@@ -44,17 +44,17 @@ export const PARTS: Part[] = [
   { id: 'b_raystinger', name: 'レイスティンガー', type: 'body', stats: { speed: 22, power: 18, cornering: 18, stamina: 10, weight: 15 }, image: bodyRayStinger },
 
   // Chassis
-  { id: 'c_super1', name: 'スーパーIIシャーシ', type: 'chassis', stats: { speed: 10, power: 10, cornering: 20, stamina: 10, weight: 15 }, image: chassisSuper2 },
-  { id: 'c_tz', name: 'スーパーTZシャーシ', type: 'chassis', stats: { speed: 15, power: 10, cornering: 30, stamina: 15, weight: 18 }, image: chassisTz },
-  { id: 'c_ar', name: 'ARシャーシ', type: 'chassis', stats: { speed: 20, power: 15, cornering: 25, stamina: 30, weight: 22 }, image: chassisAr },
+  { id: 'c_super1', name: 'スーパーIIシャーシ', type: 'chassis', stats: { speed: 10, power: 10, cornering: 20, stamina: 5, weight: 15 }, image: chassisSuper2 },
+  { id: 'c_tz', name: 'スーパーTZシャーシ', type: 'chassis', stats: { speed: 15, power: 10, cornering: 30, stamina: 6, weight: 18 }, image: chassisTz },
+  { id: 'c_ar', name: 'ARシャーシ', type: 'chassis', stats: { speed: 20, power: 15, cornering: 25, stamina: 10, weight: 22 }, image: chassisAr },
 
   // Motor
-  { id: 'm_lightdash', name: 'ライトダッシュモーター', type: 'motor', stats: { speed: 120, power: 90, cornering: 0, stamina: 10, weight: 14 }, image: motorLightdash },
+  { id: 'm_lightdash', name: 'ライトダッシュモーター', type: 'motor', stats: { speed: 120, power: 90, cornering: 0, stamina: -5, weight: 14 }, image: motorLightdash },
   { id: 'm_normal', name: 'タイプノーマルモーター', type: 'motor', stats: { speed: 50, power: 50, cornering: 0, stamina: 0, weight: 17 }, image: motorNormal },
   { id: 'm_rev', name: 'レブチューン2モーター', type: 'motor', stats: { speed: 120, power: 40, cornering: 0, stamina: 0, weight: 17 }, image: motorRev2 },
   { id: 'm_torque', name: 'トルクチューン2モーター', type: 'motor', stats: { speed: 70, power: 110, cornering: 0, stamina: 0, weight: 17 }, image: motorTorque2 },
-  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 90, power: 120, cornering: 0, stamina: -10, weight: 17 }, image: motorPowerdash },
-  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 150, power: 90, cornering: 0, stamina: -25, weight: 17 }, image: motorHyperdash },
+  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 90, power: 120, cornering: 0, stamina: -20, weight: 17 }, image: motorPowerdash },
+  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 150, power: 90, cornering: 0, stamina: -40, weight: 17 }, image: motorHyperdash },
 
   // Gear
   { id: 'g_std', name: '標準ギヤ (4:1)', type: 'gear', stats: { speed: 20, power: 40, cornering: 0, stamina: 0, weight: 2 }, image: gearStd },
@@ -77,7 +77,7 @@ export const PARTS: Part[] = [
   { id: 'rr_alum2', name: '2段アルミローラー(後)', type: 'roller_rear', stats: { speed: -8, power: 0, cornering: 65, stamina: 0, weight: 6 }, image: rollerAlum2step },
 
   // Mass Damper
-  { id: 'md_std', name: 'マスダンパー スクエア', type: 'mass_damper', stats: { speed: -10, power: 0, cornering: 30, stamina: 20, weight: 10 }, image: massDamperSquare },
+  { id: 'md_std', name: 'マスダンパー スクエア', type: 'mass_damper', stats: { speed: -10, power: 0, cornering: 30, stamina: 6, weight: 10 }, image: massDamperSquare },
 ];
 
 // CPUレーサー用：各スロットをランダムに選び、それらしい構成を自動生成する

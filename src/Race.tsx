@@ -21,8 +21,16 @@ const LANE_MUL = [1, 1.08, 0.92];
 const STAMINA_BASELINE = 15;
 // レース終盤（この進行割合を超えたあたり）からバテ・巻き返し効果が強まっていく
 const FATIGUE_START_FRAC = 0.35;
-const FATIGUE_MAX_CUT = 0.45; // 最大45%減速（低スタミナ・ダッシュ系モーター想定）
-const SECOND_WIND_MAX_BOOST = 0.12; // 最大12%増速（高スタミナ構成のご褒美）
+const FATIGUE_MAX_CUT = 0.55; // 最大55%減速（低スタミナ・ダッシュ系モーター想定）
+const SECOND_WIND_MAX_BOOST = 0.16; // 最大16%増速（高スタミナ構成のご褒美）
+
+// ── パワーヒルウェイ専用：坂道でのパワー効果 ──
+// パワー/重さ比がこの値と同じ機体は上り坂でも速度低下なし。これより低いと
+// 上り区間で最高速が下がり、高いとむしろ坂で伸びる（パワー特化機の見せ場）。
+const CLIMB_RATIO_BASELINE = 1.8;
+const CLIMB_SPEED_MIN = 0.45;
+const CLIMB_SPEED_MAX = 1.1;
+const DOWNHILL_SPEED_BOOST = 1.12; // 下り区間は誰でも一律で少し伸びる
 
 type RacerState = 'running' | 'crashed' | 'finished';
 
@@ -124,6 +132,9 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         if (rt.state !== 'running') return;
         anyRunning = true;
 
+        const mul = LANE_MUL[i] ?? 1;
+        const curSlope = sampleCourse(courseId, rt.progress, window.innerWidth, window.innerHeight, mul).slope;
+
         // 終盤に近づくほど効果が強まる「バテ／second wind」係数（逆転要素）
         const distanceTarget = TARGET_LAPS * Math.PI * 2;
         const raceFrac = Math.min(1, (rt.laps * Math.PI * 2 + rt.progress) / distanceTarget);
@@ -131,10 +142,20 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         const fatigueEase = fatigueRamp * fatigueRamp;
         const staminaGap = racer.totalStats.stamina - STAMINA_BASELINE;
         const staminaMul = staminaGap >= 0
-          ? 1 + Math.min(SECOND_WIND_MAX_BOOST, staminaGap * 0.0015) * fatigueEase
-          : 1 - Math.min(FATIGUE_MAX_CUT, -staminaGap * 0.006) * fatigueEase;
+          ? 1 + Math.min(SECOND_WIND_MAX_BOOST, staminaGap * 0.0022) * fatigueEase
+          : 1 - Math.min(FATIGUE_MAX_CUT, -staminaGap * 0.01) * fatigueEase;
 
-        const maxSpeed = racer.totalStats.speed * 0.01 * staminaMul;
+        // 坂道（パワーヒルウェイ）でのパワー効果：上りはパワー/重さ比が低いと失速し、
+        // 高いとむしろ加速。下りは誰でも一律ブースト
+        let slopeMul = 1;
+        if (curSlope === 1) {
+          const climbRatio = racer.totalStats.power / racer.totalStats.weight;
+          slopeMul = Math.max(CLIMB_SPEED_MIN, Math.min(CLIMB_SPEED_MAX, 0.4 + 0.6 * (climbRatio / CLIMB_RATIO_BASELINE)));
+        } else if (curSlope === -1) {
+          slopeMul = DOWNHILL_SPEED_BOOST;
+        }
+
+        const maxSpeed = racer.totalStats.speed * 0.01 * staminaMul * slopeMul;
         const acceleration = (racer.totalStats.power / racer.totalStats.weight) * 0.005;
         rt.speed = Math.min(rt.speed + acceleration * delta * 60, maxSpeed);
         rt.progress += rt.speed * delta;
@@ -148,7 +169,6 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
           }
         }
 
-        const mul = LANE_MUL[i] ?? 1;
         const p = sampleCourse(courseId, rt.progress, window.innerWidth, window.innerHeight, mul);
 
         if (rt.state === 'running' && p.isCorner && rt.speed > 0.5) {

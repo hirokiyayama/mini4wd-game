@@ -5,7 +5,7 @@
 // <svg viewBox="0 0 1600 900"> backdrop uses, so both course shapes sit in
 // the same world.
 
-export type CourseId = 'oval' | 'figure8';
+export type CourseId = 'oval' | 'figure8' | 'hill';
 
 export interface CourseDef {
   id: CourseId;
@@ -18,11 +18,14 @@ export interface CourseSample {
   y: number;
   angle: number;
   isCorner: boolean;
+  /** 1 = 上り区間, -1 = 下り区間, 0 = 平坦（パワーヒルウェイ専用。他コースは常に0）*/
+  slope: 1 | -1 | 0;
 }
 
 export const COURSES: CourseDef[] = [
   { id: 'oval', name: 'スピードウェイ・オーバル', description: '定番の楕円コース' },
   { id: 'figure8', name: 'ジャパンカップJr.サーキット', description: 'ウェーブ×4 ＆ ネストしたヘアピンの本格コース' },
+  { id: 'hill', name: 'パワーヒルウェイ', description: '上り×下りの超ロングストレート。パワーが物を言う長距離コース' },
 ];
 
 export const VIEWBOX_W = 1600;
@@ -250,7 +253,7 @@ export function sampleJCupLocal(pRaw: number): CourseSample {
     const x = x0 + seg.dir * u * seg.len;
     const y = seg.y + waveOffset(u);
     const angle = (Math.atan2(waveSlope(u), seg.dir * seg.len) * 180) / Math.PI;
-    return { x, y, angle, isCorner: false };
+    return { x, y, angle, isCorner: false, slope: 0 };
   }
 
   const theta = seg.thetaStart + u * (seg.thetaEnd - seg.thetaStart);
@@ -258,7 +261,80 @@ export function sampleJCupLocal(pRaw: number): CourseSample {
   const x = seg.hx + seg.r * Math.cos(theta);
   const y = seg.hy + seg.r * Math.sin(theta);
   const angle = (Math.atan2(Math.cos(theta) * hdir, -Math.sin(theta) * hdir) * 180) / Math.PI;
-  return { x, y, angle, isCorner: true };
+  return { x, y, angle, isCorner: true, slope: 0 };
+}
+
+// ── パワーヒルウェイ ─────────────────────────────────────
+// 上り一本・下り一本の超ロングストレートをヘアピン2つで繋いだ、
+// カーブよりも直線の坂道区間そのものが主役のパワー特化ロングコース。
+// slope: 1=上り（パワー/重さ比が低いと失速）, -1=下り（重力で加速）。
+export const HILL_ZOOM = 0.35;
+// オーバルより下寄りに中心を置き、縦に長いコースの上端がリーダーボードUIの
+// 裏に隠れないようにする（表示上の調整のみ。周回距離はズームに依存しない）。
+export const HILL_CENTER_Y = 480;
+export const HILL_HALF_LEN = 620;
+export const HILL_LANE_GAP = 300;
+export const HILL_TRACK_WIDTH = 100;
+const HILL_CORNER_R = HILL_LANE_GAP / 2;
+
+interface HillStraightSeg { type: 'straight'; x: number; dir: 1 | -1; len: number; slope: 1 | -1; }
+interface HillHairpinSeg { type: 'hairpin'; hx: number; hy: number; r: number; thetaStart: number; thetaEnd: number; }
+export type HillSeg = HillStraightSeg | HillHairpinSeg;
+
+const hillUpX = -HILL_LANE_GAP / 2;
+const hillDownX = HILL_LANE_GAP / 2;
+const hillTopY = -HILL_HALF_LEN;
+const hillBotY = HILL_HALF_LEN;
+
+export const hillSegments: HillSeg[] = [
+  { type: 'straight', x: hillUpX, dir: -1, len: HILL_HALF_LEN * 2, slope: 1 },
+  { type: 'hairpin', hx: 0, hy: hillTopY, r: HILL_CORNER_R, thetaStart: Math.PI, thetaEnd: Math.PI * 2 },
+  { type: 'straight', x: hillDownX, dir: 1, len: HILL_HALF_LEN * 2, slope: -1 },
+  { type: 'hairpin', hx: 0, hy: hillBotY, r: HILL_CORNER_R, thetaStart: 0, thetaEnd: Math.PI },
+];
+
+function hillSegLength(seg: HillSeg): number {
+  return seg.type === 'straight' ? seg.len : Math.abs(seg.thetaEnd - seg.thetaStart) * seg.r;
+}
+
+const hillSegLens = hillSegments.map(hillSegLength);
+const hillTotalLen = hillSegLens.reduce((a, b) => a + b, 0);
+export const hillSegFractions: number[] = (() => {
+  const out: number[] = [];
+  let acc = 0;
+  for (const len of hillSegLens) {
+    acc += len / hillTotalLen;
+    out.push(acc);
+  }
+  return out;
+})();
+
+interface HillLocalSample { x: number; y: number; angleDeg: number; isCorner: boolean; slope: 1 | -1 | 0; }
+
+/** Samples パワーヒルウェイ in origin-centered local units (like the oval). */
+export function sampleHillLocal(pRaw: number): HillLocalSample {
+  const s = (((pRaw % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
+
+  let segIndex = hillSegFractions.findIndex(f => s < f);
+  if (segIndex === -1) segIndex = hillSegments.length - 1;
+  const segStart = segIndex === 0 ? 0 : hillSegFractions[segIndex - 1];
+  const segEnd = hillSegFractions[segIndex];
+  const u = (s - segStart) / (segEnd - segStart);
+  const seg = hillSegments[segIndex];
+
+  if (seg.type === 'straight') {
+    const y0 = seg.dir === -1 ? hillBotY : hillTopY;
+    const y = y0 + seg.dir * u * seg.len;
+    const angleDeg = seg.dir === 1 ? 90 : -90;
+    return { x: seg.x, y, angleDeg, isCorner: false, slope: seg.slope };
+  }
+
+  const theta = seg.thetaStart + u * (seg.thetaEnd - seg.thetaStart);
+  const hdir = Math.sign(seg.thetaEnd - seg.thetaStart) || 1;
+  const x = seg.hx + seg.r * Math.cos(theta);
+  const y = seg.hy + seg.r * Math.sin(theta);
+  const angleDeg = (Math.atan2(Math.cos(theta) * hdir, -Math.sin(theta) * hdir) * 180) / Math.PI;
+  return { x, y, angleDeg, isCorner: true, slope: 0 };
 }
 
 function getScreenTransform(viewportWidth: number, viewportHeight: number) {
@@ -289,12 +365,20 @@ export function sampleCourse(
     const local = sampleJCupLocal(p);
     const x = JCUP_CENTER_X + (local.x - JCUP_CENTER_X) * laneMul;
     const y = JCUP_CENTER_Y + (local.y - JCUP_CENTER_Y) * laneMul;
-    return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angle, isCorner: local.isCorner };
+    return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angle, isCorner: local.isCorner, slope: 0 };
+  }
+
+  if (courseId === 'hill') {
+    const local = sampleHillLocal(p);
+    const s = HILL_ZOOM * laneMul;
+    const x = TRACK_CENTER_X + local.x * s;
+    const y = HILL_CENTER_Y + local.y * s;
+    return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angleDeg, isCorner: local.isCorner, slope: local.slope };
   }
 
   const local = sampleOvalHexLocal(p);
   const s = OVAL_ZOOM * laneMul;
   const x = TRACK_CENTER_X + local.x * s;
   const y = TRACK_CENTER_Y + local.y * s;
-  return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angleDeg, isCorner: local.isCorner };
+  return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angleDeg, isCorner: local.isCorner, slope: 0 };
 }
