@@ -39,8 +39,8 @@ const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'gear', 'tire_front',
 // ゲージの最大値（ステータスのスケーリング用）。スタミナは0を中心に±この値まで
 const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 50, weight: 200 };
 
-interface StatGaugeProps { label: string; icon: string; value: number; max: number; color: string; centered?: boolean; }
-const StatGauge: React.FC<StatGaugeProps> = ({ label, icon, value, max, color, centered = false }) => {
+interface StatGaugeProps { label: string; icon: string; value: number; max: number; color: string; centered?: boolean; hint?: string; }
+const StatGauge: React.FC<StatGaugeProps> = ({ label, icon, value, max, color, centered = false, hint }) => {
   const fillStyle = centered
     ? (() => {
         const clamped = Math.max(-max, Math.min(max, value));
@@ -50,7 +50,7 @@ const StatGauge: React.FC<StatGaugeProps> = ({ label, icon, value, max, color, c
       })()
     : { left: '0%', width: `${Math.min(100, Math.max(0, (value / max) * 100))}%` };
   return (
-    <div className="stat-row">
+    <div className="stat-row" title={hint}>
       <div className="stat-row-head">
         <span className="stat-row-label">
           <span className="stat-row-icon">{icon}</span>{label}
@@ -202,10 +202,10 @@ export const Garage: React.FC<GarageProps> = ({
           )}
 
           <div className="panel-title">マシンステータス</div>
-          <StatGauge label="スピード" icon="⚡" value={totalStats.speed}    max={STAT_MAX.speed}    color="#5aabff" />
-          <StatGauge label="パワー"   icon="🔥" value={totalStats.power}    max={STAT_MAX.power}    color="#ff6b35" />
-          <StatGauge label="コーナー" icon="🎯" value={totalStats.cornering} max={STAT_MAX.cornering} color="#00e5ff" />
-          <StatGauge label="スタミナ" icon="💚" value={totalStats.stamina}  max={STAT_MAX.stamina}  color={totalStats.stamina < 0 ? '#f87171' : '#4ade80'} centered />
+          <StatGauge label="スピード" icon="⚡" value={totalStats.speed}    max={STAT_MAX.speed}    color="#5aabff" hint="直線での最高速に影響（コーナーはやや苦手になる）" />
+          <StatGauge label="パワー"   icon="🔥" value={totalStats.power}    max={STAT_MAX.power}    color="#ff6b35" hint="スタート時の加速の伸びと、坂道（パワーヒルウェイ）の登坂力に影響" />
+          <StatGauge label="コーナー" icon="🎯" value={totalStats.cornering} max={STAT_MAX.cornering} color="#00e5ff" hint="コーナーでの速さと安定性に影響（直線はやや苦手になる）" />
+          <StatGauge label="スタミナ" icon="💚" value={totalStats.stamina}  max={STAT_MAX.stamina}  color={totalStats.stamina < 0 ? '#f87171' : '#4ade80'} centered hint="レース終盤の失速・巻き返しに影響" />
           <div className="weight-box">
             <span className="weight-label">🔩 重さ</span>
             <span className="weight-value">{totalStats.weight}g</span>

@@ -16,6 +16,12 @@ const TARGET_LAPS = 3;
 // 3台が重ならないよう、コースの相似形上に少しずつレーンをずらして配置
 const LANE_MUL = [1, 1.08, 0.92];
 
+// ── パワー：スタート時の加速の伸び ──
+// 最高速自体には関与させず（それはスピード/コーナーの役割）、0→最高速の
+// 立ち上がりの速さだけをパワー/重さ比で決める。値を控えめにして助走時間を
+// 長めに取ることで、パワー差がレース序盤にはっきり体感できるようにする。
+const ACCEL_SCALE = 0.003;
+
 // ── 逆転要素：スタミナによるバテ／second wind ──
 // スタミナ合計がこの値を上回るほど終盤に上乗せ、下回るほど終盤に失速する（基準値=平均的な構成のスタミナ）
 const STAMINA_BASELINE = 15;
@@ -36,9 +42,10 @@ const DOWNHILL_SPEED_BOOST = 1.12; // 下り区間は誰でも一律で少し伸
 // 「スピードが高いほど直線が速いがコーナーは遅い／コーナーが高いほど
 // コーナーは速いが直線は遅い」という一貫した特性にする。基礎ペースは
 // 両ステータスの合計から決め、その差分（diff）が直線・コーナーそれぞれの
-// 得意・不得意を逆向きに作る。
+// 得意・不得意を逆向きに作る。ただし差はあくまで軽い味付け程度に留め、
+// 「加速・坂」というパワーの役割を食わないよう控えめに調整している。
 const BASE_PACE_SCALE = 0.005; // (speed + cornering) 合計 → 基礎ペース
-const SPEED_CORNER_TRADEOFF = 0.0015; // diffがどれだけ直線/コーナーの速さに影響するか
+const SPEED_CORNER_TRADEOFF = 0.0004; // diffがどれだけ直線/コーナーの速さに影響するか（ごく軽め）
 const SEG_MUL_FLOOR = 0.35; // 直線・コーナーどちらでも最低限これくらいは出せる
 const SEG_MUL_SMOOTH_RATE = 6; // 直線⇔コーナー切り替え時、速度が滑らかに遷移する速さ
 // レース全体のペースを落とす（体感で以前の約半分。速いセッティングで20秒前後を目安に）
@@ -212,7 +219,10 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         }
 
         const maxSpeed = basePace * rt.segMulSmooth * staminaMul * slopeMul * rt.eventMul * GLOBAL_SPEED_SCALE;
-        const acceleration = (racer.totalStats.power / racer.totalStats.weight) * 0.005;
+        // パワーの役割はスタート時の加速の伸びと坂道（slopeMulで別途反映）に
+        // 特化させる。ここの係数を控えめにして立ち上がりに時間をかけることで、
+        // パワー差がレース序盤にはっきり体感できるようにしている
+        const acceleration = (racer.totalStats.power / racer.totalStats.weight) * ACCEL_SCALE;
         rt.speed = Math.min(rt.speed + acceleration * delta * 60, maxSpeed);
         rt.progress += rt.speed * delta;
 
@@ -231,7 +241,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
           // しきい値自体はイベントで変動させない（絶好調中はそのぶん speed が
           // 伸びているので自然とコーナーが危なくなり、つまづき中は speed が
           // 落ちているぶん自然と安全になる＝同じセッティングでも結果が変わりうる）
-          const stabilityLimit = ((racer.totalStats.cornering / 100) * 0.8 + 0.55) * GLOBAL_SPEED_SCALE;
+          const stabilityLimit = ((racer.totalStats.cornering / 100) * 0.8 + 0.85) * GLOBAL_SPEED_SCALE;
           if (rt.speed > stabilityLimit) {
             rt.state = 'crashed';
           }
