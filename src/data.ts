@@ -26,6 +26,8 @@ import rollerPlastic from './assets/parts/roller_plastic.jpg';
 import rollerAlum from './assets/parts/roller_alum.jpg';
 import rollerAlum2step from './assets/parts/roller_alum2step.jpg';
 import massDamperSquare from './assets/parts/mass_damper_square.jpg';
+import batteryNeochamp from './assets/parts/battery_neochamp.jpg';
+import batteryPowerchamp from './assets/parts/battery_powerchamp.jpg';
 
 export const PARTS: Part[] = [
   // Body — grouped into 4 clear archetypes (big stat swings between
@@ -55,6 +57,10 @@ export const PARTS: Part[] = [
   { id: 'm_torque', name: 'トルクチューン2モーター', type: 'motor', stats: { speed: 70, power: 110, cornering: 0, stamina: 10, weight: 17 }, image: motorTorque2 },
   { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 90, power: 120, cornering: 0, stamina: -35, weight: 17 }, image: motorPowerdash },
   { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 150, power: 90, cornering: 0, stamina: -45, weight: 17 }, image: motorHyperdash },
+
+  // Battery
+  { id: 'bat_neochamp', name: 'ニッケル水素電池 ネオチャンプ', type: 'battery', stats: { speed: 15, power: 5, cornering: 0, stamina: -10, weight: 10 }, image: batteryNeochamp },
+  { id: 'bat_powerchamp', name: 'パワーチャンプRX', type: 'battery', stats: { speed: 0, power: 15, cornering: 0, stamina: 0, weight: 8 }, image: batteryPowerchamp },
 
   // Gear
   { id: 'g_std', name: '標準ギヤ (4:1)', type: 'gear', stats: { speed: 20, power: 40, cornering: 0, stamina: 0, weight: 2 }, image: gearStd },
@@ -109,6 +115,7 @@ export function randomSetting(level: CPULevel = 2): MachineSetting {
     body: pickAny('body'),
     chassis: CPU_TIER_CHASSIS[level - 1],
     motor: pickFrom(CPU_TIER_MOTOR[level]),
+    battery: pickAny('battery'),
     gear: pickAny('gear'),
     tire_front: CPU_TIER_TIRE_FRONT[level - 1],
     tire_rear: CPU_TIER_TIRE_REAR[level - 1],

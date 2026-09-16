@@ -51,6 +51,19 @@ const SEG_MUL_SMOOTH_RATE = 6; // 直線⇔コーナー切り替え時、速度�
 // レース全体のペースを落とす（体感で以前の約半分。速いセッティングで20秒前後を目安に）
 const GLOBAL_SPEED_SCALE = 0.5;
 
+// ── コーナーの安定しきい値 ──
+// コーナー値だけで決めると「スピード系ボディ＋高速モーター」のように
+// 合計値が大きいだけの構成が軒並みしきい値を超えてしまう（＝ほぼ確実に
+// コースアウトする）ため、しきい値自体も基礎ペースに比例させ、その機体
+// なりの速さに見合った安定性を確保できるようにする。コーナー値は上乗せ
+// ボーナスとして残し、コーナー特化構成が最も安全になる序列は維持する。
+// 実際のコーナー進入時は、直線⇔コーナーの速度切り替え（segMulSmooth）が
+// 追いつくまでのラグや、絶好調イベントによる瞬間的な増速で理論値より
+// 速くなる瞬間があるため、定常状態の計算よりだいぶ余裕を持たせておく
+const STABILITY_BASE_PACE_FRAC = 1.1; // 基礎ペースのうちこの割合までは安定して曲がれる
+const STABILITY_CORNERING_BONUS = 0.005; // コーナー値によるボーナス（上乗せ）
+const STABILITY_MIN = 0.45; // 最低限のしきい値
+
 // ── ランダムイベント：同じセッティング同士でも毎回違う展開になるように、
 // 各マシンにたまに「絶好調（加速）」「つまづき（減速）」を発生させる。
 const RANDOM_EVENT_CHANCE_PER_SEC = 0.32; // 発生していない間、1秒あたりこの確率で新規発生
@@ -242,7 +255,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
           // しきい値自体はイベントで変動させない（絶好調中はそのぶん speed が
           // 伸びているので自然とコーナーが危なくなり、つまづき中は speed が
           // 落ちているぶん自然と安全になる＝同じセッティングでも結果が変わりうる）
-          const stabilityLimit = ((racer.totalStats.cornering / 100) * 0.8 + 0.85) * GLOBAL_SPEED_SCALE;
+          const stabilityLimit = (basePace * STABILITY_BASE_PACE_FRAC + racer.totalStats.cornering * STABILITY_CORNERING_BONUS + STABILITY_MIN) * GLOBAL_SPEED_SCALE;
           if (rt.speed > stabilityLimit) {
             rt.state = 'crashed';
           }

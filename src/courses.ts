@@ -5,7 +5,7 @@
 // <svg viewBox="0 0 1600 900"> backdrop uses, so both course shapes sit in
 // the same world.
 
-export type CourseId = 'oval' | 'figure8' | 'hill';
+export type CourseId = 'oval' | 'figure8' | 'hill' | 'grand';
 
 export interface CourseDef {
   id: CourseId;
@@ -30,6 +30,7 @@ export const COURSES: CourseDef[] = [
   { id: 'oval', name: 'スピードウェイ・オーバル', description: '定番の楕円コース' },
   { id: 'figure8', name: 'ジャパンカップJr.サーキット', description: 'ウェーブ×4 ＆ ネストしたヘアピンの本格コース' },
   { id: 'hill', name: 'パワーヒルウェイ', description: '上り×下りの超ロングストレート。パワーが物を言う長距離コース' },
+  { id: 'grand', name: 'グランドサーキット', description: '直線・ウェーブ・坂を凝縮した歴代最長のロングコース' },
 ];
 
 export const VIEWBOX_W = 1600;
@@ -298,8 +299,10 @@ const hillVerts: Vec[] = [
   { x: 600, y: 210 },   // v4b: 反対向きのカーブ（S字）
   { x: 250, y: 350 },   // v5: スタート/フィニッシュ直線へ
 ];
-// edgeSlopes[i] = 頂点i→頂点i+1の区間の傾斜
-const hillEdgeSlopes: (1 | -1 | 0)[] = [1, 1, 1, 1, 0, -1, -1, -1, 0];
+// edgeSlopes[i] = 頂点i→頂点i+1の区間の傾斜。スタート/フィニッシュ直線
+// （v5→v0）も上りにして、スタートから最初のカーブ（v0）までずっと上り坂に
+// なるようにし、そのままループの上りに繋がる分、上り区間を大幅に延長した。
+const hillEdgeSlopes: (1 | -1 | 0)[] = [1, 1, 1, 1, 0, -1, -1, -1, 1];
 // 頂点ごとのコーナー半径。ループの膨らみは広いスイーパー、S字の2つは
 // タイトな本当に危険なコーナーにして、コースアウトの緊張感をS字に集中させる。
 const hillCornerRs: number[] = [100, 110, 120, 110, 100, 85, 60, 65, 100];
@@ -386,6 +389,81 @@ export function sampleHillLocal(pRaw: number): HillLocalSample {
   return { x, y, angleDeg, isCorner: true, cornerRisk: seg.r <= HILL_DANGER_CORNER_MAX_R, slope: 0 };
 }
 
+// ── グランドサーキット ─────────────────────────────────────
+// 「直線・カーブ・坂」の3コースを1つに凝縮した、歴代最長のロングコース。
+// 自己交差はしないシンプルな1周ループだが、①長い直線（オーバル風）、
+// ②きつめのジグザグが3連続するウェーブ区間（ジャパンカップJr.風）、
+// ③上り・下りの長いストレート（パワーヒルウェイ風）を1周に全部詰め込む。
+// コース・マシンとも縮小表示してよいとのことなので、ズームは歴代最小。
+export const GRAND_ZOOM = 0.3;
+export const GRAND_CENTER_X = TRACK_CENTER_X;
+// 上端がリーダーボードUIの裏に隠れないよう、下寄りに中心を置く
+export const GRAND_CENTER_Y = 560;
+export const GRAND_TRACK_WIDTH = 100;
+
+// v0→v1 が長いスタート/フィニッシュ直線（平坦）、v3→v4→v5→v6→v7 が
+// きつめのジグザグ×3のウェーブ区間、v8→v9 が上りの長いストレート、
+// v10→v11 が下りの長いストレート。
+const grandVerts: Vec[] = [
+  { x: -800, y: 1000 },  // v0: 左下、スタート/フィニッシュ直線の始点
+  { x: 800, y: 1000 },   // v1: 右下 — スタート/フィニッシュ直線（平坦・長い）
+  { x: 1200, y: 500 },   // v2: コーナー
+  { x: 1200, y: 100 },   // v3: ウェーブ前の右側直線（平坦）
+  { x: 950, y: -50 },    // v4: ジグザグ1
+  { x: 1200, y: -250 },  // v5: ジグザグ2（逆方向）
+  { x: 950, y: -450 },   // v6: ジグザグ3（逆方向）
+  { x: 1200, y: -800 },  // v7: ウェーブ後のコーナー
+  { x: 800, y: -1150 },  // v8: 上り区間へのコーナー
+  { x: -800, y: -1150 }, // v9: 上りの長いストレート
+  { x: -1200, y: -700 }, // v10: コーナー
+  { x: -1200, y: 500 },  // v11: 下りの長いストレート
+];
+const grandEdgeSlopes: (1 | -1 | 0)[] = [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, -1, 0];
+// ウェーブ区間（ジグザグ3つ）だけタイトな本当に危険なコーナーにして、
+// それ以外の広いコーナーは見た目には曲がっていても安全にする
+const grandCornerRs: number[] = [130, 110, 100, 70, 65, 65, 70, 100, 110, 100, 110, 130];
+const GRAND_DANGER_CORNER_MAX_R = 80;
+
+export const grandSegments: HillSeg[] = buildHillPolygon(grandVerts, grandEdgeSlopes, grandCornerRs);
+
+const grandSegLens = grandSegments.map(hillSegLength);
+const grandTotalLen = grandSegLens.reduce((a, b) => a + b, 0);
+export const grandSegFractions: number[] = (() => {
+  const out: number[] = [];
+  let acc = 0;
+  for (const len of grandSegLens) {
+    acc += len / grandTotalLen;
+    out.push(acc);
+  }
+  return out;
+})();
+
+/** Samples グランドサーキット in origin-centered local units (like the hill course). */
+export function sampleGrandLocal(pRaw: number): HillLocalSample {
+  const s = (((pRaw % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
+
+  let segIndex = grandSegFractions.findIndex(f => s < f);
+  if (segIndex === -1) segIndex = grandSegments.length - 1;
+  const segStart = segIndex === 0 ? 0 : grandSegFractions[segIndex - 1];
+  const segEnd = grandSegFractions[segIndex];
+  const u = (s - segStart) / (segEnd - segStart);
+  const seg = grandSegments[segIndex];
+
+  if (seg.type === 'straight') {
+    const x = seg.from.x + (seg.to.x - seg.from.x) * u;
+    const y = seg.from.y + (seg.to.y - seg.from.y) * u;
+    const angleDeg = (Math.atan2(seg.to.y - seg.from.y, seg.to.x - seg.from.x) * 180) / Math.PI;
+    return { x, y, angleDeg, isCorner: false, cornerRisk: false, slope: seg.slope };
+  }
+
+  const theta = seg.thetaStart + u * (seg.thetaEnd - seg.thetaStart);
+  const hdir = Math.sign(seg.thetaEnd - seg.thetaStart) || 1;
+  const x = seg.center.x + seg.r * Math.cos(theta);
+  const y = seg.center.y + seg.r * Math.sin(theta);
+  const angleDeg = (Math.atan2(Math.cos(theta) * hdir, -Math.sin(theta) * hdir) * 180) / Math.PI;
+  return { x, y, angleDeg, isCorner: true, cornerRisk: seg.r <= GRAND_DANGER_CORNER_MAX_R, slope: 0 };
+}
+
 function getScreenTransform(viewportWidth: number, viewportHeight: number) {
   const scale = Math.max(viewportWidth / VIEWBOX_W, viewportHeight / VIEWBOX_H);
   const offsetX = (viewportWidth - VIEWBOX_W * scale) / 2;
@@ -422,6 +500,14 @@ export function sampleCourse(
     const s = HILL_ZOOM * laneMul;
     const x = TRACK_CENTER_X + local.x * s;
     const y = HILL_CENTER_Y + local.y * s;
+    return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angleDeg, isCorner: local.isCorner, cornerRisk: local.cornerRisk, slope: local.slope };
+  }
+
+  if (courseId === 'grand') {
+    const local = sampleGrandLocal(p);
+    const s = GRAND_ZOOM * laneMul;
+    const x = GRAND_CENTER_X + local.x * s;
+    const y = GRAND_CENTER_Y + local.y * s;
     return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angleDeg, isCorner: local.isCorner, cornerRisk: local.cornerRisk, slope: local.slope };
   }
 

@@ -1,4 +1,4 @@
-export type PartType = 'body' | 'chassis' | 'motor' | 'gear' | 'tire_front' | 'tire_rear' | 'roller_front' | 'roller_rear' | 'mass_damper';
+export type PartType = 'body' | 'chassis' | 'motor' | 'battery' | 'gear' | 'tire_front' | 'tire_rear' | 'roller_front' | 'roller_rear' | 'mass_damper';
 
 export interface PartStats {
   speed: number;       // スピード（最高速に影響）
@@ -20,6 +20,7 @@ export interface MachineSetting {
   body: string | null;
   chassis: string | null;
   motor: string | null;
+  battery: string | null;
   gear: string | null;
   tire_front: string | null;
   tire_rear: string | null;

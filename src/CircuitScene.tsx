@@ -18,6 +18,13 @@ import {
   hillSegments,
   hillSegFractions,
   sampleHillLocal,
+  GRAND_ZOOM,
+  GRAND_CENTER_X,
+  GRAND_CENTER_Y,
+  GRAND_TRACK_WIDTH,
+  grandSegments,
+  grandSegFractions,
+  sampleGrandLocal,
   type CourseId,
 } from './courses';
 
@@ -216,6 +223,93 @@ function hillTicks() {
         nodes.push(
           <rect
             key={`hh${i}-${n}`}
+            x={x - 10}
+            y={y - 6}
+            width="20"
+            height="12"
+            rx="3"
+            fill={n % 2 === 0 ? HILL_NEUTRAL_COLOR : '#f5f5f5'}
+            opacity="0.92"
+            transform={`rotate(${angleDeg + 90}, ${x}, ${y})`}
+          />
+        );
+      }
+    }
+    segStart = segEnd;
+  });
+  return nodes;
+}
+
+function buildGrandPath(tStart: number, tEnd: number, steps: number): string {
+  const parts: string[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = tStart + (tEnd - tStart) * (i / steps);
+    const { x, y } = sampleGrandLocal(t);
+    parts.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`);
+  }
+  return parts.join(' ');
+}
+
+const GRAND_STRAIGHT_TICK_BUDGET = 130;
+const GRAND_ARC_TICK_BUDGET = 70;
+
+function grandTicks() {
+  const nodes: React.ReactNode[] = [];
+  let segStart = 0;
+  const tickOffset = GRAND_TRACK_WIDTH / 2 + 8;
+  grandSegments.forEach((seg, i) => {
+    const segEnd = grandSegFractions[i];
+    const frac = segEnd - segStart;
+    if (seg.type === 'straight') {
+      const color = seg.slope === 1 ? HILL_UP_COLOR : seg.slope === -1 ? HILL_DOWN_COLOR : HILL_NEUTRAL_COLOR;
+      const count = Math.max(2, Math.round(frac * GRAND_STRAIGHT_TICK_BUDGET));
+      for (let n = 0; n < count; n++) {
+        const s = segStart + frac * (n / count);
+        const { x, y, angleDeg } = sampleGrandLocal(s * Math.PI * 2);
+        const rad = (angleDeg * Math.PI) / 180;
+        const px = x - Math.sin(rad) * tickOffset;
+        const py = y + Math.cos(rad) * tickOffset;
+        nodes.push(
+          <rect
+            key={`gt${i}-${n}`}
+            x={px - 10}
+            y={py - 6}
+            width="20"
+            height="12"
+            rx="3"
+            fill={n % 2 === 0 ? color : '#f5f5f5'}
+            opacity="0.92"
+            transform={`rotate(${angleDeg + 90}, ${px}, ${py})`}
+          />
+        );
+      }
+      if (seg.slope !== 0) {
+        const chevCount = Math.max(2, Math.round(frac * 28));
+        for (let n = 1; n < chevCount; n++) {
+          const s = segStart + frac * (n / chevCount);
+          const { x, y, angleDeg } = sampleGrandLocal(s * Math.PI * 2);
+          nodes.push(
+            <polygon
+              key={`gc${i}-${n}`}
+              points="0,-16 -15,10 15,10"
+              fill={color}
+              opacity="0.5"
+              transform={`translate(${x},${y}) rotate(${angleDeg + 90})`}
+            />
+          );
+        }
+      }
+    } else {
+      const count = Math.max(2, Math.round(frac * GRAND_ARC_TICK_BUDGET));
+      const radius = seg.r + tickOffset;
+      for (let n = 0; n < count; n++) {
+        const theta = seg.thetaStart + (seg.thetaEnd - seg.thetaStart) * (n / count);
+        const x = seg.center.x + radius * Math.cos(theta);
+        const y = seg.center.y + radius * Math.sin(theta);
+        const angleDeg = (theta * 180) / Math.PI;
+        nodes.push(
+          <rect
+            key={`gh${i}-${n}`}
             x={x - 10}
             y={y - 6}
             width="20"
@@ -537,8 +631,9 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
         const crossPt = sampleHillLocal(cross1T);
 
         const start = sampleHillLocal(0.06);
-        // ロングヒル（上り）区間の中間点＝ループの一番遠い場所あたり
-        const upMidT = ((hillSegFractions[1] + hillSegFractions[9]) / 2) * Math.PI * 2;
+        // ロングヒル（上り）区間の中間点。スタート/フィニッシュ直線から
+        // ループ終端までずっと上りになったため、その全体の中間点を使う
+        const upMidT = ((0 + hillSegFractions[9]) / 2) * Math.PI * 2;
         // 下り＋S字区間の中間点
         const downMidT = ((hillSegFractions[11] + hillSegFractions[17]) / 2) * Math.PI * 2;
         const upMid = sampleHillLocal(upMidT);
@@ -593,6 +688,67 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
           transform="rotate(-90, -720, 0)"
         >
           POWER HILLWAY
+        </text>
+      </g>
+        );
+      })()}
+
+      {/* track: グランドサーキット — 自己交差はしない1本のロングループに、
+          長いスタート/フィニッシュ直線（オーバル風）、タイトなジグザグが
+          3連続するウェーブ区間（ジャパンカップJr.風）、上り・下りの長い
+          ストレート（パワーヒルウェイ風）を全部詰め込んだ、歴代最長コース。
+          縮小表示なのでコース・マシンとも小さく見える。 */}
+      {courseId === 'grand' && (() => {
+        const start = sampleGrandLocal(0.02);
+        const startMidT = ((grandSegFractions[1] + grandSegFractions[2]) / 2) * Math.PI * 2;
+        const waveMidT = ((grandSegFractions[7] + grandSegFractions[12]) / 2) * Math.PI * 2;
+        const upMidT = ((grandSegFractions[17] + grandSegFractions[18]) / 2) * Math.PI * 2;
+        const downMidT = ((grandSegFractions[21] + grandSegFractions[22]) / 2) * Math.PI * 2;
+        const startMid = sampleGrandLocal(startMidT);
+        const waveMid = sampleGrandLocal(waveMidT);
+        const upMid = sampleGrandLocal(upMidT);
+        const downMid = sampleGrandLocal(downMidT);
+        return (
+      <g transform={`translate(${GRAND_CENTER_X},${GRAND_CENTER_Y}) scale(${GRAND_ZOOM})`}>
+        <path d={buildGrandPath(0, Math.PI * 2, 360)} fill="none" stroke="#000" strokeWidth={GRAND_TRACK_WIDTH + 34} strokeLinecap="round" opacity="0.45" filter="url(#soft)" />
+        <path d={buildGrandPath(0, Math.PI * 2, 360)} fill="none" stroke="#3a3e46" strokeWidth={GRAND_TRACK_WIDTH} strokeLinecap="round" />
+        <path d={buildGrandPath(0, Math.PI * 2, 360)} fill="none" stroke="#4d525c" strokeWidth={GRAND_TRACK_WIDTH - 16} strokeLinecap="round" />
+        <path d={buildGrandPath(0, Math.PI * 2, 360)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
+
+        {grandTicks()}
+
+        {/* start / finish checker line */}
+        <g transform={`translate(${start.x},${start.y}) rotate(${start.angleDeg})`}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <rect key={i} x={-8} y={i * 9 - 36} width="16" height="9" fill={i % 2 === 0 ? '#0c0c0c' : '#f4f4f4'} />
+          ))}
+        </g>
+
+        {/* 各区間ラベル */}
+        <g transform={`translate(${startMid.x},${startMid.y}) rotate(${startMid.angleDeg})`}>
+          <text textAnchor="middle" fill="#e8ecef" opacity="0.6" fontFamily="Rajdhani, sans-serif" fontWeight={800} fontSize="30" letterSpacing="2">START / FINISH</text>
+        </g>
+        <g transform={`translate(${waveMid.x},${waveMid.y}) rotate(${waveMid.angleDeg})`}>
+          <text textAnchor="middle" fill="#f472b6" opacity="0.85" fontFamily="Rajdhani, sans-serif" fontWeight={800} fontSize="30" letterSpacing="2">〜 WAVE ZONE 〜</text>
+        </g>
+        <g transform={`translate(${upMid.x},${upMid.y}) rotate(${upMid.angleDeg})`}>
+          <text textAnchor="middle" fill={HILL_UP_COLOR} opacity="0.85" fontFamily="Rajdhani, sans-serif" fontWeight={800} fontSize="30" letterSpacing="2">▲ POWER UP</text>
+        </g>
+        <g transform={`translate(${downMid.x},${downMid.y}) rotate(${downMid.angleDeg})`}>
+          <text textAnchor="middle" fill={HILL_DOWN_COLOR} opacity="0.85" fontFamily="Rajdhani, sans-serif" fontWeight={800} fontSize="30" letterSpacing="2">▼ DOWN HILL</text>
+        </g>
+
+        <text
+          x="0"
+          y="-50"
+          textAnchor="middle"
+          fill="#ffffff"
+          opacity="0.05"
+          fontFamily="Rajdhani, sans-serif"
+          fontWeight={900}
+          fontSize="70"
+        >
+          GRAND CIRCUIT
         </text>
       </g>
         );

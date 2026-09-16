@@ -25,6 +25,7 @@ const SLOT_LABELS: Record<PartType, string> = {
   body: 'ボディ',
   chassis: 'シャーシ',
   motor: 'モーター',
+  battery: '電池',
   gear: 'ギヤ',
   tire_front: 'フロントタイヤ',
   tire_rear: 'リアタイヤ',
@@ -34,7 +35,7 @@ const SLOT_LABELS: Record<PartType, string> = {
 };
 
 // パーツカテゴリのTabシステム
-const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'gear', 'tire_front', 'tire_rear', 'roller_front', 'roller_rear', 'mass_damper'];
+const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'battery', 'gear', 'tire_front', 'tire_rear', 'roller_front', 'roller_rear', 'mass_damper'];
 
 // ゲージの最大値（ステータスのスケーリング用）。スタミナは0を中心に±この値まで
 const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 40, weight: 200 };
@@ -345,7 +346,7 @@ const PartCard: React.FC<PartCardProps> = ({ name, description, icon, thumbnail,
 // ── Helpers ────────────────────────────────────────
 function getPartIcon(type: PartType): string {
   const icons: Record<PartType, string> = {
-    body: '🚗', chassis: '⚙️', motor: '⚡', gear: '🔧',
+    body: '🚗', chassis: '⚙️', motor: '⚡', battery: '🔋', gear: '🔧',
     tire_front: '⭕', tire_rear: '⭕', roller_front: '🔵', roller_rear: '🔵',
     mass_damper: '🔩',
   };
@@ -371,6 +372,8 @@ function getPartDescription(id: string): string {
     m_torque:    'パワー重視で加速力に優れたトルク系。スタミナへの負担は少ない。',
     m_powerdash: 'スピードとパワーを高い次元で両立した強化モーター。スタミナ消費はやや大きい。',
     m_hyper:     '圧倒的なパワーを誇る最強モーター。スタミナの消耗が激しく、終盤に失速しやすい諸刃の剣。',
+    bat_neochamp:   'スピードとパワーを底上げする充電式のニッケル水素電池。ただしスタミナはやや落ちる。',
+    bat_powerchamp: 'パワーをしっかり底上げする定番のアルカリ電池。他のステータスへの影響はない。',
     g_std:       'バランスの取れたスタンダードギヤ比。',
     g_super:     'スピード特化の超高速ギヤ比。',
     tf_slick:    'グリップ力の高いフロントタイヤ。',
