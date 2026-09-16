@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { PartStats, MachineSetting } from './types';
-import { CircuitScene } from './CircuitScene';
+import { CircuitScene, getTrackGeometry } from './CircuitScene';
 import { RaceCar, type RaceCarHandle } from './RaceCar';
 
 interface RaceProps {
@@ -26,18 +26,12 @@ export const Race: React.FC<RaceProps> = ({ setting, totalStats, onBackToGarage 
   const speed = useRef(0);
   const laps = useRef(0);
   const isOut = useRef(false);
-  const wheelSpin = useRef(0);
-  const rollerSpin = useRef(0);
   const bouncePhase = useRef(0);
   const leanAngle = useRef(0);
 
   // 初期姿勢（スタートライン上、コース進行方向を向く）
   useEffect(() => {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const cx = vw / 2;
-    const cy = vh / 2;
-    const rx = Math.min(vw * 0.35, 320);
+    const { cx, cy, rx } = getTrackGeometry(window.innerWidth, window.innerHeight);
     const car = carRef.current;
     if (car) {
       if (car.root) {
@@ -104,13 +98,8 @@ export const Race: React.FC<RaceProps> = ({ setting, totalStats, onBackToGarage 
       }
 
       const t = progress.current;
-      // Viewport adaptive oval
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const cx = vw / 2;
-      const cy = vh / 2;
-      const rx = Math.min(vw * 0.35, 320);
-      const ry = Math.min(vh * 0.28, 160);
+      // Car path matches the actual on-screen track drawn by CircuitScene
+      const { cx, cy, rx, ry } = getTrackGeometry(window.innerWidth, window.innerHeight);
 
       const x = cx + rx * Math.cos(t);
       const y = cy + ry * Math.sin(t);
@@ -129,10 +118,6 @@ export const Race: React.FC<RaceProps> = ({ setting, totalStats, onBackToGarage 
         }
       }
 
-      // タイヤ・ローラーの自転（速度に応じて回転速度が変わる）
-      wheelSpin.current = (wheelSpin.current + speed.current * delta * 2400) % 360;
-      rollerSpin.current = (rollerSpin.current + speed.current * delta * 4200) % 360;
-
       // 車体の上下動（サスペンションのバウンス。速度が上がるほど大きく速く揺れる）
       bouncePhase.current += delta * (5 + speed.current * 14);
       const bounceAmp = Math.min(4.5, 1 + speed.current * 6);
@@ -150,8 +135,11 @@ export const Race: React.FC<RaceProps> = ({ setting, totalStats, onBackToGarage 
         }
         if (car.bounce) car.bounce.style.transform = `translateY(${bounceY}px)`;
         if (car.rotate) car.rotate.style.transform = `rotate(${angle + leanAngle.current}deg)`;
-        car.wheels.forEach(w => { w.style.transform = `rotate(${wheelSpin.current}deg)`; });
-        car.rollers.forEach(r => { r.style.transform = `rotate(${rollerSpin.current}deg)`; });
+        if (car.trail) {
+          const speedRatio = maxSpeed > 0 ? speed.current / maxSpeed : 0;
+          car.trail.style.opacity = `${Math.min(0.55, speedRatio * 0.6)}`;
+          car.trail.style.transform = `scale(${1 + speedRatio * 0.5})`;
+        }
       }
 
       animId = requestAnimationFrame(loop);
@@ -174,7 +162,7 @@ export const Race: React.FC<RaceProps> = ({ setting, totalStats, onBackToGarage 
       <div className="screen-vignette" />
       <div className="screen-scanline" />
 
-      {/* ── CAR: body / 4 wheels / rollers as separate, independently-animated parts ── */}
+      {/* ── CAR: actual machine photo as a positioned game object with its own glow/shadow/trail ── */}
       <RaceCar ref={carRef} bodyId={setting.body} isOut={status === 'course_out'} />
 
       {/* ── HUD: TOP BAR ── */}

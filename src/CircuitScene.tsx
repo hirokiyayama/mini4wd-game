@@ -1,5 +1,42 @@
 import React from 'react';
 
+// These mirror the numbers used by the <svg viewBox="0 0 1600 900"> track
+// drawn below (center 800,690; outer asphalt edge rx=740/ry=205; inner
+// infield edge rx=430/ry=112) so the race loop can compute a car path that
+// actually matches what's drawn, instead of an independent guess.
+const TRACK_VIEWBOX_W = 1600;
+const TRACK_VIEWBOX_H = 900;
+const TRACK_CENTER_X = 800;
+const TRACK_CENTER_Y = 690;
+const TRACK_LANE_RX = (740 + 430) / 2;
+const TRACK_LANE_RY = (205 + 112) / 2;
+
+export interface TrackGeometry {
+  cx: number;
+  cy: number;
+  rx: number;
+  ry: number;
+}
+
+/**
+ * Converts the track's fixed SVG-space ellipse (the asphalt lane midline)
+ * into on-screen pixel coordinates for the current window size, replicating
+ * the `preserveAspectRatio="xMidYMax slice"` scaling used by the <svg>
+ * below (uniform scale to cover the viewport, centered horizontally,
+ * bottom-aligned vertically).
+ */
+export function getTrackGeometry(viewportWidth: number, viewportHeight: number): TrackGeometry {
+  const scale = Math.max(viewportWidth / TRACK_VIEWBOX_W, viewportHeight / TRACK_VIEWBOX_H);
+  const offsetX = (viewportWidth - TRACK_VIEWBOX_W * scale) / 2;
+  const offsetY = viewportHeight - TRACK_VIEWBOX_H * scale;
+  return {
+    cx: offsetX + TRACK_CENTER_X * scale,
+    cy: offsetY + TRACK_CENTER_Y * scale,
+    rx: TRACK_LANE_RX * scale,
+    ry: TRACK_LANE_RY * scale,
+  };
+}
+
 /**
  * Shared stadium/circuit backdrop used by both the Garage and Race screens.
  * Pure decorative SVG layers (sky, stands, banners, fence, track) so the two
