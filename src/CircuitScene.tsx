@@ -313,7 +313,7 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
 
       {/* both course groups shrink together around a shared anchor for the
           compact Garage preview, so the whole loop fits on screen */}
-      <g transform={compact ? 'translate(800,560) scale(0.6) translate(-800,-560)' : undefined}>
+      <g transform={compact ? 'translate(800,500) scale(0.46) translate(-800,-500)' : undefined}>
 
       {/* track oval — now a figure-8 (crosses itself once per lap at the
           center) instead of one simple loop: longer, and it actually

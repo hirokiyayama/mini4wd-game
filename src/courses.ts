@@ -30,16 +30,20 @@ export const VIEWBOX_H = 900;
 // Shared center used by the oval (matches the hardcoded cx/cy of its
 // <ellipse> elements in CircuitScene.tsx).
 export const TRACK_CENTER_X = 800;
-export const TRACK_CENTER_Y = 690;
+// Vertical center of the 1600x900 viewBox (rather than sitting low like
+// the old ellipse did) so the much bigger figure-8 below has full head
+// and leg room to grow both taller and wider.
+export const TRACK_CENTER_Y = 450;
 
 // ── Oval ──────────────────────────────────────────────
 // A "bowtie hexagon" figure-8: two diamond-shaped wings (each 3 straight
 // edges + rounded corners) sharing a crossing junction at the origin,
 // where the two diagonal edges (L3→R1 and R3→L1) cross each other. Built
 // from straights + arcs (like the old hexagon oval) instead of a smooth
-// curve, so it both crosses itself AND has real straight sections.
-export const OVAL_ZOOM = 0.56;
-export const OVAL_TRACK_WIDTH = 104;
+// curve, so it both crosses itself AND has real straight sections. Sized
+// to fill most of the 1600x900 viewBox in both directions.
+export const OVAL_ZOOM = 0.62;
+export const OVAL_TRACK_WIDTH = 120;
 
 interface Vec { x: number; y: number; }
 const vAdd = (a: Vec, b: Vec): Vec => ({ x: a.x + b.x, y: a.y + b.y });
@@ -55,9 +59,9 @@ interface PolyStraightSeg { type: 'straight'; from: Vec; to: Vec; }
 interface PolyArcSeg { type: 'arc'; center: Vec; r: number; thetaStart: number; thetaEnd: number; }
 type PolySeg = PolyStraightSeg | PolyArcSeg;
 
-const OVAL_CORNER_R = 70;
-const OVAL_W = 280;
-const OVAL_H = 200;
+const OVAL_CORNER_R = 130;
+const OVAL_W = 560;
+const OVAL_H = 560;
 
 // Left wing tip / outer / tip, then right wing tip / outer / tip — the
 // two "crossing" edges (index 2→3 and 5→0) each pass through the origin.

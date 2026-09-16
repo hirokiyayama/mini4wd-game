@@ -34,7 +34,7 @@ export const PARTS: Part[] = [
   { id: 'b_magnum', name: 'マグナムセイバー', type: 'body', stats: { speed: 45, power: 10, cornering: -15, stamina: 0, weight: 16 }, image: bodyMagnum },
   { id: 'b_tridagger', name: 'トライダガーX', type: 'body', stats: { speed: 40, power: 15, cornering: -10, stamina: -5, weight: 19 }, image: bodyTridagger },
   // コーナー特化
-  { id: 'b_beakspider', name: 'ビークスパイダー', type: 'body', stats: { speed: 10, power: -10, cornering: 50, stamina: 10, weight: 10 }, image: bodyBeakSpider },
+  { id: 'b_beakspider', name: 'ビークスパイダー', type: 'body', stats: { speed: 25, power: -10, cornering: 30, stamina: 10, weight: 10 }, image: bodyBeakSpider },
   { id: 'b_sonic', name: 'ソニックセイバー', type: 'body', stats: { speed: -10, power: -5, cornering: 50, stamina: 5, weight: 13 }, image: bodySonic },
   { id: 'b_spinaxe', name: 'スピンアックス', type: 'body', stats: { speed: -5, power: -5, cornering: 45, stamina: 0, weight: 15 }, image: bodySpinAxe },
   // パワー特化
@@ -49,12 +49,12 @@ export const PARTS: Part[] = [
   { id: 'c_ar', name: 'ARシャーシ', type: 'chassis', stats: { speed: 20, power: 15, cornering: 25, stamina: 30, weight: 22 }, image: chassisAr },
 
   // Motor
-  { id: 'm_lightdash', name: 'ライトダッシュモーター', type: 'motor', stats: { speed: 35, power: 35, cornering: 0, stamina: 25, weight: 14 }, image: motorLightdash },
+  { id: 'm_lightdash', name: 'ライトダッシュモーター', type: 'motor', stats: { speed: 120, power: 90, cornering: 0, stamina: 25, weight: 14 }, image: motorLightdash },
   { id: 'm_normal', name: 'タイプノーマルモーター', type: 'motor', stats: { speed: 50, power: 50, cornering: 0, stamina: 0, weight: 17 }, image: motorNormal },
   { id: 'm_rev', name: 'レブチューン2モーター', type: 'motor', stats: { speed: 120, power: 40, cornering: 0, stamina: 0, weight: 17 }, image: motorRev2 },
   { id: 'm_torque', name: 'トルクチューン2モーター', type: 'motor', stats: { speed: 70, power: 110, cornering: 0, stamina: 0, weight: 17 }, image: motorTorque2 },
   { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 90, power: 120, cornering: 0, stamina: 0, weight: 17 }, image: motorPowerdash },
-  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 150, power: 130, cornering: 0, stamina: -10, weight: 17 }, image: motorHyperdash },
+  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 150, power: 90, cornering: 0, stamina: -10, weight: 17 }, image: motorHyperdash },
 
   // Gear
   { id: 'g_std', name: '標準ギヤ (4:1)', type: 'gear', stats: { speed: 20, power: 40, cornering: 0, stamina: 0, weight: 2 }, image: gearStd },
