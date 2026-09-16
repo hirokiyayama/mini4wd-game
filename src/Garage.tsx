@@ -37,7 +37,7 @@ const SLOT_LABELS: Record<PartType, string> = {
 const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'gear', 'tire_front', 'tire_rear', 'roller_front', 'roller_rear', 'mass_damper'];
 
 // ゲージの最大値（ステータスのスケーリング用）。スタミナは0を中心に±この値まで
-const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 60, weight: 200 };
+const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 40, weight: 200 };
 
 interface StatGaugeProps { label: string; icon: string; value: number; max: number; color: string; centered?: boolean; hint?: string; }
 const StatGauge: React.FC<StatGaugeProps> = ({ label, icon, value, max, color, centered = false, hint }) => {
@@ -365,11 +365,11 @@ function getPartDescription(id: string): string {
     c_super1:    '安定した走行性能を発揮するベーシックシャーシ。',
     c_tz:        'コーナー安定性に定評のある人気シャーシ。',
     c_ar:        'スタミナ重視の高耐久アドバンスドシャーシ。',
-    m_lightdash: 'ダッシュ系の中では消費電力が少なく扱いやすいモーター。',
-    m_normal:    '標準的なモーター。扱いやすさが魅力。',
-    m_rev:       '最高速に特化したハイレスポンスモーター。',
-    m_torque:    'パワー重視で加速力に優れたトルク系。',
-    m_powerdash: 'スピードとパワーを高い次元で両立した強化モーター。ただしスタミナ消費はやや大きい。',
+    m_lightdash: '軽量コンパクトなダッシュ系モーター。ただしスタミナの消耗はダッシュ系の中でも大きめ。',
+    m_normal:    '標準的なモーター。扱いやすく、スタミナにも優しい。',
+    m_rev:       '最高速に特化したハイレスポンスモーター。スタミナへの負担は少ない。',
+    m_torque:    'パワー重視で加速力に優れたトルク系。スタミナへの負担は少ない。',
+    m_powerdash: 'スピードとパワーを高い次元で両立した強化モーター。スタミナ消費はやや大きい。',
     m_hyper:     '圧倒的なパワーを誇る最強モーター。スタミナの消耗が激しく、終盤に失速しやすい諸刃の剣。',
     g_std:       'バランスの取れたスタンダードギヤ比。',
     g_super:     'スピード特化の超高速ギヤ比。',
@@ -385,7 +385,7 @@ function getPartDescription(id: string): string {
     rr_plastic:  'リアの安定性を向上させるローラー。',
     rr_alum:     '超低摩擦のアルミ製リアローラー。',
     rr_alum2:    '2段構造でさらに安定性を高めたアルミローラー。',
-    md_std:      'スタミナを大きく底上げする代わりに、スピードとコーナーを大きく犠牲にする諸刃の重り。',
+    md_std:      'スタミナを底上げする代わりに、スピードとコーナーを少し犠牲にする重り。',
   };
   return desc[id] ?? '詳細情報なし';
 }
