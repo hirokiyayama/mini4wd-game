@@ -117,6 +117,24 @@ export const Garage: React.FC<GarageProps> = ({ setting, setSetting, totalStats,
             <span className="weight-value">{totalStats.weight}g</span>
           </div>
 
+          <div className="loadout-list">
+            <div className="loadout-title">現在の装備</div>
+            {PART_TABS.map(slot => {
+              const partId = setting[slot];
+              const part = partId ? PARTS.find(p => p.id === partId) : null;
+              return (
+                <div
+                  key={slot}
+                  className={`loadout-row${activeTab === slot ? ' is-active' : ''}`}
+                  onClick={() => setActiveTab(slot)}
+                >
+                  <span className="loadout-slot">{SLOT_LABELS[slot]}</span>
+                  <span className={`loadout-part${part ? '' : ' is-empty'}`}>{part ? part.name : '未装着'}</span>
+                </div>
+              );
+            })}
+          </div>
+
           <div className="catchphrase">
             小さなマシンに<br />無限の可能性を。
           </div>

@@ -19,6 +19,8 @@ export interface RaceCarHandle {
 interface RaceCarProps {
   bodyId: string | null;
   isOut: boolean;
+  label?: string;
+  highlight?: boolean;
 }
 
 function getCarImage(bodyId: string | null): string {
@@ -34,7 +36,7 @@ const GLOW: Record<string, string> = {
 };
 const DEFAULT_GLOW = GLOW.b_magnum;
 
-export const RaceCar = forwardRef<RaceCarHandle, RaceCarProps>(({ bodyId, isOut }, ref) => {
+export const RaceCar = forwardRef<RaceCarHandle, RaceCarProps>(({ bodyId, isOut, label, highlight }, ref) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const bounceRef = useRef<HTMLDivElement>(null);
   const rotateRef = useRef<HTMLDivElement>(null);
@@ -58,6 +60,7 @@ export const RaceCar = forwardRef<RaceCarHandle, RaceCarProps>(({ bodyId, isOut 
           <div className="mc-glow-ring" style={{ boxShadow: `0 0 26px 8px ${glow}66, 0 0 60px 14px ${glow}33` }} />
           <img src={getCarImage(bodyId)} alt="Machine" className="mc-photo" />
         </div>
+        {label && <div className={`mc-badge${highlight ? ' mc-badge--you' : ''}`}>{label}</div>}
       </div>
     </div>
   );
