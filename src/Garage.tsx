@@ -10,6 +10,8 @@ interface GarageProps {
   setActivePlayerIndex: (i: number) => void;
   onChangeSetting: (updater: (s: MachineSetting) => MachineSetting) => void;
   onChangeName: (name: string) => void;
+  onToggleCPU: () => void;
+  onRerollCPU: () => void;
   totalStats: PartStats;
   courseId: CourseId;
   setCourseId: (id: CourseId) => void;
@@ -72,6 +74,8 @@ export const Garage: React.FC<GarageProps> = ({
   setActivePlayerIndex,
   onChangeSetting,
   onChangeName,
+  onToggleCPU,
+  onRerollCPU,
   totalStats,
   courseId,
   setCourseId,
@@ -145,7 +149,7 @@ export const Garage: React.FC<GarageProps> = ({
                 className={`player-tab${i === activePlayerIndex ? ' is-active' : ''}`}
                 onClick={() => setActivePlayerIndex(i)}
               >
-                P{i + 1}
+                P{i + 1}{p.isCPU && <span className="tab-cpu-dot" title="CPU">🤖</span>}
               </button>
             ))}
           </div>
@@ -156,6 +160,20 @@ export const Garage: React.FC<GarageProps> = ({
             maxLength={12}
             placeholder={`プレイヤー${activePlayerIndex + 1}`}
           />
+          <div className="mode-toggle">
+            <button
+              className={`mode-toggle-btn${!activePlayer.isCPU ? ' is-active' : ''}`}
+              onClick={() => { if (activePlayer.isCPU) onToggleCPU(); }}
+            >
+              🧑 プレイヤー
+            </button>
+            <button
+              className={`mode-toggle-btn${activePlayer.isCPU ? ' is-active' : ''}`}
+              onClick={() => { if (!activePlayer.isCPU) onToggleCPU(); }}
+            >
+              🤖 CPU
+            </button>
+          </div>
 
           <div className="panel-title">マシンステータス</div>
           <StatGauge label="スピード" icon="⚡" value={totalStats.speed}    max={STAT_MAX.speed}    color="#5aabff" />
@@ -216,7 +234,13 @@ export const Garage: React.FC<GarageProps> = ({
         </div>
 
         {/* ══════ RIGHT PANEL: PARTS ══════ */}
-        <div className="glass-panel parts-panel">
+        <div className={`glass-panel parts-panel${activePlayer.isCPU ? ' is-locked' : ''}`}>
+          {activePlayer.isCPU && (
+            <div className="cpu-lock-overlay">
+              <div className="cpu-lock-label">🤖 CPUが自動で編成中</div>
+              <button className="cpu-reroll-btn" onClick={onRerollCPU}>🎲 ランダム編成をやり直す</button>
+            </div>
+          )}
           {/* Tabs */}
           <div className="tab-bar">
             {PART_TABS.map(tab => (
@@ -319,8 +343,8 @@ function getPartDescription(id: string): string {
     m_normal:    '標準的なモーター。扱いやすさが魅力。',
     m_rev:       '最高速に特化したハイレスポンスモーター。',
     m_torque:    'パワー重視で加速力に優れたトルク系。',
-    m_powerdash: 'スピードとパワーを高い次元で両立した強化モーター。',
-    m_hyper:     '圧倒的なパワーを誇る最強モーター。',
+    m_powerdash: 'スピードとパワーを高い次元で両立した強化モーター。ただしスタミナ消費はやや大きい。',
+    m_hyper:     '圧倒的なパワーを誇る最強モーター。スタミナの消耗が激しく、終盤に失速しやすい諸刃の剣。',
     g_std:       'バランスの取れたスタンダードギヤ比。',
     g_super:     'スピード特化の超高速ギヤ比。',
     tf_slick:    'グリップ力の高いフロントタイヤ。',

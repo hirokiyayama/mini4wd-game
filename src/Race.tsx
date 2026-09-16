@@ -16,6 +16,14 @@ const TARGET_LAPS = 3;
 // 3台が重ならないよう、コースの相似形上に少しずつレーンをずらして配置
 const LANE_MUL = [1, 1.08, 0.92];
 
+// ── 逆転要素：スタミナによるバテ／second wind ──
+// スタミナ合計がこの値を上回るほど終盤に上乗せ、下回るほど終盤に失速する（基準値=平均的な構成のスタミナ）
+const STAMINA_BASELINE = 15;
+// レース終盤（この進行割合を超えたあたり）からバテ・巻き返し効果が強まっていく
+const FATIGUE_START_FRAC = 0.35;
+const FATIGUE_MAX_CUT = 0.45; // 最大45%減速（低スタミナ・ダッシュ系モーター想定）
+const SECOND_WIND_MAX_BOOST = 0.12; // 最大12%増速（高スタミナ構成のご褒美）
+
 type RacerState = 'running' | 'crashed' | 'finished';
 
 interface RacerRuntime {
@@ -116,7 +124,17 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         if (rt.state !== 'running') return;
         anyRunning = true;
 
-        const maxSpeed = racer.totalStats.speed * 0.01;
+        // 終盤に近づくほど効果が強まる「バテ／second wind」係数（逆転要素）
+        const distanceTarget = TARGET_LAPS * Math.PI * 2;
+        const raceFrac = Math.min(1, (rt.laps * Math.PI * 2 + rt.progress) / distanceTarget);
+        const fatigueRamp = Math.max(0, (raceFrac - FATIGUE_START_FRAC) / (1 - FATIGUE_START_FRAC));
+        const fatigueEase = fatigueRamp * fatigueRamp;
+        const staminaGap = racer.totalStats.stamina - STAMINA_BASELINE;
+        const staminaMul = staminaGap >= 0
+          ? 1 + Math.min(SECOND_WIND_MAX_BOOST, staminaGap * 0.0015) * fatigueEase
+          : 1 - Math.min(FATIGUE_MAX_CUT, -staminaGap * 0.006) * fatigueEase;
+
+        const maxSpeed = racer.totalStats.speed * 0.01 * staminaMul;
         const acceleration = (racer.totalStats.power / racer.totalStats.weight) * 0.005;
         rt.speed = Math.min(rt.speed + acceleration * delta * 60, maxSpeed);
         rt.progress += rt.speed * delta;
@@ -233,7 +251,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         {players.map((racer, i) => (
           <div key={racer.id} ref={el => { rowRefs.current[i] = el; }} className="race-leaderboard-row">
             <span className="race-leaderboard-rank" ref={el => { rankRefs.current[i] = el; }}>{i + 1}</span>
-            <span className="race-leaderboard-name">{racer.name}</span>
+            <span className="race-leaderboard-name">{racer.name}{racer.isCPU && <span className="race-cpu-badge">🤖</span>}</span>
             <span className="race-leaderboard-lap" ref={el => { lapRefs.current[i] = el; }}>1/{TARGET_LAPS}</span>
           </div>
         ))}

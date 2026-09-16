@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Garage } from './Garage';
 import { Race } from './Race';
 import type { MachineSetting, Player } from './types';
-import { computeTotalStats } from './data';
+import { computeTotalStats, randomSetting } from './data';
 import type { CourseId } from './courses';
 import './index.css';
 
@@ -19,9 +19,9 @@ const BASE_SETTING: MachineSetting = {
 };
 
 const DEFAULT_PLAYERS: Player[] = [
-  { id: 'p1', name: 'プレイヤー1', setting: { ...BASE_SETTING, body: 'b_magnum' } },
-  { id: 'p2', name: 'プレイヤー2', setting: { ...BASE_SETTING, body: 'b_sonic' } },
-  { id: 'p3', name: 'プレイヤー3', setting: { ...BASE_SETTING, body: 'b_tridagger' } },
+  { id: 'p1', name: 'プレイヤー1', setting: { ...BASE_SETTING, body: 'b_magnum' }, isCPU: false },
+  { id: 'p2', name: 'CPU 1', setting: randomSetting(), isCPU: true },
+  { id: 'p3', name: 'CPU 2', setting: randomSetting(), isCPU: true },
 ];
 
 function App() {
@@ -36,6 +36,18 @@ function App() {
 
   const updateActiveName = (name: string) => {
     setPlayers(prev => prev.map((p, i) => (i === activePlayerIndex ? { ...p, name } : p)));
+  };
+
+  const toggleActiveCPU = () => {
+    setPlayers(prev => prev.map((p, i) => {
+      if (i !== activePlayerIndex) return p;
+      const isCPU = !p.isCPU;
+      return { ...p, isCPU, setting: isCPU ? randomSetting() : p.setting };
+    }));
+  };
+
+  const rerollActiveCPU = () => {
+    setPlayers(prev => prev.map((p, i) => (i === activePlayerIndex ? { ...p, setting: randomSetting() } : p)));
   };
 
   const activeTotalStats = useMemo(
@@ -57,6 +69,8 @@ function App() {
           setActivePlayerIndex={setActivePlayerIndex}
           onChangeSetting={updateActiveSetting}
           onChangeName={updateActiveName}
+          onToggleCPU={toggleActiveCPU}
+          onRerollCPU={rerollActiveCPU}
           totalStats={activeTotalStats}
           courseId={courseId}
           setCourseId={setCourseId}
