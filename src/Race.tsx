@@ -32,7 +32,18 @@ const CLIMB_SPEED_MIN = 0.45;
 const CLIMB_SPEED_MAX = 1.1;
 const DOWNHILL_SPEED_BOOST = 1.12; // 下り区間は誰でも一律で少し伸びる
 
+// ── ランダムイベント：同じセッティング同士でも毎回違う展開になるように、
+// 各マシンにたまに「絶好調（加速）」「つまづき（減速）」を発生させる。
+const RANDOM_EVENT_CHANCE_PER_SEC = 0.32; // 発生していない間、1秒あたりこの確率で新規発生
+const RANDOM_EVENT_MIN_DUR = 0.5;
+const RANDOM_EVENT_MAX_DUR = 1.3;
+const RANDOM_BOOST_MIN = 0.08; // 絶好調：+8%〜+18%（速度アップ＆コーナー安定）
+const RANDOM_BOOST_MAX = 0.18;
+const RANDOM_STUMBLE_MIN = 0.08; // つまづき：-8%〜-22%（速度ダウン＆コース安定悪化）
+const RANDOM_STUMBLE_MAX = 0.22;
+
 type RacerState = 'running' | 'crashed' | 'finished';
+type RandomEventKind = 'boost' | 'stumble' | null;
 
 interface RacerRuntime {
   progress: number;
@@ -41,6 +52,9 @@ interface RacerRuntime {
   bouncePhase: number;
   leanAngle: number;
   state: RacerState;
+  eventMul: number;
+  eventTimer: number;
+  eventKind: RandomEventKind;
 }
 
 interface RankEntry {
@@ -55,7 +69,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
   const [finalRanking, setFinalRanking] = useState<RankEntry[] | null>(null);
   const [, forceTick] = useState(0);
 
-  const runtimeRef = useRef<RacerRuntime[]>(players.map(() => ({ progress: 0, speed: 0, laps: 0, bouncePhase: 0, leanAngle: 0, state: 'running' })));
+  const runtimeRef = useRef<RacerRuntime[]>(players.map(() => ({ progress: 0, speed: 0, laps: 0, bouncePhase: 0, leanAngle: 0, state: 'running', eventMul: 1, eventTimer: 0, eventKind: null })));
   const carRefs = useRef<(RaceCarHandle | null)[]>([]);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const rankRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -155,7 +169,26 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
           slopeMul = DOWNHILL_SPEED_BOOST;
         }
 
-        const maxSpeed = racer.totalStats.speed * 0.01 * staminaMul * slopeMul;
+        // ランダムイベント（絶好調／つまづき）：発生中なら残り時間を減らし、
+        // 終わったら平常運転に戻す。発生していなければ毎秒一定確率で新規抽選
+        if (rt.eventTimer > 0) {
+          rt.eventTimer -= delta;
+          if (rt.eventTimer <= 0) {
+            rt.eventTimer = 0;
+            rt.eventMul = 1;
+            rt.eventKind = null;
+          }
+        } else if (Math.random() < RANDOM_EVENT_CHANCE_PER_SEC * delta) {
+          const isBoost = Math.random() < 0.5;
+          const mag = isBoost
+            ? RANDOM_BOOST_MIN + Math.random() * (RANDOM_BOOST_MAX - RANDOM_BOOST_MIN)
+            : RANDOM_STUMBLE_MIN + Math.random() * (RANDOM_STUMBLE_MAX - RANDOM_STUMBLE_MIN);
+          rt.eventMul = isBoost ? 1 + mag : 1 - mag;
+          rt.eventKind = isBoost ? 'boost' : 'stumble';
+          rt.eventTimer = RANDOM_EVENT_MIN_DUR + Math.random() * (RANDOM_EVENT_MAX_DUR - RANDOM_EVENT_MIN_DUR);
+        }
+
+        const maxSpeed = racer.totalStats.speed * 0.01 * staminaMul * slopeMul * rt.eventMul;
         const acceleration = (racer.totalStats.power / racer.totalStats.weight) * 0.005;
         rt.speed = Math.min(rt.speed + acceleration * delta * 60, maxSpeed);
         rt.progress += rt.speed * delta;
@@ -171,8 +204,10 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
 
         const p = sampleCourse(courseId, rt.progress, window.innerWidth, window.innerHeight, mul);
 
-        if (rt.state === 'running' && p.isCorner && rt.speed > 0.5) {
-          const stabilityLimit = (racer.totalStats.cornering / 100) * 0.8 + 0.3;
+        if (rt.state === 'running' && p.cornerRisk && rt.speed > 0.5) {
+          // 絶好調中は少し粘れて、つまづき中は少しふらついて不安定になる
+          // （＝同じセッティング・同じコースでもコースアウトの結果が毎回変わりうる）
+          const stabilityLimit = ((racer.totalStats.cornering / 100) * 0.8 + 0.3) * rt.eventMul;
           if (rt.speed > stabilityLimit) {
             rt.state = 'crashed';
           }
@@ -186,6 +221,8 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         // コーナーでの姿勢変化（進行方向の接線角度に、コーナリング時のドリフト角を上乗せ）
         const leanTarget = p.isCorner ? LEAN_DIR * Math.min(14, rt.speed * 22) : 0;
         rt.leanAngle += (leanTarget - rt.leanAngle) * Math.min(1, delta * 8);
+        // つまづき中は小刻みに車体が揺れる演出
+        const stumbleJitter = rt.eventKind === 'stumble' ? Math.sin(rt.bouncePhase * 3) * 6 : 0;
 
         const car = carRefs.current[i];
         if (car) {
@@ -194,11 +231,13 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
             car.root.style.top = `${p.y}px`;
           }
           if (car.bounce) car.bounce.style.transform = `translateY(${bounceY}px)`;
-          if (car.rotate) car.rotate.style.transform = `rotate(${p.angle + rt.leanAngle}deg)`;
+          if (car.rotate) car.rotate.style.transform = `rotate(${p.angle + rt.leanAngle + stumbleJitter}deg)`;
           if (car.trail) {
             const speedRatio = maxSpeed > 0 ? rt.speed / maxSpeed : 0;
-            car.trail.style.opacity = `${Math.min(0.55, speedRatio * 0.6)}`;
-            car.trail.style.transform = `scale(${1 + speedRatio * 0.5})`;
+            // 絶好調中はトレイルを大きく明るく、つまづき中は小さく暗く見せて演出する
+            const eventFlair = rt.eventKind === 'boost' ? 1.4 : rt.eventKind === 'stumble' ? 0.6 : 1;
+            car.trail.style.opacity = `${Math.min(0.7, speedRatio * 0.6 * eventFlair)}`;
+            car.trail.style.transform = `scale(${1 + speedRatio * 0.5 * eventFlair})`;
           }
         }
 

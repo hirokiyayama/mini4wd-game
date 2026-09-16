@@ -15,7 +15,6 @@ import {
   HILL_ZOOM,
   HILL_CENTER_Y,
   HILL_TRACK_WIDTH,
-  HILL_HALF_LEN,
   hillSegments,
   hillSegFractions,
   sampleHillLocal,
@@ -149,13 +148,15 @@ function buildHillPath(tStart: number, tEnd: number, steps: number): string {
   return parts.join(' ');
 }
 
-// 上り＝アンバー、下り＝シアン、ヘアピンはニュートラルなグレーの縁石で、
-// パワーが効く区間が一目でわかるように色分けする。
+// 上り＝アンバー、下り＝シアン、それ以外（平坦な直線・コーナー）は
+// ニュートラルなグレーの縁石で、パワーが効く区間が一目でわかるように塗り分ける。
 const HILL_UP_COLOR = '#f59e0b';
-const HILL_UP_DARK = '#92400e';
 const HILL_DOWN_COLOR = '#22d3ee';
-const HILL_DOWN_DARK = '#155e75';
 const HILL_NEUTRAL_COLOR = '#cbd5e1';
+
+// 全体でだいたいこの本数になるよう、各区間の弧長比率でチック本数を配分する
+const HILL_STRAIGHT_TICK_BUDGET = 90;
+const HILL_ARC_TICK_BUDGET = 56;
 
 function hillTicks() {
   const nodes: React.ReactNode[] = [];
@@ -163,11 +164,12 @@ function hillTicks() {
   const tickOffset = HILL_TRACK_WIDTH / 2 + 8;
   hillSegments.forEach((seg, i) => {
     const segEnd = hillSegFractions[i];
+    const frac = segEnd - segStart;
     if (seg.type === 'straight') {
-      const color = seg.slope === 1 ? HILL_UP_COLOR : HILL_DOWN_COLOR;
-      const count = 12;
+      const color = seg.slope === 1 ? HILL_UP_COLOR : seg.slope === -1 ? HILL_DOWN_COLOR : HILL_NEUTRAL_COLOR;
+      const count = Math.max(2, Math.round(frac * HILL_STRAIGHT_TICK_BUDGET));
       for (let n = 0; n < count; n++) {
-        const s = segStart + (segEnd - segStart) * (n / count);
+        const s = segStart + frac * (n / count);
         const { x, y, angleDeg } = sampleHillLocal(s * Math.PI * 2);
         const rad = (angleDeg * Math.PI) / 180;
         const px = x - Math.sin(rad) * tickOffset;
@@ -186,29 +188,30 @@ function hillTicks() {
           />
         );
       }
-      // 進行方向＆傾斜を示すシェブロン矢印
-      const chevCount = 5;
-      for (let n = 1; n < chevCount; n++) {
-        const s = segStart + (segEnd - segStart) * (n / chevCount);
-        const { x, y } = sampleHillLocal(s * Math.PI * 2);
-        const pointDy = seg.dir === -1 ? -16 : 16;
-        const baseDy = seg.dir === -1 ? 10 : -10;
-        nodes.push(
-          <polygon
-            key={`hc${i}-${n}`}
-            points={`${x - 15},${y + baseDy} ${x + 15},${y + baseDy} ${x},${y + baseDy + pointDy}`}
-            fill={color}
-            opacity="0.5"
-          />
-        );
+      // 上り／下り区間だけ、進行方向を示すシェブロン矢印を追加
+      if (seg.slope !== 0) {
+        const chevCount = Math.max(2, Math.round(frac * 22));
+        for (let n = 1; n < chevCount; n++) {
+          const s = segStart + frac * (n / chevCount);
+          const { x, y, angleDeg } = sampleHillLocal(s * Math.PI * 2);
+          nodes.push(
+            <polygon
+              key={`hc${i}-${n}`}
+              points="0,-16 -15,10 15,10"
+              fill={color}
+              opacity="0.5"
+              transform={`translate(${x},${y}) rotate(${angleDeg + 90})`}
+            />
+          );
+        }
       }
     } else {
-      const count = 8;
+      const count = Math.max(2, Math.round(frac * HILL_ARC_TICK_BUDGET));
       const radius = seg.r + tickOffset;
       for (let n = 0; n < count; n++) {
         const theta = seg.thetaStart + (seg.thetaEnd - seg.thetaStart) * (n / count);
-        const x = seg.hx + radius * Math.cos(theta);
-        const y = seg.hy + radius * Math.sin(theta);
+        const x = seg.center.x + radius * Math.cos(theta);
+        const y = seg.center.y + radius * Math.sin(theta);
         const angleDeg = (theta * 180) / Math.PI;
         nodes.push(
           <rect
@@ -314,14 +317,6 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
           <stop offset="0%" stopColor="#7a1010" />
           <stop offset="50%" stopColor="#d43030" />
           <stop offset="100%" stopColor="#7a1010" />
-        </linearGradient>
-        <linearGradient id="hillUpGrad" x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0%" stopColor="#3a3e46" />
-          <stop offset="100%" stopColor={HILL_UP_DARK} />
-        </linearGradient>
-        <linearGradient id="hillDownGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#3a3e46" />
-          <stop offset="100%" stopColor={HILL_DOWN_DARK} />
         </linearGradient>
       </defs>
 
@@ -527,74 +522,50 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
       </g>
       )}
 
-      {/* track: パワーヒルウェイ — 上り一本・下り一本の超ロングストレートを
-          ヘアピン2つで繋いだ、パワー勝負のロングコース。上り区間はアンバー、
-          下り区間はシアンのグラデーション＆縁石で塗り分け、シェブロン矢印で
-          傾斜と進行方向を示す。 */}
+      {/* track: パワーヒルウェイ — 上り一本・下り一本の超ロングストレート
+          （パワーが効く区間）はそのままに、平坦な直線区間ときつさの異なる
+          カーブを挟んだ変形オクタゴンのロングコース。上り区間はアンバー、
+          下り区間はシアン、それ以外は縁石ニュートラルカラーで塗り分け、
+          シェブロン矢印で傾斜と進行方向を示す。 */}
       {courseId === 'hill' && (() => {
-        const upEndT = hillSegFractions[0] * Math.PI * 2;
-        const downStartT = hillSegFractions[1] * Math.PI * 2;
-        const downEndT = hillSegFractions[2] * Math.PI * 2;
+        // 開始区間（edge0 の平坦直線＝スタート/フィニッシュストレート）の始点
+        const startT = hillSegFractions[1] * Math.PI * 2 + 0.001;
+        // 上り区間（hillSegments[6]）と下り区間（hillSegments[14]）の中点
+        const upMidT = ((hillSegFractions[5] + hillSegFractions[6]) / 2) * Math.PI * 2;
+        const downMidT = ((hillSegFractions[13] + hillSegFractions[14]) / 2) * Math.PI * 2;
+        const start = sampleHillLocal(startT);
+        const upMid = sampleHillLocal(upMidT);
+        const downMid = sampleHillLocal(downMidT);
         return (
       <g transform={`translate(${TRACK_CENTER_X},${HILL_CENTER_Y}) scale(${HILL_ZOOM})`}>
-        <path d={buildHillPath(0, Math.PI * 2, 220)} fill="none" stroke="#000" strokeWidth={HILL_TRACK_WIDTH + 34} strokeLinecap="round" opacity="0.45" filter="url(#soft)" />
-
-        {/* 上り区間（アンバー） */}
-        <path d={buildHillPath(0, upEndT, 100)} fill="none" stroke="url(#hillUpGrad)" strokeWidth={HILL_TRACK_WIDTH} strokeLinecap="round" />
-        <path d={buildHillPath(0, upEndT, 100)} fill="none" stroke={HILL_UP_COLOR} strokeWidth={HILL_TRACK_WIDTH - 16} strokeLinecap="round" opacity="0.22" />
-        <path d={buildHillPath(0, upEndT, 100)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
-
-        {/* 上りヘアピン */}
-        <path d={buildHillPath(upEndT, downStartT, 60)} fill="none" stroke="#3a3e46" strokeWidth={HILL_TRACK_WIDTH} strokeLinecap="round" />
-        <path d={buildHillPath(upEndT, downStartT, 60)} fill="none" stroke="#4d525c" strokeWidth={HILL_TRACK_WIDTH - 16} strokeLinecap="round" />
-        <path d={buildHillPath(upEndT, downStartT, 60)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
-
-        {/* 下り区間（シアン） */}
-        <path d={buildHillPath(downStartT, downEndT, 100)} fill="none" stroke="url(#hillDownGrad)" strokeWidth={HILL_TRACK_WIDTH} strokeLinecap="round" />
-        <path d={buildHillPath(downStartT, downEndT, 100)} fill="none" stroke={HILL_DOWN_COLOR} strokeWidth={HILL_TRACK_WIDTH - 16} strokeLinecap="round" opacity="0.22" />
-        <path d={buildHillPath(downStartT, downEndT, 100)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
-
-        {/* 下りヘアピン */}
-        <path d={buildHillPath(downEndT, Math.PI * 2, 60)} fill="none" stroke="#3a3e46" strokeWidth={HILL_TRACK_WIDTH} strokeLinecap="round" />
-        <path d={buildHillPath(downEndT, Math.PI * 2, 60)} fill="none" stroke="#4d525c" strokeWidth={HILL_TRACK_WIDTH - 16} strokeLinecap="round" />
-        <path d={buildHillPath(downEndT, Math.PI * 2, 60)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
+        <path d={buildHillPath(0, Math.PI * 2, 320)} fill="none" stroke="#000" strokeWidth={HILL_TRACK_WIDTH + 34} strokeLinecap="round" opacity="0.45" filter="url(#soft)" />
+        <path d={buildHillPath(0, Math.PI * 2, 320)} fill="none" stroke="#3a3e46" strokeWidth={HILL_TRACK_WIDTH} strokeLinecap="round" />
+        <path d={buildHillPath(0, Math.PI * 2, 320)} fill="none" stroke="#4d525c" strokeWidth={HILL_TRACK_WIDTH - 16} strokeLinecap="round" />
+        <path d={buildHillPath(0, Math.PI * 2, 320)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
 
         {hillTicks()}
 
-        {/* start / finish checker line（上り区間の始点） */}
-        {(() => {
-          const start = sampleHillLocal(0.001);
-          return (
-            <g transform={`translate(${start.x},${start.y}) rotate(${start.angleDeg})`}>
-              {Array.from({ length: 8 }).map((_, i) => (
-                <rect key={i} x={-8} y={i * 9 - 36} width="16" height="9" fill={i % 2 === 0 ? '#0c0c0c' : '#f4f4f4'} />
-              ))}
-            </g>
-          );
-        })()}
+        {/* start / finish checker line */}
+        <g transform={`translate(${start.x},${start.y}) rotate(${start.angleDeg})`}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <rect key={i} x={-8} y={i * 9 - 36} width="16" height="9" fill={i % 2 === 0 ? '#0c0c0c' : '#f4f4f4'} />
+          ))}
+        </g>
 
         {/* 上り／下りラベル */}
-        {(() => {
-          const upMid = sampleHillLocal((hillSegFractions[0] / 2) * Math.PI * 2);
-          const downMid = sampleHillLocal(((hillSegFractions[1] + hillSegFractions[2]) / 2) * Math.PI * 2);
-          return (
-            <>
-              <g transform={`translate(${upMid.x},${upMid.y}) rotate(${upMid.angleDeg})`}>
-                <text textAnchor="middle" fill={HILL_UP_COLOR} opacity="0.8" fontFamily="Rajdhani, sans-serif" fontWeight={800} fontSize="34" letterSpacing="2">▲ POWER UP</text>
-              </g>
-              <g transform={`translate(${downMid.x},${downMid.y}) rotate(${downMid.angleDeg})`}>
-                <text textAnchor="middle" fill={HILL_DOWN_COLOR} opacity="0.8" fontFamily="Rajdhani, sans-serif" fontWeight={800} fontSize="34" letterSpacing="2">▼ DOWN HILL</text>
-              </g>
-            </>
-          );
-        })()}
+        <g transform={`translate(${upMid.x},${upMid.y}) rotate(${upMid.angleDeg})`}>
+          <text textAnchor="middle" fill={HILL_UP_COLOR} opacity="0.8" fontFamily="Rajdhani, sans-serif" fontWeight={800} fontSize="34" letterSpacing="2">▲ POWER UP</text>
+        </g>
+        <g transform={`translate(${downMid.x},${downMid.y}) rotate(${downMid.angleDeg})`}>
+          <text textAnchor="middle" fill={HILL_DOWN_COLOR} opacity="0.8" fontFamily="Rajdhani, sans-serif" fontWeight={800} fontSize="34" letterSpacing="2">▼ DOWN HILL</text>
+        </g>
 
         <text
           x="0"
-          y={-(HILL_HALF_LEN + 90)}
+          y="-820"
           textAnchor="middle"
           fill="#ffffff"
-          opacity="0.06"
+          opacity="0.05"
           fontFamily="Rajdhani, sans-serif"
           fontWeight={900}
           fontSize="52"

@@ -17,7 +17,11 @@ export interface CourseSample {
   x: number;
   y: number;
   angle: number;
+  /** 見た目上カーブしている区間か（車体を傾ける演出に使用） */
   isCorner: boolean;
+  /** コースアウト判定の対象になる「本当に危険な」区間か。緩いスイーパーは
+   * isCorner=trueでも cornerRisk=false になりうる（パワーヒルウェイ）。 */
+  cornerRisk: boolean;
   /** 1 = 上り区間, -1 = 下り区間, 0 = 平坦（パワーヒルウェイ専用。他コースは常に0）*/
   slope: 1 | -1 | 0;
 }
@@ -253,7 +257,7 @@ export function sampleJCupLocal(pRaw: number): CourseSample {
     const x = x0 + seg.dir * u * seg.len;
     const y = seg.y + waveOffset(u);
     const angle = (Math.atan2(waveSlope(u), seg.dir * seg.len) * 180) / Math.PI;
-    return { x, y, angle, isCorner: false, slope: 0 };
+    return { x, y, angle, isCorner: false, cornerRisk: false, slope: 0 };
   }
 
   const theta = seg.thetaStart + u * (seg.thetaEnd - seg.thetaStart);
@@ -261,7 +265,7 @@ export function sampleJCupLocal(pRaw: number): CourseSample {
   const x = seg.hx + seg.r * Math.cos(theta);
   const y = seg.hy + seg.r * Math.sin(theta);
   const angle = (Math.atan2(Math.cos(theta) * hdir, -Math.sin(theta) * hdir) * 180) / Math.PI;
-  return { x, y, angle, isCorner: true, slope: 0 };
+  return { x, y, angle, isCorner: true, cornerRisk: true, slope: 0 };
 }
 
 // ── パワーヒルウェイ ─────────────────────────────────────
@@ -272,29 +276,70 @@ export const HILL_ZOOM = 0.35;
 // オーバルより下寄りに中心を置き、縦に長いコースの上端がリーダーボードUIの
 // 裏に隠れないようにする（表示上の調整のみ。周回距離はズームに依存しない）。
 export const HILL_CENTER_Y = 480;
-export const HILL_HALF_LEN = 620;
-export const HILL_LANE_GAP = 300;
 export const HILL_TRACK_WIDTH = 100;
-const HILL_CORNER_R = HILL_LANE_GAP / 2;
 
-interface HillStraightSeg { type: 'straight'; x: number; dir: 1 | -1; len: number; slope: 1 | -1; }
-interface HillHairpinSeg { type: 'hairpin'; hx: number; hy: number; r: number; thetaStart: number; thetaEnd: number; }
-export type HillSeg = HillStraightSeg | HillHairpinSeg;
+interface HillStraightSeg { type: 'straight'; from: Vec; to: Vec; slope: 1 | -1 | 0; }
+interface HillArcSeg { type: 'arc'; center: Vec; r: number; thetaStart: number; thetaEnd: number; }
+export type HillSeg = HillStraightSeg | HillArcSeg;
 
-const hillUpX = -HILL_LANE_GAP / 2;
-const hillDownX = HILL_LANE_GAP / 2;
-const hillTopY = -HILL_HALF_LEN;
-const hillBotY = HILL_HALF_LEN;
-
-export const hillSegments: HillSeg[] = [
-  { type: 'straight', x: hillUpX, dir: -1, len: HILL_HALF_LEN * 2, slope: 1 },
-  { type: 'hairpin', hx: 0, hy: hillTopY, r: HILL_CORNER_R, thetaStart: Math.PI, thetaEnd: Math.PI * 2 },
-  { type: 'straight', x: hillDownX, dir: 1, len: HILL_HALF_LEN * 2, slope: -1 },
-  { type: 'hairpin', hx: 0, hy: hillBotY, r: HILL_CORNER_R, thetaStart: 0, thetaEnd: Math.PI },
+// 8頂点の変形オクタゴン。上り一本・下り一本の超ロングストレート（パワーが
+// 効く区間）はそのままに、間に平坦な直線区間とカーブ（急コーナー〜緩い
+// スイーパーまで曲率を変化）を挟み、単純な「上り→下り」往復から本格的な
+// サーキットへ拡張。slope: 1=上り, -1=下り, 0=平坦（コーナー含む）。
+const hillVerts: Vec[] = [
+  { x: -150, y: 700 },
+  { x: 150, y: 700 },
+  { x: 380, y: 300 },
+  { x: 380, y: -500 },
+  { x: 150, y: -750 },
+  { x: -150, y: -750 },
+  { x: -380, y: -500 },
+  { x: -380, y: 300 },
 ];
+// edgeSlopes[i] = 頂点i→頂点i+1の区間の傾斜
+const hillEdgeSlopes: (1 | -1 | 0)[] = [0, 0, 1, 0, 0, 0, -1, 0];
+// 頂点ごとのコーナー半径（きついヘアピン気味〜広いスイーパーまで変化）
+const hillCornerRs: number[] = [140, 100, 90, 70, 70, 90, 100, 140];
+// この半径以下のコーナーだけが本当に危険（コースアウト判定の対象）。
+// 広いスイーパーは見た目には曲がっていてもコースアウトしない安全区間にして、
+// 8コーナー化で単純にコースアウト頻度が跳ね上がらないようにする。
+const HILL_DANGER_CORNER_MAX_R = 80;
+
+/** Like buildRoundedPolygon, but carries a slope tag per straight edge and allows a per-vertex corner radius. */
+function buildHillPolygon(verts: Vec[], edgeSlopes: (1 | -1 | 0)[], cornerRs: number[]): HillSeg[] {
+  const n = verts.length;
+  const vertexGeoms = verts.map((cur, i) => {
+    const prev = verts[(i - 1 + n) % n];
+    const next = verts[(i + 1) % n];
+    const dirIn = vNorm(vSub(cur, prev));
+    const dirOut = vNorm(vSub(next, cur));
+    const signedAngle = Math.atan2(vCross(dirIn, dirOut), vDot(dirIn, dirOut));
+    const cornerR = cornerRs[i];
+    const tangentLen = cornerR * Math.tan(Math.abs(signedAngle) / 2);
+    const tIn = vSub(cur, vScale(dirIn, tangentLen));
+    const tOut = vAdd(cur, vScale(dirOut, tangentLen));
+    const normal = signedAngle >= 0 ? vLeftNormal(dirIn) : vScale(vLeftNormal(dirIn), -1);
+    const center = vAdd(tIn, vScale(normal, cornerR));
+    const thetaStart = Math.atan2(tIn.y - center.y, tIn.x - center.x);
+    const thetaEnd = thetaStart + signedAngle;
+    return { tIn, tOut, center, thetaStart, thetaEnd, r: cornerR };
+  });
+
+  const segs: HillSeg[] = [];
+  for (let i = 0; i < n; i++) {
+    const prevG = vertexGeoms[(i - 1 + n) % n];
+    const curG = vertexGeoms[i];
+    const edgeIdx = (i - 1 + n) % n;
+    segs.push({ type: 'straight', from: prevG.tOut, to: curG.tIn, slope: edgeSlopes[edgeIdx] });
+    segs.push({ type: 'arc', center: curG.center, r: curG.r, thetaStart: curG.thetaStart, thetaEnd: curG.thetaEnd });
+  }
+  return segs;
+}
+
+export const hillSegments: HillSeg[] = buildHillPolygon(hillVerts, hillEdgeSlopes, hillCornerRs);
 
 function hillSegLength(seg: HillSeg): number {
-  return seg.type === 'straight' ? seg.len : Math.abs(seg.thetaEnd - seg.thetaStart) * seg.r;
+  return seg.type === 'straight' ? vLen(vSub(seg.to, seg.from)) : Math.abs(seg.thetaEnd - seg.thetaStart) * seg.r;
 }
 
 const hillSegLens = hillSegments.map(hillSegLength);
@@ -309,7 +354,7 @@ export const hillSegFractions: number[] = (() => {
   return out;
 })();
 
-interface HillLocalSample { x: number; y: number; angleDeg: number; isCorner: boolean; slope: 1 | -1 | 0; }
+interface HillLocalSample { x: number; y: number; angleDeg: number; isCorner: boolean; cornerRisk: boolean; slope: 1 | -1 | 0; }
 
 /** Samples パワーヒルウェイ in origin-centered local units (like the oval). */
 export function sampleHillLocal(pRaw: number): HillLocalSample {
@@ -323,18 +368,18 @@ export function sampleHillLocal(pRaw: number): HillLocalSample {
   const seg = hillSegments[segIndex];
 
   if (seg.type === 'straight') {
-    const y0 = seg.dir === -1 ? hillBotY : hillTopY;
-    const y = y0 + seg.dir * u * seg.len;
-    const angleDeg = seg.dir === 1 ? 90 : -90;
-    return { x: seg.x, y, angleDeg, isCorner: false, slope: seg.slope };
+    const x = seg.from.x + (seg.to.x - seg.from.x) * u;
+    const y = seg.from.y + (seg.to.y - seg.from.y) * u;
+    const angleDeg = (Math.atan2(seg.to.y - seg.from.y, seg.to.x - seg.from.x) * 180) / Math.PI;
+    return { x, y, angleDeg, isCorner: false, cornerRisk: false, slope: seg.slope };
   }
 
   const theta = seg.thetaStart + u * (seg.thetaEnd - seg.thetaStart);
   const hdir = Math.sign(seg.thetaEnd - seg.thetaStart) || 1;
-  const x = seg.hx + seg.r * Math.cos(theta);
-  const y = seg.hy + seg.r * Math.sin(theta);
+  const x = seg.center.x + seg.r * Math.cos(theta);
+  const y = seg.center.y + seg.r * Math.sin(theta);
   const angleDeg = (Math.atan2(Math.cos(theta) * hdir, -Math.sin(theta) * hdir) * 180) / Math.PI;
-  return { x, y, angleDeg, isCorner: true, slope: 0 };
+  return { x, y, angleDeg, isCorner: true, cornerRisk: seg.r <= HILL_DANGER_CORNER_MAX_R, slope: 0 };
 }
 
 function getScreenTransform(viewportWidth: number, viewportHeight: number) {
@@ -365,7 +410,7 @@ export function sampleCourse(
     const local = sampleJCupLocal(p);
     const x = JCUP_CENTER_X + (local.x - JCUP_CENTER_X) * laneMul;
     const y = JCUP_CENTER_Y + (local.y - JCUP_CENTER_Y) * laneMul;
-    return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angle, isCorner: local.isCorner, slope: 0 };
+    return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angle, isCorner: local.isCorner, cornerRisk: local.isCorner, slope: 0 };
   }
 
   if (courseId === 'hill') {
@@ -373,12 +418,12 @@ export function sampleCourse(
     const s = HILL_ZOOM * laneMul;
     const x = TRACK_CENTER_X + local.x * s;
     const y = HILL_CENTER_Y + local.y * s;
-    return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angleDeg, isCorner: local.isCorner, slope: local.slope };
+    return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angleDeg, isCorner: local.isCorner, cornerRisk: local.cornerRisk, slope: local.slope };
   }
 
   const local = sampleOvalHexLocal(p);
   const s = OVAL_ZOOM * laneMul;
   const x = TRACK_CENTER_X + local.x * s;
   const y = TRACK_CENTER_Y + local.y * s;
-  return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angleDeg, isCorner: local.isCorner, slope: 0 };
+  return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angleDeg, isCorner: local.isCorner, cornerRisk: local.isCorner, slope: 0 };
 }
