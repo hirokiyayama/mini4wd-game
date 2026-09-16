@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Garage } from './Garage';
 import { Race } from './Race';
-import type { MachineSetting, Player } from './types';
+import type { CPULevel, MachineSetting, Player } from './types';
 import { computeTotalStats, randomSetting } from './data';
 import type { CourseId } from './courses';
 import './index.css';
@@ -18,10 +18,12 @@ const BASE_SETTING: MachineSetting = {
   mass_damper: null,
 };
 
+const DEFAULT_CPU_LEVEL: CPULevel = 2;
+
 const DEFAULT_PLAYERS: Player[] = [
-  { id: 'p1', name: 'プレイヤー1', setting: { ...BASE_SETTING, body: 'b_magnum' }, isCPU: false },
-  { id: 'p2', name: 'CPU 1', setting: randomSetting(), isCPU: true },
-  { id: 'p3', name: 'CPU 2', setting: randomSetting(), isCPU: true },
+  { id: 'p1', name: 'プレイヤー1', setting: { ...BASE_SETTING, body: 'b_magnum' }, isCPU: false, cpuLevel: DEFAULT_CPU_LEVEL },
+  { id: 'p2', name: 'CPU 1', setting: randomSetting(DEFAULT_CPU_LEVEL), isCPU: true, cpuLevel: DEFAULT_CPU_LEVEL },
+  { id: 'p3', name: 'CPU 2', setting: randomSetting(DEFAULT_CPU_LEVEL), isCPU: true, cpuLevel: DEFAULT_CPU_LEVEL },
 ];
 
 function App() {
@@ -42,12 +44,16 @@ function App() {
     setPlayers(prev => prev.map((p, i) => {
       if (i !== activePlayerIndex) return p;
       const isCPU = !p.isCPU;
-      return { ...p, isCPU, setting: isCPU ? randomSetting() : p.setting };
+      return { ...p, isCPU, setting: isCPU ? randomSetting(p.cpuLevel) : p.setting };
     }));
   };
 
   const rerollActiveCPU = () => {
-    setPlayers(prev => prev.map((p, i) => (i === activePlayerIndex ? { ...p, setting: randomSetting() } : p)));
+    setPlayers(prev => prev.map((p, i) => (i === activePlayerIndex ? { ...p, setting: randomSetting(p.cpuLevel) } : p)));
+  };
+
+  const setActiveCPULevel = (level: CPULevel) => {
+    setPlayers(prev => prev.map((p, i) => (i === activePlayerIndex ? { ...p, cpuLevel: level, setting: randomSetting(level) } : p)));
   };
 
   const activeTotalStats = useMemo(
@@ -71,6 +77,7 @@ function App() {
           onChangeName={updateActiveName}
           onToggleCPU={toggleActiveCPU}
           onRerollCPU={rerollActiveCPU}
+          onSetCPULevel={setActiveCPULevel}
           totalStats={activeTotalStats}
           courseId={courseId}
           setCourseId={setCourseId}

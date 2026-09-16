@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PARTS } from './data';
-import type { MachineSetting, PartType, PartStats, Player } from './types';
+import type { CPULevel, MachineSetting, PartType, PartStats, Player } from './types';
 import { CircuitScene } from './CircuitScene';
 import { COURSES, type CourseId } from './courses';
 
@@ -12,11 +12,14 @@ interface GarageProps {
   onChangeName: (name: string) => void;
   onToggleCPU: () => void;
   onRerollCPU: () => void;
+  onSetCPULevel: (level: CPULevel) => void;
   totalStats: PartStats;
   courseId: CourseId;
   setCourseId: (id: CourseId) => void;
   onStartRace: () => void;
 }
+
+const CPU_LEVEL_LABELS: Record<CPULevel, string> = { 1: 'Lv.1 やさしい', 2: 'Lv.2 ふつう', 3: 'Lv.3 強い' };
 
 const SLOT_LABELS: Record<PartType, string> = {
   body: 'ボディ',
@@ -84,6 +87,7 @@ export const Garage: React.FC<GarageProps> = ({
   onChangeName,
   onToggleCPU,
   onRerollCPU,
+  onSetCPULevel,
   totalStats,
   courseId,
   setCourseId,
@@ -157,7 +161,7 @@ export const Garage: React.FC<GarageProps> = ({
                 className={`player-tab${i === activePlayerIndex ? ' is-active' : ''}`}
                 onClick={() => setActivePlayerIndex(i)}
               >
-                P{i + 1}{p.isCPU && <span className="tab-cpu-dot" title="CPU">🤖</span>}
+                P{i + 1}{p.isCPU && <span className="tab-cpu-dot" title="CPU">🤖{p.cpuLevel}</span>}
               </button>
             ))}
           </div>
@@ -182,6 +186,20 @@ export const Garage: React.FC<GarageProps> = ({
               🤖 CPU
             </button>
           </div>
+
+          {activePlayer.isCPU && (
+            <div className="cpu-level-select">
+              {([1, 2, 3] as CPULevel[]).map(lv => (
+                <button
+                  key={lv}
+                  className={`cpu-level-btn${activePlayer.cpuLevel === lv ? ' is-active' : ''}`}
+                  onClick={() => onSetCPULevel(lv)}
+                >
+                  {CPU_LEVEL_LABELS[lv]}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="panel-title">マシンステータス</div>
           <StatGauge label="スピード" icon="⚡" value={totalStats.speed}    max={STAT_MAX.speed}    color="#5aabff" />
@@ -245,7 +263,7 @@ export const Garage: React.FC<GarageProps> = ({
         <div className={`glass-panel parts-panel${activePlayer.isCPU ? ' is-locked' : ''}`}>
           {activePlayer.isCPU && (
             <div className="cpu-lock-overlay">
-              <div className="cpu-lock-label">🤖 CPUが自動で編成中</div>
+              <div className="cpu-lock-label">🤖 CPUが自動で編成中（{CPU_LEVEL_LABELS[activePlayer.cpuLevel]}）</div>
               <button className="cpu-reroll-btn" onClick={onRerollCPU}>🎲 ランダム編成をやり直す</button>
             </div>
           )}

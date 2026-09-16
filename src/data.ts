@@ -1,4 +1,4 @@
-import type { MachineSetting, Part, PartStats } from './types';
+import type { CPULevel, MachineSetting, Part, PartStats } from './types';
 
 import bodyMagnum from './assets/magnum.jpg';
 import bodySonic from './assets/sonic.jpg';
@@ -80,23 +80,38 @@ export const PARTS: Part[] = [
   { id: 'md_std', name: 'マスダンパー スクエア', type: 'mass_damper', stats: { speed: -10, power: 0, cornering: 30, stamina: 6, weight: 10 }, image: massDamperSquare },
 ];
 
-// CPUレーサー用：各スロットをランダムに選び、それらしい構成を自動生成する
-export function randomSetting(): MachineSetting {
-  const pick = (type: Part['type'], nullable = false): string | null => {
-    if (nullable && Math.random() < 0.5) return null;
+// CPUレーサーの強さレベル（1〜3）別パーツ構成。ボディとギヤは特性の違いで
+// あって強弱ではないのでレベルを問わず完全ランダム、それ以外の対応パーツは
+// レベルが上がるほど数値の高い（＝より最適化された）ものを選ぶ。
+const CPU_TIER_CHASSIS = ['c_super1', 'c_tz', 'c_ar'];
+const CPU_TIER_TIRE_FRONT = ['tf_slick', 'tf_lowhi', 'tf_sponge'];
+const CPU_TIER_TIRE_REAR = ['tr_slick', 'tr_lowhi', 'tr_sponge'];
+const CPU_TIER_ROLLER_FRONT = ['rf_plastic', 'rf_alum', 'rf_alum2'];
+const CPU_TIER_ROLLER_REAR = ['rr_plastic', 'rr_alum', 'rr_alum2'];
+const CPU_TIER_MOTOR: Record<CPULevel, string[]> = {
+  1: ['m_normal', 'm_rev', 'm_torque'],
+  2: ['m_lightdash', 'm_powerdash'],
+  3: ['m_hyper', 'm_powerdash'],
+};
+const CPU_TIER_MD_CHANCE: Record<CPULevel, number> = { 1: 0.3, 2: 0.6, 3: 0.95 };
+
+// CPUレーサー用：レベルに応じた強さでパーツを自動生成する
+export function randomSetting(level: CPULevel = 2): MachineSetting {
+  const pickAny = (type: Part['type']): string => {
     const options = PARTS.filter(p => p.type === type);
     return options[Math.floor(Math.random() * options.length)].id;
   };
+  const pickFrom = (ids: string[]): string => ids[Math.floor(Math.random() * ids.length)];
   return {
-    body: pick('body'),
-    chassis: pick('chassis'),
-    motor: pick('motor'),
-    gear: pick('gear'),
-    tire_front: pick('tire_front'),
-    tire_rear: pick('tire_rear'),
-    roller_front: pick('roller_front'),
-    roller_rear: pick('roller_rear'),
-    mass_damper: pick('mass_damper', true),
+    body: pickAny('body'),
+    chassis: CPU_TIER_CHASSIS[level - 1],
+    motor: pickFrom(CPU_TIER_MOTOR[level]),
+    gear: pickAny('gear'),
+    tire_front: CPU_TIER_TIRE_FRONT[level - 1],
+    tire_rear: CPU_TIER_TIRE_REAR[level - 1],
+    roller_front: CPU_TIER_ROLLER_FRONT[level - 1],
+    roller_rear: CPU_TIER_ROLLER_REAR[level - 1],
+    mass_damper: Math.random() < CPU_TIER_MD_CHANCE[level] ? 'md_std' : null,
   };
 }
 

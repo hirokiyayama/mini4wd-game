@@ -28,9 +28,12 @@ export interface MachineSetting {
   mass_damper: string | null;
 }
 
+export type CPULevel = 1 | 2 | 3;
+
 export interface Player {
   id: string;
   name: string;
   setting: MachineSetting;
   isCPU: boolean;
+  cpuLevel: CPULevel;
 }

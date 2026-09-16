@@ -228,9 +228,10 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         const p = sampleCourse(courseId, rt.progress, window.innerWidth, window.innerHeight, mul);
 
         if (rt.state === 'running' && p.cornerRisk && rt.speed > 0.5) {
-          // 絶好調中は少し粘れて、つまづき中は少しふらついて不安定になる
-          // （＝同じセッティング・同じコースでもコースアウトの結果が毎回変わりうる）
-          const stabilityLimit = ((racer.totalStats.cornering / 100) * 0.8 + 0.3) * GLOBAL_SPEED_SCALE * rt.eventMul;
+          // しきい値自体はイベントで変動させない（絶好調中はそのぶん speed が
+          // 伸びているので自然とコーナーが危なくなり、つまづき中は speed が
+          // 落ちているぶん自然と安全になる＝同じセッティングでも結果が変わりうる）
+          const stabilityLimit = ((racer.totalStats.cornering / 100) * 0.8 + 0.55) * GLOBAL_SPEED_SCALE;
           if (rt.speed > stabilityLimit) {
             rt.state = 'crashed';
           }
@@ -333,7 +334,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         {players.map((racer, i) => (
           <div key={racer.id} ref={el => { rowRefs.current[i] = el; }} className="race-leaderboard-row">
             <span className="race-leaderboard-rank" ref={el => { rankRefs.current[i] = el; }}>{i + 1}</span>
-            <span className="race-leaderboard-name">{racer.name}{racer.isCPU && <span className="race-cpu-badge">🤖</span>}</span>
+            <span className="race-leaderboard-name">{racer.name}{racer.isCPU && <span className="race-cpu-badge">🤖{racer.cpuLevel}</span>}</span>
             <span className="race-leaderboard-lap" ref={el => { lapRefs.current[i] = el; }}>1/{TARGET_LAPS}</span>
           </div>
         ))}
