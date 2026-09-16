@@ -33,12 +33,19 @@ const SLOT_LABELS: Record<PartType, string> = {
 // パーツカテゴリのTabシステム
 const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'gear', 'tire_front', 'tire_rear', 'roller_front', 'roller_rear', 'mass_damper'];
 
-// ゲージの最大値（ステータスのスケーリング用）
-const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 100, weight: 200 };
+// ゲージの最大値（ステータスのスケーリング用）。スタミナは0を中心に±この値まで
+const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 50, weight: 200 };
 
-interface StatGaugeProps { label: string; icon: string; value: number; max: number; color: string; }
-const StatGauge: React.FC<StatGaugeProps> = ({ label, icon, value, max, color }) => {
-  const pct = Math.min(100, Math.max(0, (value / max) * 100));
+interface StatGaugeProps { label: string; icon: string; value: number; max: number; color: string; centered?: boolean; }
+const StatGauge: React.FC<StatGaugeProps> = ({ label, icon, value, max, color, centered = false }) => {
+  const fillStyle = centered
+    ? (() => {
+        const clamped = Math.max(-max, Math.min(max, value));
+        const halfPct = (Math.abs(clamped) / max) * 50;
+        const leftPct = clamped >= 0 ? 50 : 50 - halfPct;
+        return { left: `${leftPct}%`, width: `${halfPct}%` };
+      })()
+    : { left: '0%', width: `${Math.min(100, Math.max(0, (value / max) * 100))}%` };
   return (
     <div className="stat-row">
       <div className="stat-row-head">
@@ -47,15 +54,16 @@ const StatGauge: React.FC<StatGaugeProps> = ({ label, icon, value, max, color })
         </span>
         <span className="stat-row-value">{value}</span>
       </div>
-      <div className="stat-gauge-track">
+      <div className={`stat-gauge-track${centered ? ' stat-gauge-track--centered' : ''}`}>
         <div
           className="stat-gauge-fill"
           style={{
-            width: `${pct}%`,
+            ...fillStyle,
             background: `linear-gradient(90deg, ${color}99, ${color})`,
             boxShadow: `0 0 10px ${color}, 0 0 2px ${color}`,
           }}
         />
+        {centered && <div className="stat-gauge-zero-tick" />}
         <div className="stat-gauge-sheen" />
       </div>
     </div>
@@ -179,7 +187,7 @@ export const Garage: React.FC<GarageProps> = ({
           <StatGauge label="スピード" icon="⚡" value={totalStats.speed}    max={STAT_MAX.speed}    color="#5aabff" />
           <StatGauge label="パワー"   icon="🔥" value={totalStats.power}    max={STAT_MAX.power}    color="#ff6b35" />
           <StatGauge label="コーナー" icon="🎯" value={totalStats.cornering} max={STAT_MAX.cornering} color="#00e5ff" />
-          <StatGauge label="スタミナ" icon="💚" value={totalStats.stamina}  max={STAT_MAX.stamina}  color="#4ade80" />
+          <StatGauge label="スタミナ" icon="💚" value={totalStats.stamina}  max={STAT_MAX.stamina}  color={totalStats.stamina < 0 ? '#f87171' : '#4ade80'} centered />
           <div className="weight-box">
             <span className="weight-label">🔩 重さ</span>
             <span className="weight-value">{totalStats.weight}g</span>

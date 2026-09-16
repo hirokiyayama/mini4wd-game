@@ -528,20 +528,41 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
           下り区間はシアン、それ以外は縁石ニュートラルカラーで塗り分け、
           シェブロン矢印で傾斜と進行方向を示す。 */}
       {courseId === 'hill' && (() => {
-        // 開始区間（edge0 の平坦直線＝スタート/フィニッシュストレート）の始点
-        const startT = hillSegFractions[1] * Math.PI * 2 + 0.001;
-        // 上り区間（hillSegments[6]）と下り区間（hillSegments[14]）の中点
-        const upMidT = ((hillSegFractions[5] + hillSegFractions[6]) / 2) * Math.PI * 2;
-        const downMidT = ((hillSegFractions[13] + hillSegFractions[14]) / 2) * Math.PI * 2;
-        const start = sampleHillLocal(startT);
+        // segment0（スタート/フィニッシュ直線）と segment10（クレスト遷移直線）が
+        // 交差する。segment9終了地点で前半／後半を分割し、後半（クレスト側）の
+        // 橋が前半（スタート/フィニッシュ側）の上を通るように塗り分ける。
+        const splitT = hillSegFractions[9] * Math.PI * 2;
+        const cross1T = (0 + hillSegFractions[0] * 0.31) * Math.PI * 2; // segment0上の交差点
+        const cross2T = (hillSegFractions[9] + (hillSegFractions[10] - hillSegFractions[9]) * 0.68) * Math.PI * 2; // segment10上の交差点
+        const crossPt = sampleHillLocal(cross1T);
+
+        const start = sampleHillLocal(0.06);
+        // ロングヒル（上り）区間の中間点＝ループの一番遠い場所あたり
+        const upMidT = ((hillSegFractions[1] + hillSegFractions[9]) / 2) * Math.PI * 2;
+        // 下り＋S字区間の中間点
+        const downMidT = ((hillSegFractions[11] + hillSegFractions[17]) / 2) * Math.PI * 2;
         const upMid = sampleHillLocal(upMidT);
         const downMid = sampleHillLocal(downMidT);
         return (
       <g transform={`translate(${TRACK_CENTER_X},${HILL_CENTER_Y}) scale(${HILL_ZOOM})`}>
         <path d={buildHillPath(0, Math.PI * 2, 320)} fill="none" stroke="#000" strokeWidth={HILL_TRACK_WIDTH + 34} strokeLinecap="round" opacity="0.45" filter="url(#soft)" />
-        <path d={buildHillPath(0, Math.PI * 2, 320)} fill="none" stroke="#3a3e46" strokeWidth={HILL_TRACK_WIDTH} strokeLinecap="round" />
-        <path d={buildHillPath(0, Math.PI * 2, 320)} fill="none" stroke="#4d525c" strokeWidth={HILL_TRACK_WIDTH - 16} strokeLinecap="round" />
-        <path d={buildHillPath(0, Math.PI * 2, 320)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
+
+        {/* 前半：スタート/フィニッシュ直線〜ロングヒル（上り）のループ */}
+        <path d={buildHillPath(0, splitT, 220)} fill="none" stroke="#3a3e46" strokeWidth={HILL_TRACK_WIDTH} strokeLinecap="round" />
+        <path d={buildHillPath(0, splitT, 220)} fill="none" stroke="#4d525c" strokeWidth={HILL_TRACK_WIDTH - 16} strokeLinecap="round" />
+        <path d={buildHillPath(0, splitT, 220)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
+
+        {/* 交差点の下をくぐるトンネル演出 */}
+        <ellipse cx={crossPt.x} cy={crossPt.y} rx={HILL_TRACK_WIDTH * 0.85} ry={HILL_TRACK_WIDTH * 0.55} fill="#050608" opacity="0.55" filter="url(#soft)" />
+        <path d={buildHillPath(cross1T - 0.15, cross1T + 0.15, 12)} fill="none" stroke="url(#bridgeGrad)" strokeWidth={HILL_TRACK_WIDTH} strokeLinecap="round" opacity="0.9" />
+
+        {/* 後半：クレスト遷移〜下り＋S字カーブ〜スタート/フィニッシュへ戻る（交差点で前半の上を通る） */}
+        <path d={buildHillPath(splitT, Math.PI * 2, 220)} fill="none" stroke="#3a3e46" strokeWidth={HILL_TRACK_WIDTH} strokeLinecap="round" />
+        <path d={buildHillPath(splitT, Math.PI * 2, 220)} fill="none" stroke="#4d525c" strokeWidth={HILL_TRACK_WIDTH - 16} strokeLinecap="round" />
+        <path d={buildHillPath(splitT, Math.PI * 2, 220)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
+
+        {/* 橋の路面ハイライト。最後に描いて交差点で一番上に見えるようにする */}
+        <path d={buildHillPath(cross2T - 0.15, cross2T + 0.15, 12)} fill="none" stroke="#e8ecef" strokeWidth={HILL_TRACK_WIDTH + 6} strokeLinecap="round" opacity="0.14" />
 
         {hillTicks()}
 
@@ -561,14 +582,15 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
         </g>
 
         <text
-          x="0"
-          y="-820"
+          x="-720"
+          y="0"
           textAnchor="middle"
           fill="#ffffff"
-          opacity="0.05"
+          opacity="0.06"
           fontFamily="Rajdhani, sans-serif"
           fontWeight={900}
-          fontSize="52"
+          fontSize="44"
+          transform="rotate(-90, -720, 0)"
         >
           POWER HILLWAY
         </text>

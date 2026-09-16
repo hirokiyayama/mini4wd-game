@@ -32,6 +32,18 @@ const CLIMB_SPEED_MIN = 0.45;
 const CLIMB_SPEED_MAX = 1.1;
 const DOWNHILL_SPEED_BOOST = 1.12; // 下り区間は誰でも一律で少し伸びる
 
+// ── スピード ⇔ コーナー のトレードオフ ──
+// 「スピードが高いほど直線が速いがコーナーは遅い／コーナーが高いほど
+// コーナーは速いが直線は遅い」という一貫した特性にする。基礎ペースは
+// 両ステータスの合計から決め、その差分（diff）が直線・コーナーそれぞれの
+// 得意・不得意を逆向きに作る。
+const BASE_PACE_SCALE = 0.005; // (speed + cornering) 合計 → 基礎ペース
+const SPEED_CORNER_TRADEOFF = 0.0015; // diffがどれだけ直線/コーナーの速さに影響するか
+const SEG_MUL_FLOOR = 0.35; // 直線・コーナーどちらでも最低限これくらいは出せる
+const SEG_MUL_SMOOTH_RATE = 6; // 直線⇔コーナー切り替え時、速度が滑らかに遷移する速さ
+// レース全体のペースを落とす（体感で以前の約半分。速いセッティングで20秒前後を目安に）
+const GLOBAL_SPEED_SCALE = 0.5;
+
 // ── ランダムイベント：同じセッティング同士でも毎回違う展開になるように、
 // 各マシンにたまに「絶好調（加速）」「つまづき（減速）」を発生させる。
 const RANDOM_EVENT_CHANCE_PER_SEC = 0.32; // 発生していない間、1秒あたりこの確率で新規発生
@@ -55,6 +67,7 @@ interface RacerRuntime {
   eventMul: number;
   eventTimer: number;
   eventKind: RandomEventKind;
+  segMulSmooth: number;
 }
 
 interface RankEntry {
@@ -69,7 +82,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
   const [finalRanking, setFinalRanking] = useState<RankEntry[] | null>(null);
   const [, forceTick] = useState(0);
 
-  const runtimeRef = useRef<RacerRuntime[]>(players.map(() => ({ progress: 0, speed: 0, laps: 0, bouncePhase: 0, leanAngle: 0, state: 'running', eventMul: 1, eventTimer: 0, eventKind: null })));
+  const runtimeRef = useRef<RacerRuntime[]>(players.map(() => ({ progress: 0, speed: 0, laps: 0, bouncePhase: 0, leanAngle: 0, state: 'running', eventMul: 1, eventTimer: 0, eventKind: null, segMulSmooth: 1 })));
   const carRefs = useRef<(RaceCarHandle | null)[]>([]);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const rankRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -147,7 +160,17 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         anyRunning = true;
 
         const mul = LANE_MUL[i] ?? 1;
-        const curSlope = sampleCourse(courseId, rt.progress, window.innerWidth, window.innerHeight, mul).slope;
+        const curSample = sampleCourse(courseId, rt.progress, window.innerWidth, window.innerHeight, mul);
+        const curSlope = curSample.slope;
+
+        // スピード ⇔ コーナーのトレードオフ：基礎ペースは両ステータスの合計、
+        // 直線かコーナーかでどちらが有利かが入れ替わる（滑らかに遷移させる）
+        const basePace = (racer.totalStats.speed + racer.totalStats.cornering) * BASE_PACE_SCALE;
+        const diff = racer.totalStats.speed - racer.totalStats.cornering;
+        const targetSegMul = curSample.isCorner
+          ? Math.max(SEG_MUL_FLOOR, 1 - diff * SPEED_CORNER_TRADEOFF)
+          : Math.max(SEG_MUL_FLOOR, 1 + diff * SPEED_CORNER_TRADEOFF);
+        rt.segMulSmooth += (targetSegMul - rt.segMulSmooth) * Math.min(1, delta * SEG_MUL_SMOOTH_RATE);
 
         // 終盤に近づくほど効果が強まる「バテ／second wind」係数（逆転要素）
         const distanceTarget = TARGET_LAPS * Math.PI * 2;
@@ -188,7 +211,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
           rt.eventTimer = RANDOM_EVENT_MIN_DUR + Math.random() * (RANDOM_EVENT_MAX_DUR - RANDOM_EVENT_MIN_DUR);
         }
 
-        const maxSpeed = racer.totalStats.speed * 0.01 * staminaMul * slopeMul * rt.eventMul;
+        const maxSpeed = basePace * rt.segMulSmooth * staminaMul * slopeMul * rt.eventMul * GLOBAL_SPEED_SCALE;
         const acceleration = (racer.totalStats.power / racer.totalStats.weight) * 0.005;
         rt.speed = Math.min(rt.speed + acceleration * delta * 60, maxSpeed);
         rt.progress += rt.speed * delta;
@@ -207,7 +230,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         if (rt.state === 'running' && p.cornerRisk && rt.speed > 0.5) {
           // 絶好調中は少し粘れて、つまづき中は少しふらついて不安定になる
           // （＝同じセッティング・同じコースでもコースアウトの結果が毎回変わりうる）
-          const stabilityLimit = ((racer.totalStats.cornering / 100) * 0.8 + 0.3) * rt.eventMul;
+          const stabilityLimit = ((racer.totalStats.cornering / 100) * 0.8 + 0.3) * GLOBAL_SPEED_SCALE * rt.eventMul;
           if (rt.speed > stabilityLimit) {
             rt.state = 'crashed';
           }
