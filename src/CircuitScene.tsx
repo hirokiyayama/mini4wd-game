@@ -3,6 +3,12 @@ import {
   TRACK_CENTER_X,
   TRACK_CENTER_Y,
   OVAL_ZOOM,
+  OVAL_STRETCH_X,
+  OVAL_STRETCH_Y,
+  OVAL_TRACK_WIDTH,
+  ovalSegments,
+  ovalSegFractions,
+  sampleOvalHexLocal,
   JCUP_CENTER_X,
   JCUP_CENTER_Y,
   JCUP_TRACK_WIDTH,
@@ -11,6 +17,49 @@ import {
   sampleJCupLocal,
   type CourseId,
 } from './courses';
+
+function buildOvalPath(steps: number): string {
+  const parts: string[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const s = (i / steps) * Math.PI * 2;
+    const { x, y } = sampleOvalHexLocal(s);
+    parts.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`);
+  }
+  return parts.join(' ');
+}
+
+function ovalTicks() {
+  const nodes: React.ReactNode[] = [];
+  let segStart = 0;
+  const tickOffset = OVAL_TRACK_WIDTH / 2 + 10;
+  ovalSegments.forEach((seg, i) => {
+    const segEnd = ovalSegFractions[i];
+    const color = i % 4 < 2 ? '#c81e1e' : '#1d4ed8';
+    const count = seg.type === 'straight' ? 7 : 5;
+    for (let n = 0; n < count; n++) {
+      const s = segStart + (segEnd - segStart) * (n / count);
+      const { x, y, angleDeg } = sampleOvalHexLocal(s * Math.PI * 2);
+      const rad = (angleDeg * Math.PI) / 180;
+      const px = x - Math.sin(rad) * tickOffset;
+      const py = y + Math.cos(rad) * tickOffset;
+      nodes.push(
+        <rect
+          key={`o${i}-${n}`}
+          x={px - 9}
+          y={py - 6}
+          width="18"
+          height="12"
+          rx="3"
+          fill={n % 2 === 0 ? color : '#f5f5f5'}
+          opacity="0.92"
+          transform={`rotate(${angleDeg + 90}, ${px}, ${py})`}
+        />
+      );
+    }
+    segStart = segEnd;
+  });
+  return nodes;
+}
 
 interface CircuitSceneProps {
   courseId?: CourseId;
@@ -271,75 +320,37 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
           compact Garage preview, so the whole loop fits on screen */}
       <g transform={compact ? 'translate(800,560) scale(0.6) translate(-800,-560)' : undefined}>
 
-      {/* track oval — scaled down (OVAL_ZOOM) to match the Jr. circuit's
-          compact footprint; courses.ts applies the same factor to the car
-          path so the two stay in sync. */}
+      {/* track oval — a rounded hexagon (6 straights + 6 corners) stretched
+          into an oval silhouette, instead of one smooth ellipse. Built in
+          hexagon-local units centered at the origin, then positioned +
+          non-uniformly stretched by one group transform (courses.ts
+          applies the identical stretch/zoom to the car path). */}
       {courseId === 'oval' && (
-      <g transform={`translate(${TRACK_CENTER_X},${TRACK_CENTER_Y}) scale(${OVAL_ZOOM}) translate(${-TRACK_CENTER_X},${-TRACK_CENTER_Y})`}>
-        <ellipse cx="800" cy="700" rx="760" ry="220" fill="#151719" opacity="0.55" filter="url(#soft)" />
-        <ellipse cx="800" cy="690" rx="740" ry="205" fill="url(#asphalt)" />
-        <ellipse cx="800" cy="690" rx="740" ry="205" fill="none" stroke="#e8ecef" strokeWidth="5" strokeDasharray="34,22" opacity="0.35" />
-        <ellipse cx="800" cy="690" rx="430" ry="112" fill="url(#grass)" />
-        <ellipse cx="800" cy="690" rx="430" ry="112" fill="none" stroke="#e8ecef" strokeWidth="3" strokeDasharray="24,16" opacity="0.3" />
+      <g transform={`translate(${TRACK_CENTER_X},${TRACK_CENTER_Y}) scale(${OVAL_STRETCH_X * OVAL_ZOOM},${OVAL_STRETCH_Y * OVAL_ZOOM})`}>
+        <path d={buildOvalPath(240)} fill="none" stroke="#000" strokeWidth={OVAL_TRACK_WIDTH + 40} strokeLinejoin="round" opacity="0.45" filter="url(#soft)" />
+        <path d={buildOvalPath(240)} fill="none" stroke="#3a3e46" strokeWidth={OVAL_TRACK_WIDTH} strokeLinejoin="round" />
+        <path d={buildOvalPath(240)} fill="none" stroke="#4d525c" strokeWidth={OVAL_TRACK_WIDTH - 16} strokeLinejoin="round" />
+        <path d={buildOvalPath(240)} fill="none" stroke="#e8ecef" strokeWidth="5" strokeDasharray="30,20" opacity="0.35" />
 
-        {/* red / white curb along both edges */}
-        {Array.from({ length: 26 }).map((_, i) => {
-          const a = (i / 26) * Math.PI * 2;
-          const bx = 800 + 762 * Math.cos(a);
-          const by = 690 + 214 * Math.sin(a);
-          const angleDeg = (a * 180) / Math.PI;
-          return (
-            <rect
-              key={`o${i}`}
-              x={bx - 12}
-              y={by - 7}
-              width="24"
-              height="14"
-              rx="3"
-              fill={i % 2 === 0 ? '#c81e1e' : '#f5f5f5'}
-              opacity="0.92"
-              transform={`rotate(${angleDeg + 90}, ${bx}, ${by})`}
-            />
-          );
-        })}
-        {Array.from({ length: 16 }).map((_, i) => {
-          const a = (i / 16) * Math.PI * 2;
-          const bx = 800 + 408 * Math.cos(a);
-          const by = 690 + 100 * Math.sin(a);
-          const angleDeg = (a * 180) / Math.PI;
-          return (
-            <rect
-              key={`i${i}`}
-              x={bx - 10}
-              y={by - 6}
-              width="20"
-              height="12"
-              rx="3"
-              fill={i % 2 === 0 ? '#c81e1e' : '#f5f5f5'}
-              opacity="0.9"
-              transform={`rotate(${angleDeg + 90}, ${bx}, ${by})`}
-            />
-          );
-        })}
+        {/* red/blue curb, alternating by corner */}
+        {ovalTicks()}
 
-        {/* start / finish checker line */}
-        <g transform="translate(800,895) rotate(0)">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <rect
-              key={i}
-              x={-45 + i * 10}
-              y={-108}
-              width="10"
-              height="18"
-              fill={i % 2 === 0 ? '#0c0c0c' : '#f4f4f4'}
-            />
-          ))}
-        </g>
+        {/* start / finish checker line, at the start of segment 0 */}
+        {(() => {
+          const start = sampleOvalHexLocal(0.001);
+          return (
+            <g transform={`translate(${start.x},${start.y}) rotate(${start.angleDeg})`}>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <rect key={i} x={-8} y={i * 9 - 36} width="16" height="9" fill={i % 2 === 0 ? '#0c0c0c' : '#f4f4f4'} />
+              ))}
+            </g>
+          );
+        })()}
 
         {/* center logo watermark */}
         <text
-          x="800"
-          y="700"
+          x="0"
+          y="10"
           textAnchor="middle"
           fill="#ffffff"
           opacity="0.05"

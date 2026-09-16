@@ -33,12 +33,103 @@ export const TRACK_CENTER_X = 800;
 export const TRACK_CENTER_Y = 690;
 
 // ── Oval ──────────────────────────────────────────────
-// Shrunk to roughly match the Jr. circuit's footprint (see OVAL_ZOOM,
-// applied to both the car path here and the drawn ellipses in
-// CircuitScene.tsx so the two courses read as similarly "small").
-export const OVAL_LANE_RX = (740 + 430) / 2;
-export const OVAL_LANE_RY = (205 + 112) / 2;
-export const OVAL_ZOOM = 0.68;
+// A rounded hexagon (6 straights + 6 corners) stretched into an ellipse-
+// like "speedway oval" shape, instead of a single smooth ellipse — more
+// straights, more complex, while keeping the wide/flat oval silhouette.
+// Built in unstretched hexagon-local units, then stretched non-uniformly
+// (OVAL_STRETCH_X/Y) at sample time; the stretch is applied to both
+// position and heading so straights/corners stay geometrically correct.
+export const OVAL_SIDES = 6;
+export const OVAL_R_POLY = 430;
+export const OVAL_CORNER_R = 100;
+export const OVAL_STRETCH_X = 1.3;
+export const OVAL_STRETCH_Y = 0.68;
+export const OVAL_ZOOM = 0.78;
+export const OVAL_TRACK_WIDTH = 110;
+
+interface Vec { x: number; y: number; }
+const vAdd = (a: Vec, b: Vec): Vec => ({ x: a.x + b.x, y: a.y + b.y });
+const vSub = (a: Vec, b: Vec): Vec => ({ x: a.x - b.x, y: a.y - b.y });
+const vScale = (a: Vec, s: number): Vec => ({ x: a.x * s, y: a.y * s });
+const vLen = (a: Vec): number => Math.hypot(a.x, a.y);
+const vNorm = (a: Vec): Vec => { const l = vLen(a) || 1; return { x: a.x / l, y: a.y / l }; };
+const vLeftNormal = (a: Vec): Vec => ({ x: -a.y, y: a.x });
+
+export interface OvalStraightSeg { type: 'straight'; from: Vec; to: Vec; }
+export interface OvalArcSeg { type: 'arc'; center: Vec; r: number; thetaStart: number; thetaEnd: number; }
+export type OvalSeg = OvalStraightSeg | OvalArcSeg;
+
+const ovalVerts: Vec[] = Array.from({ length: OVAL_SIDES }, (_, k) => {
+  const a = (k / OVAL_SIDES) * Math.PI * 2;
+  return { x: OVAL_R_POLY * Math.cos(a), y: OVAL_R_POLY * Math.sin(a) };
+});
+
+const ovalPhi = (Math.PI * 2) / OVAL_SIDES;
+const ovalTangentLen = OVAL_CORNER_R * Math.tan(ovalPhi / 2);
+
+const ovalVertexGeoms = ovalVerts.map((cur, i) => {
+  const prev = ovalVerts[(i - 1 + OVAL_SIDES) % OVAL_SIDES];
+  const next = ovalVerts[(i + 1) % OVAL_SIDES];
+  const dirIn = vNorm(vSub(cur, prev));
+  const dirOut = vNorm(vSub(next, cur));
+  const tIn = vSub(cur, vScale(dirIn, ovalTangentLen));
+  const tOut = vAdd(cur, vScale(dirOut, ovalTangentLen));
+  const center = vAdd(tIn, vScale(vLeftNormal(dirIn), OVAL_CORNER_R));
+  const thetaStart = Math.atan2(tIn.y - center.y, tIn.x - center.x);
+  const thetaEnd = thetaStart + ovalPhi;
+  return { tIn, tOut, center, thetaStart, thetaEnd };
+});
+
+export const ovalSegments: OvalSeg[] = [];
+for (let i = 0; i < OVAL_SIDES; i++) {
+  const prevG = ovalVertexGeoms[(i - 1 + OVAL_SIDES) % OVAL_SIDES];
+  const curG = ovalVertexGeoms[i];
+  ovalSegments.push({ type: 'straight', from: prevG.tOut, to: curG.tIn });
+  ovalSegments.push({ type: 'arc', center: curG.center, r: OVAL_CORNER_R, thetaStart: curG.thetaStart, thetaEnd: curG.thetaEnd });
+}
+
+function ovalSegLength(seg: OvalSeg): number {
+  return seg.type === 'straight' ? vLen(vSub(seg.to, seg.from)) : Math.abs(seg.thetaEnd - seg.thetaStart) * seg.r;
+}
+
+const ovalSegLens = ovalSegments.map(ovalSegLength);
+const ovalTotalLen = ovalSegLens.reduce((a, b) => a + b, 0);
+export const ovalSegFractions: number[] = (() => {
+  const out: number[] = [];
+  let acc = 0;
+  for (const len of ovalSegLens) {
+    acc += len / ovalTotalLen;
+    out.push(acc);
+  }
+  return out;
+})();
+
+interface LocalSample { x: number; y: number; angleDeg: number; isCorner: boolean; }
+
+/** Samples the rounded-hexagon oval in unstretched local units (hexagon centered at origin). */
+export function sampleOvalHexLocal(pRaw: number): LocalSample {
+  const s = (((pRaw % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
+
+  let segIndex = ovalSegFractions.findIndex(f => s < f);
+  if (segIndex === -1) segIndex = ovalSegments.length - 1;
+  const segStart = segIndex === 0 ? 0 : ovalSegFractions[segIndex - 1];
+  const segEnd = ovalSegFractions[segIndex];
+  const u = (s - segStart) / (segEnd - segStart);
+  const seg = ovalSegments[segIndex];
+
+  if (seg.type === 'straight') {
+    const x = seg.from.x + (seg.to.x - seg.from.x) * u;
+    const y = seg.from.y + (seg.to.y - seg.from.y) * u;
+    const angleDeg = (Math.atan2(seg.to.y - seg.from.y, seg.to.x - seg.from.x) * 180) / Math.PI;
+    return { x, y, angleDeg, isCorner: false };
+  }
+
+  const theta = seg.thetaStart + u * (seg.thetaEnd - seg.thetaStart);
+  const x = seg.center.x + seg.r * Math.cos(theta);
+  const y = seg.center.y + seg.r * Math.sin(theta);
+  const angleDeg = (Math.atan2(Math.cos(theta), -Math.sin(theta)) * 180) / Math.PI;
+  return { x, y, angleDeg, isCorner: true };
+}
 
 // The Jr. circuit uses its own (smaller, higher-up) center so it can be
 // more compact without having to match the oval's placement.
@@ -182,13 +273,12 @@ export function sampleCourse(
     return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angle, isCorner: local.isCorner };
   }
 
-  const rx = OVAL_LANE_RX * OVAL_ZOOM * laneMul;
-  const ry = OVAL_LANE_RY * OVAL_ZOOM * laneMul;
-  const x = TRACK_CENTER_X + rx * Math.cos(p);
-  const y = TRACK_CENTER_Y + ry * Math.sin(p);
-  const dx = -rx * Math.sin(p);
-  const dy = ry * Math.cos(p);
-  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-  const isCorner = Math.abs(Math.cos(p)) > 0.8;
-  return { x: offsetX + x * scale, y: offsetY + y * scale, angle, isCorner };
+  const local = sampleOvalHexLocal(p);
+  const sx = OVAL_STRETCH_X * OVAL_ZOOM * laneMul;
+  const sy = OVAL_STRETCH_Y * OVAL_ZOOM * laneMul;
+  const x = TRACK_CENTER_X + local.x * sx;
+  const y = TRACK_CENTER_Y + local.y * sy;
+  const rad = (local.angleDeg * Math.PI) / 180;
+  const angle = (Math.atan2(Math.sin(rad) * sy, Math.cos(rad) * sx) * 180) / Math.PI;
+  return { x: offsetX + x * scale, y: offsetY + y * scale, angle, isCorner: local.isCorner };
 }
