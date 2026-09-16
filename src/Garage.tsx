@@ -37,7 +37,7 @@ const SLOT_LABELS: Record<PartType, string> = {
 const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'gear', 'tire_front', 'tire_rear', 'roller_front', 'roller_rear', 'mass_damper'];
 
 // ゲージの最大値（ステータスのスケーリング用）。スタミナは0を中心に±この値まで
-const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 50, weight: 200 };
+const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 60, weight: 200 };
 
 interface StatGaugeProps { label: string; icon: string; value: number; max: number; color: string; centered?: boolean; hint?: string; }
 const StatGauge: React.FC<StatGaugeProps> = ({ label, icon, value, max, color, centered = false, hint }) => {
@@ -302,7 +302,7 @@ export const Garage: React.FC<GarageProps> = ({
                 thumbnailFit={activeTab === 'body' ? 'crop' : 'contain'}
                 selected={setting[activeTab] === part.id}
                 onClick={() => handleSelectPart(part.id)}
-                stats={`SP ${part.stats.speed} / PW ${part.stats.power} / CO ${part.stats.cornering} / ${part.stats.weight}g`}
+                stats={`SP ${part.stats.speed} / PW ${part.stats.power} / CO ${part.stats.cornering} / ST ${part.stats.stamina} / ${part.stats.weight}g`}
               />
             ))}
           </div>
@@ -385,7 +385,7 @@ function getPartDescription(id: string): string {
     rr_plastic:  'リアの安定性を向上させるローラー。',
     rr_alum:     '超低摩擦のアルミ製リアローラー。',
     rr_alum2:    '2段構造でさらに安定性を高めたアルミローラー。',
-    md_std:      'ジャンプ後の着地を安定させる重り。',
+    md_std:      'スタミナを大きく底上げする代わりに、スピードとコーナーを大きく犠牲にする諸刃の重り。',
   };
   return desc[id] ?? '詳細情報なし';
 }

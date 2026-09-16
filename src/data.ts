@@ -53,8 +53,8 @@ export const PARTS: Part[] = [
   { id: 'm_normal', name: 'タイプノーマルモーター', type: 'motor', stats: { speed: 50, power: 50, cornering: 0, stamina: 0, weight: 17 }, image: motorNormal },
   { id: 'm_rev', name: 'レブチューン2モーター', type: 'motor', stats: { speed: 120, power: 40, cornering: 0, stamina: 0, weight: 17 }, image: motorRev2 },
   { id: 'm_torque', name: 'トルクチューン2モーター', type: 'motor', stats: { speed: 70, power: 110, cornering: 0, stamina: 0, weight: 17 }, image: motorTorque2 },
-  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 90, power: 120, cornering: 0, stamina: -20, weight: 17 }, image: motorPowerdash },
-  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 150, power: 90, cornering: 0, stamina: -40, weight: 17 }, image: motorHyperdash },
+  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 90, power: 120, cornering: 0, stamina: -12, weight: 17 }, image: motorPowerdash },
+  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 150, power: 90, cornering: 0, stamina: -22, weight: 17 }, image: motorHyperdash },
 
   // Gear
   { id: 'g_std', name: '標準ギヤ (4:1)', type: 'gear', stats: { speed: 20, power: 40, cornering: 0, stamina: 0, weight: 2 }, image: gearStd },
@@ -77,7 +77,7 @@ export const PARTS: Part[] = [
   { id: 'rr_alum2', name: '2段アルミローラー(後)', type: 'roller_rear', stats: { speed: -8, power: 0, cornering: 65, stamina: 0, weight: 6 }, image: rollerAlum2step },
 
   // Mass Damper
-  { id: 'md_std', name: 'マスダンパー スクエア', type: 'mass_damper', stats: { speed: -10, power: 0, cornering: 30, stamina: 6, weight: 10 }, image: massDamperSquare },
+  { id: 'md_std', name: 'マスダンパー スクエア', type: 'mass_damper', stats: { speed: -30, power: 0, cornering: -30, stamina: 30, weight: 10 }, image: massDamperSquare },
 ];
 
 // CPUレーサーの強さレベル（1〜3）別パーツ構成。ボディとギヤは特性の違いで
@@ -93,7 +93,10 @@ const CPU_TIER_MOTOR: Record<CPULevel, string[]> = {
   2: ['m_lightdash', 'm_powerdash'],
   3: ['m_hyper', 'm_powerdash'],
 };
-const CPU_TIER_MD_CHANCE: Record<CPULevel, number> = { 1: 0.3, 2: 0.6, 3: 0.95 };
+// マスダンパーはスタミナと引き換えにスピード/コーナーを大きく犠牲にする
+// 諸刃のパーツになったため、レベルに関わらず控えめな確率にしておく
+// （「強いCPUほど必ず積む」ような単純な上位互換ではなくなったため）
+const CPU_TIER_MD_CHANCE: Record<CPULevel, number> = { 1: 0.2, 2: 0.25, 3: 0.3 };
 
 // CPUレーサー用：レベルに応じた強さでパーツを自動生成する
 export function randomSetting(level: CPULevel = 2): MachineSetting {

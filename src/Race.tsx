@@ -25,8 +25,8 @@ const ACCEL_SCALE = 0.003;
 // ── 逆転要素：スタミナによるバテ／second wind ──
 // スタミナ合計がこの値を上回るほど終盤に上乗せ、下回るほど終盤に失速する（基準値=平均的な構成のスタミナ）
 const STAMINA_BASELINE = 15;
-// レース終盤（この進行割合を超えたあたり）からバテ・巻き返し効果が強まっていく
-const FATIGUE_START_FRAC = 0.35;
+// ラスト1周（3周レースなら2/3経過）からバテ・巻き返し効果が一気に強まる
+const FATIGUE_START_FRAC = 2 / 3;
 const FATIGUE_MAX_CUT = 0.55; // 最大55%減速（低スタミナ・ダッシュ系モーター想定）
 const SECOND_WIND_MAX_BOOST = 0.16; // 最大16%増速（高スタミナ構成のご褒美）
 
@@ -179,11 +179,12 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
           : Math.max(SEG_MUL_FLOOR, 1 + diff * SPEED_CORNER_TRADEOFF);
         rt.segMulSmooth += (targetSegMul - rt.segMulSmooth) * Math.min(1, delta * SEG_MUL_SMOOTH_RATE);
 
-        // 終盤に近づくほど効果が強まる「バテ／second wind」係数（逆転要素）
+        // ラスト1周に入ったら一気に効いてくる「バテ／second wind」係数（逆転要素）。
+        // 線形（直線的）に立ち上げることで、なだらかにではなくラップ切り替わりで
+        // はっきり分かるように失速・巻き返しさせる
         const distanceTarget = TARGET_LAPS * Math.PI * 2;
         const raceFrac = Math.min(1, (rt.laps * Math.PI * 2 + rt.progress) / distanceTarget);
-        const fatigueRamp = Math.max(0, (raceFrac - FATIGUE_START_FRAC) / (1 - FATIGUE_START_FRAC));
-        const fatigueEase = fatigueRamp * fatigueRamp;
+        const fatigueEase = Math.max(0, (raceFrac - FATIGUE_START_FRAC) / (1 - FATIGUE_START_FRAC));
         const staminaGap = racer.totalStats.stamina - STAMINA_BASELINE;
         const staminaMul = staminaGap >= 0
           ? 1 + Math.min(SECOND_WIND_MAX_BOOST, staminaGap * 0.0022) * fatigueEase
