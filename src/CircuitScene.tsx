@@ -1,5 +1,8 @@
 import React from 'react';
 import {
+  TRACK_CENTER_X,
+  TRACK_CENTER_Y,
+  OVAL_ZOOM,
   JCUP_CENTER_X,
   JCUP_CENTER_Y,
   JCUP_TRACK_WIDTH,
@@ -268,9 +271,11 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
           compact Garage preview, so the whole loop fits on screen */}
       <g transform={compact ? 'translate(800,560) scale(0.6) translate(-800,-560)' : undefined}>
 
-      {/* track oval */}
+      {/* track oval — scaled down (OVAL_ZOOM) to match the Jr. circuit's
+          compact footprint; courses.ts applies the same factor to the car
+          path so the two stay in sync. */}
       {courseId === 'oval' && (
-      <g>
+      <g transform={`translate(${TRACK_CENTER_X},${TRACK_CENTER_Y}) scale(${OVAL_ZOOM}) translate(${-TRACK_CENTER_X},${-TRACK_CENTER_Y})`}>
         <ellipse cx="800" cy="700" rx="760" ry="220" fill="#151719" opacity="0.55" filter="url(#soft)" />
         <ellipse cx="800" cy="690" rx="740" ry="205" fill="url(#asphalt)" />
         <ellipse cx="800" cy="690" rx="740" ry="205" fill="none" stroke="#e8ecef" strokeWidth="5" strokeDasharray="34,22" opacity="0.35" />

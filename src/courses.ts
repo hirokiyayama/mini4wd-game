@@ -33,8 +33,12 @@ export const TRACK_CENTER_X = 800;
 export const TRACK_CENTER_Y = 690;
 
 // ── Oval ──────────────────────────────────────────────
+// Shrunk to roughly match the Jr. circuit's footprint (see OVAL_ZOOM,
+// applied to both the car path here and the drawn ellipses in
+// CircuitScene.tsx so the two courses read as similarly "small").
 export const OVAL_LANE_RX = (740 + 430) / 2;
 export const OVAL_LANE_RY = (205 + 112) / 2;
+export const OVAL_ZOOM = 0.68;
 
 // The Jr. circuit uses its own (smaller, higher-up) center so it can be
 // more compact without having to match the oval's placement.
@@ -178,8 +182,8 @@ export function sampleCourse(
     return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angle, isCorner: local.isCorner };
   }
 
-  const rx = OVAL_LANE_RX * laneMul;
-  const ry = OVAL_LANE_RY * laneMul;
+  const rx = OVAL_LANE_RX * OVAL_ZOOM * laneMul;
+  const ry = OVAL_LANE_RY * OVAL_ZOOM * laneMul;
   const x = TRACK_CENTER_X + rx * Math.cos(p);
   const y = TRACK_CENTER_Y + ry * Math.sin(p);
   const dx = -rx * Math.sin(p);
