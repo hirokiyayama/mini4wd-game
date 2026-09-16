@@ -3,9 +3,6 @@ import { PARTS } from './data';
 import type { MachineSetting, PartType, PartStats, Player } from './types';
 import { CircuitScene } from './CircuitScene';
 import { COURSES, type CourseId } from './courses';
-import magnumImg from './assets/magnum.jpg';
-import sonicImg from './assets/sonic.jpg';
-import tridaggerImg from './assets/tridagger.jpg';
 
 interface GarageProps {
   players: Player[];
@@ -63,10 +60,10 @@ const StatGauge: React.FC<StatGaugeProps> = ({ label, icon, value, max, color })
   );
 };
 
+const DEFAULT_BODY_IMAGE = PARTS.find(p => p.id === 'b_magnum')!.image!;
+
 function getBodyImage(id: string | null): string {
-  if (id === 'b_sonic') return sonicImg;
-  if (id === 'b_tridagger') return tridaggerImg;
-  return magnumImg;
+  return PARTS.find(p => p.id === id)?.image ?? DEFAULT_BODY_IMAGE;
 }
 
 export const Garage: React.FC<GarageProps> = ({
@@ -307,9 +304,14 @@ function getPartIcon(type: PartType): string {
 
 function getPartDescription(id: string): string {
   const desc: Record<string, string> = {
-    b_magnum:    '高いバランス性能を持つ定番ボディ。',
-    b_sonic:     '空力特性に優れたコーナリング特化ボディ。',
-    b_tridagger: 'パワーとスタミナに優れた重量型ボディ。',
+    b_magnum:      '高いバランス性能を持つ定番ボディ。',
+    b_sonic:       '空力特性に優れたコーナリング特化ボディ。',
+    b_tridagger:   'パワーとスタミナに優れた重量型ボディ。',
+    b_spinaxe:     '圧倒的な最高速を誇るスピード特化ボディ。コーナーはやや苦手。',
+    b_beakspider:  '超軽量・低重心でコーナリング性能はトップクラス。パワーは控えめ。',
+    b_brockeng:    '重量級ボディに強力なパワーを秘めたパワーファイター。',
+    b_protosaberjb:'スピード・パワー・コーナーを高い次元でまとめたオールラウンダー。',
+    b_raystinger:  '軽量ボディで最高速に全振りした一撃必殺の高速マシン。安定性は低い。',
     c_super1:    '安定した走行性能を発揮するベーシックシャーシ。',
     c_tz:        'コーナー安定性に定評のある人気シャーシ。',
     c_ar:        'スタミナ重視の高耐久アドバンスドシャーシ。',

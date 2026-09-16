@@ -3,11 +3,7 @@ import {
   TRACK_CENTER_X,
   TRACK_CENTER_Y,
   OVAL_ZOOM,
-  OVAL_STRETCH_X,
-  OVAL_STRETCH_Y,
   OVAL_TRACK_WIDTH,
-  ovalSegments,
-  ovalSegFractions,
   sampleOvalHexLocal,
   JCUP_CENTER_X,
   JCUP_CENTER_Y,
@@ -18,46 +14,39 @@ import {
   type CourseId,
 } from './courses';
 
-function buildOvalPath(steps: number): string {
+function buildOvalPath(tStart: number, tEnd: number, steps: number): string {
   const parts: string[] = [];
   for (let i = 0; i <= steps; i++) {
-    const s = (i / steps) * Math.PI * 2;
-    const { x, y } = sampleOvalHexLocal(s);
+    const t = tStart + (tEnd - tStart) * (i / steps);
+    const { x, y } = sampleOvalHexLocal(t);
     parts.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`);
   }
   return parts.join(' ');
 }
 
-function ovalTicks() {
+function ovalTicks(tStart: number, tEnd: number, count: number, color: string, key: string) {
   const nodes: React.ReactNode[] = [];
-  let segStart = 0;
-  const tickOffset = OVAL_TRACK_WIDTH / 2 + 10;
-  ovalSegments.forEach((seg, i) => {
-    const segEnd = ovalSegFractions[i];
-    const color = i % 4 < 2 ? '#c81e1e' : '#1d4ed8';
-    const count = seg.type === 'straight' ? 7 : 5;
-    for (let n = 0; n < count; n++) {
-      const s = segStart + (segEnd - segStart) * (n / count);
-      const { x, y, angleDeg } = sampleOvalHexLocal(s * Math.PI * 2);
-      const rad = (angleDeg * Math.PI) / 180;
-      const px = x - Math.sin(rad) * tickOffset;
-      const py = y + Math.cos(rad) * tickOffset;
-      nodes.push(
-        <rect
-          key={`o${i}-${n}`}
-          x={px - 9}
-          y={py - 6}
-          width="18"
-          height="12"
-          rx="3"
-          fill={n % 2 === 0 ? color : '#f5f5f5'}
-          opacity="0.92"
-          transform={`rotate(${angleDeg + 90}, ${px}, ${py})`}
-        />
-      );
-    }
-    segStart = segEnd;
-  });
+  const tickOffset = OVAL_TRACK_WIDTH / 2 + 9;
+  for (let n = 0; n < count; n++) {
+    const t = tStart + (tEnd - tStart) * (n / count);
+    const { x, y, angleDeg } = sampleOvalHexLocal(t);
+    const rad = (angleDeg * Math.PI) / 180;
+    const px = x - Math.sin(rad) * tickOffset;
+    const py = y + Math.cos(rad) * tickOffset;
+    nodes.push(
+      <rect
+        key={`${key}${n}`}
+        x={px - 9}
+        y={py - 6}
+        width="18"
+        height="12"
+        rx="3"
+        fill={n % 2 === 0 ? color : '#f5f5f5'}
+        opacity="0.92"
+        transform={`rotate(${angleDeg + 90}, ${px}, ${py})`}
+      />
+    );
+  }
   return nodes;
 }
 
@@ -222,6 +211,11 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
         <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="8" />
         </filter>
+        <linearGradient id="bridgeGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#7a1010" />
+          <stop offset="50%" stopColor="#d43030" />
+          <stop offset="100%" stopColor="#7a1010" />
+        </linearGradient>
       </defs>
 
       {minimal ? (
@@ -320,24 +314,38 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
           compact Garage preview, so the whole loop fits on screen */}
       <g transform={compact ? 'translate(800,560) scale(0.6) translate(-800,-560)' : undefined}>
 
-      {/* track oval — a rounded hexagon (6 straights + 6 corners) stretched
-          into an oval silhouette, instead of one smooth ellipse. Built in
-          hexagon-local units centered at the origin, then positioned +
-          non-uniformly stretched by one group transform (courses.ts
-          applies the identical stretch/zoom to the car path). */}
+      {/* track oval — now a figure-8 (crosses itself once per lap at the
+          center) instead of one simple loop: longer, and it actually
+          crosses. Built in origin-centered local units, positioned by one
+          group transform (courses.ts applies the identical zoom to the
+          car path). The crossing is drawn as a raised bridge using paint
+          order, since this is a flat top-down scene. */}
       {courseId === 'oval' && (
-      <g transform={`translate(${TRACK_CENTER_X},${TRACK_CENTER_Y}) scale(${OVAL_STRETCH_X * OVAL_ZOOM},${OVAL_STRETCH_Y * OVAL_ZOOM})`}>
-        <path d={buildOvalPath(240)} fill="none" stroke="#000" strokeWidth={OVAL_TRACK_WIDTH + 40} strokeLinejoin="round" opacity="0.45" filter="url(#soft)" />
-        <path d={buildOvalPath(240)} fill="none" stroke="#3a3e46" strokeWidth={OVAL_TRACK_WIDTH} strokeLinejoin="round" />
-        <path d={buildOvalPath(240)} fill="none" stroke="#4d525c" strokeWidth={OVAL_TRACK_WIDTH - 16} strokeLinejoin="round" />
-        <path d={buildOvalPath(240)} fill="none" stroke="#e8ecef" strokeWidth="5" strokeDasharray="30,20" opacity="0.35" />
+      <g transform={`translate(${TRACK_CENTER_X},${TRACK_CENTER_Y}) scale(${OVAL_ZOOM})`}>
+        <path d={buildOvalPath(0, Math.PI * 2, 260)} fill="none" stroke="#000" strokeWidth={OVAL_TRACK_WIDTH + 38} strokeLinecap="round" opacity="0.45" filter="url(#soft)" />
 
-        {/* red/blue curb, alternating by corner */}
-        {ovalTicks()}
+        {/* first half (drawn first so the second half's bridge paints over it at the crossing) */}
+        <path d={buildOvalPath(0, Math.PI, 150)} fill="none" stroke="#3a3e46" strokeWidth={OVAL_TRACK_WIDTH} strokeLinecap="round" />
+        <path d={buildOvalPath(0, Math.PI, 150)} fill="none" stroke="#4d525c" strokeWidth={OVAL_TRACK_WIDTH - 16} strokeLinecap="round" />
+        <path d={buildOvalPath(0, Math.PI, 150)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
+        {ovalTicks(0, Math.PI, 16, '#c81e1e', 'o1-')}
 
-        {/* start / finish checker line, at the start of segment 0 */}
+        {/* under-bridge tunnel mouth at the crossing */}
+        <ellipse cx="0" cy="0" rx={OVAL_TRACK_WIDTH * 0.85} ry={OVAL_TRACK_WIDTH * 0.55} fill="#050608" opacity="0.55" filter="url(#soft)" />
+        <path d={buildOvalPath(-0.32, 0.32, 16)} fill="none" stroke="url(#bridgeGrad)" strokeWidth={OVAL_TRACK_WIDTH} strokeLinecap="round" opacity="0.9" />
+
+        {/* second half (the "over" bridge) */}
+        <path d={buildOvalPath(Math.PI, Math.PI * 2, 150)} fill="none" stroke="#3a3e46" strokeWidth={OVAL_TRACK_WIDTH} strokeLinecap="round" />
+        <path d={buildOvalPath(Math.PI, Math.PI * 2, 150)} fill="none" stroke="#4d525c" strokeWidth={OVAL_TRACK_WIDTH - 16} strokeLinecap="round" />
+        <path d={buildOvalPath(Math.PI, Math.PI * 2, 150)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
+        {ovalTicks(Math.PI, Math.PI * 2, 16, '#1d4ed8', 'o2-')}
+
+        {/* bridge deck highlight right at the crossing, drawn last so it reads on top */}
+        <path d={buildOvalPath(Math.PI - 0.3, Math.PI + 0.3, 14)} fill="none" stroke="#e8ecef" strokeWidth={OVAL_TRACK_WIDTH + 6} strokeLinecap="round" opacity="0.14" />
+
+        {/* start / finish checker line, near a loop tip */}
         {(() => {
-          const start = sampleOvalHexLocal(0.001);
+          const start = sampleOvalHexLocal(Math.PI / 2 - 0.05);
           return (
             <g transform={`translate(${start.x},${start.y}) rotate(${start.angleDeg})`}>
               {Array.from({ length: 8 }).map((_, i) => (
@@ -350,13 +358,13 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
         {/* center logo watermark */}
         <text
           x="0"
-          y="10"
+          y="-140"
           textAnchor="middle"
           fill="#ffffff"
           opacity="0.05"
           fontFamily="Rajdhani, sans-serif"
           fontWeight={900}
-          fontSize="72"
+          fontSize="56"
         >
           MINI 4WD
         </text>

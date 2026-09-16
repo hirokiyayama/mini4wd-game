@@ -1,7 +1,5 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react';
-import magnumImg from './assets/magnum.jpg';
-import sonicImg from './assets/sonic.jpg';
-import tridaggerImg from './assets/tridagger.jpg';
+import { PARTS } from './data';
 
 /**
  * The in-race machine. A real photo is a fixed 3/4-angle product shot, so
@@ -28,10 +26,10 @@ interface RaceCarProps {
   label?: string;
 }
 
+const DEFAULT_BODY_IMAGE = PARTS.find(p => p.id === 'b_magnum')!.image!;
+
 function getCarImage(bodyId: string | null): string {
-  if (bodyId === 'b_sonic') return sonicImg;
-  if (bodyId === 'b_tridagger') return tridaggerImg;
-  return magnumImg;
+  return PARTS.find(p => p.id === bodyId)?.image ?? DEFAULT_BODY_IMAGE;
 }
 
 interface Livery {
@@ -45,6 +43,11 @@ const LIVERY: Record<string, Livery> = {
   b_magnum: { primary: '#f2f5fa', secondary: '#1d4ed8', accent: '#dc2626', glow: '#5aabff' },
   b_sonic: { primary: '#f2f5fa', secondary: '#dc2626', accent: '#0f7a4d', glow: '#ff5a5a' },
   b_tridagger: { primary: '#20222b', secondary: '#dc2626', accent: '#f4a300', glow: '#ffb020' },
+  b_spinaxe: { primary: '#1d3fae', secondary: '#f4a300', accent: '#f5f5f5', glow: '#5aabff' },
+  b_beakspider: { primary: '#15171f', secondary: '#dc2626', accent: '#22d3ee', glow: '#22d3ee' },
+  b_brockeng: { primary: '#c81e1e', secondary: '#15171f', accent: '#f4c430', glow: '#ff5a5a' },
+  b_protosaberjb: { primary: '#1d2f8f', secondary: '#dc2626', accent: '#f4c430', glow: '#5aabff' },
+  b_raystinger: { primary: '#c3c8d0', secondary: '#15171f', accent: '#dc2626', glow: '#e8ecf2' },
 };
 const DEFAULT_LIVERY = LIVERY.b_magnum;
 
