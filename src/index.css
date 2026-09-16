@@ -810,10 +810,10 @@ body, html {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 108px;
-  height: 108px;
-  margin-left: -54px;
-  margin-top: -54px;
+  width: 70px;
+  height: 70px;
+  margin-left: -35px;
+  margin-top: -35px;
   border-radius: 50%;
   opacity: 0;
   transform: scale(1);
@@ -826,68 +826,73 @@ body, html {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 108px;
-  height: 26px;
-  margin-left: -54px;
-  margin-top: -7px;
+  width: 68px;
+  height: 18px;
+  margin-left: -34px;
+  margin-top: -5px;
   background: radial-gradient(ellipse at center, rgba(0,0,0,0.6), transparent 72%);
   filter: blur(2px);
 }
 
 .mc-rotate {
   position: relative;
-  width: 140px;
-  height: 105px;
-  margin-left: -70px;
-  margin-top: -52.5px;
+  width: 76px;
+  height: 38px;
+  margin-left: -38px;
+  margin-top: -19px;
 }
 
 .mc-rotate.is-out { animation: car-shake 0.5s ease; }
 
-.mc-glow-ring {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 60%;
-  height: 60%;
-  margin-left: -30%;
-  margin-top: -30%;
-  border-radius: 50%;
-}
-
-.mc-photo {
-  position: relative;
+.mc-arrow-svg {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  -webkit-mask-image: radial-gradient(ellipse 56% 62% at 50% 44%, #000 42%, rgba(0,0,0,0.75) 62%, transparent 90%);
-  mask-image: radial-gradient(ellipse 56% 62% at 50% 44%, #000 42%, rgba(0,0,0,0.75) 62%, transparent 90%);
-  filter: drop-shadow(0 10px 16px rgba(0,0,0,0.85)) contrast(1.06) saturate(1.12);
+  display: block;
+  overflow: visible;
 }
 
-.mc-badge {
+.mc-tag {
   position: absolute;
   left: 50%;
-  top: -22px;
+  top: -58px;
   transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.mc-tag-photo {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #111;
+  border: 2px solid rgba(255,255,255,0.75);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+.mc-tag-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 46% 42%;
+  transform: scale(1.9);
+}
+
+.mc-tag-name {
   padding: 2px 9px;
   font-size: 10px;
   font-weight: 800;
   font-family: 'Rajdhani', sans-serif;
   letter-spacing: 0.5px;
   color: #fff;
-  background: rgba(10,14,30,0.75);
+  background: rgba(10,14,30,0.8);
   border: 1px solid rgba(255,255,255,0.25);
   border-radius: 99px;
   white-space: nowrap;
   backdrop-filter: blur(4px);
-}
-
-.mc-badge--you {
-  background: linear-gradient(135deg, #ffd740, #ffb020);
-  color: #2a1a00;
-  border-color: rgba(255,215,64,0.6);
-  box-shadow: 0 0 10px rgba(255,215,64,0.5);
 }
 
 .race-topbar {

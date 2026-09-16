@@ -204,7 +204,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
 
   return (
     <div className="mini4wd-screen">
-      <CircuitScene courseId={courseId} />
+      <CircuitScene courseId={courseId} minimal />
       <div className="screen-vignette" />
       <div className="screen-scanline" />
 

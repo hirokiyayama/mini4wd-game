@@ -4,13 +4,16 @@ import sonicImg from './assets/sonic.jpg';
 import tridaggerImg from './assets/tridagger.jpg';
 
 /**
- * The in-race machine. Uses the actual machine photo (so it's clearly the
- * body the player picked in the garage) as a proper positioned/animated
- * game object rather than a flat, unremarkable sprite: it gets its own
- * glow, ground shadow and speed trail, and the race loop drives its
- * position, heading, suspension bounce and cornering lean every frame via
- * direct style writes on the exposed refs (kept imperative for animation
- * performance, matching the rest of the race loop in Race.tsx).
+ * The in-race machine. A real photo is a fixed 3/4-angle product shot, so
+ * spinning the whole image to face the direction of travel never reads as
+ * "driving" — it just looks like a picture rotating. Instead the race
+ * object is an arrow-shaped livery icon (unambiguously forward-pointing at
+ * any heading) colored to match the player's chosen body, with a small
+ * non-rotating badge (photo thumbnail + name) hovering above it so it's
+ * still clearly tied back to the machine they built in the garage. The
+ * race loop drives position, heading, suspension bounce and cornering lean
+ * every frame via direct style writes on the exposed refs (kept imperative
+ * for animation performance).
  */
 export interface RaceCarHandle {
   root: HTMLDivElement | null;
@@ -23,7 +26,6 @@ interface RaceCarProps {
   bodyId: string | null;
   isOut: boolean;
   label?: string;
-  highlight?: boolean;
 }
 
 function getCarImage(bodyId: string | null): string {
@@ -32,14 +34,21 @@ function getCarImage(bodyId: string | null): string {
   return magnumImg;
 }
 
-const GLOW: Record<string, string> = {
-  b_magnum: '#5aabff',
-  b_sonic: '#ff5a5a',
-  b_tridagger: '#ffb020',
-};
-const DEFAULT_GLOW = GLOW.b_magnum;
+interface Livery {
+  primary: string;
+  secondary: string;
+  accent: string;
+  glow: string;
+}
 
-export const RaceCar = forwardRef<RaceCarHandle, RaceCarProps>(({ bodyId, isOut, label, highlight }, ref) => {
+const LIVERY: Record<string, Livery> = {
+  b_magnum: { primary: '#f2f5fa', secondary: '#1d4ed8', accent: '#dc2626', glow: '#5aabff' },
+  b_sonic: { primary: '#f2f5fa', secondary: '#dc2626', accent: '#0f7a4d', glow: '#ff5a5a' },
+  b_tridagger: { primary: '#20222b', secondary: '#dc2626', accent: '#f4a300', glow: '#ffb020' },
+};
+const DEFAULT_LIVERY = LIVERY.b_magnum;
+
+export const RaceCar = forwardRef<RaceCarHandle, RaceCarProps>(({ bodyId, isOut, label }, ref) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const bounceRef = useRef<HTMLDivElement>(null);
   const rotateRef = useRef<HTMLDivElement>(null);
@@ -52,18 +61,33 @@ export const RaceCar = forwardRef<RaceCarHandle, RaceCarProps>(({ bodyId, isOut,
     get trail() { return trailRef.current; },
   }));
 
-  const glow = (bodyId && GLOW[bodyId]) || DEFAULT_GLOW;
+  const c = (bodyId && LIVERY[bodyId]) || DEFAULT_LIVERY;
 
   return (
     <div ref={rootRef} className="mc-root">
       <div ref={bounceRef} className="mc-bounce">
-        <div ref={trailRef} className="mc-trail" style={{ background: `radial-gradient(circle, ${glow}88, transparent 70%)` }} />
+        <div ref={trailRef} className="mc-trail" style={{ background: `radial-gradient(circle, ${c.glow}88, transparent 70%)` }} />
         <div className="mc-shadow" />
+
+        {/* heading indicator: rotates every frame to actually face the direction of travel */}
         <div ref={rotateRef} className={`mc-rotate${isOut ? ' is-out' : ''}`}>
-          <div className="mc-glow-ring" style={{ boxShadow: `0 0 26px 8px ${glow}66, 0 0 60px 14px ${glow}33` }} />
-          <img src={getCarImage(bodyId)} alt="Machine" className="mc-photo" />
+          <svg viewBox="0 0 120 60" className="mc-arrow-svg" style={{ filter: `drop-shadow(0 0 10px ${c.glow}99) drop-shadow(0 4px 6px rgba(0,0,0,0.7))` }}>
+            <ellipse cx="34" cy="4" rx="9" ry="5" fill="#111" opacity="0.85" />
+            <ellipse cx="34" cy="56" rx="9" ry="5" fill="#111" opacity="0.85" />
+            <ellipse cx="86" cy="4" rx="7" ry="4" fill="#111" opacity="0.85" />
+            <ellipse cx="86" cy="56" rx="7" ry="4" fill="#111" opacity="0.85" />
+            <path d="M116,30 L80,8 L20,8 Q6,8 6,20 L6,40 Q6,52 20,52 L80,52 Z" fill={c.primary} stroke="#0a0a0a" strokeWidth="2.5" />
+            <path d="M116,30 L90,15 L90,45 Z" fill={c.secondary} />
+            <path d="M74,14 L58,30 L74,46 L44,36 L44,24 Z" fill={c.accent} opacity="0.92" />
+            <circle cx="30" cy="30" r="9" fill="#151a24" stroke="#000" strokeWidth="1.5" />
+          </svg>
         </div>
-        {label && <div className={`mc-badge${highlight ? ' mc-badge--you' : ''}`}>{label}</div>}
+
+        {/* name/photo tag: stays upright regardless of heading */}
+        <div className="mc-tag">
+          <div className="mc-tag-photo"><img src={getCarImage(bodyId)} alt="" /></div>
+          {label && <div className="mc-tag-name">{label}</div>}
+        </div>
       </div>
     </div>
   );

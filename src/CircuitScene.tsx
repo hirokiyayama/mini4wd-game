@@ -1,31 +1,66 @@
 import React from 'react';
-import { TRACK_CENTER_X, TRACK_CENTER_Y, FIG8_A, FIG8_B, type CourseId } from './courses';
+import { TRACK_CENTER_X, TRACK_CENTER_Y, sampleJCupLocal, JCUP_F1, JCUP_F2, JCUP_F3, type CourseId } from './courses';
 
 interface CircuitSceneProps {
   courseId?: CourseId;
+  /** Drops the stadium decoration (crowd/stands/banners/lights/containers)
+   * so the track itself gets the screen — used on the race screen. */
+  minimal?: boolean;
 }
 
-function fig8Point(t: number, zoom: number) {
-  const A = FIG8_A * zoom;
-  const B = FIG8_B * zoom;
-  return {
-    x: TRACK_CENTER_X + A * Math.sin(t),
-    y: TRACK_CENTER_Y + B * Math.sin(t) * Math.cos(t),
-  };
-}
-
-// Matches the FIG8_ZOOM used by sampleCourse() in courses.ts so the drawn
-// track lines up with the car's actual path.
-const FIG8_ZOOM = 0.82;
-
-function buildFig8Path(tStart: number, tEnd: number, steps: number): string {
+function buildJCupPath(sStart: number, sEnd: number, steps: number): string {
   const parts: string[] = [];
   for (let i = 0; i <= steps; i++) {
-    const t = tStart + (tEnd - tStart) * (i / steps);
-    const { x, y } = fig8Point(t, FIG8_ZOOM);
+    const s = sStart + (sEnd - sStart) * (i / steps);
+    const { x, y } = sampleJCupLocal(s * Math.PI * 2);
     parts.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`);
   }
   return parts.join(' ');
+}
+
+function hairpinTicks(hx: number, thetaStart: number, thetaEnd: number, radius: number, count: number, color: string, key: string) {
+  return Array.from({ length: count }).map((_, i) => {
+    const theta = thetaStart + (thetaEnd - thetaStart) * (i / count);
+    const x = hx + radius * Math.cos(theta);
+    const y = TRACK_CENTER_Y + radius * Math.sin(theta);
+    const angleDeg = (theta * 180) / Math.PI;
+    return (
+      <rect
+        key={`${key}${i}`}
+        x={x - 11}
+        y={y - 7}
+        width="22"
+        height="14"
+        rx="3"
+        fill={i % 2 === 0 ? color : '#f5f5f5'}
+        opacity="0.92"
+        transform={`rotate(${angleDeg + 90}, ${x}, ${y})`}
+      />
+    );
+  });
+}
+
+function straightTicks(sStart: number, sEnd: number, count: number, offset: number, color: string, key: string) {
+  return Array.from({ length: count }).map((_, i) => {
+    const s = sStart + (sEnd - sStart) * (i / count);
+    const { x, y, angle } = sampleJCupLocal(s * Math.PI * 2);
+    const rad = (angle * Math.PI) / 180;
+    const px = x - Math.sin(rad) * offset;
+    const py = y + Math.cos(rad) * offset;
+    return (
+      <rect
+        key={`${key}${i}`}
+        x={px - 11}
+        y={py - 7}
+        width="22"
+        height="14"
+        rx="3"
+        fill={i % 2 === 0 ? color : '#f5f5f5'}
+        opacity="0.92"
+        transform={`rotate(${angle + 90}, ${px}, ${py})`}
+      />
+    );
+  });
 }
 
 /**
@@ -35,7 +70,7 @@ function buildFig8Path(tStart: number, tEnd: number, steps: number): string {
  * itself switches shape based on `courseId` (see courses.ts for the actual
  * car-path math, which mirrors this drawing).
  */
-export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval' }) => {
+export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', minimal = false }) => {
   const crowd = Array.from({ length: 60 }).map((_, i) => {
     const row = Math.floor(i / 20);
     const col = i % 20;
@@ -108,94 +143,99 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval' })
         <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="8" />
         </filter>
-        <linearGradient id="bridgeGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#7a1010" />
-          <stop offset="50%" stopColor="#d43030" />
-          <stop offset="100%" stopColor="#7a1010" />
-        </linearGradient>
       </defs>
 
-      {/* sky */}
-      <rect x="0" y="0" width="1600" height="620" fill="url(#sky)" />
-      <circle cx="1240" cy="120" r="140" fill="url(#sunGlow)" />
-      {/* clouds */}
-      {[[140, 90, 1], [430, 60, 0.8], [980, 70, 0.7], [1440, 140, 0.9]].map(([x, y, s], i) => (
-        <g key={i} opacity={0.55} filter="url(#soft)">
-          <ellipse cx={x} cy={y} rx={70 * (s as number)} ry={22 * (s as number)} fill="#ffffff" />
-          <ellipse cx={(x as number) + 50 * (s as number)} cy={(y as number) + 8} rx={46 * (s as number)} ry={18 * (s as number)} fill="#ffffff" />
-        </g>
-      ))}
-      {/* distant mountains */}
-      <polygon points="0,420 180,300 340,400 520,270 720,410 900,320 1080,410 1260,290 1440,400 1600,330 1600,460 0,460" fill="#5578a8" opacity="0.45" />
-
-      {/* grandstand structures */}
-      <g>
-        <path d="M0,300 L1600,300 L1600,420 L0,420 Z" fill="url(#standGrad)" opacity="0.92" />
-        <path d="M0,300 L1600,300 L1600,320 L0,320 Z" fill="#111a2c" opacity="0.5" />
-        {crowd.map((p, i) => (
-          <rect key={i} x={p.x} y={p.y} width="10" height="12" rx="2" fill={p.c} opacity="0.85" />
-        ))}
-        <rect x="0" y="405" width="1600" height="18" fill="#0c1220" />
-      </g>
-
-      {/* floodlight towers — kept off-center so they never sit directly
-          behind the car stage in the middle of the screen */}
-      {[150, 1450].map((x, i) => (
-        <g key={i}>
-          <rect x={x - 4} y={170} width="8" height="150" fill="#39435a" />
-          <rect x={x - 34} y={150} width="68" height="26" rx="4" fill="#20293b" stroke="#4a5878" strokeWidth="1.5" />
-          {[0, 1, 2, 3].map((n) => (
-            <circle key={n} cx={x - 26 + n * 18} cy={163} r="6" fill="#fff8dd" opacity="0.95" />
+      {minimal ? (
+        <>
+          {/* flat dark backdrop — no stadium theatrics, all the room goes to the track */}
+          <rect x="0" y="0" width="1600" height="900" fill="#0a1220" />
+          <rect x="0" y="0" width="1600" height="900" fill="url(#grass)" opacity="0.35" />
+        </>
+      ) : (
+        <>
+          {/* sky */}
+          <rect x="0" y="0" width="1600" height="620" fill="url(#sky)" />
+          <circle cx="1240" cy="120" r="140" fill="url(#sunGlow)" />
+          {/* clouds */}
+          {[[140, 90, 1], [430, 60, 0.8], [980, 70, 0.7], [1440, 140, 0.9]].map(([x, y, s], i) => (
+            <g key={i} opacity={0.55} filter="url(#soft)">
+              <ellipse cx={x} cy={y} rx={70 * (s as number)} ry={22 * (s as number)} fill="#ffffff" />
+              <ellipse cx={(x as number) + 50 * (s as number)} cy={(y as number) + 8} rx={46 * (s as number)} ry={18 * (s as number)} fill="#ffffff" />
+            </g>
           ))}
-          <ellipse cx={x} cy={190} rx="90" ry="34" fill="#fff6d8" opacity="0.12" filter="url(#soft)" />
-        </g>
-      ))}
+          {/* distant mountains */}
+          <polygon points="0,420 180,300 340,400 520,270 720,410 900,320 1080,410 1260,290 1440,400 1600,330 1600,460 0,460" fill="#5578a8" opacity="0.45" />
 
-      {/* sponsor banners along the back fence — kept to the far sides so the
-          car stage in the middle of the screen never overlaps them */}
-      {[
-        { x: 100, w: 210, grad: 'url(#bannerBlue)', text: 'MINI 4WD', size: 19 },
-        { x: 100, w: 210, y: 60, grad: 'url(#bannerGold)', text: 'SPEED BATTLE', size: 14 },
-        { x: 1290, w: 210, grad: 'url(#bannerRed)', text: 'RACING', size: 19 },
-        { x: 1290, w: 210, y: 60, grad: 'url(#bannerBlue)', text: 'CHAMPIONSHIP', size: 13 },
-      ].map((b, i) => (
-        <g key={i}>
-          <rect x={b.x} y={310 + (b.y ?? 0)} width={b.w} height={44} rx="6" fill={b.grad} stroke="#0c1220" strokeWidth="2" />
-          <text
-            x={b.x + b.w / 2}
-            y={310 + (b.y ?? 0) + 28}
-            textAnchor="middle"
-            fill="#ffffff"
-            fontFamily="Rajdhani, sans-serif"
-            fontWeight={800}
-            fontSize={b.size}
-            letterSpacing="1.5"
-          >
-            {b.text}
-          </text>
-        </g>
-      ))}
+          {/* grandstand structures */}
+          <g>
+            <path d="M0,300 L1600,300 L1600,420 L0,420 Z" fill="url(#standGrad)" opacity="0.92" />
+            <path d="M0,300 L1600,300 L1600,320 L0,320 Z" fill="#111a2c" opacity="0.5" />
+            {crowd.map((p, i) => (
+              <rect key={i} x={p.x} y={p.y} width="10" height="12" rx="2" fill={p.c} opacity="0.85" />
+            ))}
+            <rect x="0" y="405" width="1600" height="18" fill="#0c1220" />
+          </g>
 
-      {/* shipping containers + tire stacks decorating the paddock corners */}
-      <g>
-        <rect x="60" y="440" width="150" height="90" rx="4" fill="url(#containerBlue)" stroke="#122447" strokeWidth="3" />
-        {[0, 1, 2, 3, 4].map((n) => (
-          <line key={n} x1={70} y1={452 + n * 15} x2={200} y2={452 + n * 15} stroke="#16346a" strokeWidth="2" opacity="0.6" />
-        ))}
-        <rect x="1400" y="440" width="150" height="90" rx="4" fill="url(#containerBlue)" stroke="#122447" strokeWidth="3" />
-        {[0, 1, 2, 3, 4].map((n) => (
-          <line key={n} x1={1410} y1={452 + n * 15} x2={1540} y2={452 + n * 15} stroke="#16346a" strokeWidth="2" opacity="0.6" />
-        ))}
-        {tireStack(240, 545, 4)}
-        {tireStack(1370, 545, 4)}
-        {tireStack(280, 552, 3, 0.85)}
-      </g>
+          {/* floodlight towers — kept off-center so they never sit directly
+              behind the car stage in the middle of the screen */}
+          {[150, 1450].map((x, i) => (
+            <g key={i}>
+              <rect x={x - 4} y={170} width="8" height="150" fill="#39435a" />
+              <rect x={x - 34} y={150} width="68" height="26" rx="4" fill="#20293b" stroke="#4a5878" strokeWidth="1.5" />
+              {[0, 1, 2, 3].map((n) => (
+                <circle key={n} cx={x - 26 + n * 18} cy={163} r="6" fill="#fff8dd" opacity="0.95" />
+              ))}
+              <ellipse cx={x} cy={190} rx="90" ry="34" fill="#fff6d8" opacity="0.12" filter="url(#soft)" />
+            </g>
+          ))}
 
-      {/* grass infield */}
-      <rect x="0" y="500" width="1600" height="400" fill="url(#grass)" />
-      {Array.from({ length: 14 }).map((_, i) => (
-        <rect key={i} x={i * 120 - 40} y="500" width="60" height="400" fill="#ffffff" opacity={i % 2 === 0 ? 0.03 : 0} />
-      ))}
+          {/* sponsor banners along the back fence — kept to the far sides so the
+              car stage in the middle of the screen never overlaps them */}
+          {[
+            { x: 100, w: 210, grad: 'url(#bannerBlue)', text: 'MINI 4WD', size: 19 },
+            { x: 100, w: 210, y: 60, grad: 'url(#bannerGold)', text: 'SPEED BATTLE', size: 14 },
+            { x: 1290, w: 210, grad: 'url(#bannerRed)', text: 'RACING', size: 19 },
+            { x: 1290, w: 210, y: 60, grad: 'url(#bannerBlue)', text: 'CHAMPIONSHIP', size: 13 },
+          ].map((b, i) => (
+            <g key={i}>
+              <rect x={b.x} y={310 + (b.y ?? 0)} width={b.w} height={44} rx="6" fill={b.grad} stroke="#0c1220" strokeWidth="2" />
+              <text
+                x={b.x + b.w / 2}
+                y={310 + (b.y ?? 0) + 28}
+                textAnchor="middle"
+                fill="#ffffff"
+                fontFamily="Rajdhani, sans-serif"
+                fontWeight={800}
+                fontSize={b.size}
+                letterSpacing="1.5"
+              >
+                {b.text}
+              </text>
+            </g>
+          ))}
+
+          {/* shipping containers + tire stacks decorating the paddock corners */}
+          <g>
+            <rect x="60" y="440" width="150" height="90" rx="4" fill="url(#containerBlue)" stroke="#122447" strokeWidth="3" />
+            {[0, 1, 2, 3, 4].map((n) => (
+              <line key={n} x1={70} y1={452 + n * 15} x2={200} y2={452 + n * 15} stroke="#16346a" strokeWidth="2" opacity="0.6" />
+            ))}
+            <rect x="1400" y="440" width="150" height="90" rx="4" fill="url(#containerBlue)" stroke="#122447" strokeWidth="3" />
+            {[0, 1, 2, 3, 4].map((n) => (
+              <line key={n} x1={1410} y1={452 + n * 15} x2={1540} y2={452 + n * 15} stroke="#16346a" strokeWidth="2" opacity="0.6" />
+            ))}
+            {tireStack(240, 545, 4)}
+            {tireStack(1370, 545, 4)}
+            {tireStack(280, 552, 3, 0.85)}
+          </g>
+
+          {/* grass infield */}
+          <rect x="0" y="500" width="1600" height="400" fill="url(#grass)" />
+          {Array.from({ length: 14 }).map((_, i) => (
+            <rect key={i} x={i * 120 - 40} y="500" width="60" height="400" fill="#ffffff" opacity={i % 2 === 0 ? 0.03 : 0} />
+          ))}
+        </>
+      )}
 
       {/* track oval */}
       {courseId === 'oval' && (
@@ -276,71 +316,38 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval' })
       </g>
       )}
 
-      {/* track figure-8 (ジャパンカップJr.サーキット) — one crossing point
-          rendered as a raised bridge, using paint order for the over/under
-          illusion since this is a flat top-down scene. */}
+      {/* track: ジャパンカップJr.サーキット — two wavy straights closed off
+          by tight hairpin turns at both ends, matching the real set's
+          ストレート＋ウェーブ＋カーブ(ヘアピン) layout. */}
       {courseId === 'figure8' && (
       <g>
-        <path d={buildFig8Path(0, Math.PI * 2, 240)} fill="none" stroke="#151719" strokeWidth="182" strokeLinecap="round" opacity="0.5" filter="url(#soft)" />
+        <path d={buildJCupPath(0, 1, 260)} fill="none" stroke="#000" strokeWidth="196" strokeLinecap="round" opacity="0.45" filter="url(#soft)" />
+        <path d={buildJCupPath(0, 1, 260)} fill="none" stroke="#3a3e46" strokeWidth="164" strokeLinecap="round" />
+        <path d={buildJCupPath(0, 1, 260)} fill="none" stroke="#4d525c" strokeWidth="150" strokeLinecap="round" />
+        <path d={buildJCupPath(0, 1, 260)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.4" />
 
-        {/* first half: drawn first so the second half's bridge paints over it at the crossing */}
-        <path d={buildFig8Path(0, Math.PI, 140)} fill="none" stroke="url(#asphalt)" strokeWidth="150" strokeLinecap="round" />
-        <path d={buildFig8Path(0, Math.PI, 140)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.32" />
-        {Array.from({ length: 22 }).map((_, i) => {
-          const t = (i / 22) * Math.PI;
-          const { x, y } = fig8Point(t, FIG8_ZOOM);
-          const dx = FIG8_A * FIG8_ZOOM * Math.cos(t);
-          const dy = FIG8_B * FIG8_ZOOM * Math.cos(2 * t);
-          const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
+        {/* red half (top straight + right hairpin) / blue half (bottom straight + left hairpin) curb,
+            echoing the real set's red/blue/white lane colors */}
+        {straightTicks(0, JCUP_F1, 14, 92, '#c81e1e', 't1')}
+        {hairpinTicks(TRACK_CENTER_X + 480, -Math.PI / 2, Math.PI / 2, 197, 11, '#c81e1e', 'h1')}
+        {straightTicks(JCUP_F2, JCUP_F3, 14, 92, '#1d4ed8', 't2')}
+        {hairpinTicks(TRACK_CENTER_X - 480, Math.PI / 2, (Math.PI * 3) / 2, 197, 11, '#1d4ed8', 'h2')}
+
+        {/* start / finish checker line, placed at the top straight's start */}
+        {(() => {
+          const start = sampleJCupLocal(0.001);
           return (
-            <rect
-              key={`h1-${i}`}
-              x={x - 11}
-              y={y - 68}
-              width="22"
-              height="14"
-              rx="3"
-              fill={i % 2 === 0 ? '#c81e1e' : '#f5f5f5'}
-              opacity="0.85"
-              transform={`rotate(${angleDeg}, ${x}, ${y})`}
-            />
+            <g transform={`translate(${start.x},${start.y}) rotate(${start.angle})`}>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <rect key={i} x={-9} y={i * 10 - 40} width="18" height="10" fill={i % 2 === 0 ? '#0c0c0c' : '#f4f4f4'} />
+              ))}
+            </g>
           );
-        })}
-
-        {/* under-bridge tunnel mouths just before/after the crossing point */}
-        <ellipse cx={TRACK_CENTER_X} cy={TRACK_CENTER_Y} rx="112" ry="58" fill="#050608" opacity="0.55" filter="url(#soft)" />
-        <path d={buildFig8Path(-0.34, 0.34, 20)} fill="none" stroke="url(#bridgeGrad)" strokeWidth="150" strokeLinecap="round" opacity="0.9" />
-
-        {/* second half: the "over" bridge */}
-        <path d={buildFig8Path(Math.PI, Math.PI * 2, 140)} fill="none" stroke="url(#asphalt)" strokeWidth="150" strokeLinecap="round" />
-        <path d={buildFig8Path(Math.PI, Math.PI * 2, 140)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.32" />
-        {Array.from({ length: 22 }).map((_, i) => {
-          const t = Math.PI + (i / 22) * Math.PI;
-          const { x, y } = fig8Point(t, FIG8_ZOOM);
-          const dx = FIG8_A * FIG8_ZOOM * Math.cos(t);
-          const dy = FIG8_B * FIG8_ZOOM * Math.cos(2 * t);
-          const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
-          return (
-            <rect
-              key={`h2-${i}`}
-              x={x - 11}
-              y={y - 68}
-              width="22"
-              height="14"
-              rx="3"
-              fill={i % 2 === 0 ? '#1d4ed8' : '#f5f5f5'}
-              opacity="0.85"
-              transform={`rotate(${angleDeg}, ${x}, ${y})`}
-            />
-          );
-        })}
-
-        {/* bridge deck highlight right at the crossing, drawn last so it reads on top */}
-        <path d={buildFig8Path(Math.PI - 0.3, Math.PI + 0.3, 16)} fill="none" stroke="#e8ecef" strokeWidth="158" strokeLinecap="round" opacity="0.14" />
+        })()}
 
         <text
           x={TRACK_CENTER_X}
-          y={TRACK_CENTER_Y - 170}
+          y={TRACK_CENTER_Y - 4}
           textAnchor="middle"
           fill="#ffffff"
           opacity="0.06"
