@@ -103,7 +103,7 @@ export const Garage: React.FC<GarageProps> = ({
 
   return (
     <div className="mini4wd-screen">
-      <CircuitScene courseId={courseId} />
+      <CircuitScene courseId={courseId} compact />
 
       {/* subtle vignette + scanline for depth/polish */}
       <div className="screen-vignette" />

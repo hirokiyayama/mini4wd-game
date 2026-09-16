@@ -22,11 +22,13 @@ export interface CourseSample {
 
 export const COURSES: CourseDef[] = [
   { id: 'oval', name: 'スピードウェイ・オーバル', description: '定番の楕円コース' },
-  { id: 'figure8', name: 'ジャパンカップJr.サーキット', description: 'S字ウェーブ＆ヘアピンの本格コース' },
+  { id: 'figure8', name: 'ジャパンカップJr.サーキット', description: 'ウェーブ×4 ＆ ネストしたヘアピンの本格コース' },
 ];
 
 export const VIEWBOX_W = 1600;
 export const VIEWBOX_H = 900;
+// Shared center used by the oval (matches the hardcoded cx/cy of its
+// <ellipse> elements in CircuitScene.tsx).
 export const TRACK_CENTER_X = 800;
 export const TRACK_CENTER_Y = 690;
 
@@ -34,23 +36,77 @@ export const TRACK_CENTER_Y = 690;
 export const OVAL_LANE_RX = (740 + 430) / 2;
 export const OVAL_LANE_RY = (205 + 112) / 2;
 
-// ── ジャパンカップJr.サーキット (figure8 id kept for compatibility) ──────
-// A "stadium" serpentine: two long wavy straights connected by tight
-// hairpin turns at both ends, mirroring the real Japan Cup Jr. circuit set
-// (ストレート + ウェーブ + カーブ×hairpins) far more closely than a smooth
-// oval/lemniscate would.
-export const JCUP_HALF_W = 480;
-export const JCUP_ROW_GAP = 230;
-export const JCUP_HAIRPIN_R = JCUP_ROW_GAP / 2;
-export const JCUP_WAVE_AMP = 42;
-export const JCUP_WAVE_CYCLES = 2;
+// The Jr. circuit uses its own (smaller, higher-up) center so it can be
+// more compact without having to match the oval's placement.
+export const JCUP_CENTER_X = 800;
+export const JCUP_CENTER_Y = 480;
 
-const JCUP_STRAIGHT_LEN = JCUP_HALF_W * 2;
-const JCUP_HAIRPIN_LEN = Math.PI * JCUP_HAIRPIN_R;
-const JCUP_TOTAL_LEN = JCUP_STRAIGHT_LEN * 2 + JCUP_HAIRPIN_LEN * 2;
-export const JCUP_F1 = JCUP_STRAIGHT_LEN / JCUP_TOTAL_LEN;
-export const JCUP_F2 = JCUP_F1 + JCUP_HAIRPIN_LEN / JCUP_TOTAL_LEN;
-export const JCUP_F3 = JCUP_F2 + JCUP_STRAIGHT_LEN / JCUP_TOTAL_LEN;
+// ── ジャパンカップJr.サーキット (figure8 id kept for compatibility) ──────
+// A 4-row "boustrophedon" serpentine: wavy straights snake back and forth
+// (row0 →, row1 ←, row2 →, row3 ←) joined by tight hairpins that alternate
+// sides, and the loop-closing hairpin (row3 → row0) nests around the
+// smaller row1→row2 hairpin on the same side — much closer to the real
+// set's dense, nested-hairpin layout than a simple 2-lane stadium.
+export const JCUP_ROWS = 4;
+export const JCUP_HALF_W = 380;
+export const JCUP_ROW_GAP = 130;
+export const JCUP_WAVE_AMP = 24;
+export const JCUP_WAVE_CYCLES = 2;
+export const JCUP_TRACK_WIDTH = 96;
+
+export interface StraightSeg {
+  type: 'straight';
+  y: number;
+  dir: 1 | -1;
+  len: number;
+}
+export interface HairpinSeg {
+  type: 'hairpin';
+  hx: number;
+  hy: number;
+  r: number;
+  thetaStart: number;
+  thetaEnd: number;
+}
+export type Seg = StraightSeg | HairpinSeg;
+
+const rowYs: number[] = Array.from({ length: JCUP_ROWS }, (_, i) => (
+  JCUP_CENTER_Y - ((JCUP_ROWS - 1) * JCUP_ROW_GAP) / 2 + i * JCUP_ROW_GAP
+));
+
+export const jcupSegments: Seg[] = [];
+for (let i = 0; i < JCUP_ROWS; i++) {
+  const dir: 1 | -1 = i % 2 === 0 ? 1 : -1;
+  jcupSegments.push({ type: 'straight', y: rowYs[i], dir, len: JCUP_HALF_W * 2 });
+
+  const next = (i + 1) % JCUP_ROWS;
+  const isRight = dir === 1;
+  const startIsTop = rowYs[i] < rowYs[next];
+  const hx = JCUP_CENTER_X + (isRight ? JCUP_HALF_W : -JCUP_HALF_W);
+  const hy = (rowYs[i] + rowYs[next]) / 2;
+  const r = Math.abs(rowYs[next] - rowYs[i]) / 2;
+  const hdir = isRight === startIsTop ? 1 : -1;
+  const apex = isRight ? 0 : Math.PI;
+  const thetaStart = apex - 0.5 * Math.PI * hdir;
+  const thetaEnd = apex + 0.5 * Math.PI * hdir;
+  jcupSegments.push({ type: 'hairpin', hx, hy, r, thetaStart, thetaEnd });
+}
+
+function segLength(seg: Seg): number {
+  return seg.type === 'straight' ? seg.len : Math.abs(seg.thetaEnd - seg.thetaStart) * seg.r;
+}
+
+const jcupSegLens = jcupSegments.map(segLength);
+const jcupTotalLen = jcupSegLens.reduce((a, b) => a + b, 0);
+export const jcupSegFractions: number[] = (() => {
+  const out: number[] = [];
+  let acc = 0;
+  for (const len of jcupSegLens) {
+    acc += len / jcupTotalLen;
+    out.push(acc);
+  }
+  return out;
+})();
 
 function waveOffset(u: number): number {
   // Amplitude tapers to 0 at both ends (u=0,1) so the straight meets the
@@ -67,40 +123,27 @@ function waveSlope(u: number): number {
 /** Samples the Japan Cup Jr. circuit in LOCAL (unscaled) course units. */
 export function sampleJCupLocal(pRaw: number): CourseSample {
   const s = (((pRaw % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
-  const cx = TRACK_CENTER_X;
-  const cy = TRACK_CENTER_Y;
-  const topY = cy - JCUP_HAIRPIN_R;
-  const botY = cy + JCUP_HAIRPIN_R;
 
-  if (s < JCUP_F1) {
-    const u = s / JCUP_F1;
-    const x = cx - JCUP_HALF_W + u * JCUP_STRAIGHT_LEN;
-    const y = topY + waveOffset(u);
-    const angle = (Math.atan2(waveSlope(u), JCUP_STRAIGHT_LEN) * 180) / Math.PI;
+  let segIndex = jcupSegFractions.findIndex(f => s < f);
+  if (segIndex === -1) segIndex = jcupSegments.length - 1;
+  const segStart = segIndex === 0 ? 0 : jcupSegFractions[segIndex - 1];
+  const segEnd = jcupSegFractions[segIndex];
+  const u = (s - segStart) / (segEnd - segStart);
+  const seg = jcupSegments[segIndex];
+
+  if (seg.type === 'straight') {
+    const x0 = seg.dir === 1 ? JCUP_CENTER_X - JCUP_HALF_W : JCUP_CENTER_X + JCUP_HALF_W;
+    const x = x0 + seg.dir * u * seg.len;
+    const y = seg.y + waveOffset(u);
+    const angle = (Math.atan2(waveSlope(u), seg.dir * seg.len) * 180) / Math.PI;
     return { x, y, angle, isCorner: false };
   }
-  if (s < JCUP_F2) {
-    const u = (s - JCUP_F1) / (JCUP_F2 - JCUP_F1);
-    const theta = -Math.PI / 2 + u * Math.PI;
-    const hx = cx + JCUP_HALF_W;
-    const x = hx + JCUP_HAIRPIN_R * Math.cos(theta);
-    const y = cy + JCUP_HAIRPIN_R * Math.sin(theta);
-    const angle = (Math.atan2(Math.cos(theta), -Math.sin(theta)) * 180) / Math.PI;
-    return { x, y, angle, isCorner: true };
-  }
-  if (s < JCUP_F3) {
-    const u = (s - JCUP_F2) / (JCUP_F3 - JCUP_F2);
-    const x = cx + JCUP_HALF_W - u * JCUP_STRAIGHT_LEN;
-    const y = botY + waveOffset(u);
-    const angle = (Math.atan2(waveSlope(u), -JCUP_STRAIGHT_LEN) * 180) / Math.PI;
-    return { x, y, angle, isCorner: false };
-  }
-  const u = (s - JCUP_F3) / (1 - JCUP_F3);
-  const theta = Math.PI / 2 + u * Math.PI;
-  const hx = cx - JCUP_HALF_W;
-  const x = hx + JCUP_HAIRPIN_R * Math.cos(theta);
-  const y = cy + JCUP_HAIRPIN_R * Math.sin(theta);
-  const angle = (Math.atan2(Math.cos(theta), -Math.sin(theta)) * 180) / Math.PI;
+
+  const theta = seg.thetaStart + u * (seg.thetaEnd - seg.thetaStart);
+  const hdir = Math.sign(seg.thetaEnd - seg.thetaStart);
+  const x = seg.hx + seg.r * Math.cos(theta);
+  const y = seg.hy + seg.r * Math.sin(theta);
+  const angle = (Math.atan2(Math.cos(theta) * hdir, -Math.sin(theta) * hdir) * 180) / Math.PI;
   return { x, y, angle, isCorner: true };
 }
 
@@ -130,8 +173,8 @@ export function sampleCourse(
 
   if (courseId === 'figure8') {
     const local = sampleJCupLocal(p);
-    const x = TRACK_CENTER_X + (local.x - TRACK_CENTER_X) * laneMul;
-    const y = TRACK_CENTER_Y + (local.y - TRACK_CENTER_Y) * laneMul;
+    const x = JCUP_CENTER_X + (local.x - JCUP_CENTER_X) * laneMul;
+    const y = JCUP_CENTER_Y + (local.y - JCUP_CENTER_Y) * laneMul;
     return { x: offsetX + x * scale, y: offsetY + y * scale, angle: local.angle, isCorner: local.isCorner };
   }
 

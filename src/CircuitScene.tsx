@@ -1,11 +1,24 @@
 import React from 'react';
-import { TRACK_CENTER_X, TRACK_CENTER_Y, sampleJCupLocal, JCUP_F1, JCUP_F2, JCUP_F3, type CourseId } from './courses';
+import {
+  JCUP_CENTER_X,
+  JCUP_CENTER_Y,
+  JCUP_TRACK_WIDTH,
+  jcupSegments,
+  jcupSegFractions,
+  sampleJCupLocal,
+  type CourseId,
+} from './courses';
 
 interface CircuitSceneProps {
   courseId?: CourseId;
   /** Drops the stadium decoration (crowd/stands/banners/lights/containers)
    * so the track itself gets the screen — used on the race screen. */
   minimal?: boolean;
+  /** Shrinks the drawn track around its center — used for the Garage
+   * preview so the whole course fits instead of being mostly hidden
+   * behind the car-stage podium. Purely visual; gameplay always uses the
+   * full-size geometry from courses.ts. */
+  compact?: boolean;
 }
 
 function buildJCupPath(sStart: number, sEnd: number, steps: number): string {
@@ -18,49 +31,63 @@ function buildJCupPath(sStart: number, sEnd: number, steps: number): string {
   return parts.join(' ');
 }
 
-function hairpinTicks(hx: number, thetaStart: number, thetaEnd: number, radius: number, count: number, color: string, key: string) {
-  return Array.from({ length: count }).map((_, i) => {
-    const theta = thetaStart + (thetaEnd - thetaStart) * (i / count);
-    const x = hx + radius * Math.cos(theta);
-    const y = TRACK_CENTER_Y + radius * Math.sin(theta);
-    const angleDeg = (theta * 180) / Math.PI;
-    return (
-      <rect
-        key={`${key}${i}`}
-        x={x - 11}
-        y={y - 7}
-        width="22"
-        height="14"
-        rx="3"
-        fill={i % 2 === 0 ? color : '#f5f5f5'}
-        opacity="0.92"
-        transform={`rotate(${angleDeg + 90}, ${x}, ${y})`}
-      />
-    );
-  });
-}
+const JCUP_ROW_COLORS = ['#c81e1e', '#1d4ed8'];
 
-function straightTicks(sStart: number, sEnd: number, count: number, offset: number, color: string, key: string) {
-  return Array.from({ length: count }).map((_, i) => {
-    const s = sStart + (sEnd - sStart) * (i / count);
-    const { x, y, angle } = sampleJCupLocal(s * Math.PI * 2);
-    const rad = (angle * Math.PI) / 180;
-    const px = x - Math.sin(rad) * offset;
-    const py = y + Math.cos(rad) * offset;
-    return (
-      <rect
-        key={`${key}${i}`}
-        x={px - 11}
-        y={py - 7}
-        width="22"
-        height="14"
-        rx="3"
-        fill={i % 2 === 0 ? color : '#f5f5f5'}
-        opacity="0.92"
-        transform={`rotate(${angle + 90}, ${px}, ${py})`}
-      />
-    );
+function jcupTicks() {
+  const nodes: React.ReactNode[] = [];
+  let segStart = 0;
+  const tickOffset = JCUP_TRACK_WIDTH / 2 + 8;
+  jcupSegments.forEach((seg, i) => {
+    const segEnd = jcupSegFractions[i];
+    const color = JCUP_ROW_COLORS[Math.floor(i / 2) % 2];
+    if (seg.type === 'straight') {
+      const count = 8;
+      for (let n = 0; n < count; n++) {
+        const s = segStart + (segEnd - segStart) * (n / count);
+        const { x, y, angle } = sampleJCupLocal(s * Math.PI * 2);
+        const rad = (angle * Math.PI) / 180;
+        const px = x - Math.sin(rad) * tickOffset;
+        const py = y + Math.cos(rad) * tickOffset;
+        nodes.push(
+          <rect
+            key={`s${i}-${n}`}
+            x={px - 10}
+            y={py - 6}
+            width="20"
+            height="12"
+            rx="3"
+            fill={n % 2 === 0 ? color : '#f5f5f5'}
+            opacity="0.92"
+            transform={`rotate(${angle + 90}, ${px}, ${py})`}
+          />
+        );
+      }
+    } else {
+      const count = 7;
+      const radius = seg.r + tickOffset;
+      for (let n = 0; n < count; n++) {
+        const theta = seg.thetaStart + (seg.thetaEnd - seg.thetaStart) * (n / count);
+        const x = seg.hx + radius * Math.cos(theta);
+        const y = seg.hy + radius * Math.sin(theta);
+        const angleDeg = (theta * 180) / Math.PI;
+        nodes.push(
+          <rect
+            key={`h${i}-${n}`}
+            x={x - 10}
+            y={y - 6}
+            width="20"
+            height="12"
+            rx="3"
+            fill={n % 2 === 0 ? color : '#f5f5f5'}
+            opacity="0.92"
+            transform={`rotate(${angleDeg + 90}, ${x}, ${y})`}
+          />
+        );
+      }
+    }
+    segStart = segEnd;
   });
+  return nodes;
 }
 
 /**
@@ -70,7 +97,7 @@ function straightTicks(sStart: number, sEnd: number, count: number, offset: numb
  * itself switches shape based on `courseId` (see courses.ts for the actual
  * car-path math, which mirrors this drawing).
  */
-export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', minimal = false }) => {
+export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', minimal = false, compact = false }) => {
   const crowd = Array.from({ length: 60 }).map((_, i) => {
     const row = Math.floor(i / 20);
     const col = i % 20;
@@ -237,6 +264,10 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
         </>
       )}
 
+      {/* both course groups shrink together around a shared anchor for the
+          compact Garage preview, so the whole loop fits on screen */}
+      <g transform={compact ? 'translate(800,560) scale(0.6) translate(-800,-560)' : undefined}>
+
       {/* track oval */}
       {courseId === 'oval' && (
       <g>
@@ -316,49 +347,47 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
       </g>
       )}
 
-      {/* track: ジャパンカップJr.サーキット — two wavy straights closed off
-          by tight hairpin turns at both ends, matching the real set's
-          ストレート＋ウェーブ＋カーブ(ヘアピン) layout. */}
+      {/* track: ジャパンカップJr.サーキット — 4 wavy rows snaking back and
+          forth, joined by hairpins that alternate sides (the row3→row0
+          closing hairpin nests around the smaller row1→row2 one),
+          matching the real set's dense ストレート＋ウェーブ＋カーブ layout. */}
       {courseId === 'figure8' && (
       <g>
-        <path d={buildJCupPath(0, 1, 260)} fill="none" stroke="#000" strokeWidth="196" strokeLinecap="round" opacity="0.45" filter="url(#soft)" />
-        <path d={buildJCupPath(0, 1, 260)} fill="none" stroke="#3a3e46" strokeWidth="164" strokeLinecap="round" />
-        <path d={buildJCupPath(0, 1, 260)} fill="none" stroke="#4d525c" strokeWidth="150" strokeLinecap="round" />
-        <path d={buildJCupPath(0, 1, 260)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.4" />
+        <path d={buildJCupPath(0, 1, 320)} fill="none" stroke="#000" strokeWidth={JCUP_TRACK_WIDTH + 32} strokeLinecap="round" opacity="0.45" filter="url(#soft)" />
+        <path d={buildJCupPath(0, 1, 320)} fill="none" stroke="#3a3e46" strokeWidth={JCUP_TRACK_WIDTH} strokeLinecap="round" />
+        <path d={buildJCupPath(0, 1, 320)} fill="none" stroke="#4d525c" strokeWidth={JCUP_TRACK_WIDTH - 14} strokeLinecap="round" />
+        <path d={buildJCupPath(0, 1, 320)} fill="none" stroke="#e8ecef" strokeWidth="3" strokeDasharray="18,14" opacity="0.4" />
 
-        {/* red half (top straight + right hairpin) / blue half (bottom straight + left hairpin) curb,
-            echoing the real set's red/blue/white lane colors */}
-        {straightTicks(0, JCUP_F1, 14, 92, '#c81e1e', 't1')}
-        {hairpinTicks(TRACK_CENTER_X + 480, -Math.PI / 2, Math.PI / 2, 197, 11, '#c81e1e', 'h1')}
-        {straightTicks(JCUP_F2, JCUP_F3, 14, 92, '#1d4ed8', 't2')}
-        {hairpinTicks(TRACK_CENTER_X - 480, Math.PI / 2, (Math.PI * 3) / 2, 197, 11, '#1d4ed8', 'h2')}
+        {/* red/blue curb alternating by row, echoing the real set's lane colors */}
+        {jcupTicks()}
 
-        {/* start / finish checker line, placed at the top straight's start */}
+        {/* start / finish checker line, placed at row 0's start */}
         {(() => {
           const start = sampleJCupLocal(0.001);
           return (
             <g transform={`translate(${start.x},${start.y}) rotate(${start.angle})`}>
-              {Array.from({ length: 8 }).map((_, i) => (
-                <rect key={i} x={-9} y={i * 10 - 40} width="18" height="10" fill={i % 2 === 0 ? '#0c0c0c' : '#f4f4f4'} />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <rect key={i} x={-7} y={i * 8 - 24} width="14" height="8" fill={i % 2 === 0 ? '#0c0c0c' : '#f4f4f4'} />
               ))}
             </g>
           );
         })()}
 
         <text
-          x={TRACK_CENTER_X}
-          y={TRACK_CENTER_Y - 4}
+          x={JCUP_CENTER_X}
+          y={JCUP_CENTER_Y + 6}
           textAnchor="middle"
           fill="#ffffff"
           opacity="0.06"
           fontFamily="Rajdhani, sans-serif"
           fontWeight={900}
-          fontSize="60"
+          fontSize="46"
         >
           JAPAN CUP Jr.
         </text>
       </g>
       )}
+      </g>
     </svg>
   );
 };
