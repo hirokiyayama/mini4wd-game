@@ -4,6 +4,7 @@ import {
   TRACK_CENTER_Y,
   OVAL_ZOOM,
   OVAL_TRACK_WIDTH,
+  ovalSegFractions,
   sampleOvalHexLocal,
   JCUP_CENTER_X,
   JCUP_CENTER_Y,
@@ -320,28 +321,35 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
           group transform (courses.ts applies the identical zoom to the
           car path). The crossing is drawn as a raised bridge using paint
           order, since this is a flat top-down scene. */}
-      {courseId === 'oval' && (
+      {courseId === 'oval' && (() => {
+        // Segment 0 (straight R3→L1) and segment 6 (straight L3→R1) are the
+        // two edges that cross near the origin — split rendering there so
+        // the second half's bridge paints over the first half.
+        const splitT = ovalSegFractions[5] * Math.PI * 2;
+        const cross1T = (ovalSegFractions[0] / 2) * Math.PI * 2;
+        const cross2T = ((ovalSegFractions[5] + ovalSegFractions[6]) / 2) * Math.PI * 2;
+        return (
       <g transform={`translate(${TRACK_CENTER_X},${TRACK_CENTER_Y}) scale(${OVAL_ZOOM})`}>
         <path d={buildOvalPath(0, Math.PI * 2, 260)} fill="none" stroke="#000" strokeWidth={OVAL_TRACK_WIDTH + 38} strokeLinecap="round" opacity="0.45" filter="url(#soft)" />
 
         {/* first half (drawn first so the second half's bridge paints over it at the crossing) */}
-        <path d={buildOvalPath(0, Math.PI, 150)} fill="none" stroke="#3a3e46" strokeWidth={OVAL_TRACK_WIDTH} strokeLinecap="round" />
-        <path d={buildOvalPath(0, Math.PI, 150)} fill="none" stroke="#4d525c" strokeWidth={OVAL_TRACK_WIDTH - 16} strokeLinecap="round" />
-        <path d={buildOvalPath(0, Math.PI, 150)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
-        {ovalTicks(0, Math.PI, 16, '#c81e1e', 'o1-')}
+        <path d={buildOvalPath(0, splitT, 150)} fill="none" stroke="#3a3e46" strokeWidth={OVAL_TRACK_WIDTH} strokeLinecap="round" />
+        <path d={buildOvalPath(0, splitT, 150)} fill="none" stroke="#4d525c" strokeWidth={OVAL_TRACK_WIDTH - 16} strokeLinecap="round" />
+        <path d={buildOvalPath(0, splitT, 150)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
+        {ovalTicks(0, splitT, 16, '#c81e1e', 'o1-')}
 
         {/* under-bridge tunnel mouth at the crossing */}
         <ellipse cx="0" cy="0" rx={OVAL_TRACK_WIDTH * 0.85} ry={OVAL_TRACK_WIDTH * 0.55} fill="#050608" opacity="0.55" filter="url(#soft)" />
-        <path d={buildOvalPath(-0.32, 0.32, 16)} fill="none" stroke="url(#bridgeGrad)" strokeWidth={OVAL_TRACK_WIDTH} strokeLinecap="round" opacity="0.9" />
+        <path d={buildOvalPath(cross1T - 0.18, cross1T + 0.18, 12)} fill="none" stroke="url(#bridgeGrad)" strokeWidth={OVAL_TRACK_WIDTH} strokeLinecap="round" opacity="0.9" />
 
         {/* second half (the "over" bridge) */}
-        <path d={buildOvalPath(Math.PI, Math.PI * 2, 150)} fill="none" stroke="#3a3e46" strokeWidth={OVAL_TRACK_WIDTH} strokeLinecap="round" />
-        <path d={buildOvalPath(Math.PI, Math.PI * 2, 150)} fill="none" stroke="#4d525c" strokeWidth={OVAL_TRACK_WIDTH - 16} strokeLinecap="round" />
-        <path d={buildOvalPath(Math.PI, Math.PI * 2, 150)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
-        {ovalTicks(Math.PI, Math.PI * 2, 16, '#1d4ed8', 'o2-')}
+        <path d={buildOvalPath(splitT, Math.PI * 2, 150)} fill="none" stroke="#3a3e46" strokeWidth={OVAL_TRACK_WIDTH} strokeLinecap="round" />
+        <path d={buildOvalPath(splitT, Math.PI * 2, 150)} fill="none" stroke="#4d525c" strokeWidth={OVAL_TRACK_WIDTH - 16} strokeLinecap="round" />
+        <path d={buildOvalPath(splitT, Math.PI * 2, 150)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.35" />
+        {ovalTicks(splitT, Math.PI * 2, 16, '#1d4ed8', 'o2-')}
 
         {/* bridge deck highlight right at the crossing, drawn last so it reads on top */}
-        <path d={buildOvalPath(Math.PI - 0.3, Math.PI + 0.3, 14)} fill="none" stroke="#e8ecef" strokeWidth={OVAL_TRACK_WIDTH + 6} strokeLinecap="round" opacity="0.14" />
+        <path d={buildOvalPath(cross2T - 0.18, cross2T + 0.18, 12)} fill="none" stroke="#e8ecef" strokeWidth={OVAL_TRACK_WIDTH + 6} strokeLinecap="round" opacity="0.14" />
 
         {/* start / finish checker line, near a loop tip */}
         {(() => {
@@ -369,7 +377,8 @@ export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval', m
           MINI 4WD
         </text>
       </g>
-      )}
+        );
+      })()}
 
       {/* track: ジャパンカップJr.サーキット — 4 wavy rows snaking back and
           forth, joined by hairpins that alternate sides (the row3→row0

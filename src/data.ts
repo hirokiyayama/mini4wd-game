@@ -26,16 +26,20 @@ import rollerAlum2step from './assets/parts/roller_alum2step.jpg';
 import massDamperSquare from './assets/parts/mass_damper_square.jpg';
 
 export const PARTS: Part[] = [
-  // Body — each machine now has a strongly distinct personality (big stat
-  // swings, not just +/-5) instead of near-identical numbers.
-  { id: 'b_magnum', name: 'マグナムセイバー', type: 'body', stats: { speed: 15, power: 10, cornering: 10, stamina: 10, weight: 15 }, image: bodyMagnum },
-  { id: 'b_sonic', name: 'ソニックセイバー', type: 'body', stats: { speed: -5, power: -5, cornering: 45, stamina: 5, weight: 13 }, image: bodySonic },
-  { id: 'b_tridagger', name: 'トライダガーX', type: 'body', stats: { speed: -10, power: 30, cornering: 5, stamina: 35, weight: 23 }, image: bodyTridagger },
-  { id: 'b_spinaxe', name: 'スピンアックス', type: 'body', stats: { speed: 40, power: 5, cornering: -10, stamina: 0, weight: 18 }, image: bodySpinAxe },
-  { id: 'b_beakspider', name: 'ビークスパイダー', type: 'body', stats: { speed: -15, power: -10, cornering: 50, stamina: 15, weight: 10 }, image: bodyBeakSpider },
-  { id: 'b_brockeng', name: 'ブロッケンG', type: 'body', stats: { speed: 5, power: 40, cornering: -15, stamina: 20, weight: 25 }, image: bodyBrockenG },
-  { id: 'b_protosaberjb', name: 'プロトセイバーJB', type: 'body', stats: { speed: 30, power: 20, cornering: 20, stamina: 5, weight: 17 }, image: bodyProtoSaberJB },
-  { id: 'b_raystinger', name: 'レイスティンガー', type: 'body', stats: { speed: 50, power: -15, cornering: -20, stamina: -10, weight: 11 }, image: bodyRayStinger },
+  // Body — grouped into 4 clear archetypes (big stat swings between
+  // groups, not just +/-5) so each machine's role is obvious at a glance.
+  // スピード特化
+  { id: 'b_magnum', name: 'マグナムセイバー', type: 'body', stats: { speed: 45, power: 10, cornering: -15, stamina: 0, weight: 16 }, image: bodyMagnum },
+  { id: 'b_tridagger', name: 'トライダガーX', type: 'body', stats: { speed: 40, power: 15, cornering: -10, stamina: -5, weight: 19 }, image: bodyTridagger },
+  // コーナー特化
+  { id: 'b_beakspider', name: 'ビークスパイダー', type: 'body', stats: { speed: -15, power: -10, cornering: 55, stamina: 10, weight: 10 }, image: bodyBeakSpider },
+  { id: 'b_sonic', name: 'ソニックセイバー', type: 'body', stats: { speed: -10, power: -5, cornering: 50, stamina: 5, weight: 13 }, image: bodySonic },
+  { id: 'b_spinaxe', name: 'スピンアックス', type: 'body', stats: { speed: -5, power: -5, cornering: 45, stamina: 0, weight: 15 }, image: bodySpinAxe },
+  // パワー特化
+  { id: 'b_brockeng', name: 'ブロッケンG', type: 'body', stats: { speed: 0, power: 55, cornering: -20, stamina: 15, weight: 26 }, image: bodyBrockenG },
+  // バランス型
+  { id: 'b_protosaberjb', name: 'プロトセイバーJB', type: 'body', stats: { speed: 20, power: 20, cornering: 20, stamina: 15, weight: 17 }, image: bodyProtoSaberJB },
+  { id: 'b_raystinger', name: 'レイスティンガー', type: 'body', stats: { speed: 22, power: 18, cornering: 18, stamina: 10, weight: 15 }, image: bodyRayStinger },
 
   // Chassis
   { id: 'c_super1', name: 'スーパーIIシャーシ', type: 'chassis', stats: { speed: 10, power: 10, cornering: 20, stamina: 10, weight: 15 }, image: chassisSuper2 },

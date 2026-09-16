@@ -304,14 +304,14 @@ function getPartIcon(type: PartType): string {
 
 function getPartDescription(id: string): string {
   const desc: Record<string, string> = {
-    b_magnum:      '高いバランス性能を持つ定番ボディ。',
-    b_sonic:       '空力特性に優れたコーナリング特化ボディ。',
-    b_tridagger:   'パワーとスタミナに優れた重量型ボディ。',
-    b_spinaxe:     '圧倒的な最高速を誇るスピード特化ボディ。コーナーはやや苦手。',
+    b_magnum:      '圧倒的な最高速を誇るスピード特化ボディ。コーナーはやや苦手。',
+    b_tridagger:   '高い最高速を誇るスピード特化ボディ。パワーはやや控えめ。',
     b_beakspider:  '超軽量・低重心でコーナリング性能はトップクラス。パワーは控えめ。',
+    b_sonic:       '空力特性に優れたコーナリング特化ボディ。',
+    b_spinaxe:     '軽快なハンドリングが持ち味のコーナリング特化ボディ。',
     b_brockeng:    '重量級ボディに強力なパワーを秘めたパワーファイター。',
-    b_protosaberjb:'スピード・パワー・コーナーを高い次元でまとめたオールラウンダー。',
-    b_raystinger:  '軽量ボディで最高速に全振りした一撃必殺の高速マシン。安定性は低い。',
+    b_protosaberjb:'スピード・パワー・コーナーを高い次元でまとめたバランス型ボディ。',
+    b_raystinger:  '弱点のないオールラウンダー。安定して走れるバランス型ボディ。',
     c_super1:    '安定した走行性能を発揮するベーシックシャーシ。',
     c_tz:        'コーナー安定性に定評のある人気シャーシ。',
     c_ar:        'スタミナ重視の高耐久アドバンスドシャーシ。',

@@ -33,29 +33,117 @@ export const TRACK_CENTER_X = 800;
 export const TRACK_CENTER_Y = 690;
 
 // ── Oval ──────────────────────────────────────────────
-// A figure-8 (lemniscate): x = A sin t, y = (B/2) sin 2t. This naturally
-// crosses itself once per lap at the center (t=0 and t=π land on the same
-// point), giving a longer, self-crossing "oval" instead of a single
-// simple loop — rendered as a raised bridge at the crossing in
-// CircuitScene. Smaller bounding box than the old single loop is fine
-// (the figure-8 packs more path length into it).
-export const OVAL_FIG8_A = 430;
-export const OVAL_FIG8_B = 220;
-export const OVAL_ZOOM = 0.75;
+// A "bowtie hexagon" figure-8: two diamond-shaped wings (each 3 straight
+// edges + rounded corners) sharing a crossing junction at the origin,
+// where the two diagonal edges (L3→R1 and R3→L1) cross each other. Built
+// from straights + arcs (like the old hexagon oval) instead of a smooth
+// curve, so it both crosses itself AND has real straight sections.
+export const OVAL_ZOOM = 0.56;
 export const OVAL_TRACK_WIDTH = 104;
+
+interface Vec { x: number; y: number; }
+const vAdd = (a: Vec, b: Vec): Vec => ({ x: a.x + b.x, y: a.y + b.y });
+const vSub = (a: Vec, b: Vec): Vec => ({ x: a.x - b.x, y: a.y - b.y });
+const vScale = (a: Vec, s: number): Vec => ({ x: a.x * s, y: a.y * s });
+const vLen = (a: Vec): number => Math.hypot(a.x, a.y);
+const vNorm = (a: Vec): Vec => { const l = vLen(a) || 1; return { x: a.x / l, y: a.y / l }; };
+const vLeftNormal = (a: Vec): Vec => ({ x: -a.y, y: a.x });
+const vDot = (a: Vec, b: Vec): number => a.x * b.x + a.y * b.y;
+const vCross = (a: Vec, b: Vec): number => a.x * b.y - a.y * b.x;
+
+interface PolyStraightSeg { type: 'straight'; from: Vec; to: Vec; }
+interface PolyArcSeg { type: 'arc'; center: Vec; r: number; thetaStart: number; thetaEnd: number; }
+type PolySeg = PolyStraightSeg | PolyArcSeg;
+
+const OVAL_CORNER_R = 70;
+const OVAL_W = 280;
+const OVAL_H = 200;
+
+// Left wing tip / outer / tip, then right wing tip / outer / tip — the
+// two "crossing" edges (index 2→3 and 5→0) each pass through the origin.
+const ovalVerts: Vec[] = [
+  { x: -OVAL_W, y: -OVAL_H },
+  { x: -2 * OVAL_W, y: 0 },
+  { x: -OVAL_W, y: OVAL_H },
+  { x: OVAL_W, y: -OVAL_H },
+  { x: 2 * OVAL_W, y: 0 },
+  { x: OVAL_W, y: OVAL_H },
+];
+
+/** Builds a rounded polygon from arbitrary (possibly self-intersecting) vertices, handling both left and right turns at each corner. */
+function buildRoundedPolygon(verts: Vec[], cornerR: number): PolySeg[] {
+  const n = verts.length;
+  const vertexGeoms = verts.map((cur, i) => {
+    const prev = verts[(i - 1 + n) % n];
+    const next = verts[(i + 1) % n];
+    const dirIn = vNorm(vSub(cur, prev));
+    const dirOut = vNorm(vSub(next, cur));
+    const signedAngle = Math.atan2(vCross(dirIn, dirOut), vDot(dirIn, dirOut));
+    const tangentLen = cornerR * Math.tan(Math.abs(signedAngle) / 2);
+    const tIn = vSub(cur, vScale(dirIn, tangentLen));
+    const tOut = vAdd(cur, vScale(dirOut, tangentLen));
+    const normal = signedAngle >= 0 ? vLeftNormal(dirIn) : vScale(vLeftNormal(dirIn), -1);
+    const center = vAdd(tIn, vScale(normal, cornerR));
+    const thetaStart = Math.atan2(tIn.y - center.y, tIn.x - center.x);
+    const thetaEnd = thetaStart + signedAngle;
+    return { tIn, tOut, center, thetaStart, thetaEnd };
+  });
+
+  const segs: PolySeg[] = [];
+  for (let i = 0; i < n; i++) {
+    const prevG = vertexGeoms[(i - 1 + n) % n];
+    const curG = vertexGeoms[i];
+    segs.push({ type: 'straight', from: prevG.tOut, to: curG.tIn });
+    segs.push({ type: 'arc', center: curG.center, r: cornerR, thetaStart: curG.thetaStart, thetaEnd: curG.thetaEnd });
+  }
+  return segs;
+}
+
+function polySegLength(seg: PolySeg): number {
+  return seg.type === 'straight' ? vLen(vSub(seg.to, seg.from)) : Math.abs(seg.thetaEnd - seg.thetaStart) * seg.r;
+}
+
+function polySegFractions(segs: PolySeg[]): number[] {
+  const lens = segs.map(polySegLength);
+  const total = lens.reduce((a, b) => a + b, 0);
+  const out: number[] = [];
+  let acc = 0;
+  for (const len of lens) {
+    acc += len / total;
+    out.push(acc);
+  }
+  return out;
+}
+
+export const ovalSegments: PolySeg[] = buildRoundedPolygon(ovalVerts, OVAL_CORNER_R);
+export const ovalSegFractions: number[] = polySegFractions(ovalSegments);
 
 interface LocalSample { x: number; y: number; angleDeg: number; isCorner: boolean; }
 
-/** Samples the figure-8 oval in unstretched local units (centered at the origin). */
+/** Samples the figure-8 oval in unstretched local units (crossing at the origin). */
 export function sampleOvalHexLocal(pRaw: number): LocalSample {
-  const t = pRaw;
-  const x = OVAL_FIG8_A * Math.sin(t);
-  const y = (OVAL_FIG8_B / 2) * Math.sin(2 * t);
-  const dx = OVAL_FIG8_A * Math.cos(t);
-  const dy = OVAL_FIG8_B * Math.cos(2 * t);
-  const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
-  const isCorner = Math.abs(Math.cos(t)) < 0.4;
-  return { x, y, angleDeg, isCorner };
+  const s = (((pRaw % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
+
+  let segIndex = ovalSegFractions.findIndex(f => s < f);
+  if (segIndex === -1) segIndex = ovalSegments.length - 1;
+  const segStart = segIndex === 0 ? 0 : ovalSegFractions[segIndex - 1];
+  const segEnd = ovalSegFractions[segIndex];
+  const u = (s - segStart) / (segEnd - segStart);
+  const seg = ovalSegments[segIndex];
+
+  if (seg.type === 'straight') {
+    const x = seg.from.x + (seg.to.x - seg.from.x) * u;
+    const y = seg.from.y + (seg.to.y - seg.from.y) * u;
+    const angleDeg = (Math.atan2(seg.to.y - seg.from.y, seg.to.x - seg.from.x) * 180) / Math.PI;
+    return { x, y, angleDeg, isCorner: false };
+  }
+
+  const theta = seg.thetaStart + u * (seg.thetaEnd - seg.thetaStart);
+  const hdir = Math.sign(seg.thetaEnd - seg.thetaStart) || 1;
+  const x = seg.center.x + seg.r * Math.cos(theta);
+  const y = seg.center.y + seg.r * Math.sin(theta);
+  const angleDeg = (Math.atan2(Math.cos(theta) * hdir, -Math.sin(theta) * hdir) * 180) / Math.PI;
+  return { x, y, angleDeg, isCorner: true };
 }
 
 // The Jr. circuit uses its own (smaller, higher-up) center so it can be
