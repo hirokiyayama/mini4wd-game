@@ -18,9 +18,11 @@ const LANE_MUL = [1, 1.08, 0.92];
 
 // ── パワー：スタート時の加速の伸び ──
 // 最高速自体には関与させず（それはスピード/コーナーの役割）、0→最高速の
-// 立ち上がりの速さだけをパワー/重さ比で決める。値を控えめにして助走時間を
-// 長めに取ることで、パワー差がレース序盤にはっきり体感できるようにする。
-const ACCEL_SCALE = 0.003;
+// 立ち上がりの速さだけをパワー/重さ比で決める。パワー/重さ比を単純比例
+// ではなく累乗（ACCEL_EXPONENT）で効かせることで、少しのパワー差でも
+// 加速の伸びにはっきり差がつくようにしている。
+const ACCEL_SCALE = 0.002;
+const ACCEL_EXPONENT = 1.6;
 
 // ── 逆転要素：スタミナによるバテ／second wind ──
 // スタミナ合計がこの値を上回るほど終盤に上乗せ、下回るほど終盤に失速する（基準値=平均的な構成のスタミナ）
@@ -236,7 +238,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         // パワーの役割はスタート時の加速の伸びと坂道（slopeMulで別途反映）に
         // 特化させる。ここの係数を控えめにして立ち上がりに時間をかけることで、
         // パワー差がレース序盤にはっきり体感できるようにしている
-        const acceleration = (racer.totalStats.power / racer.totalStats.weight) * ACCEL_SCALE;
+        const acceleration = Math.pow(racer.totalStats.power / racer.totalStats.weight, ACCEL_EXPONENT) * ACCEL_SCALE;
         rt.speed = Math.min(rt.speed + acceleration * delta * 60, maxSpeed);
         rt.progress += rt.speed * delta;
 

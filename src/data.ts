@@ -36,7 +36,7 @@ export const PARTS: Part[] = [
   { id: 'b_magnum', name: 'マグナムセイバー', type: 'body', stats: { speed: 45, power: 10, cornering: -15, stamina: 0, weight: 16 }, image: bodyMagnum },
   { id: 'b_tridagger', name: 'トライダガーX', type: 'body', stats: { speed: 40, power: 15, cornering: -10, stamina: 0, weight: 19 }, image: bodyTridagger },
   // コーナー特化
-  { id: 'b_beakspider', name: 'ビークスパイダー', type: 'body', stats: { speed: 25, power: -10, cornering: 30, stamina: 8, weight: 10 }, image: bodyBeakSpider },
+  { id: 'b_beakspider', name: 'ビークスパイダー', type: 'body', stats: { speed: 5, power: -10, cornering: 30, stamina: 0, weight: 10 }, image: bodyBeakSpider },
   { id: 'b_sonic', name: 'ソニックセイバー', type: 'body', stats: { speed: -10, power: -5, cornering: 50, stamina: 6, weight: 13 }, image: bodySonic },
   { id: 'b_spinaxe', name: 'スピンアックス', type: 'body', stats: { speed: -5, power: -5, cornering: 45, stamina: 4, weight: 15 }, image: bodySpinAxe },
   // パワー特化
