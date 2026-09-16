@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
 import { PARTS } from './data';
-import type { MachineSetting, PartType, PartStats } from './types';
+import type { MachineSetting, PartType, PartStats, Player } from './types';
 import { CircuitScene } from './CircuitScene';
+import { COURSES, type CourseId } from './courses';
+import magnumImg from './assets/magnum.jpg';
+import sonicImg from './assets/sonic.jpg';
+import tridaggerImg from './assets/tridagger.jpg';
 
 interface GarageProps {
-  setting: MachineSetting;
-  setSetting: React.Dispatch<React.SetStateAction<MachineSetting>>;
+  players: Player[];
+  activePlayerIndex: number;
+  setActivePlayerIndex: (i: number) => void;
+  onChangeSetting: (updater: (s: MachineSetting) => MachineSetting) => void;
+  onChangeName: (name: string) => void;
   totalStats: PartStats;
+  courseId: CourseId;
+  setCourseId: (id: CourseId) => void;
   onStartRace: () => void;
 }
 
@@ -56,17 +65,30 @@ const StatGauge: React.FC<StatGaugeProps> = ({ label, icon, value, max, color })
 };
 
 function getBodyImage(id: string | null): string {
-  if (id === 'b_sonic') return '/sonic.jpg';
-  if (id === 'b_tridagger') return '/tridagger.jpg';
-  return '/magnum.jpg';
+  if (id === 'b_sonic') return sonicImg;
+  if (id === 'b_tridagger') return tridaggerImg;
+  return magnumImg;
 }
 
-export const Garage: React.FC<GarageProps> = ({ setting, setSetting, totalStats, onStartRace }) => {
+export const Garage: React.FC<GarageProps> = ({
+  players,
+  activePlayerIndex,
+  setActivePlayerIndex,
+  onChangeSetting,
+  onChangeName,
+  totalStats,
+  courseId,
+  setCourseId,
+  onStartRace,
+}) => {
   const [activeTab, setActiveTab] = useState<PartType>('body');
   const [pressedBtn, setPressedBtn] = useState(false);
 
+  const activePlayer = players[activePlayerIndex];
+  const setting = activePlayer.setting;
+
   const handleSelectPart = (partId: string | null) => {
-    setSetting(prev => ({ ...prev, [activeTab]: partId }));
+    onChangeSetting(prev => ({ ...prev, [activeTab]: partId }));
   };
 
   // ボディ画像のパスを取得
@@ -81,7 +103,7 @@ export const Garage: React.FC<GarageProps> = ({ setting, setSetting, totalStats,
 
   return (
     <div className="mini4wd-screen">
-      <CircuitScene />
+      <CircuitScene courseId={courseId} />
 
       {/* subtle vignette + scanline for depth/polish */}
       <div className="screen-vignette" />
@@ -96,6 +118,19 @@ export const Garage: React.FC<GarageProps> = ({ setting, setSetting, totalStats,
             <span className="brand-line2">SPEED BATTLE</span>
           </div>
         </div>
+        <div className="course-select">
+          <span className="course-select-label">コース</span>
+          {COURSES.map(c => (
+            <button
+              key={c.id}
+              className={`course-btn${courseId === c.id ? ' is-active' : ''}`}
+              onClick={() => setCourseId(c.id)}
+              title={c.description}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
         <div className="selected-pill">
           <span className="selected-pill-label">選択中のマシン</span>
           <span className="selected-pill-value">{selectedBodyName}</span>
@@ -107,6 +142,25 @@ export const Garage: React.FC<GarageProps> = ({ setting, setSetting, totalStats,
 
         {/* ══════ LEFT PANEL: STATS ══════ */}
         <div className="glass-panel stats-panel">
+          <div className="player-tabs">
+            {players.map((p, i) => (
+              <button
+                key={p.id}
+                className={`player-tab${i === activePlayerIndex ? ' is-active' : ''}`}
+                onClick={() => setActivePlayerIndex(i)}
+              >
+                P{i + 1}
+              </button>
+            ))}
+          </div>
+          <input
+            className="player-name-input"
+            value={activePlayer.name}
+            onChange={e => onChangeName(e.target.value)}
+            maxLength={12}
+            placeholder={`プレイヤー${activePlayerIndex + 1}`}
+          />
+
           <div className="panel-title">マシンステータス</div>
           <StatGauge label="スピード" icon="⚡" value={totalStats.speed}    max={STAT_MAX.speed}    color="#5aabff" />
           <StatGauge label="パワー"   icon="🔥" value={totalStats.power}    max={STAT_MAX.power}    color="#ff6b35" />

@@ -201,6 +201,95 @@ body, html {
   color: var(--accent-gold);
 }
 
+.course-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.course-select-label {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.4);
+  font-weight: 700;
+  margin-right: 2px;
+}
+
+.course-btn {
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Noto Sans JP', sans-serif;
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.course-btn:hover { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.85); }
+
+.course-btn.is-active {
+  background: linear-gradient(135deg, rgba(41,121,255,0.4), rgba(13,71,161,0.4));
+  color: #fff;
+  border-color: var(--border-bright);
+  box-shadow: 0 0 10px rgba(41,121,255,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.player-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.player-tab {
+  flex: 1;
+  padding: 8px 0;
+  font-size: 12px;
+  font-weight: 800;
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.45);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.player-tab:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.75); }
+
+.player-tab.is-active {
+  background: linear-gradient(135deg, rgba(41,121,255,0.4), rgba(13,71,161,0.4));
+  color: #fff;
+  border-color: var(--border-bright);
+  box-shadow: 0 0 10px rgba(41,121,255,0.3);
+}
+
+.player-name-input {
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Noto Sans JP', sans-serif;
+  color: #fff;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.player-name-input:focus {
+  border-color: rgba(90,171,255,0.6);
+  background: rgba(255,255,255,0.07);
+}
+
+.player-name-input::placeholder { color: rgba(255,255,255,0.3); }
+
 .selected-pill {
   display: flex;
   align-items: center;
@@ -833,16 +922,7 @@ body, html {
   border-color: rgba(255,255,255,0.28);
 }
 
-.race-center-hud {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-}
-
-.race-lap, .race-timer, .race-rank { text-align: center; }
 .race-timer { text-align: right; }
-
-.race-hud-value--rank { color: #00e5ff; }
 
 .race-hud-label {
   font-size: 11px;
@@ -862,53 +942,58 @@ body, html {
 
 .race-hud-value--gold { color: var(--accent-gold); }
 
-.race-hud-sub { font-size: 14px; color: rgba(255,255,255,0.4); }
-
-.race-hud-best { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 2px; }
-
-.race-mini-stats {
+.race-leaderboard {
   position: absolute;
-  bottom: 20px;
-  left: 20px;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 20;
-  background: linear-gradient(180deg, rgba(6,11,34,0.85), rgba(4,7,26,0.9));
+  background: linear-gradient(180deg, rgba(6,11,34,0.88), rgba(4,7,26,0.92));
   border: 1px solid var(--border-subtle);
   backdrop-filter: blur(12px);
   border-radius: var(--radius-md);
-  padding: 13px 17px;
+  padding: 8px 6px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 150px;
+  gap: 4px;
+  min-width: 230px;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 20px rgba(0,0,0,0.35);
 }
 
-.race-mini-stat-row { display: flex; align-items: center; gap: 8px; }
+.race-leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.03);
+}
 
-.race-mini-stat-label {
-  font-size: 10px;
+.race-leaderboard-rank {
+  width: 18px;
+  text-align: center;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 900;
+  font-size: 15px;
+  color: var(--accent-gold);
+}
+
+.race-leaderboard-name {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.race-leaderboard-lap {
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
-  color: rgba(255,255,255,0.42);
-  width: 22px;
-}
-
-.race-mini-stat-track {
-  flex: 1;
-  height: 6px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 99px;
-  overflow: hidden;
-}
-
-.race-mini-stat-fill { height: 100%; border-radius: 99px; transition: width 0.3s ease; }
-
-.race-mini-stat-val {
-  font-size: 11.5px;
-  font-family: 'Rajdhani', sans-serif;
-  color: #fff;
-  width: 30px;
-  text-align: right;
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.5px;
 }
 
 .race-overlay {
@@ -946,11 +1031,6 @@ body, html {
   border: 2px solid;
 }
 
-.race-result-card--danger {
-  border-color: #ef4444;
-  box-shadow: 0 0 50px rgba(239,68,68,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
-}
-
 .race-result-card--gold {
   border-color: var(--accent-gold);
   box-shadow: 0 0 60px rgba(255,215,64,0.45), inset 0 1px 0 rgba(255,255,255,0.08);
@@ -966,14 +1046,7 @@ body, html {
   font-family: 'Rajdhani', sans-serif;
 }
 
-.race-result-title--danger { color: #ef4444; }
 .race-result-title--gold { color: var(--accent-gold); letter-spacing: 5px; }
-
-.race-result-sub {
-  font-size: 14px;
-  color: rgba(255,255,255,0.5);
-  margin-top: 10px;
-}
 
 .race-result-time {
   font-size: 50px;
@@ -1009,15 +1082,28 @@ body, html {
   width: 32px;
 }
 
-.race-rank-row.is-player {
-  color: #fff;
+.race-rank-name { font-weight: 700; color: #fff; }
+
+.race-rank-tag {
+  margin-left: auto;
+  padding: 2px 9px;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 99px;
+  letter-spacing: 0.5px;
 }
 
-.race-rank-row.is-player .race-rank-pos {
-  color: var(--accent-gold);
+.race-rank-tag--out {
+  background: rgba(239,68,68,0.16);
+  color: #ef4444;
+  border: 1px solid rgba(239,68,68,0.4);
 }
 
-.race-rank-name { font-weight: 700; }
+.race-rank-tag--finish {
+  background: rgba(74,222,128,0.16);
+  color: #4ade80;
+  border: 1px solid rgba(74,222,128,0.4);
+}
 
 .race-result-btn {
   margin-top: 26px;
@@ -1031,13 +1117,6 @@ body, html {
   border: 1.5px solid;
   transition: all 0.18s ease;
 }
-
-.race-result-btn--danger {
-  background: rgba(239,68,68,0.16);
-  color: #ef4444;
-  border-color: #ef4444;
-}
-.race-result-btn--danger:hover { background: rgba(239,68,68,0.28); }
 
 .race-result-btn--gold {
   background: rgba(255,215,64,0.14);

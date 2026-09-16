@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Garage } from './Garage';
 import { Race } from './Race';
-import type { MachineSetting, PartStats } from './types';
-import { PARTS } from './data';
+import type { MachineSetting, Player } from './types';
+import { computeTotalStats } from './data';
+import type { CourseId } from './courses';
 import './index.css';
 
-const DEFAULT_SETTING: MachineSetting = {
+const BASE_SETTING: MachineSetting = {
   body: 'b_magnum',
   chassis: 'c_super1',
   motor: 'm_normal',
@@ -18,41 +19,56 @@ const DEFAULT_SETTING: MachineSetting = {
   mass_damper: null,
 };
 
+const DEFAULT_PLAYERS: Player[] = [
+  { id: 'p1', name: 'プレイヤー1', setting: { ...BASE_SETTING, body: 'b_magnum' } },
+  { id: 'p2', name: 'プレイヤー2', setting: { ...BASE_SETTING, body: 'b_sonic' } },
+  { id: 'p3', name: 'プレイヤー3', setting: { ...BASE_SETTING, body: 'b_tridagger' } },
+];
+
 function App() {
   const [currentScreen, setCurrentScreen] = useState<'garage' | 'race'>('garage');
-  const [setting, setSetting] = useState<MachineSetting>(DEFAULT_SETTING);
+  const [players, setPlayers] = useState<Player[]>(DEFAULT_PLAYERS);
+  const [activePlayerIndex, setActivePlayerIndex] = useState(0);
+  const [courseId, setCourseId] = useState<CourseId>('oval');
 
-  const totalStats = useMemo(() => {
-    const total: PartStats = { speed: 0, power: 0, cornering: 0, stamina: 0, weight: 0 };
-    Object.values(setting).forEach(partId => {
-      if (!partId) return;
-      const part = PARTS.find(p => p.id === partId);
-      if (part) {
-        total.speed += part.stats.speed;
-        total.power += part.stats.power;
-        total.cornering += part.stats.cornering;
-        total.stamina += part.stats.stamina;
-        total.weight += part.stats.weight;
-      }
-    });
-    return total;
-  }, [setting]);
+  const updateActiveSetting = (updater: (s: MachineSetting) => MachineSetting) => {
+    setPlayers(prev => prev.map((p, i) => (i === activePlayerIndex ? { ...p, setting: updater(p.setting) } : p)));
+  };
+
+  const updateActiveName = (name: string) => {
+    setPlayers(prev => prev.map((p, i) => (i === activePlayerIndex ? { ...p, name } : p)));
+  };
+
+  const activeTotalStats = useMemo(
+    () => computeTotalStats(players[activePlayerIndex].setting),
+    [players, activePlayerIndex]
+  );
+
+  const racePlayers = useMemo(
+    () => players.map(p => ({ ...p, totalStats: computeTotalStats(p.setting) })),
+    [players]
+  );
 
   return (
     <div className="app-container">
       {currentScreen === 'garage' && (
-        <Garage 
-          setting={setting} 
-          setSetting={setSetting} 
-          totalStats={totalStats}
-          onStartRace={() => setCurrentScreen('race')} 
+        <Garage
+          players={players}
+          activePlayerIndex={activePlayerIndex}
+          setActivePlayerIndex={setActivePlayerIndex}
+          onChangeSetting={updateActiveSetting}
+          onChangeName={updateActiveName}
+          totalStats={activeTotalStats}
+          courseId={courseId}
+          setCourseId={setCourseId}
+          onStartRace={() => setCurrentScreen('race')}
         />
       )}
       {currentScreen === 'race' && (
-        <Race 
-          setting={setting}
-          totalStats={totalStats}
-          onBackToGarage={() => setCurrentScreen('garage')} 
+        <Race
+          players={racePlayers}
+          courseId={courseId}
+          onBackToGarage={() => setCurrentScreen('garage')}
         />
       )}
     </div>

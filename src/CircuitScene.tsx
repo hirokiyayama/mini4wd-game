@@ -1,48 +1,41 @@
 import React from 'react';
+import { TRACK_CENTER_X, TRACK_CENTER_Y, FIG8_A, FIG8_B, type CourseId } from './courses';
 
-// These mirror the numbers used by the <svg viewBox="0 0 1600 900"> track
-// drawn below (center 800,690; outer asphalt edge rx=740/ry=205; inner
-// infield edge rx=430/ry=112) so the race loop can compute a car path that
-// actually matches what's drawn, instead of an independent guess.
-const TRACK_VIEWBOX_W = 1600;
-const TRACK_VIEWBOX_H = 900;
-const TRACK_CENTER_X = 800;
-const TRACK_CENTER_Y = 690;
-const TRACK_LANE_RX = (740 + 430) / 2;
-const TRACK_LANE_RY = (205 + 112) / 2;
-
-export interface TrackGeometry {
-  cx: number;
-  cy: number;
-  rx: number;
-  ry: number;
+interface CircuitSceneProps {
+  courseId?: CourseId;
 }
 
-/**
- * Converts the track's fixed SVG-space ellipse (the asphalt lane midline)
- * into on-screen pixel coordinates for the current window size, replicating
- * the `preserveAspectRatio="xMidYMax slice"` scaling used by the <svg>
- * below (uniform scale to cover the viewport, centered horizontally,
- * bottom-aligned vertically).
- */
-export function getTrackGeometry(viewportWidth: number, viewportHeight: number): TrackGeometry {
-  const scale = Math.max(viewportWidth / TRACK_VIEWBOX_W, viewportHeight / TRACK_VIEWBOX_H);
-  const offsetX = (viewportWidth - TRACK_VIEWBOX_W * scale) / 2;
-  const offsetY = viewportHeight - TRACK_VIEWBOX_H * scale;
+function fig8Point(t: number, zoom: number) {
+  const A = FIG8_A * zoom;
+  const B = FIG8_B * zoom;
   return {
-    cx: offsetX + TRACK_CENTER_X * scale,
-    cy: offsetY + TRACK_CENTER_Y * scale,
-    rx: TRACK_LANE_RX * scale,
-    ry: TRACK_LANE_RY * scale,
+    x: TRACK_CENTER_X + A * Math.sin(t),
+    y: TRACK_CENTER_Y + B * Math.sin(t) * Math.cos(t),
   };
+}
+
+// Matches the FIG8_ZOOM used by sampleCourse() in courses.ts so the drawn
+// track lines up with the car's actual path.
+const FIG8_ZOOM = 0.82;
+
+function buildFig8Path(tStart: number, tEnd: number, steps: number): string {
+  const parts: string[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = tStart + (tEnd - tStart) * (i / steps);
+    const { x, y } = fig8Point(t, FIG8_ZOOM);
+    parts.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`);
+  }
+  return parts.join(' ');
 }
 
 /**
  * Shared stadium/circuit backdrop used by both the Garage and Race screens.
  * Pure decorative SVG layers (sky, stands, banners, fence, track) so the two
- * screens share one consistent "mini 4WD racing venue" world.
+ * screens share one consistent "mini 4WD racing venue" world. The track
+ * itself switches shape based on `courseId` (see courses.ts for the actual
+ * car-path math, which mirrors this drawing).
  */
-export const CircuitScene: React.FC = () => {
+export const CircuitScene: React.FC<CircuitSceneProps> = ({ courseId = 'oval' }) => {
   const crowd = Array.from({ length: 60 }).map((_, i) => {
     const row = Math.floor(i / 20);
     const col = i % 20;
@@ -115,6 +108,11 @@ export const CircuitScene: React.FC = () => {
         <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="8" />
         </filter>
+        <linearGradient id="bridgeGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#7a1010" />
+          <stop offset="50%" stopColor="#d43030" />
+          <stop offset="100%" stopColor="#7a1010" />
+        </linearGradient>
       </defs>
 
       {/* sky */}
@@ -200,6 +198,7 @@ export const CircuitScene: React.FC = () => {
       ))}
 
       {/* track oval */}
+      {courseId === 'oval' && (
       <g>
         <ellipse cx="800" cy="700" rx="760" ry="220" fill="#151719" opacity="0.55" filter="url(#soft)" />
         <ellipse cx="800" cy="690" rx="740" ry="205" fill="url(#asphalt)" />
@@ -275,6 +274,84 @@ export const CircuitScene: React.FC = () => {
           MINI 4WD
         </text>
       </g>
+      )}
+
+      {/* track figure-8 (ジャパンカップJr.サーキット) — one crossing point
+          rendered as a raised bridge, using paint order for the over/under
+          illusion since this is a flat top-down scene. */}
+      {courseId === 'figure8' && (
+      <g>
+        <path d={buildFig8Path(0, Math.PI * 2, 240)} fill="none" stroke="#151719" strokeWidth="182" strokeLinecap="round" opacity="0.5" filter="url(#soft)" />
+
+        {/* first half: drawn first so the second half's bridge paints over it at the crossing */}
+        <path d={buildFig8Path(0, Math.PI, 140)} fill="none" stroke="url(#asphalt)" strokeWidth="150" strokeLinecap="round" />
+        <path d={buildFig8Path(0, Math.PI, 140)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.32" />
+        {Array.from({ length: 22 }).map((_, i) => {
+          const t = (i / 22) * Math.PI;
+          const { x, y } = fig8Point(t, FIG8_ZOOM);
+          const dx = FIG8_A * FIG8_ZOOM * Math.cos(t);
+          const dy = FIG8_B * FIG8_ZOOM * Math.cos(2 * t);
+          const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
+          return (
+            <rect
+              key={`h1-${i}`}
+              x={x - 11}
+              y={y - 68}
+              width="22"
+              height="14"
+              rx="3"
+              fill={i % 2 === 0 ? '#c81e1e' : '#f5f5f5'}
+              opacity="0.85"
+              transform={`rotate(${angleDeg}, ${x}, ${y})`}
+            />
+          );
+        })}
+
+        {/* under-bridge tunnel mouths just before/after the crossing point */}
+        <ellipse cx={TRACK_CENTER_X} cy={TRACK_CENTER_Y} rx="112" ry="58" fill="#050608" opacity="0.55" filter="url(#soft)" />
+        <path d={buildFig8Path(-0.34, 0.34, 20)} fill="none" stroke="url(#bridgeGrad)" strokeWidth="150" strokeLinecap="round" opacity="0.9" />
+
+        {/* second half: the "over" bridge */}
+        <path d={buildFig8Path(Math.PI, Math.PI * 2, 140)} fill="none" stroke="url(#asphalt)" strokeWidth="150" strokeLinecap="round" />
+        <path d={buildFig8Path(Math.PI, Math.PI * 2, 140)} fill="none" stroke="#e8ecef" strokeWidth="4" strokeDasharray="26,18" opacity="0.32" />
+        {Array.from({ length: 22 }).map((_, i) => {
+          const t = Math.PI + (i / 22) * Math.PI;
+          const { x, y } = fig8Point(t, FIG8_ZOOM);
+          const dx = FIG8_A * FIG8_ZOOM * Math.cos(t);
+          const dy = FIG8_B * FIG8_ZOOM * Math.cos(2 * t);
+          const angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
+          return (
+            <rect
+              key={`h2-${i}`}
+              x={x - 11}
+              y={y - 68}
+              width="22"
+              height="14"
+              rx="3"
+              fill={i % 2 === 0 ? '#1d4ed8' : '#f5f5f5'}
+              opacity="0.85"
+              transform={`rotate(${angleDeg}, ${x}, ${y})`}
+            />
+          );
+        })}
+
+        {/* bridge deck highlight right at the crossing, drawn last so it reads on top */}
+        <path d={buildFig8Path(Math.PI - 0.3, Math.PI + 0.3, 16)} fill="none" stroke="#e8ecef" strokeWidth="158" strokeLinecap="round" opacity="0.14" />
+
+        <text
+          x={TRACK_CENTER_X}
+          y={TRACK_CENTER_Y - 170}
+          textAnchor="middle"
+          fill="#ffffff"
+          opacity="0.06"
+          fontFamily="Rajdhani, sans-serif"
+          fontWeight={900}
+          fontSize="60"
+        >
+          JAPAN CUP Jr.
+        </text>
+      </g>
+      )}
     </svg>
   );
 };

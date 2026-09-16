@@ -1,4 +1,4 @@
-import type { Part } from './types';
+import type { MachineSetting, Part, PartStats } from './types';
 
 export const PARTS: Part[] = [
   // Body
@@ -39,3 +39,19 @@ export const PARTS: Part[] = [
   // Mass Damper
   { id: 'md_std', name: 'マスダンパー', type: 'mass_damper', stats: { speed: -10, power: 0, cornering: 30, stamina: 20, weight: 10 } }
 ];
+
+export function computeTotalStats(setting: MachineSetting): PartStats {
+  const total: PartStats = { speed: 0, power: 0, cornering: 0, stamina: 0, weight: 0 };
+  Object.values(setting).forEach(partId => {
+    if (!partId) return;
+    const part = PARTS.find(p => p.id === partId);
+    if (part) {
+      total.speed += part.stats.speed;
+      total.power += part.stats.power;
+      total.cornering += part.stats.cornering;
+      total.stamina += part.stats.stamina;
+      total.weight += part.stats.weight;
+    }
+  });
+  return total;
+}

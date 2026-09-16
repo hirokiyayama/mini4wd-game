@@ -27,3 +27,9 @@ export interface MachineSetting {
   frp: string | null;
   mass_damper: string | null;
 }
+
+export interface Player {
+  id: string;
+  name: string;
+  setting: MachineSetting;
+}

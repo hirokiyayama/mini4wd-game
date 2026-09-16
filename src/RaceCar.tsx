@@ -1,4 +1,7 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react';
+import magnumImg from './assets/magnum.jpg';
+import sonicImg from './assets/sonic.jpg';
+import tridaggerImg from './assets/tridagger.jpg';
 
 /**
  * The in-race machine. Uses the actual machine photo (so it's clearly the
@@ -24,9 +27,9 @@ interface RaceCarProps {
 }
 
 function getCarImage(bodyId: string | null): string {
-  if (bodyId === 'b_sonic') return '/sonic.jpg';
-  if (bodyId === 'b_tridagger') return '/tridagger.jpg';
-  return '/magnum.jpg';
+  if (bodyId === 'b_sonic') return sonicImg;
+  if (bodyId === 'b_tridagger') return tridaggerImg;
+  return magnumImg;
 }
 
 const GLOW: Record<string, string> = {
