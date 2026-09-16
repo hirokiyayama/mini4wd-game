@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { PartStats, MachineSetting } from './types';
 import { CircuitScene } from './CircuitScene';
+import { RaceCar, type RaceCarHandle } from './RaceCar';
 
 interface RaceProps {
   setting: MachineSetting;
   totalStats: PartStats;
   onBackToGarage: () => void;
 }
+
+// 楕円コースが常に同じ回転方向に曲がり続けるため、姿勢の傾き（ドリフト）は常に同じ向き
+const LEAN_DIR = -1;
 
 export const Race: React.FC<RaceProps> = ({ setting, totalStats, onBackToGarage }) => {
   const [status, setStatus] = useState<'countdown' | 'running' | 'course_out' | 'goal'>('countdown');
@@ -17,16 +21,32 @@ export const Race: React.FC<RaceProps> = ({ setting, totalStats, onBackToGarage 
   const [lapStart, setLapStart] = useState(0);
   const targetLaps = 3;
 
-  const carRef = useRef<HTMLDivElement>(null);
+  const carRef = useRef<RaceCarHandle>(null);
   const progress = useRef(0);
   const speed = useRef(0);
   const laps = useRef(0);
   const isOut = useRef(false);
+  const wheelSpin = useRef(0);
+  const rollerSpin = useRef(0);
+  const bouncePhase = useRef(0);
+  const leanAngle = useRef(0);
 
-  // ボディ画像のパスを取得
-  let carImage = '/magnum.jpg';
-  if (setting.body === 'b_sonic') carImage = '/sonic.jpg';
-  if (setting.body === 'b_tridagger') carImage = '/tridagger.jpg';
+  // 初期姿勢（スタートライン上、コース進行方向を向く）
+  useEffect(() => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const cx = vw / 2;
+    const cy = vh / 2;
+    const rx = Math.min(vw * 0.35, 320);
+    const car = carRef.current;
+    if (car) {
+      if (car.root) {
+        car.root.style.left = `${cx + rx}px`;
+        car.root.style.top = `${cy}px`;
+      }
+      if (car.rotate) car.rotate.style.transform = 'rotate(90deg)';
+    }
+  }, []);
 
   // カウントダウン
   useEffect(() => {
@@ -109,10 +129,29 @@ export const Race: React.FC<RaceProps> = ({ setting, totalStats, onBackToGarage 
         }
       }
 
-      if (carRef.current) {
-        carRef.current.style.left = `${x}px`;
-        carRef.current.style.top = `${y}px`;
-        carRef.current.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+      // タイヤ・ローラーの自転（速度に応じて回転速度が変わる）
+      wheelSpin.current = (wheelSpin.current + speed.current * delta * 2400) % 360;
+      rollerSpin.current = (rollerSpin.current + speed.current * delta * 4200) % 360;
+
+      // 車体の上下動（サスペンションのバウンス。速度が上がるほど大きく速く揺れる）
+      bouncePhase.current += delta * (5 + speed.current * 14);
+      const bounceAmp = Math.min(4.5, 1 + speed.current * 6);
+      const bounceY = Math.sin(bouncePhase.current) * bounceAmp;
+
+      // コーナーでの姿勢変化（進行方向の接線角度に、コーナリング時のドリフト角を上乗せ）
+      const leanTarget = isCorner ? LEAN_DIR * Math.min(14, speed.current * 22) : 0;
+      leanAngle.current += (leanTarget - leanAngle.current) * Math.min(1, delta * 8);
+
+      const car = carRef.current;
+      if (car) {
+        if (car.root) {
+          car.root.style.left = `${x}px`;
+          car.root.style.top = `${y}px`;
+        }
+        if (car.bounce) car.bounce.style.transform = `translateY(${bounceY}px)`;
+        if (car.rotate) car.rotate.style.transform = `rotate(${angle + leanAngle.current}deg)`;
+        car.wheels.forEach(w => { w.style.transform = `rotate(${wheelSpin.current}deg)`; });
+        car.rollers.forEach(r => { r.style.transform = `rotate(${rollerSpin.current}deg)`; });
       }
 
       animId = requestAnimationFrame(loop);
@@ -129,30 +168,14 @@ export const Race: React.FC<RaceProps> = ({ setting, totalStats, onBackToGarage 
     return `${m}'${s.toString().padStart(2, '0')}"${cs.toString().padStart(2, '0')}`;
   };
 
-  const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
-  const vh = typeof window !== 'undefined' ? window.innerHeight : 720;
-  const cx = vw / 2;
-  const cy = vh / 2;
-  const rx = Math.min(vw * 0.35, 320);
-
   return (
     <div className="mini4wd-screen">
       <CircuitScene />
       <div className="screen-vignette" />
       <div className="screen-scanline" />
 
-      {/* ── CAR (2D image on track) — position math is untouched game logic ── */}
-      <div
-        ref={carRef}
-        className={`race-car${status === 'course_out' ? ' is-out' : ''}`}
-        style={{
-          left: `${cx + rx}px`,
-          top: `${cy}px`,
-          transform: 'translate(-50%, -50%) rotate(90deg)',
-        }}
-      >
-        <img src={carImage} alt="Machine" className="race-car-img" />
-      </div>
+      {/* ── CAR: body / 4 wheels / rollers as separate, independently-animated parts ── */}
+      <RaceCar ref={carRef} bodyId={setting.body} isOut={status === 'course_out'} />
 
       {/* ── HUD: TOP BAR ── */}
       <div className="race-topbar">

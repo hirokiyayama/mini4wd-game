@@ -651,21 +651,53 @@ body, html {
 /* ══════════════════════════════════════════════
    RACE SCREEN
 ══════════════════════════════════════════════ */
-.race-car {
+/* ── Race car: body / 4 wheels / rollers as separate animated parts ── */
+.mc-root {
   position: absolute;
   z-index: 10;
-  width: 92px;
+  width: 0;
+  height: 0;
   pointer-events: none;
 }
 
-.race-car.is-out { animation: car-shake 0.5s ease; }
+.mc-bounce {
+  position: relative;
+}
 
-.race-car-img {
+.mc-shadow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 76px;
+  height: 20px;
+  margin-left: -38px;
+  margin-top: -6px;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.55), transparent 72%);
+  filter: blur(1.5px);
+}
+
+.mc-rotate {
+  position: relative;
+  width: 92px;
+  height: 42px;
+  margin-left: -46px;
+  margin-top: -21px;
+  filter: drop-shadow(0 8px 10px rgba(0,0,0,0.75)) drop-shadow(0 0 12px rgba(41,121,255,0.3));
+}
+
+.mc-rotate.is-out { animation: car-shake 0.5s ease; }
+
+.mc-svg {
   width: 100%;
-  object-fit: contain;
-  -webkit-mask-image: radial-gradient(ellipse 54% 60% at 50% 44%, #000 40%, rgba(0,0,0,0.7) 60%, transparent 88%);
-  mask-image: radial-gradient(ellipse 54% 60% at 50% 44%, #000 40%, rgba(0,0,0,0.7) 60%, transparent 88%);
-  filter: drop-shadow(0 8px 14px rgba(0,0,0,0.85)) drop-shadow(0 0 12px rgba(41,121,255,0.35));
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.mc-wheel-g,
+.mc-roller-g {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
 }
 
 .race-topbar {
