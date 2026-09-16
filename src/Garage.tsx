@@ -28,12 +28,11 @@ const SLOT_LABELS: Record<PartType, string> = {
   tire_rear: 'リアタイヤ',
   roller_front: 'フロントローラー',
   roller_rear: 'リアローラー',
-  frp: 'FRPプレート',
   mass_damper: 'マスダンパー',
 };
 
 // パーツカテゴリのTabシステム
-const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'gear', 'tire_front', 'tire_rear', 'roller_front', 'roller_rear', 'frp', 'mass_damper'];
+const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'gear', 'tire_front', 'tire_rear', 'roller_front', 'roller_rear', 'mass_damper'];
 
 // ゲージの最大値（ステータスのスケーリング用）
 const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 100, weight: 200 };
@@ -96,7 +95,7 @@ export const Garage: React.FC<GarageProps> = ({
 
   // 現在のタブのパーツ一覧
   const tabParts = PARTS.filter(p => p.type === activeTab);
-  const nullable = ['frp', 'mass_damper'].includes(activeTab);
+  const nullable = activeTab === 'mass_damper';
 
   // 選択中のボディ名
   const selectedBodyName = PARTS.find(p => p.id === setting.body)?.name ?? '未選択';
@@ -252,7 +251,8 @@ export const Garage: React.FC<GarageProps> = ({
                 name={part.name}
                 description={getPartDescription(part.id)}
                 icon={getPartIcon(activeTab)}
-                thumbnail={activeTab === 'body' ? getBodyImage(part.id) : undefined}
+                thumbnail={activeTab === 'body' ? getBodyImage(part.id) : part.image}
+                thumbnailFit={activeTab === 'body' ? 'crop' : 'contain'}
                 selected={setting[activeTab] === part.id}
                 onClick={() => handleSelectPart(part.id)}
                 stats={`SP ${part.stats.speed} / PW ${part.stats.power} / CO ${part.stats.cornering} / ${part.stats.weight}g`}
@@ -271,11 +271,12 @@ interface PartCardProps {
   description: string;
   icon: string;
   thumbnail?: string;
+  thumbnailFit?: 'crop' | 'contain';
   selected: boolean;
   onClick: () => void;
   stats: string | null;
 }
-const PartCard: React.FC<PartCardProps> = ({ name, description, icon, thumbnail, selected, onClick, stats }) => {
+const PartCard: React.FC<PartCardProps> = ({ name, description, icon, thumbnail, thumbnailFit = 'contain', selected, onClick, stats }) => {
   return (
     <div
       onClick={onClick}
@@ -283,7 +284,7 @@ const PartCard: React.FC<PartCardProps> = ({ name, description, icon, thumbnail,
     >
       {selected && <div className="part-card-ribbon">✓</div>}
       <div className="part-card-icon">
-        {thumbnail ? <img src={thumbnail} alt="" className="part-card-thumb" /> : icon}
+        {thumbnail ? <img src={thumbnail} alt="" className={`part-card-thumb part-card-thumb--${thumbnailFit}`} /> : icon}
       </div>
       <div className="part-card-body">
         <div className="part-card-name">{name}</div>
@@ -299,7 +300,7 @@ function getPartIcon(type: PartType): string {
   const icons: Record<PartType, string> = {
     body: '🚗', chassis: '⚙️', motor: '⚡', gear: '🔧',
     tire_front: '⭕', tire_rear: '⭕', roller_front: '🔵', roller_rear: '🔵',
-    frp: '📋', mass_damper: '🔩',
+    mass_damper: '🔩',
   };
   return icons[type];
 }
@@ -320,13 +321,16 @@ function getPartDescription(id: string): string {
     g_super:     'スピード特化の超高速ギヤ比。',
     tf_slick:    'グリップ力の高いフロントタイヤ。',
     tf_sponge:   'コーナーで真価を発揮するスポンジタイヤ。',
+    tf_lowhi:    '重心を下げて安定性を高めるローハイトタイヤ。',
     tr_slick:    '安定性の高いリアスリックタイヤ。',
     tr_sponge:   'コーナリングを支えるリアスポンジタイヤ。',
+    tr_lowhi:    '重心を下げて安定性を高めるローハイトタイヤ。',
     rf_plastic:  'コーナーでの安定性を高めるパーツ。',
     rf_alum:     '高精度アルミ製で摩擦が少ないローラー。',
+    rf_alum2:    '2段構造でさらに安定性を高めたアルミローラー。',
     rr_plastic:  'リアの安定性を向上させるローラー。',
     rr_alum:     '超低摩擦のアルミ製リアローラー。',
-    frp_front:   'カーボン複合素材の超強力バンパー。',
+    rr_alum2:    '2段構造でさらに安定性を高めたアルミローラー。',
     md_std:      'ジャンプ後の着地を安定させる重り。',
   };
   return desc[id] ?? '詳細情報なし';

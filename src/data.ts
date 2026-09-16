@@ -1,5 +1,21 @@
 import type { MachineSetting, Part, PartStats } from './types';
 
+import chassisAr from './assets/parts/chassis_ar.jpg';
+import chassisTz from './assets/parts/chassis_tz.jpg';
+import chassisSuper2 from './assets/parts/chassis_super2.jpg';
+import motorNormal from './assets/parts/motor_normal.jpg';
+import motorRev2 from './assets/parts/motor_rev2.jpg';
+import motorTorque2 from './assets/parts/motor_torque2.jpg';
+import motorHyperdash from './assets/parts/motor_hyperdash.jpg';
+import gearStd from './assets/parts/gear_std.jpg';
+import gearSuper from './assets/parts/gear_super.jpg';
+import tireSponge from './assets/parts/tire_sponge.jpg';
+import tireLowhi from './assets/parts/tire_lowhi.jpg';
+import rollerPlastic from './assets/parts/roller_plastic.jpg';
+import rollerAlum from './assets/parts/roller_alum.jpg';
+import rollerAlum2step from './assets/parts/roller_alum2step.jpg';
+import massDamperSquare from './assets/parts/mass_damper_square.jpg';
+
 export const PARTS: Part[] = [
   // Body
   { id: 'b_magnum', name: 'マグナムセイバー', type: 'body', stats: { speed: 10, power: 0, cornering: 0, stamina: 0, weight: 15 } },
@@ -7,37 +23,38 @@ export const PARTS: Part[] = [
   { id: 'b_tridagger', name: 'トライダガーX', type: 'body', stats: { speed: 5, power: 5, cornering: 5, stamina: 10, weight: 16 } },
 
   // Chassis
-  { id: 'c_super1', name: 'スーパー1シャーシ', type: 'chassis', stats: { speed: 10, power: 10, cornering: 20, stamina: 10, weight: 15 } },
-  { id: 'c_tz', name: 'スーパーTZシャーシ', type: 'chassis', stats: { speed: 15, power: 10, cornering: 30, stamina: 15, weight: 18 } },
-  { id: 'c_ar', name: 'ARシャーシ', type: 'chassis', stats: { speed: 20, power: 15, cornering: 25, stamina: 30, weight: 22 } },
-  
+  { id: 'c_super1', name: 'スーパーIIシャーシ', type: 'chassis', stats: { speed: 10, power: 10, cornering: 20, stamina: 10, weight: 15 }, image: chassisSuper2 },
+  { id: 'c_tz', name: 'スーパーTZシャーシ', type: 'chassis', stats: { speed: 15, power: 10, cornering: 30, stamina: 15, weight: 18 }, image: chassisTz },
+  { id: 'c_ar', name: 'ARシャーシ', type: 'chassis', stats: { speed: 20, power: 15, cornering: 25, stamina: 30, weight: 22 }, image: chassisAr },
+
   // Motor
-  { id: 'm_normal', name: 'ノーマルモーター', type: 'motor', stats: { speed: 50, power: 50, cornering: 0, stamina: 0, weight: 17 } },
-  { id: 'm_rev', name: 'レブチューンモーター', type: 'motor', stats: { speed: 120, power: 40, cornering: 0, stamina: 0, weight: 17 } },
-  { id: 'm_torque', name: 'トルクチューンモーター', type: 'motor', stats: { speed: 70, power: 110, cornering: 0, stamina: 0, weight: 17 } },
-  { id: 'm_hyper', name: 'ハイパーダッシュ', type: 'motor', stats: { speed: 150, power: 130, cornering: 0, stamina: -10, weight: 17 } },
+  { id: 'm_normal', name: 'タイプノーマルモーター', type: 'motor', stats: { speed: 50, power: 50, cornering: 0, stamina: 0, weight: 17 }, image: motorNormal },
+  { id: 'm_rev', name: 'レブチューン2モーター', type: 'motor', stats: { speed: 120, power: 40, cornering: 0, stamina: 0, weight: 17 }, image: motorRev2 },
+  { id: 'm_torque', name: 'トルクチューン2モーター', type: 'motor', stats: { speed: 70, power: 110, cornering: 0, stamina: 0, weight: 17 }, image: motorTorque2 },
+  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 150, power: 130, cornering: 0, stamina: -10, weight: 17 }, image: motorHyperdash },
 
   // Gear
-  { id: 'g_std', name: '標準ギヤ (4:1)', type: 'gear', stats: { speed: 20, power: 40, cornering: 0, stamina: 0, weight: 2 } },
-  { id: 'g_super', name: '超速ギヤ (3.5:1)', type: 'gear', stats: { speed: 50, power: 20, cornering: 0, stamina: 0, weight: 2 } },
-  
+  { id: 'g_std', name: '標準ギヤ (4:1)', type: 'gear', stats: { speed: 20, power: 40, cornering: 0, stamina: 0, weight: 2 }, image: gearStd },
+  { id: 'g_super', name: '超速ギヤ (3.5:1)', type: 'gear', stats: { speed: 50, power: 20, cornering: 0, stamina: 0, weight: 2 }, image: gearSuper },
+
   // Tires
   { id: 'tf_slick', name: 'スリックタイヤ(前)', type: 'tire_front', stats: { speed: 30, power: 10, cornering: 10, stamina: 0, weight: 5 } },
-  { id: 'tf_sponge', name: 'スポンジタイヤ(前)', type: 'tire_front', stats: { speed: 20, power: 20, cornering: 30, stamina: 0, weight: 3 } },
+  { id: 'tf_sponge', name: 'スポンジタイヤ(前)', type: 'tire_front', stats: { speed: 20, power: 20, cornering: 30, stamina: 0, weight: 3 }, image: tireSponge },
+  { id: 'tf_lowhi', name: 'ローハイトタイヤ(前)', type: 'tire_front', stats: { speed: 15, power: 5, cornering: 25, stamina: 0, weight: 4 }, image: tireLowhi },
   { id: 'tr_slick', name: 'スリックタイヤ(後)', type: 'tire_rear', stats: { speed: 30, power: 10, cornering: 10, stamina: 0, weight: 5 } },
-  { id: 'tr_sponge', name: 'スポンジタイヤ(後)', type: 'tire_rear', stats: { speed: 20, power: 20, cornering: 30, stamina: 0, weight: 3 } },
+  { id: 'tr_sponge', name: 'スポンジタイヤ(後)', type: 'tire_rear', stats: { speed: 20, power: 20, cornering: 30, stamina: 0, weight: 3 }, image: tireSponge },
+  { id: 'tr_lowhi', name: 'ローハイトタイヤ(後)', type: 'tire_rear', stats: { speed: 15, power: 5, cornering: 25, stamina: 0, weight: 4 }, image: tireLowhi },
 
   // Rollers
-  { id: 'rf_plastic', name: 'プラローラー(前)', type: 'roller_front', stats: { speed: 0, power: 0, cornering: 20, stamina: 0, weight: 2 } },
-  { id: 'rf_alum', name: 'アルミローラー(前)', type: 'roller_front', stats: { speed: -5, power: 0, cornering: 50, stamina: 0, weight: 4 } },
-  { id: 'rr_plastic', name: 'プラローラー(後)', type: 'roller_rear', stats: { speed: 0, power: 0, cornering: 20, stamina: 0, weight: 2 } },
-  { id: 'rr_alum', name: 'アルミローラー(後)', type: 'roller_rear', stats: { speed: -5, power: 0, cornering: 50, stamina: 0, weight: 4 } },
+  { id: 'rf_plastic', name: 'プラローラー(前)', type: 'roller_front', stats: { speed: 0, power: 0, cornering: 20, stamina: 0, weight: 2 }, image: rollerPlastic },
+  { id: 'rf_alum', name: 'アルミベアリングローラー(前)', type: 'roller_front', stats: { speed: -5, power: 0, cornering: 50, stamina: 0, weight: 4 }, image: rollerAlum },
+  { id: 'rf_alum2', name: '2段アルミローラー(前)', type: 'roller_front', stats: { speed: -8, power: 0, cornering: 65, stamina: 0, weight: 6 }, image: rollerAlum2step },
+  { id: 'rr_plastic', name: 'プラローラー(後)', type: 'roller_rear', stats: { speed: 0, power: 0, cornering: 20, stamina: 0, weight: 2 }, image: rollerPlastic },
+  { id: 'rr_alum', name: 'アルミベアリングローラー(後)', type: 'roller_rear', stats: { speed: -5, power: 0, cornering: 50, stamina: 0, weight: 4 }, image: rollerAlum },
+  { id: 'rr_alum2', name: '2段アルミローラー(後)', type: 'roller_rear', stats: { speed: -8, power: 0, cornering: 65, stamina: 0, weight: 6 }, image: rollerAlum2step },
 
-  // FRP
-  { id: 'frp_front', name: 'FRP強化マウント', type: 'frp', stats: { speed: 0, power: 0, cornering: 40, stamina: 10, weight: 3 } },
-  
   // Mass Damper
-  { id: 'md_std', name: 'マスダンパー', type: 'mass_damper', stats: { speed: -10, power: 0, cornering: 30, stamina: 20, weight: 10 } }
+  { id: 'md_std', name: 'マスダンパー スクエア', type: 'mass_damper', stats: { speed: -10, power: 0, cornering: 30, stamina: 20, weight: 10 }, image: massDamperSquare },
 ];
 
 export function computeTotalStats(setting: MachineSetting): PartStats {

@@ -15,7 +15,6 @@ const BASE_SETTING: MachineSetting = {
   tire_rear: 'tr_slick',
   roller_front: 'rf_plastic',
   roller_rear: 'rr_plastic',
-  frp: null,
   mass_damper: null,
 };
 
