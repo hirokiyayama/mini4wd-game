@@ -29,8 +29,15 @@ const ACCEL_EXPONENT = 1.6;
 const STAMINA_BASELINE = 15;
 // ラスト1周（3周レースなら2/3経過）からバテ・巻き返し効果が一気に強まる
 const FATIGUE_START_FRAC = 2 / 3;
-const FATIGUE_MAX_CUT = 0.55; // 最大55%減速（低スタミナ・ダッシュ系モーター想定）
-const SECOND_WIND_MAX_BOOST = 0.16; // 最大16%増速（高スタミナ構成のご褒美）
+// スタミナが基準からどれだけ離れているか（staminaGap）に比例して終盤の
+// 速度倍率が連続的に変化する。以前は上限/下限でキャップしていたため、
+// 極端にスタミナが低い構成でも「そこから先はもう変わらない」という
+// 不自然な頭打ちが生じていた。キャップを撤廃し、差が大きいほど際限なく
+// 効果が強まるようにする。SAFETY_FLOOR/CEILING は実際には到達しない
+// 想定外の値が来た場合の保険にすぎない。
+const STAMINA_EFFECT_COEF = 0.01; // staminaGap 1あたりの倍率変化量
+const STAMINA_MUL_SAFETY_FLOOR = 0.25;
+const STAMINA_MUL_SAFETY_CEILING = 2;
 
 // ── パワーヒルウェイ専用：坂道でのパワー効果 ──
 // パワー/重さ比がこの値と同じ機体は上り坂でも速度低下なし。これより低いと
@@ -201,9 +208,10 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         const raceFrac = Math.min(1, (rt.laps * Math.PI * 2 + rt.progress) / distanceTarget);
         const fatigueEase = Math.max(0, (raceFrac - FATIGUE_START_FRAC) / (1 - FATIGUE_START_FRAC));
         const staminaGap = racer.totalStats.stamina - STAMINA_BASELINE;
-        const staminaMul = staminaGap >= 0
-          ? 1 + Math.min(SECOND_WIND_MAX_BOOST, staminaGap * 0.0022) * fatigueEase
-          : 1 - Math.min(FATIGUE_MAX_CUT, -staminaGap * 0.01) * fatigueEase;
+        const staminaMul = Math.max(
+          STAMINA_MUL_SAFETY_FLOOR,
+          Math.min(STAMINA_MUL_SAFETY_CEILING, 1 + staminaGap * STAMINA_EFFECT_COEF * fatigueEase)
+        );
 
         // 坂道（パワーヒルウェイ）でのパワー効果：上りはパワー/重さ比が低いと失速し、
         // 高いとむしろ加速。下りは誰でも一律ブースト
