@@ -51,12 +51,12 @@ export const PARTS: Part[] = [
   { id: 'c_ar', name: 'ARシャーシ', type: 'chassis', stats: { speed: 20, power: 15, cornering: 25, stamina: 10, weight: 22 }, image: chassisAr },
 
   // Motor
-  { id: 'm_lightdash', name: 'ライトダッシュモーター', type: 'motor', stats: { speed: 125, power: 80, cornering: 0, stamina: -30, weight: 14 }, image: motorLightdash },
+  { id: 'm_lightdash', name: 'ライトダッシュモーター', type: 'motor', stats: { speed: 120, power: 50, cornering: 0, stamina: -25, weight: 14 }, image: motorLightdash },
   { id: 'm_normal', name: 'タイプノーマルモーター', type: 'motor', stats: { speed: 50, power: 50, cornering: 0, stamina: 10, weight: 17 }, image: motorNormal },
-  { id: 'm_rev', name: 'レブチューン2モーター', type: 'motor', stats: { speed: 120, power: 40, cornering: 0, stamina: 10, weight: 17 }, image: motorRev2 },
-  { id: 'm_torque', name: 'トルクチューン2モーター', type: 'motor', stats: { speed: 90, power: 110, cornering: 0, stamina: 10, weight: 17 }, image: motorTorque2 },
-  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 110, power: 120, cornering: 0, stamina: -30, weight: 17 }, image: motorPowerdash },
-  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 135, power: 80, cornering: 0, stamina: -45, weight: 17 }, image: motorHyperdash },
+  { id: 'm_rev', name: 'レブチューン2モーター', type: 'motor', stats: { speed: 110, power: 40, cornering: -10, stamina: 10, weight: 17 }, image: motorRev2 },
+  { id: 'm_torque', name: 'トルクチューン2モーター', type: 'motor', stats: { speed: 70, power: 80, cornering: 20, stamina: 10, weight: 17 }, image: motorTorque2 },
+  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 100, power: 100, cornering: 0, stamina: -30, weight: 17 }, image: motorPowerdash },
+  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 135, power: 70, cornering: 0, stamina: -45, weight: 17 }, image: motorHyperdash },
 
   // Battery
   { id: 'bat_neochamp', name: 'ニッケル水素電池 ネオチャンプ', type: 'battery', stats: { speed: 15, power: 5, cornering: 0, stamina: -10, weight: 10 }, image: batteryNeochamp },
@@ -83,7 +83,7 @@ export const PARTS: Part[] = [
   { id: 'rr_alum2', name: '2段アルミローラー(後)', type: 'roller_rear', stats: { speed: -8, power: 0, cornering: 65, stamina: 0, weight: 6 }, image: rollerAlum2step },
 
   // Mass Damper
-  { id: 'md_std', name: 'マスダンパー スクエア', type: 'mass_damper', stats: { speed: -15, power: 0, cornering: -15, stamina: 6, weight: 10 }, image: massDamperSquare },
+  { id: 'md_std', name: 'マスダンパー スクエア', type: 'mass_damper', stats: { speed: -15, power: -15, cornering: 5, stamina: 10, weight: 10 }, image: massDamperSquare },
 ];
 
 // CPUレーサーの強さレベル（1〜3）別パーツ構成。ボディとギヤは特性の違いで
