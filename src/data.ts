@@ -55,7 +55,7 @@ export const PARTS: Part[] = [
   { id: 'm_normal', name: 'タイプノーマルモーター', type: 'motor', stats: { speed: 50, power: 50, cornering: 0, stamina: 10, weight: 17 }, image: motorNormal },
   { id: 'm_rev', name: 'レブチューン2モーター', type: 'motor', stats: { speed: 110, power: 40, cornering: -10, stamina: 10, weight: 17 }, image: motorRev2 },
   { id: 'm_torque', name: 'トルクチューン2モーター', type: 'motor', stats: { speed: 70, power: 80, cornering: 20, stamina: 10, weight: 17 }, image: motorTorque2 },
-  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 100, power: 100, cornering: 0, stamina: -30, weight: 17 }, image: motorPowerdash },
+  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 100, power: 150, cornering: 0, stamina: -30, weight: 17 }, image: motorPowerdash },
   { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 130, power: 50, cornering: 0, stamina: -45, weight: 17 }, image: motorHyperdash },
 
   // Battery
