@@ -17,6 +17,7 @@ const BASE_SETTING: MachineSetting = {
   roller_front: 'rf_plastic',
   roller_rear: 'rr_plastic',
   mass_damper: null,
+  stabilizer: null,
 };
 
 const DEFAULT_CPU_LEVEL: CPULevel = 2;

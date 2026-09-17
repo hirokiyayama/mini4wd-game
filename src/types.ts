@@ -1,4 +1,4 @@
-export type PartType = 'body' | 'chassis' | 'motor' | 'battery' | 'gear' | 'tire_front' | 'tire_rear' | 'roller_front' | 'roller_rear' | 'mass_damper';
+export type PartType = 'body' | 'chassis' | 'motor' | 'battery' | 'gear' | 'tire_front' | 'tire_rear' | 'roller_front' | 'roller_rear' | 'mass_damper' | 'stabilizer';
 
 export interface PartStats {
   speed: number;       // スピード（最高速に影響）
@@ -27,6 +27,7 @@ export interface MachineSetting {
   roller_front: string | null;
   roller_rear: string | null;
   mass_damper: string | null;
+  stabilizer: string | null;
 }
 
 export type CPULevel = 1 | 2 | 3;

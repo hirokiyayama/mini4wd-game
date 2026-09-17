@@ -32,10 +32,11 @@ const SLOT_LABELS: Record<PartType, string> = {
   roller_front: 'フロントローラー',
   roller_rear: 'リアローラー',
   mass_damper: 'マスダンパー',
+  stabilizer: 'スタビライザー',
 };
 
 // パーツカテゴリのTabシステム
-const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'battery', 'gear', 'tire_front', 'tire_rear', 'roller_front', 'roller_rear', 'mass_damper'];
+const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'battery', 'gear', 'tire_front', 'tire_rear', 'roller_front', 'roller_rear', 'mass_damper', 'stabilizer'];
 
 // ゲージの最大値（ステータスのスケーリング用）。スタミナは0を中心に±この値まで
 const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 40, weight: 200 };
@@ -109,7 +110,7 @@ export const Garage: React.FC<GarageProps> = ({
 
   // 現在のタブのパーツ一覧
   const tabParts = PARTS.filter(p => p.type === activeTab);
-  const nullable = activeTab === 'mass_damper';
+  const nullable = activeTab === 'mass_damper' || activeTab === 'stabilizer';
 
   // 選択中のボディ名
   const selectedBodyName = PARTS.find(p => p.id === setting.body)?.name ?? '未選択';
@@ -348,7 +349,7 @@ function getPartIcon(type: PartType): string {
   const icons: Record<PartType, string> = {
     body: '🚗', chassis: '⚙️', motor: '⚡', battery: '🔋', gear: '🔧',
     tire_front: '⭕', tire_rear: '⭕', roller_front: '🔵', roller_rear: '🔵',
-    mass_damper: '🔩',
+    mass_damper: '🔩', stabilizer: '🛡️',
   };
   return icons[type];
 }
@@ -375,20 +376,29 @@ function getPartDescription(id: string): string {
     bat_neochamp:   'スピードとパワーを底上げする充電式のニッケル水素電池。ただしスタミナはやや落ちる。',
     bat_powerchamp: 'パワーをしっかり底上げする定番のアルカリ電池。他のステータスへの影響はない。',
     g_std:       'バランスの取れたスタンダードギヤ比。',
+    g_ex37:      '標準と超速の中間にあたる万能なギヤ比(3.7:1)。',
     g_super:     'スピード特化の超高速ギヤ比。',
     tf_slick:    'グリップ力の高いフロントタイヤ。',
     tf_sponge:   'コーナーで真価を発揮するスポンジタイヤ。',
     tf_lowhi:    '重心を下げて安定性を高めるローハイトタイヤ。',
+    tf_hardlowhi:'硬めのゴムで転がり抵抗を減らしたローハイトタイヤ。グリップは控えめ。',
+    tf_narrowsponge: '幅を絞って軽量化したスポンジタイヤ。標準品よりわずかにグリップは落ちる。',
     tr_slick:    '安定性の高いリアスリックタイヤ。',
     tr_sponge:   'コーナリングを支えるリアスポンジタイヤ。',
     tr_lowhi:    '重心を下げて安定性を高めるローハイトタイヤ。',
+    tr_hardlowhi:'硬めのゴムで転がり抵抗を減らしたローハイトタイヤ。グリップは控えめ。',
+    tr_narrowsponge: '幅を絞って軽量化したスポンジタイヤ。標準品よりわずかにグリップは落ちる。',
     rf_plastic:  'コーナーでの安定性を高めるパーツ。',
+    rf_plastic2low: '低摩擦素材の2段構造プラローラー。速度を落とさずコーナー安定性を高める。',
     rf_alum:     '高精度アルミ製で摩擦が少ないローラー。',
     rf_alum2:    '2段構造でさらに安定性を高めたアルミローラー。',
     rr_plastic:  'リアの安定性を向上させるローラー。',
+    rr_plastic2low: '低摩擦素材の2段構造プラローラー。速度を落とさずコーナー安定性を高める。',
     rr_alum:     '超低摩擦のアルミ製リアローラー。',
     rr_alum2:    '2段構造でさらに安定性を高めたアルミローラー。',
     md_std:      'スタミナを底上げする代わりに、スピードとコーナーを少し犠牲にする重り。',
+    stab_pole:   '軽量なポールタイプのスタビライザー。わずかな重量でコーナー安定性を上げる。',
+    stab_hitube: '高い位置で車体を支えるチューブスタビライザー。コーナー安定性は高いが少し重い。',
   };
   return desc[id] ?? '詳細情報なし';
 }

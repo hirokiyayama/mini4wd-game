@@ -28,17 +28,23 @@ import rollerAlum2step from './assets/parts/roller_alum2step.jpg';
 import massDamperSquare from './assets/parts/mass_damper_square.jpg';
 import batteryNeochamp from './assets/parts/battery_neochamp.jpg';
 import batteryPowerchamp from './assets/parts/battery_powerchamp.jpg';
+import rollerPlastic2Low from './assets/parts/roller_plastic2low.jpg';
+import tireHardLowhi from './assets/parts/tire_hardlowhi.jpg';
+import tireNarrowSponge from './assets/parts/tire_narrowsponge.jpg';
+import gearEx37 from './assets/parts/gear_ex37.jpg';
+import stabilizerHitube from './assets/parts/stabilizer_hitube.jpg';
+import stabilizerPole from './assets/parts/stabilizer_pole.jpg';
 
 export const PARTS: Part[] = [
   // Body — grouped into 4 clear archetypes (big stat swings between
   // groups, not just +/-5) so each machine's role is obvious at a glance.
   // スピード特化
-  { id: 'b_magnum', name: 'マグナムセイバー', type: 'body', stats: { speed: 45, power: 10, cornering: -15, stamina: 0, weight: 16 }, image: bodyMagnum },
+  { id: 'b_magnum', name: 'マグナムセイバー', type: 'body', stats: { speed: 45, power: 0, cornering: -15, stamina: 0, weight: 16 }, image: bodyMagnum },
   { id: 'b_tridagger', name: 'トライダガーX', type: 'body', stats: { speed: 40, power: 15, cornering: -10, stamina: 0, weight: 19 }, image: bodyTridagger },
   // コーナー特化
-  { id: 'b_beakspider', name: 'ビークスパイダー', type: 'body', stats: { speed: 5, power: -10, cornering: 30, stamina: 0, weight: 10 }, image: bodyBeakSpider },
-  { id: 'b_sonic', name: 'ソニックセイバー', type: 'body', stats: { speed: -10, power: -5, cornering: 50, stamina: 6, weight: 13 }, image: bodySonic },
-  { id: 'b_spinaxe', name: 'スピンアックス', type: 'body', stats: { speed: -5, power: -5, cornering: 45, stamina: 4, weight: 15 }, image: bodySpinAxe },
+  { id: 'b_beakspider', name: 'ビークスパイダー', type: 'body', stats: { speed: 20, power: 0, cornering: 30, stamina: 0, weight: 10 }, image: bodyBeakSpider },
+  { id: 'b_sonic', name: 'ソニックセイバー', type: 'body', stats: { speed: -10, power: 0, cornering: 50, stamina: 6, weight: 13 }, image: bodySonic },
+  { id: 'b_spinaxe', name: 'スピンアックス', type: 'body', stats: { speed: -5, power: 0, cornering: 45, stamina: 4, weight: 15 }, image: bodySpinAxe },
   // パワー特化
   { id: 'b_brockeng', name: 'ブロッケンG', type: 'body', stats: { speed: 0, power: 65, cornering: 0, stamina: 10, weight: 26 }, image: bodyBrockenG },
   // バランス型
@@ -64,26 +70,37 @@ export const PARTS: Part[] = [
 
   // Gear
   { id: 'g_std', name: '標準ギヤ (4:1)', type: 'gear', stats: { speed: 20, power: 40, cornering: 0, stamina: 0, weight: 2 }, image: gearStd },
+  { id: 'g_ex37', name: 'ハイスピードEXカウンターギヤ (3.7:1)', type: 'gear', stats: { speed: 38, power: 28, cornering: 0, stamina: 0, weight: 2 }, image: gearEx37 },
   { id: 'g_super', name: '超速ギヤ (3.5:1)', type: 'gear', stats: { speed: 50, power: 20, cornering: 0, stamina: 0, weight: 2 }, image: gearSuper },
 
   // Tires
   { id: 'tf_slick', name: 'スリックタイヤ(前)', type: 'tire_front', stats: { speed: 30, power: 10, cornering: 10, stamina: 0, weight: 5 } },
   { id: 'tf_sponge', name: 'スポンジタイヤ(前)', type: 'tire_front', stats: { speed: 20, power: 20, cornering: 30, stamina: 0, weight: 3 }, image: tireSponge },
   { id: 'tf_lowhi', name: 'ローハイトタイヤ(前)', type: 'tire_front', stats: { speed: 15, power: 5, cornering: 25, stamina: 0, weight: 4 }, image: tireLowhi },
+  { id: 'tf_hardlowhi', name: 'スーパーハード ローハイトタイヤ(前)', type: 'tire_front', stats: { speed: 30, power: 10, cornering: 10, stamina: 0, weight: 4 }, image: tireHardLowhi },
+  { id: 'tf_narrowsponge', name: 'ナローレストンスポンジタイヤ(前)', type: 'tire_front', stats: { speed: 25, power: 15, cornering: 25, stamina: 0, weight: 2 }, image: tireNarrowSponge },
   { id: 'tr_slick', name: 'スリックタイヤ(後)', type: 'tire_rear', stats: { speed: 30, power: 10, cornering: 10, stamina: 0, weight: 5 } },
   { id: 'tr_sponge', name: 'スポンジタイヤ(後)', type: 'tire_rear', stats: { speed: 20, power: 20, cornering: 30, stamina: 0, weight: 3 }, image: tireSponge },
   { id: 'tr_lowhi', name: 'ローハイトタイヤ(後)', type: 'tire_rear', stats: { speed: 15, power: 5, cornering: 25, stamina: 0, weight: 4 }, image: tireLowhi },
+  { id: 'tr_hardlowhi', name: 'スーパーハード ローハイトタイヤ(後)', type: 'tire_rear', stats: { speed: 30, power: 10, cornering: 10, stamina: 0, weight: 4 }, image: tireHardLowhi },
+  { id: 'tr_narrowsponge', name: 'ナローレストンスポンジタイヤ(後)', type: 'tire_rear', stats: { speed: 25, power: 15, cornering: 25, stamina: 0, weight: 2 }, image: tireNarrowSponge },
 
   // Rollers
   { id: 'rf_plastic', name: 'プラローラー(前)', type: 'roller_front', stats: { speed: 0, power: 0, cornering: 20, stamina: 0, weight: 2 }, image: rollerPlastic },
+  { id: 'rf_plastic2low', name: '2段低摩擦プラローラー(前)', type: 'roller_front', stats: { speed: 2, power: 0, cornering: 35, stamina: 0, weight: 3 }, image: rollerPlastic2Low },
   { id: 'rf_alum', name: 'アルミベアリングローラー(前)', type: 'roller_front', stats: { speed: -5, power: 0, cornering: 50, stamina: 0, weight: 4 }, image: rollerAlum },
   { id: 'rf_alum2', name: '2段アルミローラー(前)', type: 'roller_front', stats: { speed: -8, power: 0, cornering: 65, stamina: 0, weight: 6 }, image: rollerAlum2step },
   { id: 'rr_plastic', name: 'プラローラー(後)', type: 'roller_rear', stats: { speed: 0, power: 0, cornering: 20, stamina: 0, weight: 2 }, image: rollerPlastic },
+  { id: 'rr_plastic2low', name: '2段低摩擦プラローラー(後)', type: 'roller_rear', stats: { speed: 2, power: 0, cornering: 35, stamina: 0, weight: 3 }, image: rollerPlastic2Low },
   { id: 'rr_alum', name: 'アルミベアリングローラー(後)', type: 'roller_rear', stats: { speed: -5, power: 0, cornering: 50, stamina: 0, weight: 4 }, image: rollerAlum },
   { id: 'rr_alum2', name: '2段アルミローラー(後)', type: 'roller_rear', stats: { speed: -8, power: 0, cornering: 65, stamina: 0, weight: 6 }, image: rollerAlum2step },
 
   // Mass Damper
   { id: 'md_std', name: 'マスダンパー スクエア', type: 'mass_damper', stats: { speed: -10, power: -10, cornering: 5, stamina: 10, weight: 10 }, image: massDamperSquare },
+
+  // Stabilizer
+  { id: 'stab_pole', name: 'スタビライザーポール', type: 'stabilizer', stats: { speed: -1, power: 0, cornering: 10, stamina: 0, weight: 3 }, image: stabilizerPole },
+  { id: 'stab_hitube', name: 'ハイマウントチューブスタビ', type: 'stabilizer', stats: { speed: -3, power: 0, cornering: 20, stamina: 0, weight: 6 }, image: stabilizerHitube },
 ];
 
 // CPUレーサーの強さレベル（1〜3）別パーツ構成。ボディとギヤは特性の違いで
@@ -103,6 +120,8 @@ const CPU_TIER_MOTOR: Record<CPULevel, string[]> = {
 // 諸刃のパーツになったため、レベルに関わらず控えめな確率にしておく
 // （「強いCPUほど必ず積む」ような単純な上位互換ではなくなったため）
 const CPU_TIER_MD_CHANCE: Record<CPULevel, number> = { 1: 0.2, 2: 0.25, 3: 0.3 };
+// スタビライザーもマスダンパー同様の任意装備。強さへの影響は控えめなので確率も控えめ。
+const CPU_TIER_STAB_CHANCE: Record<CPULevel, number> = { 1: 0.15, 2: 0.2, 3: 0.25 };
 
 // CPUレーサー用：レベルに応じた強さでパーツを自動生成する
 export function randomSetting(level: CPULevel = 2): MachineSetting {
@@ -122,6 +141,7 @@ export function randomSetting(level: CPULevel = 2): MachineSetting {
     roller_front: CPU_TIER_ROLLER_FRONT[level - 1],
     roller_rear: CPU_TIER_ROLLER_REAR[level - 1],
     mass_damper: Math.random() < CPU_TIER_MD_CHANCE[level] ? 'md_std' : null,
+    stabilizer: Math.random() < CPU_TIER_STAB_CHANCE[level] ? pickAny('stabilizer') : null,
   };
 }
 
