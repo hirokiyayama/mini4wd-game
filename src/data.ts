@@ -40,7 +40,7 @@ export const PARTS: Part[] = [
   { id: 'b_sonic', name: 'ソニックセイバー', type: 'body', stats: { speed: -10, power: -5, cornering: 50, stamina: 6, weight: 13 }, image: bodySonic },
   { id: 'b_spinaxe', name: 'スピンアックス', type: 'body', stats: { speed: -5, power: -5, cornering: 45, stamina: 4, weight: 15 }, image: bodySpinAxe },
   // パワー特化
-  { id: 'b_brockeng', name: 'ブロッケンG', type: 'body', stats: { speed: 0, power: 80, cornering: 0, stamina: 10, weight: 26 }, image: bodyBrockenG },
+  { id: 'b_brockeng', name: 'ブロッケンG', type: 'body', stats: { speed: 0, power: 65, cornering: 0, stamina: 10, weight: 26 }, image: bodyBrockenG },
   // バランス型
   { id: 'b_protosaberjb', name: 'プロトセイバーJB', type: 'body', stats: { speed: 20, power: 20, cornering: 20, stamina: 9, weight: 17 }, image: bodyProtoSaberJB },
   { id: 'b_raystinger', name: 'レイスティンガー', type: 'body', stats: { speed: 22, power: 18, cornering: 18, stamina: 7, weight: 15 }, image: bodyRayStinger },
@@ -55,7 +55,7 @@ export const PARTS: Part[] = [
   { id: 'm_normal', name: 'タイプノーマルモーター', type: 'motor', stats: { speed: 50, power: 50, cornering: 0, stamina: 10, weight: 17 }, image: motorNormal },
   { id: 'm_rev', name: 'レブチューン2モーター', type: 'motor', stats: { speed: 110, power: 40, cornering: -10, stamina: 10, weight: 17 }, image: motorRev2 },
   { id: 'm_torque', name: 'トルクチューン2モーター', type: 'motor', stats: { speed: 70, power: 80, cornering: 20, stamina: 10, weight: 17 }, image: motorTorque2 },
-  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 100, power: 150, cornering: 0, stamina: -30, weight: 17 }, image: motorPowerdash },
+  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 100, power: 135, cornering: 0, stamina: -30, weight: 17 }, image: motorPowerdash },
   { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 130, power: 50, cornering: 0, stamina: -45, weight: 17 }, image: motorHyperdash },
 
   // Battery
@@ -83,7 +83,7 @@ export const PARTS: Part[] = [
   { id: 'rr_alum2', name: '2段アルミローラー(後)', type: 'roller_rear', stats: { speed: -8, power: 0, cornering: 65, stamina: 0, weight: 6 }, image: rollerAlum2step },
 
   // Mass Damper
-  { id: 'md_std', name: 'マスダンパー スクエア', type: 'mass_damper', stats: { speed: -15, power: -15, cornering: 5, stamina: 10, weight: 10 }, image: massDamperSquare },
+  { id: 'md_std', name: 'マスダンパー スクエア', type: 'mass_damper', stats: { speed: -10, power: -10, cornering: 5, stamina: 10, weight: 10 }, image: massDamperSquare },
 ];
 
 // CPUレーサーの強さレベル（1〜3）別パーツ構成。ボディとギヤは特性の違いで
