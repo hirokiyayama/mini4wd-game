@@ -40,7 +40,7 @@ export const PARTS: Part[] = [
   { id: 'b_sonic', name: 'ソニックセイバー', type: 'body', stats: { speed: -10, power: -5, cornering: 50, stamina: 6, weight: 13 }, image: bodySonic },
   { id: 'b_spinaxe', name: 'スピンアックス', type: 'body', stats: { speed: -5, power: -5, cornering: 45, stamina: 4, weight: 15 }, image: bodySpinAxe },
   // パワー特化
-  { id: 'b_brockeng', name: 'ブロッケンG', type: 'body', stats: { speed: 0, power: 55, cornering: -20, stamina: 10, weight: 26 }, image: bodyBrockenG },
+  { id: 'b_brockeng', name: 'ブロッケンG', type: 'body', stats: { speed: 0, power: 80, cornering: 0, stamina: 10, weight: 26 }, image: bodyBrockenG },
   // バランス型
   { id: 'b_protosaberjb', name: 'プロトセイバーJB', type: 'body', stats: { speed: 20, power: 20, cornering: 20, stamina: 9, weight: 17 }, image: bodyProtoSaberJB },
   { id: 'b_raystinger', name: 'レイスティンガー', type: 'body', stats: { speed: 22, power: 18, cornering: 18, stamina: 7, weight: 15 }, image: bodyRayStinger },
