@@ -116,6 +116,29 @@ body, html {
   0%, 100% { text-shadow: 0 0 10px rgba(255,215,64,0.6); }
   50%       { text-shadow: 0 0 18px rgba(255,215,64,0.95), 0 0 30px rgba(255,215,64,0.4); }
 }
+@keyframes special-flash {
+  0%   { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+@keyframes special-card-in {
+  0%   { transform: scale(0.4) rotate(-4deg); opacity: 0; }
+  55%  { transform: scale(1.08) rotate(1deg); opacity: 1; }
+  75%  { transform: scale(0.97) rotate(-0.5deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes special-name-glow {
+  0%, 100% { text-shadow: 0 0 18px var(--special-glow, #fff), 0 0 40px var(--special-color, #fff); }
+  50%       { text-shadow: 0 0 30px var(--special-glow, #fff), 0 0 70px var(--special-color, #fff), 0 0 100px var(--special-color, #fff); }
+}
+@keyframes special-ring-pulse {
+  0%   { transform: scale(0.6); opacity: 0.9; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+@keyframes special-burst-spin {
+  0%   { opacity: 0; transform: scale(0.5) rotate(0deg); }
+  30%  { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.6) rotate(220deg); }
+}
 
 /* ══════════════════════════════════════════════
    SCREEN SHELL
@@ -966,6 +989,26 @@ body, html {
   filter: blur(2px);
 }
 
+/* 必殺技発動中、自機の周囲に表示する派手なオーラ演出（機体ごとの色でグロー） */
+.mc-special {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 110px;
+  height: 110px;
+  margin-left: -55px;
+  margin-top: -55px;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, var(--special-glow, #fff) 0%, var(--special-color, #5aabff) 40%, transparent 72%);
+  filter: blur(2px);
+  mix-blend-mode: screen;
+  transition: opacity 0.2s ease;
+  z-index: -1;
+}
+
 .mc-rotate {
   position: relative;
   width: 54px;
@@ -1159,6 +1202,87 @@ body, html {
   font-size: 76px;
   color: #4ade80;
   text-shadow: 0 0 50px rgba(74,222,128,0.7);
+}
+
+/* ── 必殺技演出オーバーレイ ── */
+.race-special-overlay {
+  z-index: 40;
+  background: radial-gradient(circle at 50% 50%, rgba(10,14,34,0.55), rgba(0,0,0,0.86));
+  overflow: hidden;
+}
+
+.race-special-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, var(--special-color, #fff), transparent 65%);
+  opacity: 0;
+  animation: special-flash 0.5s ease-out forwards;
+  pointer-events: none;
+}
+
+.race-special-overlay::before,
+.race-special-overlay::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 220px;
+  height: 220px;
+  margin-left: -110px;
+  margin-top: -110px;
+  border-radius: 50%;
+  border: 3px solid var(--special-color, #fff);
+  opacity: 0;
+  pointer-events: none;
+  animation: special-ring-pulse 1.1s ease-out infinite;
+}
+.race-special-overlay::after {
+  animation-delay: 0.35s;
+}
+
+.race-special-card {
+  position: relative;
+  text-align: center;
+  padding: 40px 70px;
+  background: linear-gradient(180deg, rgba(8,13,34,0.94), rgba(4,7,26,0.94));
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--special-color, #fff);
+  box-shadow: 0 0 70px var(--special-color, #fff), inset 0 1px 0 rgba(255,255,255,0.08);
+  animation: special-card-in 0.55s cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+
+.race-special-machine {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.6);
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.race-special-quote {
+  margin-top: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+
+.race-special-name {
+  margin-top: 14px;
+  font-size: 52px;
+  font-weight: 900;
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  color: #fff;
+  animation: special-name-glow 0.9s ease-in-out infinite;
+}
+
+.race-special-desc {
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+  font-family: 'Noto Sans JP', sans-serif;
 }
 
 .race-result-card {

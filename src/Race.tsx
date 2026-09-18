@@ -3,6 +3,8 @@ import type { PartStats, Player } from './types';
 import { CircuitScene } from './CircuitScene';
 import { RaceCar, type RaceCarHandle } from './RaceCar';
 import { sampleCourse, type CourseId } from './courses';
+import { getSpecialMove, type SpecialMove } from './specials';
+import { playSpecialSound, primeAudio } from './sound';
 
 interface RaceProps {
   players: (Player & { totalStats: PartStats })[];
@@ -83,6 +85,21 @@ const RANDOM_BOOST_MAX = 0.18;
 const RANDOM_STUMBLE_MIN = 0.08; // つまづき：-8%〜-22%（速度ダウン＆コース安定悪化）
 const RANDOM_STUMBLE_MAX = 0.22;
 
+// ── 必殺技：ラスト1周（3周レースなら3周目）に入った瞬間、各マシンが
+// この確率で自分の必殺技を発動する。発動時はレース画面を一時停止して
+// 技名を演出表示し、演出が終わると実際の効果が一定時間発動する。
+const SPECIAL_TRIGGER_LAP = TARGET_LAPS - 1; // このラップ数に達した瞬間が「3周目に入った」タイミング
+const SPECIAL_TRIGGER_CHANCE = 0.85;
+const SPECIAL_ANNOUNCE_MS = 2200; // 技名演出の停止時間
+const SPECIAL_EFFECT_DURATION = 3.5; // boost/corner系：効果が続く時間（秒）
+const SPECIAL_DEBUFF_DURATION = 2.5; // attack系：命中した相手が妨害を受ける時間（秒）
+const SPECIAL_FX_ATTACK_DURATION = 1.4; // attack系：発動者自身の演出エフェクトの長さ
+const SPECIAL_BOOST_MUL = 1.6; // boost系：最高速の倍率
+const SPECIAL_DEBUFF_MUL = 0.45; // attack系：命中した相手の最高速の倍率
+const SPECIAL_CORNER_SEG_MUL = 1.45; // corner系：コーナーでも直線並み（以上）の速度を出せる
+// 攻撃技の索敵範囲（コーン状の空気の刃）：自分より前方、この距離（ラジアン換算）以内の敵に命中
+const SPECIAL_ATTACK_CONE_RANGE = Math.PI * 2 * 0.5;
+
 type RacerState = 'running' | 'crashed' | 'finished';
 type RandomEventKind = 'boost' | 'stumble' | null;
 
@@ -97,11 +114,47 @@ interface RacerRuntime {
   eventTimer: number;
   eventKind: RandomEventKind;
   segMulSmooth: number;
+  specialRolled: boolean; // 3周目突入時の抽選を済ませたか
+  specialBoostMul: number; // boost系必殺技：最高速倍率（発動中のみ1より大きい）
+  specialBoostTimer: number;
+  specialCornerTimer: number; // corner系必殺技：コーナー無敵＋速度低下無効の残り時間
+  specialDebuffMul: number; // attack系必殺技を受けた側：最高速倍率（1より小さい）
+  specialDebuffTimer: number;
+  specialFxTimer: number; // 自機に表示する必殺技エフェクトの残り時間（演出用）
 }
 
 interface RankEntry {
   name: string;
   state: RacerState;
+}
+
+interface ActiveSpecialEvent {
+  racerIndex: number;
+  move: SpecialMove;
+}
+
+function raceDistance(rt: RacerRuntime): number {
+  return rt.laps * Math.PI * 2 + rt.progress;
+}
+
+// 攻撃系必殺技の対象を決める。cone=前方の範囲内すべて／single=最も近い前方1機／
+// homing=前方にいる中で最も先行している1機（＝現在の先頭）をロックオン
+function findAttackTargets(kind: 'attack_cone' | 'attack_single' | 'attack_homing', actorIndex: number, runtime: RacerRuntime[]): number[] {
+  const actorDist = raceDistance(runtime[actorIndex]);
+  const ahead = runtime
+    .map((rt, i) => ({ i, dist: raceDistance(rt) }))
+    .filter(c => c.i !== actorIndex && runtime[c.i].state === 'running' && c.dist > actorDist);
+  if (ahead.length === 0) return [];
+  if (kind === 'attack_cone') {
+    return ahead.filter(c => c.dist - actorDist <= SPECIAL_ATTACK_CONE_RANGE).map(c => c.i);
+  }
+  if (kind === 'attack_single') {
+    ahead.sort((a, b) => a.dist - b.dist);
+    return [ahead[0].i];
+  }
+  // attack_homing：先頭を追尾ロックオン
+  ahead.sort((a, b) => b.dist - a.dist);
+  return [ahead[0].i];
 }
 
 export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage }) => {
@@ -110,13 +163,25 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
   const [time, setTime] = useState(0);
   const [finalRanking, setFinalRanking] = useState<RankEntry[] | null>(null);
   const [, forceTick] = useState(0);
+  const [activeSpecial, setActiveSpecial] = useState<ActiveSpecialEvent | null>(null);
 
-  const runtimeRef = useRef<RacerRuntime[]>(players.map(() => ({ progress: 0, speed: 0, laps: 0, bouncePhase: 0, leanAngle: 0, state: 'running', eventMul: 1, eventTimer: 0, eventKind: null, segMulSmooth: 1 })));
+  const runtimeRef = useRef<RacerRuntime[]>(players.map(() => ({
+    progress: 0, speed: 0, laps: 0, bouncePhase: 0, leanAngle: 0, state: 'running',
+    eventMul: 1, eventTimer: 0, eventKind: null, segMulSmooth: 1,
+    specialRolled: false, specialBoostMul: 1, specialBoostTimer: 0, specialCornerTimer: 0,
+    specialDebuffMul: 1, specialDebuffTimer: 0, specialFxTimer: 0,
+  })));
   const carRefs = useRef<(RaceCarHandle | null)[]>([]);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const rankRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const lapRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const raceOver = useRef(false);
+  const pendingSpecialsRef = useRef<number[]>([]);
+  const specialOverlayActiveRef = useRef(false);
+
+  // レース画面が表示された時点（=ガレージでのレース開始ボタン操作の直後）で
+  // AudioContext を温めておき、必殺技発動時の効果音再生をスムーズにする
+  useEffect(() => { primeAudio(); }, []);
 
   // 初期姿勢（スタートライン上、コース進行方向を向く）
   useEffect(() => {
@@ -146,11 +211,13 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
     return () => clearTimeout(t);
   }, [status, countdown]);
 
-  // タイマー
+  // タイマー（必殺技の演出停止中はタイムも止める）
   useEffect(() => {
     let timer: number;
     if (status === 'running') {
-      timer = window.setInterval(() => setTime(prev => prev + 10), 10);
+      timer = window.setInterval(() => {
+        if (!specialOverlayActiveRef.current) setTime(prev => prev + 10);
+      }, 10);
     }
     return () => clearInterval(timer);
   }, [status]);
@@ -175,8 +242,61 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
       setStatus('finished');
     };
 
+    // 必殺技の演出（画面停止＋技名表示）が終わったタイミングで実際の効果を適用する
+    const applySpecialEffect = (racerIndex: number, move: SpecialMove) => {
+      const rt = runtimeRef.current[racerIndex];
+      if (!rt || rt.state !== 'running') return;
+      if (move.kind === 'boost') {
+        rt.specialBoostMul = SPECIAL_BOOST_MUL;
+        rt.specialBoostTimer = SPECIAL_EFFECT_DURATION;
+        rt.specialFxTimer = SPECIAL_EFFECT_DURATION;
+      } else if (move.kind === 'corner') {
+        rt.specialCornerTimer = SPECIAL_EFFECT_DURATION;
+        rt.specialFxTimer = SPECIAL_EFFECT_DURATION;
+      } else {
+        const targets = findAttackTargets(move.kind, racerIndex, runtimeRef.current);
+        rt.specialFxTimer = SPECIAL_FX_ATTACK_DURATION;
+        if (targets.length === 0) {
+          // 前方に敵がいなければ空振り。せっかくの演出が無駄にならないよう自機を少しブーストする
+          rt.specialBoostMul = SPECIAL_BOOST_MUL;
+          rt.specialBoostTimer = SPECIAL_EFFECT_DURATION;
+        } else {
+          targets.forEach(ti => {
+            const targetRt = runtimeRef.current[ti];
+            targetRt.specialDebuffMul = SPECIAL_DEBUFF_MUL;
+            targetRt.specialDebuffTimer = SPECIAL_DEBUFF_DURATION;
+          });
+        }
+      }
+    };
+
+    // 必殺技の演出待ちキューを1件処理する（画面停止→技名演出→効果発動→再開）
+    const processSpecialQueue = () => {
+      if (specialOverlayActiveRef.current) return;
+      while (pendingSpecialsRef.current.length > 0) {
+        const idx = pendingSpecialsRef.current.shift()!;
+        const rt = runtimeRef.current[idx];
+        if (!rt || rt.state !== 'running') continue;
+        const move = getSpecialMove(players[idx].setting.body);
+        specialOverlayActiveRef.current = true;
+        setActiveSpecial({ racerIndex: idx, move });
+        playSpecialSound(move.kind);
+        window.setTimeout(() => {
+          applySpecialEffect(idx, move);
+          specialOverlayActiveRef.current = false;
+          setActiveSpecial(null);
+        }, SPECIAL_ANNOUNCE_MS);
+        break;
+      }
+    };
+
     const loop = (now: number) => {
       if (raceOver.current) return;
+      if (specialOverlayActiveRef.current) {
+        last = now;
+        animId = requestAnimationFrame(loop);
+        return;
+      }
       const delta = (now - last) / 1000;
       last = now;
 
@@ -192,12 +312,31 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         const curSample = sampleCourse(courseId, rt.progress, window.innerWidth, window.innerHeight, mul);
         const curSlope = curSample.slope;
 
+        // 必殺技の効果タイマー（boost/corner/debuff/演出FX）を毎フレーム減衰させる
+        if (rt.specialBoostTimer > 0) {
+          rt.specialBoostTimer -= delta;
+          if (rt.specialBoostTimer <= 0) { rt.specialBoostTimer = 0; rt.specialBoostMul = 1; }
+        }
+        if (rt.specialCornerTimer > 0) {
+          rt.specialCornerTimer -= delta;
+          if (rt.specialCornerTimer <= 0) rt.specialCornerTimer = 0;
+        }
+        if (rt.specialDebuffTimer > 0) {
+          rt.specialDebuffTimer -= delta;
+          if (rt.specialDebuffTimer <= 0) { rt.specialDebuffTimer = 0; rt.specialDebuffMul = 1; }
+        }
+        if (rt.specialFxTimer > 0) {
+          rt.specialFxTimer -= delta;
+          if (rt.specialFxTimer <= 0) rt.specialFxTimer = 0;
+        }
+
         // スピード ⇔ コーナーのトレードオフ：基礎ペースは両ステータスの合計、
         // 直線かコーナーかでどちらが有利かが入れ替わる（滑らかに遷移させる）
         const basePace = (racer.totalStats.speed + racer.totalStats.cornering) * BASE_PACE_SCALE;
         const diff = racer.totalStats.speed - racer.totalStats.cornering;
+        // corner系必殺技の発動中はコーナーでも直線並み（以上）の速度を維持する
         const targetSegMul = curSample.isCorner
-          ? Math.max(SEG_MUL_FLOOR, 1 - diff * SPEED_CORNER_TRADEOFF)
+          ? (rt.specialCornerTimer > 0 ? SPECIAL_CORNER_SEG_MUL : Math.max(SEG_MUL_FLOOR, 1 - diff * SPEED_CORNER_TRADEOFF))
           : Math.max(SEG_MUL_FLOOR, 1 + diff * SPEED_CORNER_TRADEOFF);
         rt.segMulSmooth += (targetSegMul - rt.segMulSmooth) * Math.min(1, delta * SEG_MUL_SMOOTH_RATE);
 
@@ -242,7 +381,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
           rt.eventTimer = RANDOM_EVENT_MIN_DUR + Math.random() * (RANDOM_EVENT_MAX_DUR - RANDOM_EVENT_MIN_DUR);
         }
 
-        const maxSpeed = basePace * rt.segMulSmooth * staminaMul * slopeMul * rt.eventMul * GLOBAL_SPEED_SCALE;
+        const maxSpeed = basePace * rt.segMulSmooth * staminaMul * slopeMul * rt.eventMul * rt.specialBoostMul * rt.specialDebuffMul * GLOBAL_SPEED_SCALE;
         // パワーの役割はスタート時の加速の伸びと坂道（slopeMulで別途反映）に
         // 特化させる。ここの係数を控えめにして立ち上がりに時間をかけることで、
         // パワー差がレース序盤にはっきり体感できるようにしている
@@ -257,14 +396,22 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
             rt.state = 'finished';
             anyFinished = true;
           }
+          // 3周目（ラストラップ）に入った瞬間、一度だけ必殺技の抽選を行う
+          if (rt.state === 'running' && rt.laps === SPECIAL_TRIGGER_LAP && !rt.specialRolled) {
+            rt.specialRolled = true;
+            if (Math.random() < SPECIAL_TRIGGER_CHANCE) {
+              pendingSpecialsRef.current.push(i);
+            }
+          }
         }
 
         const p = sampleCourse(courseId, rt.progress, window.innerWidth, window.innerHeight, mul);
 
-        if (rt.state === 'running' && p.cornerRisk && rt.speed > 0.5) {
+        if (rt.state === 'running' && p.cornerRisk && rt.speed > 0.5 && rt.specialCornerTimer <= 0) {
           // しきい値自体はイベントで変動させない（絶好調中はそのぶん speed が
           // 伸びているので自然とコーナーが危なくなり、つまづき中は speed が
           // 落ちているぶん自然と安全になる＝同じセッティングでも結果が変わりうる）
+          // corner系必殺技の発動中はコースアウト判定そのものを免除する（壁走り／ドリフト演出との整合）
           const stabilityLimit = (basePace * STABILITY_BASE_PACE_FRAC + racer.totalStats.cornering * STABILITY_CORNERING_BONUS + STABILITY_MIN) * GLOBAL_SPEED_SCALE;
           if (rt.speed > stabilityLimit) {
             rt.state = 'crashed';
@@ -297,6 +444,14 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
             car.trail.style.opacity = `${Math.min(0.7, speedRatio * 0.6 * eventFlair)}`;
             car.trail.style.transform = `scale(${1 + speedRatio * 0.5 * eventFlair})`;
           }
+          if (car.special) {
+            const fxActive = rt.specialFxTimer > 0;
+            const move = getSpecialMove(racer.setting.body);
+            car.special.style.setProperty('--special-color', move.color);
+            car.special.style.setProperty('--special-glow', move.glow);
+            car.special.style.opacity = fxActive ? '1' : '0';
+            car.special.style.transform = fxActive ? `scale(${1.15 + Math.sin(rt.bouncePhase * 2.2) * 0.18}) rotate(${rt.bouncePhase * 40}deg)` : 'scale(0.7)';
+          }
         }
 
         if (rt.state === 'crashed') {
@@ -316,6 +471,14 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
           lapEl.textContent = rt.state === 'crashed' ? 'OUT' : rt.state === 'finished' ? 'FINISH' : `${Math.min(rt.laps + 1, TARGET_LAPS)}/${TARGET_LAPS}`;
         }
       });
+
+      // 3周目突入で抽選に成功したマシンがあれば、ここで必殺技の演出をキューから1件開始する
+      // （発動した場合は演出が終わるまでゴール判定を持ち越す）
+      processSpecialQueue();
+      if (specialOverlayActiveRef.current) {
+        animId = requestAnimationFrame(loop);
+        return;
+      }
 
       if (anyFinished || !anyRunning) {
         finishRace();
@@ -373,6 +536,22 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
           </div>
         ))}
       </div>
+
+      {/* ── 必殺技演出：発動中はレース画面を止めて技名を大きく中央に表示 ── */}
+      {activeSpecial && (
+        <div
+          className="race-overlay race-special-overlay"
+          style={{ '--special-color': activeSpecial.move.color, '--special-glow': activeSpecial.move.glow } as React.CSSProperties}
+        >
+          <div className="race-special-flash" />
+          <div className="race-special-card">
+            <div className="race-special-machine">{players[activeSpecial.racerIndex].name}</div>
+            <div className="race-special-quote">「{activeSpecial.move.quote}」</div>
+            <div className="race-special-name">{activeSpecial.move.name}</div>
+            <div className="race-special-desc">{activeSpecial.move.description}</div>
+          </div>
+        </div>
+      )}
 
       {/* ── COUNTDOWN ── */}
       {status === 'countdown' && (

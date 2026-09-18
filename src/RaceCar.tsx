@@ -18,6 +18,7 @@ export interface RaceCarHandle {
   bounce: HTMLDivElement | null;
   rotate: HTMLDivElement | null;
   trail: HTMLDivElement | null;
+  special: HTMLDivElement | null;
 }
 
 interface RaceCarProps {
@@ -56,12 +57,14 @@ export const RaceCar = forwardRef<RaceCarHandle, RaceCarProps>(({ bodyId, isOut,
   const bounceRef = useRef<HTMLDivElement>(null);
   const rotateRef = useRef<HTMLDivElement>(null);
   const trailRef = useRef<HTMLDivElement>(null);
+  const specialRef = useRef<HTMLDivElement>(null);
 
   useImperativeHandle(ref, () => ({
     get root() { return rootRef.current; },
     get bounce() { return bounceRef.current; },
     get rotate() { return rotateRef.current; },
     get trail() { return trailRef.current; },
+    get special() { return specialRef.current; },
   }));
 
   const c = (bodyId && LIVERY[bodyId]) || DEFAULT_LIVERY;
@@ -69,6 +72,7 @@ export const RaceCar = forwardRef<RaceCarHandle, RaceCarProps>(({ bodyId, isOut,
   return (
     <div ref={rootRef} className="mc-root">
       <div ref={bounceRef} className="mc-bounce">
+        <div ref={specialRef} className="mc-special" />
         <div ref={trailRef} className="mc-trail" style={{ background: `radial-gradient(circle, ${c.glow}88, transparent 70%)` }} />
         <div className="mc-shadow" />
 
