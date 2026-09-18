@@ -12,7 +12,6 @@ import bodyRayStinger from './assets/raystinger.jpg';
 import chassisAr from './assets/parts/chassis_ar.jpg';
 import chassisTz from './assets/parts/chassis_tz.jpg';
 import chassisSuper2 from './assets/parts/chassis_super2.jpg';
-import motorNormal from './assets/parts/motor_normal.jpg';
 import motorRev2 from './assets/parts/motor_rev2.jpg';
 import motorTorque2 from './assets/parts/motor_torque2.jpg';
 import motorHyperdash from './assets/parts/motor_hyperdash.jpg';
@@ -57,12 +56,11 @@ export const PARTS: Part[] = [
   { id: 'c_ar', name: 'ARシャーシ', type: 'chassis', stats: { speed: 20, power: 15, cornering: 25, stamina: 10, weight: 22 }, image: chassisAr },
 
   // Motor
-  { id: 'm_lightdash', name: 'ライトダッシュモーター', type: 'motor', stats: { speed: 120, power: 50, cornering: 0, stamina: -25, weight: 14 }, image: motorLightdash },
-  { id: 'm_normal', name: 'タイプノーマルモーター', type: 'motor', stats: { speed: 50, power: 50, cornering: 0, stamina: 10, weight: 17 }, image: motorNormal },
-  { id: 'm_rev', name: 'レブチューン2モーター', type: 'motor', stats: { speed: 110, power: 40, cornering: -10, stamina: 10, weight: 17 }, image: motorRev2 },
-  { id: 'm_torque', name: 'トルクチューン2モーター', type: 'motor', stats: { speed: 70, power: 80, cornering: 20, stamina: 10, weight: 17 }, image: motorTorque2 },
-  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 90, power: 125, cornering: 0, stamina: -35, weight: 17 }, image: motorPowerdash },
-  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 130, power: 50, cornering: 0, stamina: -45, weight: 17 }, image: motorHyperdash },
+  { id: 'm_lightdash', name: 'ライトダッシュモーター', type: 'motor', stats: { speed: 40, power: 50, cornering: 0, stamina: -20, weight: 14 }, image: motorLightdash },
+  { id: 'm_rev', name: 'レブチューン2モーター', type: 'motor', stats: { speed: 40, power: 20, cornering: -10, stamina: 10, weight: 17 }, image: motorRev2 },
+  { id: 'm_torque', name: 'トルクチューン2モーター', type: 'motor', stats: { speed: 20, power: 40, cornering: 20, stamina: 10, weight: 17 }, image: motorTorque2 },
+  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 40, power: 60, cornering: 0, stamina: -30, weight: 17 }, image: motorPowerdash },
+  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 50, power: 50, cornering: 0, stamina: -30, weight: 17 }, image: motorHyperdash },
 
   // Battery
   { id: 'bat_neochamp', name: 'ニッケル水素電池 ネオチャンプ', type: 'battery', stats: { speed: 15, power: 5, cornering: 0, stamina: -10, weight: 10 }, image: batteryNeochamp },
@@ -112,7 +110,7 @@ const CPU_TIER_TIRE_REAR = ['tr_slick', 'tr_lowhi', 'tr_sponge'];
 const CPU_TIER_ROLLER_FRONT = ['rf_plastic', 'rf_alum', 'rf_alum2'];
 const CPU_TIER_ROLLER_REAR = ['rr_plastic', 'rr_alum', 'rr_alum2'];
 const CPU_TIER_MOTOR: Record<CPULevel, string[]> = {
-  1: ['m_normal', 'm_rev', 'm_torque'],
+  1: ['m_rev', 'm_torque'],
   2: ['m_lightdash', 'm_powerdash'],
   3: ['m_hyper', 'm_powerdash'],
 };
