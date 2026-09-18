@@ -1,5 +1,6 @@
 // プロジェクトに音声アセットがないため、必殺技の効果音は Web Audio API で
-// その場合成する（パワーアップの上昇音＋インパクト音）。
+// その場で合成する。「ぎゅいーん」とエンジンが唸って吹け上がり、
+// 「ズキューン」と一気に駆け抜ける、モーターの吹き上がり音をイメージした構成。
 import type { SpecialKind } from './specials';
 
 let sharedCtx: AudioContext | null = null;
@@ -27,34 +28,53 @@ export function playSpecialSound(kind: SpecialKind): void {
   const isAttack = ATTACK_KINDS.includes(kind);
   const now = ctx.currentTime;
 
-  // 上昇するパワーアップ音
-  const osc = ctx.createOscillator();
-  const oscGain = ctx.createGain();
-  osc.type = isAttack ? 'sawtooth' : 'sine';
-  osc.frequency.setValueAtTime(170, now);
-  osc.frequency.exponentialRampToValueAtTime(isAttack ? 820 : 1150, now + 0.42);
-  oscGain.gain.setValueAtTime(0.0001, now);
-  oscGain.gain.exponentialRampToValueAtTime(0.32, now + 0.08);
-  oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
-  osc.connect(oscGain).connect(ctx.destination);
-  osc.start(now);
-  osc.stop(now + 0.6);
+  // ①「ぎゅいいいん」：モーターが唸りながら一気に吹け上がるレブ音
+  //   （一瞬タメてから急加速するとエンジン音らしく聞こえる）
+  const revFilter = ctx.createBiquadFilter();
+  revFilter.type = 'lowpass';
+  revFilter.frequency.setValueAtTime(450, now);
+  revFilter.frequency.exponentialRampToValueAtTime(4500, now + 0.3);
+  const revMaster = ctx.createGain();
+  revMaster.gain.setValueAtTime(0.0001, now);
+  revMaster.gain.exponentialRampToValueAtTime(0.42, now + 0.09);
+  revMaster.gain.exponentialRampToValueAtTime(0.3, now + 0.26);
+  revMaster.gain.exponentialRampToValueAtTime(0.0001, now + 0.36);
+  revFilter.connect(revMaster).connect(ctx.destination);
 
-  // 重ねるハーモニクス（きらびやかさを足す）
-  const osc2 = ctx.createOscillator();
-  const osc2Gain = ctx.createGain();
-  osc2.type = 'triangle';
-  osc2.frequency.setValueAtTime(340, now);
-  osc2.frequency.exponentialRampToValueAtTime(isAttack ? 1400 : 1900, now + 0.4);
-  osc2Gain.gain.setValueAtTime(0.0001, now);
-  osc2Gain.gain.exponentialRampToValueAtTime(0.14, now + 0.1);
-  osc2Gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
-  osc2.connect(osc2Gain).connect(ctx.destination);
-  osc2.start(now);
-  osc2.stop(now + 0.55);
+  const revA = ctx.createOscillator();
+  revA.type = 'sawtooth';
+  revA.frequency.setValueAtTime(90, now);
+  revA.frequency.linearRampToValueAtTime(58, now + 0.06);
+  revA.frequency.exponentialRampToValueAtTime(isAttack ? 430 : 500, now + 0.3);
+  revA.connect(revFilter);
+  revA.start(now);
+  revA.stop(now + 0.38);
 
-  // 着地のインパクト（ノイズバースト）
-  const bufferSize = Math.floor(ctx.sampleRate * 0.22);
+  const revB = ctx.createOscillator();
+  revB.type = 'square';
+  revB.detune.setValueAtTime(-22, now);
+  revB.frequency.setValueAtTime(90, now);
+  revB.frequency.linearRampToValueAtTime(58, now + 0.06);
+  revB.frequency.exponentialRampToValueAtTime(isAttack ? 430 : 500, now + 0.3);
+  revB.connect(revFilter);
+  revB.start(now);
+  revB.stop(now + 0.38);
+
+  // ②「ズキューン」：レブのピークから一気に駆け抜ける発射音（下降ピッチスイープ）
+  const launchOsc = ctx.createOscillator();
+  launchOsc.type = isAttack ? 'sawtooth' : 'sine';
+  const launchGain = ctx.createGain();
+  launchOsc.frequency.setValueAtTime(isAttack ? 1900 : 1500, now + 0.28);
+  launchOsc.frequency.exponentialRampToValueAtTime(160, now + 0.62);
+  launchGain.gain.setValueAtTime(0.0001, now + 0.28);
+  launchGain.gain.exponentialRampToValueAtTime(0.48, now + 0.32);
+  launchGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.64);
+  launchOsc.connect(launchGain).connect(ctx.destination);
+  launchOsc.start(now + 0.28);
+  launchOsc.stop(now + 0.66);
+
+  // ③ 発射の勢いを支える「シュッ」というノイズの風切り音
+  const bufferSize = Math.floor(ctx.sampleRate * 0.36);
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
   const data = buffer.getChannelData(0);
   for (let i = 0; i < bufferSize; i++) {
@@ -63,13 +83,15 @@ export function playSpecialSound(kind: SpecialKind): void {
   const noise = ctx.createBufferSource();
   noise.buffer = buffer;
   const noiseFilter = ctx.createBiquadFilter();
-  noiseFilter.type = isAttack ? 'highpass' : 'lowpass';
-  noiseFilter.frequency.value = isAttack ? 900 : 1800;
+  noiseFilter.type = 'bandpass';
+  noiseFilter.Q.value = 0.7;
+  noiseFilter.frequency.setValueAtTime(1300, now + 0.28);
+  noiseFilter.frequency.exponentialRampToValueAtTime(280, now + 0.6);
   const noiseGain = ctx.createGain();
-  noiseGain.gain.setValueAtTime(0.0001, now + 0.34);
-  noiseGain.gain.exponentialRampToValueAtTime(isAttack ? 0.55 : 0.3, now + 0.37);
-  noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.65);
+  noiseGain.gain.setValueAtTime(0.0001, now + 0.28);
+  noiseGain.gain.exponentialRampToValueAtTime(isAttack ? 0.5 : 0.32, now + 0.31);
+  noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
   noise.connect(noiseFilter).connect(noiseGain).connect(ctx.destination);
-  noise.start(now + 0.34);
-  noise.stop(now + 0.7);
+  noise.start(now + 0.28);
+  noise.stop(now + 0.62);
 }

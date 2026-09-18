@@ -3,7 +3,7 @@ import type { PartStats, Player } from './types';
 import { CircuitScene } from './CircuitScene';
 import { RaceCar, type RaceCarHandle } from './RaceCar';
 import { sampleCourse, type CourseId } from './courses';
-import { getSpecialMove, type SpecialMove } from './specials';
+import { getSpecialMove, type SpecialMove, type SpecialFxKey } from './specials';
 import { playSpecialSound, primeAudio } from './sound';
 
 interface RaceProps {
@@ -121,6 +121,8 @@ interface RacerRuntime {
   specialDebuffMul: number; // attack系必殺技を受けた側：最高速倍率（1より小さい）
   specialDebuffTimer: number;
   specialFxTimer: number; // 自機に表示する必殺技エフェクトの残り時間（演出用）
+  specialFxTotal: number; // ↑の開始時の合計時間（経過率の計算用）
+  specialFxKind: SpecialFxKey | null; // 発動中の必殺技エフェクト種別
 }
 
 interface RankEntry {
@@ -135,6 +137,15 @@ interface ActiveSpecialEvent {
 
 function raceDistance(rt: RacerRuntime): number {
   return rt.laps * Math.PI * 2 + rt.progress;
+}
+
+// マグナム（トルネード＝ジャンプ→高速回転）とブロッケンG（ハンマー＝ウイリー→叩きつけ）用の
+// 演出開始直後だけのジャンプ・回転モーション。0→1→0 と滑らかに立ち上がって収まる包絡線を使うので、
+// 通常の姿勢制御にスナップなく合流する
+function specialMotionEnvelope(elapsed: number, windowLen: number): number {
+  if (windowLen <= 0) return 0;
+  const t = Math.min(1, Math.max(0, elapsed / windowLen));
+  return Math.sin(t * Math.PI);
 }
 
 // 攻撃系必殺技の対象を決める。cone=前方の範囲内すべて／single=最も近い前方1機／
@@ -169,7 +180,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
     progress: 0, speed: 0, laps: 0, bouncePhase: 0, leanAngle: 0, state: 'running',
     eventMul: 1, eventTimer: 0, eventKind: null, segMulSmooth: 1,
     specialRolled: false, specialBoostMul: 1, specialBoostTimer: 0, specialCornerTimer: 0,
-    specialDebuffMul: 1, specialDebuffTimer: 0, specialFxTimer: 0,
+    specialDebuffMul: 1, specialDebuffTimer: 0, specialFxTimer: 0, specialFxTotal: 0, specialFxKind: null,
   })));
   const carRefs = useRef<(RaceCarHandle | null)[]>([]);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -242,20 +253,24 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
       setStatus('finished');
     };
 
-    // 必殺技の演出（画面停止＋技名表示）が終わったタイミングで実際の効果を適用する
+    // 必殺技の演出（画面停止＋セリフ表示）が終わったタイミングで実際の効果を適用する
     const applySpecialEffect = (racerIndex: number, move: SpecialMove) => {
       const rt = runtimeRef.current[racerIndex];
       if (!rt || rt.state !== 'running') return;
+      rt.specialFxKind = move.fxKey;
       if (move.kind === 'boost') {
         rt.specialBoostMul = SPECIAL_BOOST_MUL;
         rt.specialBoostTimer = SPECIAL_EFFECT_DURATION;
         rt.specialFxTimer = SPECIAL_EFFECT_DURATION;
+        rt.specialFxTotal = SPECIAL_EFFECT_DURATION;
       } else if (move.kind === 'corner') {
         rt.specialCornerTimer = SPECIAL_EFFECT_DURATION;
         rt.specialFxTimer = SPECIAL_EFFECT_DURATION;
+        rt.specialFxTotal = SPECIAL_EFFECT_DURATION;
       } else {
         const targets = findAttackTargets(move.kind, racerIndex, runtimeRef.current);
         rt.specialFxTimer = SPECIAL_FX_ATTACK_DURATION;
+        rt.specialFxTotal = SPECIAL_FX_ATTACK_DURATION;
         if (targets.length === 0) {
           // 前方に敵がいなければ空振り。せっかくの演出が無駄にならないよう自機を少しブーストする
           rt.specialBoostMul = SPECIAL_BOOST_MUL;
@@ -327,7 +342,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         }
         if (rt.specialFxTimer > 0) {
           rt.specialFxTimer -= delta;
-          if (rt.specialFxTimer <= 0) rt.specialFxTimer = 0;
+          if (rt.specialFxTimer <= 0) { rt.specialFxTimer = 0; rt.specialFxKind = null; }
         }
 
         // スピード ⇔ コーナーのトレードオフ：基礎ペースは両ステータスの合計、
@@ -421,13 +436,28 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         // 車体の上下動（サスペンションのバウンス。速度が上がるほど大きく速く揺れる）
         rt.bouncePhase += delta * (5 + rt.speed * 14);
         const bounceAmp = Math.min(4.5, 1 + rt.speed * 6);
-        const bounceY = Math.sin(rt.bouncePhase) * bounceAmp;
+        let bounceY = Math.sin(rt.bouncePhase) * bounceAmp;
 
         // コーナーでの姿勢変化（進行方向の接線角度に、コーナリング時のドリフト角を上乗せ）
         const leanTarget = p.isCorner ? LEAN_DIR * Math.min(14, rt.speed * 22) : 0;
         rt.leanAngle += (leanTarget - rt.leanAngle) * Math.min(1, delta * 8);
         // つまづき中は小刻みに車体が揺れる演出
         const stumbleJitter = rt.eventKind === 'stumble' ? Math.sin(rt.bouncePhase * 3) * 6 : 0;
+
+        // マグナム（大ジャンプ→高速回転）とブロッケンG（ウイリー→叩きつけ）は
+        // 必殺技発動の瞬間だけ通常の姿勢制御に上乗せしてジャンプ・追加回転させる
+        let extraSpin = 0;
+        if (rt.specialFxTimer > 0) {
+          const fxElapsed = rt.specialFxTotal - rt.specialFxTimer;
+          if (rt.specialFxKind === 'tornado') {
+            const envelope = specialMotionEnvelope(fxElapsed, 1.2);
+            bounceY -= envelope * 34;
+            extraSpin = envelope * 720;
+          } else if (rt.specialFxKind === 'hammer') {
+            const envelope = specialMotionEnvelope(fxElapsed, 1.0);
+            bounceY -= envelope * 26;
+          }
+        }
 
         const car = carRefs.current[i];
         if (car) {
@@ -436,7 +466,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
             car.root.style.top = `${p.y}px`;
           }
           if (car.bounce) car.bounce.style.transform = `translateY(${bounceY}px)`;
-          if (car.rotate) car.rotate.style.transform = `rotate(${p.angle + rt.leanAngle + stumbleJitter}deg)`;
+          if (car.rotate) car.rotate.style.transform = `rotate(${p.angle + rt.leanAngle + stumbleJitter + extraSpin}deg)`;
           if (car.trail) {
             const speedRatio = maxSpeed > 0 ? rt.speed / maxSpeed : 0;
             // 絶好調中はトレイルを大きく明るく、つまづき中は小さく暗く見せて演出する
@@ -449,8 +479,10 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
             const move = getSpecialMove(racer.setting.body);
             car.special.style.setProperty('--special-color', move.color);
             car.special.style.setProperty('--special-glow', move.glow);
+            car.special.className = `mc-special${fxActive ? ` mc-special--active mc-special--${move.fxKey}` : ''}`;
             car.special.style.opacity = fxActive ? '1' : '0';
-            car.special.style.transform = fxActive ? `scale(${1.15 + Math.sin(rt.bouncePhase * 2.2) * 0.18}) rotate(${rt.bouncePhase * 40}deg)` : 'scale(0.7)';
+            // ブレード／針／壁走りのような進行方向依存の演出は、車体の向きに合わせて回転させる
+            car.special.style.transform = `rotate(${p.angle + rt.leanAngle}deg)`;
           }
         }
 
@@ -537,19 +569,14 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         ))}
       </div>
 
-      {/* ── 必殺技演出：発動中はレース画面を止めて技名を大きく中央に表示 ── */}
+      {/* ── 必殺技演出：発動中はレース画面を止めてセリフだけを大きく中央に表示 ── */}
       {activeSpecial && (
         <div
           className="race-overlay race-special-overlay"
           style={{ '--special-color': activeSpecial.move.color, '--special-glow': activeSpecial.move.glow } as React.CSSProperties}
         >
           <div className="race-special-flash" />
-          <div className="race-special-card">
-            <div className="race-special-machine">{players[activeSpecial.racerIndex].name}</div>
-            <div className="race-special-quote">「{activeSpecial.move.quote}」</div>
-            <div className="race-special-name">{activeSpecial.move.name}</div>
-            <div className="race-special-desc">{activeSpecial.move.description}</div>
-          </div>
+          <div className="race-special-quote">{activeSpecial.move.quote}</div>
         </div>
       )}
 

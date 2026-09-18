@@ -72,7 +72,9 @@ export const RaceCar = forwardRef<RaceCarHandle, RaceCarProps>(({ bodyId, isOut,
   return (
     <div ref={rootRef} className="mc-root">
       <div ref={bounceRef} className="mc-bounce">
-        <div ref={specialRef} className="mc-special" />
+        <div ref={specialRef} className="mc-special">
+          <div className="mc-special-inner" />
+        </div>
         <div ref={trailRef} className="mc-trail" style={{ background: `radial-gradient(circle, ${c.glow}88, transparent 70%)` }} />
         <div className="mc-shadow" />
 
