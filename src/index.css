@@ -42,7 +42,9 @@
 body, html {
   width: 100%;
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
+  overscroll-behavior: none;
   background: var(--bg-dark);
   color: var(--text-primary);
   font-family: 'Noto Sans JP', sans-serif;
@@ -52,6 +54,13 @@ body, html {
 #root {
   width: 100%;
   height: 100%;
+}
+
+/* スマホでのタップ操作向け：300msの遅延やダブルタップズームを防ぐ */
+button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
+.mode-toggle-btn, .cpu-level-btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ── Scrollbar ── */
@@ -186,6 +195,7 @@ body, html {
 .mini4wd-screen {
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   position: relative;
   display: flex;
@@ -1564,3 +1574,86 @@ body, html {
   border-color: var(--accent-gold);
 }
 .race-result-btn--gold:hover { background: rgba(255,215,64,0.25); }
+
+/* ══════════════════════════════════════════════
+   スマホ対応：横幅の狭い画面ではガレージを縦積みに、
+   レース画面のHUDをコンパクトにする
+══════════════════════════════════════════════ */
+@media (max-width: 760px) {
+  /* ── ガレージ：ヘッダー ── */
+  .hud-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+  .course-select {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .selected-pill { padding: 7px 14px; }
+  .brand-line1 { font-size: 15px; letter-spacing: 2px; }
+  .brand-line2 { font-size: 10px; letter-spacing: 3px; }
+
+  /* ── ガレージ：3カラムを縦積みにし、ページ全体をスクロール可能にする ── */
+  .main-layout {
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .stats-panel {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+    overflow-y: visible;
+    padding: 16px;
+  }
+  .car-stage {
+    flex: none;
+    min-height: 320px;
+    padding: 16px 0;
+  }
+  .parts-panel {
+    width: 100%;
+    border-left: none;
+    flex: none;
+    overflow: visible;
+  }
+  .part-list {
+    flex: none;
+    overflow-y: visible;
+  }
+  .car-photo, .car-reflection { width: 260px; max-width: 68vw; }
+  .start-btn { padding: 14px 34px; font-size: 18px; gap: 8px; }
+  .start-btn-flag { font-size: 22px; }
+  .stage-tagline { display: none; }
+
+  /* ── レース画面：HUDをコンパクトに ── */
+  .race-topbar { padding: 8px 12px; }
+  .race-back-btn { padding: 7px 12px; font-size: 11px; }
+  .race-hud-label { font-size: 9px; letter-spacing: 2px; }
+  .race-hud-value { font-size: 22px; }
+  .sound-toggle-btn { width: 36px; height: 36px; font-size: 16px; }
+
+  .race-leaderboard {
+    top: 54px;
+    gap: 3px;
+    padding: 5px;
+    max-width: calc(100vw - 16px);
+  }
+  .race-leaderboard-row { padding: 4px 7px; gap: 4px; }
+  .race-leaderboard-rank { width: 13px; font-size: 12px; }
+  .race-leaderboard-name { max-width: 52px; font-size: 10px; }
+  .race-leaderboard-lap { font-size: 9px; }
+
+  .race-countdown { font-size: 76px; }
+  .race-countdown.is-go { font-size: 48px; }
+
+  .race-result-card { padding: 26px 22px; }
+  .race-result-icon { font-size: 44px; }
+  .race-result-title { font-size: 26px; letter-spacing: 2px; }
+  .race-result-title--gold { letter-spacing: 3px; }
+  .race-result-time { font-size: 34px; }
+}

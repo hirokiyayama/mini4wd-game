@@ -260,9 +260,10 @@ export const Garage: React.FC<GarageProps> = ({
           <div className="start-btn-wrap">
             <button
               className={`start-btn${pressedBtn ? ' is-pressed' : ''}`}
-              onMouseDown={() => setPressedBtn(true)}
-              onMouseUp={() => { setPressedBtn(false); onStartRace(); }}
-              onMouseLeave={() => setPressedBtn(false)}
+              onPointerDown={() => setPressedBtn(true)}
+              onPointerUp={() => { setPressedBtn(false); onStartRace(); }}
+              onPointerLeave={() => setPressedBtn(false)}
+              onPointerCancel={() => setPressedBtn(false)}
             >
               <span className="start-btn-flag">🏁</span>
               レース開始！
