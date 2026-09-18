@@ -4,7 +4,8 @@ import { CircuitScene } from './CircuitScene';
 import { RaceCar, type RaceCarHandle } from './RaceCar';
 import { sampleCourse, type CourseId } from './courses';
 import { getSpecialMove, type SpecialMove, type SpecialFxKey } from './specials';
-import { playSpecialSound, primeAudio } from './sound';
+import { playSpecialSound } from './sound';
+import { SoundToggle } from './SoundToggle';
 
 interface RaceProps {
   players: (Player & { totalStats: PartStats })[];
@@ -195,10 +196,6 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
   const specialOverlayActiveRef = useRef(false);
   const slowestAssignedRef = useRef(false); // 最下位マシンの判定を済ませたか（レース中1回だけ）
   const prevRankRef = useRef<number[]>(players.map(() => 0)); // 追い抜かれた瞬間を検知するための直前順位
-
-  // レース画面が表示された時点（=ガレージでのレース開始ボタン操作の直後）で
-  // 音声再生の許可を得ておき、必殺技発動時の効果音再生をスムーズにする
-  useEffect(() => { primeAudio(); }, []);
 
   // 初期姿勢（スタートライン上、コース進行方向を向く）
   useEffect(() => {
@@ -598,6 +595,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
           <div className="race-hud-label">TIME</div>
           <div className="race-hud-value race-hud-value--gold">{formatTime(time)}</div>
         </div>
+        <SoundToggle />
       </div>
 
       {/* ── LEADERBOARD ── */}

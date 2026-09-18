@@ -4,6 +4,7 @@ import type { CPULevel, MachineSetting, PartType, PartStats, Player } from './ty
 import { CircuitScene } from './CircuitScene';
 import { COURSES, type CourseId } from './courses';
 import { playGarageBgm, stopGarageBgm } from './bgm';
+import { SoundToggle } from './SoundToggle';
 
 interface GarageProps {
   players: Player[];
@@ -156,6 +157,7 @@ export const Garage: React.FC<GarageProps> = ({
           <span className="selected-pill-label">選択中のマシン</span>
           <span className="selected-pill-value">{selectedBodyName}</span>
         </div>
+        <SoundToggle />
       </div>
 
       {/* ─── MAIN LAYOUT ─── */}

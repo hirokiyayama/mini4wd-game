@@ -1,37 +1,40 @@
 // ガレージ画面で流すBGM。添付された2曲からランダムに1つを選び、ループ再生する。
 import track1 from './assets/bgm/garage_bgm1.mp3';
 import track2 from './assets/bgm/garage_bgm2.mp3';
+import { isMuted, subscribeMuted, onFirstInteraction } from './audioSettings';
 
 const TRACKS = [track1, track2];
 
 let audioEl: HTMLAudioElement | null = null;
-let unlockListenerAdded = false;
 
 function ensureAudioEl(): HTMLAudioElement {
   if (!audioEl) {
     audioEl = new Audio();
     audioEl.loop = true;
     audioEl.volume = 0.5;
+    subscribeMuted(next => {
+      if (audioEl) audioEl.muted = next;
+    });
   }
   return audioEl;
 }
 
-// ブラウザの自動再生制限で再生がブロックされた場合、最初のユーザー操作で再生を試みる
+// ブラウザは「ミュート状態での自動再生」は常に許可するため、まずミュートで
+// 再生を開始し、成功したら希望のミュート状態（サウンド設定）へ同期する。
+// それでもブロックされる場合は、最初のユーザー操作を待ってから再試行する
 function tryPlay(el: HTMLAudioElement): void {
+  el.muted = true;
   const playPromise = el.play();
-  if (!playPromise) return;
-  playPromise.catch(() => {
-    if (unlockListenerAdded) return;
-    unlockListenerAdded = true;
-    const unlock = () => {
-      el.play().catch(() => {});
-      document.removeEventListener('click', unlock);
-      document.removeEventListener('touchstart', unlock);
-      document.removeEventListener('keydown', unlock);
-    };
-    document.addEventListener('click', unlock);
-    document.addEventListener('touchstart', unlock);
-    document.addEventListener('keydown', unlock);
+  const syncMuted = () => { el.muted = isMuted(); };
+  if (!playPromise) {
+    syncMuted();
+    return;
+  }
+  playPromise.then(syncMuted).catch(() => {
+    onFirstInteraction(() => {
+      el.muted = true;
+      el.play().then(syncMuted).catch(() => {});
+    });
   });
 }
 
