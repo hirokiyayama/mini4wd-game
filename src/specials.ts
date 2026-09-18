@@ -45,7 +45,7 @@ export const SPECIAL_MOVES: Record<string, SpecialMove> = {
     fxKey: 'wind',
     color: '#22d3ee',
     glow: '#7ce9fb',
-    description: 'コーナーでの減速を大幅軽減！高速でコーナーを突破！',
+    description: 'コーナーでの減速とコースアウトを無効化！さらに最高速も大幅アップ！',
     faceImage: faceSonic,
   },
   b_tridagger: {
@@ -56,7 +56,7 @@ export const SPECIAL_MOVES: Record<string, SpecialMove> = {
     fxKey: 'wallrun',
     color: '#ffb020',
     glow: '#ffd27a',
-    description: '壁面を走行してコーナーを高速突破！速度低下をほぼ無効化！',
+    description: '壁面を走行してコーナーを高速突破！最高速が大幅アップ！',
     faceImage: faceTridagger,
   },
   b_spinaxe: {
@@ -67,7 +67,7 @@ export const SPECIAL_MOVES: Record<string, SpecialMove> = {
     fxKey: 'thunder',
     color: '#f4a300',
     glow: '#ffd27a',
-    description: 'ドリフトしながらコーナーを高速突破！コーナー脱出時に加速！',
+    description: 'ドリフトしながらコーナーを高速突破！さらに最高速も大幅アップ！',
     faceImage: faceSpinaxe,
   },
   b_protosaberjb: {
@@ -96,11 +96,11 @@ export const SPECIAL_MOVES: Record<string, SpecialMove> = {
     bodyId: 'b_brockeng',
     name: 'ハンマーGクラッシュ',
     quote: 'いけっ！ハンマーGクラッシュ！',
-    kind: 'attack_single',
+    kind: 'attack_cone',
     fxKey: 'hammer',
     color: '#ff5a5a',
     glow: '#ffb3b3',
-    description: '前方の敵を吹き飛ばし、大きく減速させる！',
+    description: '前方の敵をまとめて吹き飛ばし、範囲内の相手を大きく減速させる！',
     faceImage: faceBrockenG,
   },
   b_raystinger: {

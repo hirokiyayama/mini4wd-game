@@ -285,6 +285,10 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         rt.specialFxTimer = SPECIAL_EFFECT_DURATION;
         rt.specialFxTotal = SPECIAL_EFFECT_DURATION;
       } else if (move.kind === 'corner') {
+        // コーナーでの速度低下・コースアウト無効化だけでは直線区間で恩恵がなく
+        // 効果が薄いため、boost系と同じ最高速アップも重ねて発動させる
+        rt.specialBoostMul = SPECIAL_BOOST_MUL;
+        rt.specialBoostTimer = SPECIAL_EFFECT_DURATION;
         rt.specialCornerTimer = SPECIAL_EFFECT_DURATION;
         rt.specialFxTimer = SPECIAL_EFFECT_DURATION;
         rt.specialFxTotal = SPECIAL_EFFECT_DURATION;
