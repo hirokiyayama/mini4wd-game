@@ -6,6 +6,7 @@ import { sampleCourse, type CourseId } from './courses';
 import { getSpecialMove, type SpecialMove, type SpecialFxKey } from './specials';
 import { playSpecialSound } from './sound';
 import { SoundToggle } from './SoundToggle';
+import { playRaceBgm, stopRaceBgm } from './bgm';
 
 interface RaceProps {
   players: (Player & { totalStats: PartStats })[];
@@ -196,6 +197,12 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
   const specialOverlayActiveRef = useRef(false);
   const slowestAssignedRef = useRef(false); // 最下位マシンの判定を済ませたか（レース中1回だけ）
   const prevRankRef = useRef<number[]>(players.map(() => 0)); // 追い抜かれた瞬間を検知するための直前順位
+
+  // レース画面の表示中だけBGMをランダム再生する（3曲からランダムに1つを選択）
+  useEffect(() => {
+    playRaceBgm();
+    return () => stopRaceBgm();
+  }, []);
 
   // 初期姿勢（スタートライン上、コース進行方向を向く）
   useEffect(() => {
