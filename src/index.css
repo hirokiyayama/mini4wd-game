@@ -1336,6 +1336,8 @@ button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
   flex-direction: row;
   align-items: stretch;
   gap: 6px;
+  /* タイマーと隣り合わせにならないよう、はっきり距離を空ける */
+  margin-right: 22px;
 }
 
 .race-leaderboard-row {
@@ -1343,6 +1345,11 @@ button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
   align-items: center;
   gap: 8px;
   padding: 5px 10px;
+  /* 幅を固定し、表示順も入れ替えないことで、内容が変わってもレイアウトが
+     ガタつかない（＝隣接するタイマーの位置もぶれない）ようにする */
+  width: 178px;
+  box-sizing: border-box;
+  flex-shrink: 0;
   border-radius: var(--radius-sm);
   background: rgba(4,7,26,0.35);
   backdrop-filter: blur(4px);
@@ -1350,6 +1357,7 @@ button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
 
 .race-leaderboard-rank {
   width: 18px;
+  flex-shrink: 0;
   text-align: center;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 900;
@@ -1362,11 +1370,12 @@ button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
   display: flex;
   flex-direction: column;
   line-height: 1.2;
+  flex: 1;
   min-width: 0;
 }
 
 .race-leaderboard-name {
-  max-width: 100px;
+  max-width: 100%;
   font-size: 12px;
   font-weight: 700;
   color: rgba(255,255,255,0.92);
@@ -1377,7 +1386,7 @@ button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
 }
 
 .race-leaderboard-machine {
-  max-width: 100px;
+  max-width: 100%;
   font-size: 10px;
   font-weight: 600;
   color: rgba(150,195,255,0.85);
@@ -1390,6 +1399,9 @@ button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
 .race-cpu-badge { margin-left: 4px; font-size: 10px; }
 
 .race-leaderboard-lap {
+  flex-shrink: 0;
+  min-width: 38px;
+  text-align: right;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   font-size: 12px;
@@ -1664,8 +1676,8 @@ button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
   .race-hud-value { font-size: 22px; }
   .sound-toggle-btn { width: 36px; height: 36px; font-size: 16px; }
 
-  .race-leaderboard { gap: 3px; }
-  .race-leaderboard-row { padding: 4px 7px; gap: 4px; }
+  .race-leaderboard { gap: 3px; margin-right: 10px; }
+  .race-leaderboard-row { width: 118px; padding: 4px 7px; gap: 4px; }
   .race-leaderboard-rank { width: 13px; font-size: 12px; }
   .race-leaderboard-name, .race-leaderboard-machine { max-width: 52px; }
   .race-leaderboard-name { font-size: 10px; }

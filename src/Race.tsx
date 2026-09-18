@@ -103,8 +103,9 @@ const SPECIAL_FX_ATTACK_DURATION = 1.4; // attack系：発動者自身の演出�
 const SPECIAL_BOOST_MUL = 1.6; // boost系：最高速の倍率
 const SPECIAL_DEBUFF_MUL = 0.45; // attack系：命中した相手の最高速の倍率
 const SPECIAL_CORNER_SEG_MUL = 1.45; // corner系：コーナーでも直線並み（以上）の速度を出せる
-// 攻撃技の索敵範囲（コーン状の空気の刃）：自分より前方、この距離（ラジアン換算）以内の敵に命中
-const SPECIAL_ATTACK_CONE_RANGE = Math.PI * 2 * 0.5;
+// 攻撃技の索敵範囲（範囲攻撃）：自分より前方にいるマシンには距離を問わず全機命中させる
+// （半周などに制限すると、終盤で差が開いた際に一部しか巻き込めず「1機しか効かない」ように見えるため）
+const SPECIAL_ATTACK_CONE_RANGE = Infinity;
 
 type RacerState = 'running' | 'crashed' | 'finished';
 type RandomEventKind = 'boost' | 'stumble' | null;
@@ -190,7 +191,6 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
     specialDebuffMul: 1, specialDebuffTimer: 0, specialFxTimer: 0, specialFxTotal: 0, specialFxKind: null,
   })));
   const carRefs = useRef<(RaceCarHandle | null)[]>([]);
-  const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const rankRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const lapRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const raceOver = useRef(false);
@@ -531,7 +531,8 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
       order.forEach((racerIndex, rank) => {
         rankOf[racerIndex] = rank;
         if (rankRefs.current[racerIndex]) rankRefs.current[racerIndex]!.textContent = `${rank + 1}`;
-        if (rowRefs.current[racerIndex]) rowRefs.current[racerIndex]!.style.order = String(rank);
+        // 表示順は入れ替えず（プレイヤーごとに固定位置）、順位の数字だけを更新する。
+        // 毎フレーム並び替えるとタイマーや名前表示がガタつく（見づらい）ため
         const rt = runtimeRef.current[racerIndex];
         const lapEl = lapRefs.current[racerIndex];
         if (lapEl) {
@@ -608,7 +609,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
             {players.map((racer, i) => {
               const bodyName = PARTS.find(p => p.id === racer.setting.body)?.name ?? '';
               return (
-                <div key={racer.id} ref={el => { rowRefs.current[i] = el; }} className="race-leaderboard-row">
+                <div key={racer.id} className="race-leaderboard-row">
                   <span className="race-leaderboard-rank" ref={el => { rankRefs.current[i] = el; }}>{i + 1}</span>
                   <span className="race-leaderboard-names">
                     <span className="race-leaderboard-name">{racer.name}{racer.isCPU && <span className="race-cpu-badge">🤖{racer.cpuLevel}</span>}</span>
