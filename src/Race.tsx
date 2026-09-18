@@ -85,12 +85,15 @@ const RANDOM_BOOST_MAX = 0.18;
 const RANDOM_STUMBLE_MIN = 0.08; // つまづき：-8%〜-22%（速度ダウン＆コース安定悪化）
 const RANDOM_STUMBLE_MAX = 0.22;
 
-// ── 必殺技：ラスト1周（3周レースなら3周目）に入った瞬間、各マシンが
-// この確率で自分の必殺技を発動する。発動時はレース画面を一時停止して
-// 技名を演出表示し、演出が終わると実際の効果が一定時間発動する。
+// ── 必殺技：ラスト1周（3周レースなら3周目）に入ってから、各マシンがこの確率で
+// 自分の必殺技を発動する。3週目突入時点で最下位のマシンだけは突入と同時に
+// 抽選、それ以外のマシンは自分が3週目に入った後、他の誰かに追い抜かれた
+// 瞬間に抽選する（一度も追い抜かれなければ発動しないまま終わる）。
+// 発動時はレース画面を一時停止してセリフを演出表示し、演出が終わると
+// 実際の効果が一定時間発動する。
 const SPECIAL_TRIGGER_LAP = TARGET_LAPS - 1; // このラップ数に達した瞬間が「3周目に入った」タイミング
 const SPECIAL_TRIGGER_CHANCE = 0.85;
-const SPECIAL_ANNOUNCE_MS = 2200; // 技名演出の停止時間
+const SPECIAL_ANNOUNCE_MS = 2200; // セリフ演出の停止時間
 const SPECIAL_EFFECT_DURATION = 3.5; // boost/corner系：効果が続く時間（秒）
 const SPECIAL_DEBUFF_DURATION = 2.5; // attack系：命中した相手が妨害を受ける時間（秒）
 const SPECIAL_FX_ATTACK_DURATION = 1.4; // attack系：発動者自身の演出エフェクトの長さ
@@ -114,7 +117,8 @@ interface RacerRuntime {
   eventTimer: number;
   eventKind: RandomEventKind;
   segMulSmooth: number;
-  specialRolled: boolean; // 3周目突入時の抽選を済ませたか
+  specialRolled: boolean; // 必殺技抽選を済ませたか（結果がハズレでも一度きり）
+  isSlowest: boolean; // 3週目突入時点で最下位だったマシンか（＝3週目突入と同時に抽選する側）
   specialBoostMul: number; // boost系必殺技：最高速倍率（発動中のみ1より大きい）
   specialBoostTimer: number;
   specialCornerTimer: number; // corner系必殺技：コーナー無敵＋速度低下無効の残り時間
@@ -179,7 +183,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
   const runtimeRef = useRef<RacerRuntime[]>(players.map(() => ({
     progress: 0, speed: 0, laps: 0, bouncePhase: 0, leanAngle: 0, state: 'running',
     eventMul: 1, eventTimer: 0, eventKind: null, segMulSmooth: 1,
-    specialRolled: false, specialBoostMul: 1, specialBoostTimer: 0, specialCornerTimer: 0,
+    specialRolled: false, isSlowest: false, specialBoostMul: 1, specialBoostTimer: 0, specialCornerTimer: 0,
     specialDebuffMul: 1, specialDebuffTimer: 0, specialFxTimer: 0, specialFxTotal: 0, specialFxKind: null,
   })));
   const carRefs = useRef<(RaceCarHandle | null)[]>([]);
@@ -189,9 +193,11 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
   const raceOver = useRef(false);
   const pendingSpecialsRef = useRef<number[]>([]);
   const specialOverlayActiveRef = useRef(false);
+  const slowestAssignedRef = useRef(false); // 最下位マシンの判定を済ませたか（レース中1回だけ）
+  const prevRankRef = useRef<number[]>(players.map(() => 0)); // 追い抜かれた瞬間を検知するための直前順位
 
   // レース画面が表示された時点（=ガレージでのレース開始ボタン操作の直後）で
-  // AudioContext を温めておき、必殺技発動時の効果音再生をスムーズにする
+  // 音声再生の許可を得ておき、必殺技発動時の効果音再生をスムーズにする
   useEffect(() => { primeAudio(); }, []);
 
   // 初期姿勢（スタートライン上、コース進行方向を向く）
@@ -253,6 +259,17 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
       setStatus('finished');
     };
 
+    // 3週目へ最初に突入したタイミングで、その時点の最下位マシンを1台だけ確定する。
+    // このマシンだけが「3週目突入と同時」に抽選され、残りは「追い抜かれた瞬間」抽選になる
+    const assignSlowestRole = () => {
+      const running = runtimeRef.current
+        .map((rt, i) => ({ i, dist: raceDistance(rt) }))
+        .filter(c => runtimeRef.current[c.i].state === 'running');
+      if (running.length === 0) return;
+      running.sort((a, b) => a.dist - b.dist);
+      runtimeRef.current[running[0].i].isSlowest = true;
+    };
+
     // 必殺技の演出（画面停止＋セリフ表示）が終わったタイミングで実際の効果を適用する
     const applySpecialEffect = (racerIndex: number, move: SpecialMove) => {
       const rt = runtimeRef.current[racerIndex];
@@ -295,7 +312,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         const move = getSpecialMove(players[idx].setting.body);
         specialOverlayActiveRef.current = true;
         setActiveSpecial({ racerIndex: idx, move });
-        playSpecialSound(move.kind);
+        playSpecialSound();
         window.setTimeout(() => {
           applySpecialEffect(idx, move);
           specialOverlayActiveRef.current = false;
@@ -411,11 +428,18 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
             rt.state = 'finished';
             anyFinished = true;
           }
-          // 3周目（ラストラップ）に入った瞬間、一度だけ必殺技の抽選を行う
-          if (rt.state === 'running' && rt.laps === SPECIAL_TRIGGER_LAP && !rt.specialRolled) {
-            rt.specialRolled = true;
-            if (Math.random() < SPECIAL_TRIGGER_CHANCE) {
-              pendingSpecialsRef.current.push(i);
+          // 3周目（ラストラップ）に入った瞬間：最初にここへ来たマシンを基準に最下位を確定し、
+          // 最下位マシン自身が3周目に入った瞬間はここで必殺技を抽選する
+          if (rt.state === 'running' && rt.laps === SPECIAL_TRIGGER_LAP) {
+            if (!slowestAssignedRef.current) {
+              assignSlowestRole();
+              slowestAssignedRef.current = true;
+            }
+            if (rt.isSlowest && !rt.specialRolled) {
+              rt.specialRolled = true;
+              if (Math.random() < SPECIAL_TRIGGER_CHANCE) {
+                pendingSpecialsRef.current.push(i);
+              }
             }
           }
         }
@@ -494,7 +518,9 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
       // リーダーボード（DOM直接更新で頻繁な再レンダリングを回避）
       const distances = players.map((_, i) => runtimeRef.current[i].laps * Math.PI * 2 + runtimeRef.current[i].progress);
       const order = [...distances.keys()].sort((a, b) => distances[b] - distances[a]);
+      const rankOf: number[] = new Array(players.length);
       order.forEach((racerIndex, rank) => {
+        rankOf[racerIndex] = rank;
         if (rankRefs.current[racerIndex]) rankRefs.current[racerIndex]!.textContent = `${rank + 1}`;
         if (rowRefs.current[racerIndex]) rowRefs.current[racerIndex]!.style.order = String(rank);
         const rt = runtimeRef.current[racerIndex];
@@ -504,7 +530,23 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         }
       });
 
-      // 3周目突入で抽選に成功したマシンがあれば、ここで必殺技の演出をキューから1件開始する
+      // 最下位以外のマシンは、自分が3週目に入った後で誰かに追い抜かれた（順位が悪化した）
+      // 瞬間に一度だけ必殺技を抽選する
+      players.forEach((_, i) => {
+        const rt = runtimeRef.current[i];
+        if (
+          rt.state === 'running' && !rt.isSlowest && !rt.specialRolled &&
+          rt.laps >= SPECIAL_TRIGGER_LAP && rankOf[i] > prevRankRef.current[i]
+        ) {
+          rt.specialRolled = true;
+          if (Math.random() < SPECIAL_TRIGGER_CHANCE) {
+            pendingSpecialsRef.current.push(i);
+          }
+        }
+        prevRankRef.current[i] = rankOf[i];
+      });
+
+      // 抽選に成功したマシンがあれば、ここで必殺技の演出をキューから1件開始する
       // （発動した場合は演出が終わるまでゴール判定を持ち越す）
       processSpecialQueue();
       if (specialOverlayActiveRef.current) {
