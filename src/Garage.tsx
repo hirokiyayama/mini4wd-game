@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PARTS } from './data';
 import type { CPULevel, MachineSetting, PartType, PartStats, Player } from './types';
 import { CircuitScene } from './CircuitScene';
 import { COURSES, type CourseId } from './courses';
+import { playGarageBgm, stopGarageBgm } from './bgm';
 
 interface GarageProps {
   players: Player[];
@@ -97,6 +98,12 @@ export const Garage: React.FC<GarageProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<PartType>('body');
   const [pressedBtn, setPressedBtn] = useState(false);
+
+  // ガレージ画面の表示中だけBGMをループ再生する（2曲からランダムに1つを選択）
+  useEffect(() => {
+    playGarageBgm();
+    return () => stopGarageBgm();
+  }, []);
 
   const activePlayer = players[activePlayerIndex];
   const setting = activePlayer.setting;
