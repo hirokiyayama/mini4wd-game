@@ -1308,7 +1308,19 @@ button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
   border-color: rgba(255,255,255,0.32);
 }
 
-.race-timer { text-align: right; }
+/* タイマーを枠で囲み、幅も固定する。数字が変わるたびに横幅が変わって
+   ガタつくのを防ぐため、タブラー数字（等幅の数字）も指定する */
+.race-timer {
+  flex-shrink: 0;
+  width: 118px;
+  text-align: right;
+  padding: 5px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(4,7,26,0.4);
+  backdrop-filter: blur(4px);
+  box-sizing: border-box;
+}
 
 .race-hud-label {
   font-size: 11px;
@@ -1323,6 +1335,8 @@ button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
   font-size: 30px;
   font-weight: 900;
   font-family: 'Rajdhani', sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
   color: #fff;
   line-height: 1;
   text-shadow: 0 1px 8px rgba(0,0,0,0.9), 0 0 16px rgba(0,0,0,0.6);
@@ -1362,6 +1376,7 @@ button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
   font-family: 'Rajdhani', sans-serif;
   font-weight: 900;
   font-size: 15px;
+  font-variant-numeric: tabular-nums;
   color: var(--accent-gold);
   text-shadow: 0 1px 6px rgba(0,0,0,0.9);
 }
@@ -1405,6 +1420,7 @@ button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
   color: rgba(255,255,255,0.7);
   letter-spacing: 0.5px;
   white-space: nowrap;
@@ -1672,6 +1688,7 @@ button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
   .race-topbar { padding: 8px 12px; flex-wrap: wrap; row-gap: 6px; }
   .race-topbar-right { flex-wrap: wrap; justify-content: flex-end; gap: 8px 10px; }
   .race-back-btn { padding: 7px 12px; font-size: 11px; }
+  .race-timer { width: 92px; padding: 4px 10px; }
   .race-hud-label { font-size: 9px; letter-spacing: 2px; }
   .race-hud-value { font-size: 22px; }
   .sound-toggle-btn { width: 36px; height: 36px; font-size: 16px; }
