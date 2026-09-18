@@ -191,6 +191,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
     specialDebuffMul: 1, specialDebuffTimer: 0, specialFxTimer: 0, specialFxTotal: 0, specialFxKind: null,
   })));
   const carRefs = useRef<(RaceCarHandle | null)[]>([]);
+  const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const rankRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const lapRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const raceOver = useRef(false);
@@ -531,8 +532,9 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
       order.forEach((racerIndex, rank) => {
         rankOf[racerIndex] = rank;
         if (rankRefs.current[racerIndex]) rankRefs.current[racerIndex]!.textContent = `${rank + 1}`;
-        // 表示順は入れ替えず（プレイヤーごとに固定位置）、順位の数字だけを更新する。
-        // 毎フレーム並び替えるとタイマーや名前表示がガタつく（見づらい）ため
+        // 1位が左端になるよう表示順を入れ替える。各行の幅を固定してあるので、
+        // 入れ替わってもリーダーボード全体の幅は変わらず、隣のタイマー等はぶれない
+        if (rowRefs.current[racerIndex]) rowRefs.current[racerIndex]!.style.order = String(rank);
         const rt = runtimeRef.current[racerIndex];
         const lapEl = lapRefs.current[racerIndex];
         if (lapEl) {
@@ -609,7 +611,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
             {players.map((racer, i) => {
               const bodyName = PARTS.find(p => p.id === racer.setting.body)?.name ?? '';
               return (
-                <div key={racer.id} className="race-leaderboard-row">
+                <div key={racer.id} ref={el => { rowRefs.current[i] = el; }} className="race-leaderboard-row">
                   <span className="race-leaderboard-rank" ref={el => { rankRefs.current[i] = el; }}>{i + 1}</span>
                   <span className="race-leaderboard-names">
                     <span className="race-leaderboard-name">{racer.name}{racer.isCPU && <span className="race-cpu-badge">🤖{racer.cpuLevel}</span>}</span>
