@@ -616,14 +616,17 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         ))}
       </div>
 
-      {/* ── 必殺技演出：発動中はレース画面を止めてセリフだけを大きく中央に表示 ── */}
+      {/* ── 必殺技演出：発動中はレース画面を止めて顔画像とセリフを大きく中央に表示 ── */}
       {activeSpecial && (
         <div
           className="race-overlay race-special-overlay"
           style={{ '--special-color': activeSpecial.move.color, '--special-glow': activeSpecial.move.glow } as React.CSSProperties}
         >
           <div className="race-special-flash" />
-          <div className="race-special-quote">{activeSpecial.move.quote}</div>
+          <div className="race-special-content">
+            <img src={activeSpecial.move.faceImage} alt="" className="race-special-face" />
+            <div className="race-special-quote">{activeSpecial.move.quote}</div>
+          </div>
         </div>
       )}
 

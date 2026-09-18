@@ -1,5 +1,14 @@
 // マシンごとの必殺技定義。レース3周目に一定確率で発動し、レース画面を一時停止して
-// 技名を大きく演出表示したのち、実際のゲーム効果（加速・コーナー無敵・敵妨害）を適用する。
+// セリフ・顔画像を大きく演出表示したのち、実際のゲーム効果（加速・コーナー無敵・敵妨害）を適用する。
+import faceMagnum from './assets/faces/face_magnum.jpg';
+import faceSonic from './assets/faces/face_sonic.jpg';
+import faceTridagger from './assets/faces/face_tridagger.jpg';
+import faceSpinaxe from './assets/faces/face_spinaxe.jpg';
+import faceProtoSaberJB from './assets/faces/face_protosaberjb.jpg';
+import faceBeakSpider from './assets/faces/face_beakspider.jpg';
+import faceBrockenG from './assets/faces/face_brockeng.jpg';
+import faceRayStinger from './assets/faces/face_raystinger.jpg';
+
 export type SpecialKind = 'boost' | 'corner' | 'attack_cone' | 'attack_single' | 'attack_homing';
 // エフェクトの見た目パターン（マシンごとに異なる演出をCSS側で切り替えるためのキー）
 export type SpecialFxKey = 'tornado' | 'wind' | 'wallrun' | 'thunder' | 'afterimage' | 'blade' | 'hammer' | 'needle';
@@ -13,6 +22,7 @@ export interface SpecialMove {
   color: string;
   glow: string;
   description: string;
+  faceImage: string;
 }
 
 export const SPECIAL_MOVES: Record<string, SpecialMove> = {
@@ -25,6 +35,7 @@ export const SPECIAL_MOVES: Record<string, SpecialMove> = {
     color: '#5aabff',
     glow: '#8fc4ff',
     description: '直線で超加速！一定時間、最高速度が大幅アップ！',
+    faceImage: faceMagnum,
   },
   b_sonic: {
     bodyId: 'b_sonic',
@@ -35,6 +46,7 @@ export const SPECIAL_MOVES: Record<string, SpecialMove> = {
     color: '#22d3ee',
     glow: '#7ce9fb',
     description: 'コーナーでの減速を大幅軽減！高速でコーナーを突破！',
+    faceImage: faceSonic,
   },
   b_tridagger: {
     bodyId: 'b_tridagger',
@@ -45,6 +57,7 @@ export const SPECIAL_MOVES: Record<string, SpecialMove> = {
     color: '#ffb020',
     glow: '#ffd27a',
     description: '壁面を走行してコーナーを高速突破！速度低下をほぼ無効化！',
+    faceImage: faceTridagger,
   },
   b_spinaxe: {
     bodyId: 'b_spinaxe',
@@ -55,6 +68,7 @@ export const SPECIAL_MOVES: Record<string, SpecialMove> = {
     color: '#f4a300',
     glow: '#ffd27a',
     description: 'ドリフトしながらコーナーを高速突破！コーナー脱出時に加速！',
+    faceImage: faceSpinaxe,
   },
   b_protosaberjb: {
     bodyId: 'b_protosaberjb',
@@ -65,6 +79,7 @@ export const SPECIAL_MOVES: Record<string, SpecialMove> = {
     color: '#5aabff',
     glow: '#c3e0ff',
     description: '一定時間、マシンの速度を大幅アップ！',
+    faceImage: faceProtoSaberJB,
   },
   b_beakspider: {
     bodyId: 'b_beakspider',
@@ -75,6 +90,7 @@ export const SPECIAL_MOVES: Record<string, SpecialMove> = {
     color: '#22d3ee',
     glow: '#a5f3fc',
     description: '前方の敵を攻撃！一定範囲の敵にダメージ！',
+    faceImage: faceBeakSpider,
   },
   b_brockeng: {
     bodyId: 'b_brockeng',
@@ -85,6 +101,7 @@ export const SPECIAL_MOVES: Record<string, SpecialMove> = {
     color: '#ff5a5a',
     glow: '#ffb3b3',
     description: '前方の敵を吹き飛ばし、大きく減速させる！',
+    faceImage: faceBrockenG,
   },
   b_raystinger: {
     bodyId: 'b_raystinger',
@@ -95,6 +112,7 @@ export const SPECIAL_MOVES: Record<string, SpecialMove> = {
     color: '#dc2626',
     glow: '#ff8080',
     description: '敵をロックオンして追尾攻撃！命中した敵を大幅減速！',
+    faceImage: faceRayStinger,
   },
 };
 
