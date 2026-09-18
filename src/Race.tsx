@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { PartStats, Player } from './types';
+import { PARTS } from './data';
 import { CircuitScene } from './CircuitScene';
 import { RaceCar, type RaceCarHandle } from './RaceCar';
 import { sampleCourse, type CourseId } from './courses';
@@ -94,7 +95,7 @@ const RANDOM_STUMBLE_MAX = 0.22;
 // 発動時はレース画面を一時停止してセリフを演出表示し、演出が終わると
 // 実際の効果が一定時間発動する。
 const SPECIAL_TRIGGER_LAP = TARGET_LAPS - 1; // このラップ数に達した瞬間が「3周目に入った」タイミング
-const SPECIAL_TRIGGER_CHANCE = 0.85;
+const SPECIAL_TRIGGER_CHANCE = 1;
 const SPECIAL_ANNOUNCE_MS = 2200; // セリフ演出の停止時間
 const SPECIAL_EFFECT_DURATION = 3.5; // boost/corner系：効果が続く時間（秒）
 const SPECIAL_DEBUFF_DURATION = 2.5; // attack系：命中した相手が妨害を受ける時間（秒）
@@ -599,25 +600,31 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         />
       ))}
 
-      {/* ── HUD: TOP BAR ── */}
+      {/* ── HUD: TOP BAR（順位表示はタイマーの左に配置） ── */}
       <div className="race-topbar">
         <button onClick={onBackToGarage} className="race-back-btn">◀ ガレージ</button>
-        <div className="race-timer">
-          <div className="race-hud-label">TIME</div>
-          <div className="race-hud-value race-hud-value--gold">{formatTime(time)}</div>
-        </div>
-        <SoundToggle />
-      </div>
-
-      {/* ── LEADERBOARD ── */}
-      <div className="race-leaderboard">
-        {players.map((racer, i) => (
-          <div key={racer.id} ref={el => { rowRefs.current[i] = el; }} className="race-leaderboard-row">
-            <span className="race-leaderboard-rank" ref={el => { rankRefs.current[i] = el; }}>{i + 1}</span>
-            <span className="race-leaderboard-name">{racer.name}{racer.isCPU && <span className="race-cpu-badge">🤖{racer.cpuLevel}</span>}</span>
-            <span className="race-leaderboard-lap" ref={el => { lapRefs.current[i] = el; }}>1/{TARGET_LAPS}</span>
+        <div className="race-topbar-right">
+          <div className="race-leaderboard">
+            {players.map((racer, i) => {
+              const bodyName = PARTS.find(p => p.id === racer.setting.body)?.name ?? '';
+              return (
+                <div key={racer.id} ref={el => { rowRefs.current[i] = el; }} className="race-leaderboard-row">
+                  <span className="race-leaderboard-rank" ref={el => { rankRefs.current[i] = el; }}>{i + 1}</span>
+                  <span className="race-leaderboard-names">
+                    <span className="race-leaderboard-name">{racer.name}{racer.isCPU && <span className="race-cpu-badge">🤖{racer.cpuLevel}</span>}</span>
+                    <span className="race-leaderboard-machine">{bodyName}</span>
+                  </span>
+                  <span className="race-leaderboard-lap" ref={el => { lapRefs.current[i] = el; }}>1/{TARGET_LAPS}</span>
+                </div>
+              );
+            })}
           </div>
-        ))}
+          <div className="race-timer">
+            <div className="race-hud-label">TIME</div>
+            <div className="race-hud-value race-hud-value--gold">{formatTime(time)}</div>
+          </div>
+          <SoundToggle />
+        </div>
       </div>
 
       {/* ── 必殺技演出：発動中はレース画面を止めて顔画像とセリフを大きく中央に表示 ── */}
