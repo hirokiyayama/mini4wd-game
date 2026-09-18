@@ -1,6 +1,6 @@
 // ガレージ画面で流すBGM。添付された2曲からランダムに1つを選び、ループ再生する。
-import track1 from './assets/bgm/garage_bgm1.m4a';
-import track2 from './assets/bgm/garage_bgm2.m4a';
+import track1 from './assets/bgm/garage_bgm1.mp3';
+import track2 from './assets/bgm/garage_bgm2.mp3';
 
 const TRACKS = [track1, track2];
 
