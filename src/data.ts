@@ -35,21 +35,21 @@ import stabilizerHitube from './assets/parts/stabilizer_hitube.jpg';
 import stabilizerPole from './assets/parts/stabilizer_pole.jpg';
 
 export const PARTS: Part[] = [
-  // Body — マシン本体の性能差がパーツ選びより大きく効くよう、基本数値100を
-  // 基準に得意分野で大きく上振れ・苦手分野で下振れさせて個性を出す。
-  // 重さも130gを基準に、軽量級・重量級で振れ幅を持たせている。
+  // Body — SP/PW/COは基準値100・上限130・下限70の範囲に収め、機体間の
+  // 性能差を出しすぎないようにしている（個性は得意/苦手の配分で表現）。
+  // 重さは130gを基準に、軽量級・重量級で振れ幅を持たせている。
   // スピード特化
-  { id: 'b_magnum', name: 'マグナムセイバー', type: 'body', stats: { speed: 180, power: 60, cornering: 30, stamina: 25, weight: 110 }, image: bodyMagnum },
-  { id: 'b_tridagger', name: 'トライダガーX', type: 'body', stats: { speed: 160, power: 90, cornering: 40, stamina: 25, weight: 125 }, image: bodyTridagger },
+  { id: 'b_magnum', name: 'マグナムセイバー', type: 'body', stats: { speed: 130, power: 85, cornering: 70, stamina: 25, weight: 110 }, image: bodyMagnum },
+  { id: 'b_tridagger', name: 'トライダガーX', type: 'body', stats: { speed: 125, power: 95, cornering: 75, stamina: 25, weight: 125 }, image: bodyTridagger },
   // コーナー特化
-  { id: 'b_beakspider', name: 'ビークスパイダー', type: 'body', stats: { speed: 90, power: 50, cornering: 170, stamina: 20, weight: 90 }, image: bodyBeakSpider },
-  { id: 'b_sonic', name: 'ソニックセイバー', type: 'body', stats: { speed: 60, power: 50, cornering: 200, stamina: 25, weight: 105 }, image: bodySonic },
-  { id: 'b_spinaxe', name: 'スピンアックス', type: 'body', stats: { speed: 70, power: 50, cornering: 185, stamina: 18, weight: 115 }, image: bodySpinAxe },
+  { id: 'b_beakspider', name: 'ビークスパイダー', type: 'body', stats: { speed: 85, power: 80, cornering: 120, stamina: 20, weight: 90 }, image: bodyBeakSpider },
+  { id: 'b_sonic', name: 'ソニックセイバー', type: 'body', stats: { speed: 75, power: 80, cornering: 130, stamina: 25, weight: 105 }, image: bodySonic },
+  { id: 'b_spinaxe', name: 'スピンアックス', type: 'body', stats: { speed: 80, power: 80, cornering: 128, stamina: 18, weight: 115 }, image: bodySpinAxe },
   // パワー特化
-  { id: 'b_brockeng', name: 'ブロッケンG', type: 'body', stats: { speed: 60, power: 230, cornering: 60, stamina: 30, weight: 180 }, image: bodyBrockenG },
+  { id: 'b_brockeng', name: 'ブロッケンG', type: 'body', stats: { speed: 80, power: 130, cornering: 85, stamina: 30, weight: 180 }, image: bodyBrockenG },
   // バランス型
   { id: 'b_protosaberjb', name: 'プロトセイバーJB', type: 'body', stats: { speed: 100, power: 100, cornering: 100, stamina: 25, weight: 130 }, image: bodyProtoSaberJB },
-  { id: 'b_raystinger', name: 'レイスティンガー', type: 'body', stats: { speed: 110, power: 105, cornering: 105, stamina: 22, weight: 125 }, image: bodyRayStinger },
+  { id: 'b_raystinger', name: 'レイスティンガー', type: 'body', stats: { speed: 105, power: 102, cornering: 102, stamina: 22, weight: 125 }, image: bodyRayStinger },
 
   // Chassis
   { id: 'c_super1', name: 'スーパーIIシャーシ', type: 'chassis', stats: { speed: 10, power: 25, cornering: 20, stamina: 15, weight: 15 }, image: chassisSuper2 },
@@ -85,14 +85,14 @@ export const PARTS: Part[] = [
   { id: 'tr_narrowsponge', name: 'ナローレストンスポンジタイヤ(後)', type: 'tire_rear', stats: { speed: 25, power: 15, cornering: 25, stamina: 15, weight: 2 }, image: tireNarrowSponge },
 
   // Rollers
-  { id: 'rf_plastic', name: 'プラローラー(前)', type: 'roller_front', stats: { speed: 0, power: 0, cornering: 20, stamina: 0, weight: 2 }, image: rollerPlastic },
-  { id: 'rf_plastic2low', name: '2段低摩擦プラローラー(前)', type: 'roller_front', stats: { speed: 2, power: 0, cornering: 35, stamina: 0, weight: 3 }, image: rollerPlastic2Low },
-  { id: 'rf_alum', name: 'アルミベアリングローラー(前)', type: 'roller_front', stats: { speed: -5, power: 0, cornering: 50, stamina: 0, weight: 4 }, image: rollerAlum },
-  { id: 'rf_alum2', name: '2段アルミローラー(前)', type: 'roller_front', stats: { speed: -8, power: 0, cornering: 65, stamina: 0, weight: 6 }, image: rollerAlum2step },
-  { id: 'rr_plastic', name: 'プラローラー(後)', type: 'roller_rear', stats: { speed: 0, power: 0, cornering: 20, stamina: 0, weight: 2 }, image: rollerPlastic },
-  { id: 'rr_plastic2low', name: '2段低摩擦プラローラー(後)', type: 'roller_rear', stats: { speed: 2, power: 0, cornering: 35, stamina: 0, weight: 3 }, image: rollerPlastic2Low },
-  { id: 'rr_alum', name: 'アルミベアリングローラー(後)', type: 'roller_rear', stats: { speed: -5, power: 0, cornering: 50, stamina: 0, weight: 4 }, image: rollerAlum },
-  { id: 'rr_alum2', name: '2段アルミローラー(後)', type: 'roller_rear', stats: { speed: -8, power: 0, cornering: 65, stamina: 0, weight: 6 }, image: rollerAlum2step },
+  { id: 'rf_plastic', name: 'プラローラー(前)', type: 'roller_front', stats: { speed: 5, power: 0, cornering: 20, stamina: 0, weight: 2 }, image: rollerPlastic },
+  { id: 'rf_plastic2low', name: '2段低摩擦プラローラー(前)', type: 'roller_front', stats: { speed: 0, power: 0, cornering: 25, stamina: 0, weight: 3 }, image: rollerPlastic2Low },
+  { id: 'rf_alum', name: 'アルミベアリングローラー(前)', type: 'roller_front', stats: { speed: -5, power: 0, cornering: 40, stamina: 0, weight: 4 }, image: rollerAlum },
+  { id: 'rf_alum2', name: '2段アルミローラー(前)', type: 'roller_front', stats: { speed: -15, power: 0, cornering: 50, stamina: 0, weight: 6 }, image: rollerAlum2step },
+  { id: 'rr_plastic', name: 'プラローラー(後)', type: 'roller_rear', stats: { speed: 5, power: 0, cornering: 20, stamina: 0, weight: 2 }, image: rollerPlastic },
+  { id: 'rr_plastic2low', name: '2段低摩擦プラローラー(後)', type: 'roller_rear', stats: { speed: 0, power: 0, cornering: 25, stamina: 0, weight: 3 }, image: rollerPlastic2Low },
+  { id: 'rr_alum', name: 'アルミベアリングローラー(後)', type: 'roller_rear', stats: { speed: -5, power: 0, cornering: 40, stamina: 0, weight: 4 }, image: rollerAlum },
+  { id: 'rr_alum2', name: '2段アルミローラー(後)', type: 'roller_rear', stats: { speed: -15, power: 0, cornering: 50, stamina: 0, weight: 6 }, image: rollerAlum2step },
 
   // Mass Damper
   { id: 'md_std', name: 'マスダンパー スクエア', type: 'mass_damper', stats: { speed: -10, power: -10, cornering: 5, stamina: 10, weight: 10 }, image: massDamperSquare },

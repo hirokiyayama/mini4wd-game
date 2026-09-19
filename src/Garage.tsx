@@ -41,7 +41,7 @@ const SLOT_LABELS: Record<PartType, string> = {
 const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'battery', 'gear', 'tire_front', 'tire_rear', 'roller_front', 'roller_rear', 'mass_damper', 'stabilizer'];
 
 // ゲージの最大値（ステータスのスケーリング用）
-const STAT_MAX = { speed: 500, power: 550, cornering: 600, stamina: 200, weight: 350 };
+const STAT_MAX = { speed: 450, power: 400, cornering: 480, stamina: 200, weight: 350 };
 
 interface StatGaugeProps { label: string; icon: string; value: number; max: number; color: string; centered?: boolean; hint?: string; }
 const StatGauge: React.FC<StatGaugeProps> = ({ label, icon, value, max, color, centered = false, hint }) => {
@@ -397,14 +397,14 @@ function getPartDescription(id: string): string {
     tr_lowhi:    '重心を下げて安定性を高めるローハイトタイヤ。',
     tr_hardlowhi:'硬めのゴムで転がり抵抗を減らしたローハイトタイヤ。グリップは控えめ。',
     tr_narrowsponge: '幅を絞って軽量化したスポンジタイヤ。標準品よりわずかにグリップは落ちる。',
-    rf_plastic:  'コーナーでの安定性を高めるパーツ。',
+    rf_plastic:  'コーナーでの安定性を高める、わずかに速度も乗る定番パーツ。',
     rf_plastic2low: '低摩擦素材の2段構造プラローラー。速度を落とさずコーナー安定性を高める。',
     rf_alum:     '高精度アルミ製で摩擦が少ないローラー。',
-    rf_alum2:    '2段構造でさらに安定性を高めたアルミローラー。',
-    rr_plastic:  'リアの安定性を向上させるローラー。',
+    rf_alum2:    '2段構造でさらに安定性を高めたアルミローラー。ただし速度はやや犠牲になる。',
+    rr_plastic:  'リアの安定性を向上させる、わずかに速度も乗る定番ローラー。',
     rr_plastic2low: '低摩擦素材の2段構造プラローラー。速度を落とさずコーナー安定性を高める。',
     rr_alum:     '超低摩擦のアルミ製リアローラー。',
-    rr_alum2:    '2段構造でさらに安定性を高めたアルミローラー。',
+    rr_alum2:    '2段構造でさらに安定性を高めたアルミローラー。ただし速度はやや犠牲になる。',
     md_std:      'スタミナを底上げする代わりに、スピードとコーナーを少し犠牲にする重り。',
     stab_pole:   '軽量なポールタイプのスタビライザー。わずかな重量でコーナー安定性を上げる。',
     stab_hitube: '高い位置で車体を支えるチューブスタビライザー。コーナー安定性は高いが少し重い。',
