@@ -40,7 +40,7 @@ const SLOT_LABELS: Record<PartType, string> = {
 // パーツカテゴリのTabシステム
 const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'battery', 'gear', 'tire_front', 'tire_rear', 'roller_front', 'roller_rear', 'mass_damper', 'stabilizer'];
 
-// ゲージの最大値（ステータスのスケーリング用）。スタミナは0を中心に±この値まで
+// ゲージの最大値（ステータスのスケーリング用）
 const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 40, weight: 200 };
 
 interface StatGaugeProps { label: string; icon: string; value: number; max: number; color: string; centered?: boolean; hint?: string; }
@@ -216,7 +216,7 @@ export const Garage: React.FC<GarageProps> = ({
           <StatGauge label="スピード" icon="⚡" value={totalStats.speed}    max={STAT_MAX.speed}    color="#5aabff" hint="直線での最高速に影響（コーナーはやや苦手になる）" />
           <StatGauge label="パワー"   icon="🔥" value={totalStats.power}    max={STAT_MAX.power}    color="#ff6b35" hint="スタート時の加速の伸びと、坂道（パワーヒルウェイ）の登坂力に影響" />
           <StatGauge label="コーナー" icon="🎯" value={totalStats.cornering} max={STAT_MAX.cornering} color="#00e5ff" hint="コーナーでの速さと安定性に影響（直線はやや苦手になる）" />
-          <StatGauge label="スタミナ" icon="💚" value={totalStats.stamina}  max={STAT_MAX.stamina}  color={totalStats.stamina < 0 ? '#f87171' : '#4ade80'} centered hint="レース終盤の失速・巻き返しに影響" />
+          <StatGauge label="スタミナ" icon="💚" value={totalStats.stamina}  max={STAT_MAX.stamina}  color="#4ade80" hint="尽きると減速。ラストラップでは残った分だけ加速してゴールで使い切る" />
           <div className="weight-box">
             <span className="weight-label">🔩 重さ</span>
             <span className="weight-value">{totalStats.weight}g</span>
@@ -377,12 +377,12 @@ function getPartDescription(id: string): string {
     c_super1:    '安定した走行性能を発揮するベーシックシャーシ。',
     c_tz:        'コーナー安定性に定評のある人気シャーシ。',
     c_ar:        '全方位を高い次元でまとめた高耐久アドバンスドシャーシ。',
-    m_lightdash: '軽量コンパクトなダッシュ系モーター。ただしスタミナの消耗はダッシュ系の中でも大きめ。',
-    m_rev:       '最高速に特化したハイレスポンスモーター。スタミナへの負担は少ない。',
-    m_torque:    'パワー重視で加速力に優れたトルク系。スタミナへの負担は少ない。',
-    m_powerdash: 'スピードとパワーを高い次元で両立した強化モーター。スタミナ消費はやや大きい。',
-    m_hyper:     '圧倒的なパワーを誇る最強モーター。スタミナの消耗が激しく、終盤に失速しやすい諸刃の剣。',
-    bat_neochamp:   'スピードとパワーを底上げする充電式のニッケル水素電池。ただしスタミナはやや落ちる。',
+    m_lightdash: '軽量コンパクトなダッシュ系モーター。ただしスタミナの蓄えはダッシュ系の中でも少なめ。',
+    m_rev:       '最高速に特化したハイレスポンスモーター。スタミナの蓄えも豊富。',
+    m_torque:    'パワー重視で加速力に優れたトルク系。スタミナの蓄えも豊富。',
+    m_powerdash: 'スピードとパワーを高い次元で両立した強化モーター。ただしスタミナの蓄えはない。',
+    m_hyper:     '圧倒的なパワーを誇る最強モーター。ただしスタミナの蓄えはなく、終盤は早めに息切れしやすい諸刃の剣。',
+    bat_neochamp:   'スピードとパワーを底上げする充電式のニッケル水素電池。他のステータスへの影響はない。',
     bat_powerchamp: 'パワーをしっかり底上げする定番のアルカリ電池。他のステータスへの影響はない。',
     g_std:       'バランスの取れたスタンダードギヤ比。',
     g_ex37:      '標準と超速の中間にあたる万能なギヤ比(3.7:1)。',

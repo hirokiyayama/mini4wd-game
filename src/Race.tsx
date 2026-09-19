@@ -29,20 +29,15 @@ const LANE_MUL = [1, 1.08, 0.92];
 const ACCEL_SCALE = 0.002;
 const ACCEL_EXPONENT = 1.6;
 
-// ── 逆転要素：スタミナによるバテ／second wind ──
-// スタミナ合計がこの値を上回るほど終盤に上乗せ、下回るほど終盤に失速する（基準値=平均的な構成のスタミナ）
-const STAMINA_BASELINE = 15;
-// ラスト1周（3周レースなら2/3経過）からバテ・巻き返し効果が一気に強まる
-const FATIGUE_START_FRAC = 2 / 3;
-// スタミナが基準からどれだけ離れているか（staminaGap）に比例して終盤の
-// 速度倍率が連続的に変化する。以前は上限/下限でキャップしていたため、
-// 極端にスタミナが低い構成でも「そこから先はもう変わらない」という
-// 不自然な頭打ちが生じていた。キャップを撤廃し、差が大きいほど際限なく
-// 効果が強まるようにする。SAFETY_FLOOR/CEILING は実際には到達しない
-// 想定外の値が来た場合の保険にすぎない。
-const STAMINA_EFFECT_COEF = 0.01; // staminaGap 1あたりの倍率変化量
-const STAMINA_MUL_SAFETY_FLOOR = 0.25;
-const STAMINA_MUL_SAFETY_CEILING = 2;
+// ── スタミナ：残量制の資源 ──
+// スタミナは0以上の資源として走行距離に比例して消費され、尽きると減速する。
+// ラストラップに入った瞬間、その時点の残りスタミナを「ゴールでちょうど0になる」
+// ペースに再設定し、消費ペースに比例した終盤ブーストを与える（温存できていた
+// マシンほど大きな追い上げを見せ、使い切るタイミングはゴールに揃う）
+const EARLY_STAMINA_DRAIN_PER_LAP = 10; // ラスト1周を除く各ラップで消費するスタミナ量の目安
+const EARLY_STAMINA_DRAIN_PER_RAD = EARLY_STAMINA_DRAIN_PER_LAP / (Math.PI * 2);
+const STAMINA_EMPTY_SLOWDOWN_MUL = 0.65; // スタミナが尽きたときの速度倍率
+const FINAL_LAP_BOOST_MAX = 0.35; // ラストラップ開始時に残っていたスタミナを使い切るペースで得られる最大加速倍率
 
 // ── パワーヒルウェイ専用：坂道でのパワー効果 ──
 // パワー/重さ比がこの値と同じ機体は上り坂でも速度低下なし。これより低いと
@@ -131,6 +126,9 @@ interface RacerRuntime {
   specialFxTimer: number; // 自機に表示する必殺技エフェクトの残り時間（演出用）
   specialFxTotal: number; // ↑の開始時の合計時間（経過率の計算用）
   specialFxKind: SpecialFxKey | null; // 発動中の必殺技エフェクト種別
+  staminaLeft: number; // 残りスタミナ（0になると減速）
+  staminaAtFinalLapStart: number; // ラストラップ突入時点の残りスタミナ（終盤ブースト計算の基準）
+  finalLapDrainPerRad: number | null; // ラストラップ用に再設定した消費ペース（ゴールでちょうど0になるよう算出）
 }
 
 interface RankEntry {
@@ -184,11 +182,12 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
   const [, forceTick] = useState(0);
   const [activeSpecial, setActiveSpecial] = useState<ActiveSpecialEvent | null>(null);
 
-  const runtimeRef = useRef<RacerRuntime[]>(players.map(() => ({
+  const runtimeRef = useRef<RacerRuntime[]>(players.map((p) => ({
     progress: 0, speed: 0, laps: 0, bouncePhase: 0, leanAngle: 0, state: 'running',
     eventMul: 1, eventTimer: 0, eventKind: null, segMulSmooth: 1,
     specialRolled: false, isSlowest: false, specialBoostMul: 1, specialBoostTimer: 0, specialCornerTimer: 0,
     specialDebuffMul: 1, specialDebuffTimer: 0, specialFxTimer: 0, specialFxTotal: 0, specialFxKind: null,
+    staminaLeft: p.totalStats.stamina, staminaAtFinalLapStart: 0, finalLapDrainPerRad: null,
   })));
   const carRefs = useRef<(RaceCarHandle | null)[]>([]);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -382,17 +381,21 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
           : Math.max(SEG_MUL_FLOOR, 1 + diff * SPEED_CORNER_TRADEOFF);
         rt.segMulSmooth += (targetSegMul - rt.segMulSmooth) * Math.min(1, delta * SEG_MUL_SMOOTH_RATE);
 
-        // ラスト1周に入ったら一気に効いてくる「バテ／second wind」係数（逆転要素）。
-        // 線形（直線的）に立ち上げることで、なだらかにではなくラップ切り替わりで
-        // はっきり分かるように失速・巻き返しさせる
-        const distanceTarget = TARGET_LAPS * Math.PI * 2;
-        const raceFrac = Math.min(1, (rt.laps * Math.PI * 2 + rt.progress) / distanceTarget);
-        const fatigueEase = Math.max(0, (raceFrac - FATIGUE_START_FRAC) / (1 - FATIGUE_START_FRAC));
-        const staminaGap = racer.totalStats.stamina - STAMINA_BASELINE;
-        const staminaMul = Math.max(
-          STAMINA_MUL_SAFETY_FLOOR,
-          Math.min(STAMINA_MUL_SAFETY_CEILING, 1 + staminaGap * STAMINA_EFFECT_COEF * fatigueEase)
-        );
+        // ラストラップに入った瞬間、その時点の残りスタミナを「ゴールでちょうど0になる」
+        // ペースに1度だけ再設定する（以降のフレームはそのペースで消費し続ける）
+        const isFinalLap = rt.laps === TARGET_LAPS - 1;
+        if (isFinalLap && rt.finalLapDrainPerRad === null) {
+          const remainingRad = Math.max(0.0001, Math.PI * 2 - rt.progress);
+          rt.staminaAtFinalLapStart = rt.staminaLeft;
+          rt.finalLapDrainPerRad = rt.staminaLeft / remainingRad;
+        }
+        // 尽きていれば減速。ラストラップでまだ残っていれば、使い切るペースに
+        // 比例した加速（温存できていたマシンほど大きな追い上げ）を与える
+        const staminaMul = rt.staminaLeft <= 0
+          ? STAMINA_EMPTY_SLOWDOWN_MUL
+          : (isFinalLap && rt.staminaAtFinalLapStart > 0
+            ? 1 + FINAL_LAP_BOOST_MAX * (rt.staminaLeft / rt.staminaAtFinalLapStart)
+            : 1);
 
         // 坂道（パワーヒルウェイ）でのパワー効果：上りはパワー/重さ比が低いと失速し、
         // 高いとむしろ加速。下りは誰でも一律ブースト
@@ -429,7 +432,10 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
         // パワー差がレース序盤にはっきり体感できるようにしている
         const acceleration = Math.pow(racer.totalStats.power / racer.totalStats.weight, ACCEL_EXPONENT) * ACCEL_SCALE;
         rt.speed = Math.min(rt.speed + acceleration * delta * 60, maxSpeed);
-        rt.progress += rt.speed * delta;
+        const distanceThisFrame = rt.speed * delta;
+        rt.progress += distanceThisFrame;
+        const drainPerRad = isFinalLap ? (rt.finalLapDrainPerRad ?? 0) : EARLY_STAMINA_DRAIN_PER_RAD;
+        rt.staminaLeft = Math.max(0, rt.staminaLeft - drainPerRad * distanceThisFrame);
 
         if (rt.progress >= Math.PI * 2) {
           rt.progress %= Math.PI * 2;
