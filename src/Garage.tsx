@@ -40,8 +40,8 @@ const SLOT_LABELS: Record<PartType, string> = {
 // パーツカテゴリのTabシステム
 const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'battery', 'gear', 'tire_front', 'tire_rear', 'roller_front', 'roller_rear', 'mass_damper', 'stabilizer'];
 
-// ゲージの最大値（ステータスのスケーリング用）
-const STAT_MAX = { speed: 450, power: 400, cornering: 480, stamina: 200, weight: 350 };
+// ゲージの最大値（ステータスのスケーリング用）。スタミナは0を中心に±この値まで
+const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 40, weight: 200 };
 
 interface StatGaugeProps { label: string; icon: string; value: number; max: number; color: string; centered?: boolean; hint?: string; }
 const StatGauge: React.FC<StatGaugeProps> = ({ label, icon, value, max, color, centered = false, hint }) => {
@@ -216,7 +216,7 @@ export const Garage: React.FC<GarageProps> = ({
           <StatGauge label="スピード" icon="⚡" value={totalStats.speed}    max={STAT_MAX.speed}    color="#5aabff" hint="直線での最高速に影響（コーナーはやや苦手になる）" />
           <StatGauge label="パワー"   icon="🔥" value={totalStats.power}    max={STAT_MAX.power}    color="#ff6b35" hint="スタート時の加速の伸びと、坂道（パワーヒルウェイ）の登坂力に影響" />
           <StatGauge label="コーナー" icon="🎯" value={totalStats.cornering} max={STAT_MAX.cornering} color="#00e5ff" hint="コーナーでの速さと安定性に影響（直線はやや苦手になる）" />
-          <StatGauge label="スタミナ" icon="💚" value={totalStats.stamina}  max={STAT_MAX.stamina}  color="#4ade80" hint="尽きると減速。ラストラップでは残った分だけ加速してゴールで使い切る" />
+          <StatGauge label="スタミナ" icon="💚" value={totalStats.stamina}  max={STAT_MAX.stamina}  color={totalStats.stamina < 0 ? '#f87171' : '#4ade80'} centered hint="レース終盤の失速・巻き返しに影響" />
           <div className="weight-box">
             <span className="weight-label">🔩 重さ</span>
             <span className="weight-value">{totalStats.weight}g</span>
@@ -366,8 +366,8 @@ function getPartIcon(type: PartType): string {
 
 function getPartDescription(id: string): string {
   const desc: Record<string, string> = {
-    b_magnum:      '圧倒的な最高速を誇るスピード特化ボディ。コーナーはやや苦手だが、スタミナの蓄えは豊富。',
-    b_tridagger:   '高い最高速を誇るスピード特化ボディ。パワーはやや控えめだが、スタミナの蓄えは豊富。',
+    b_magnum:      '圧倒的な最高速を誇るスピード特化ボディ。コーナーはやや苦手。',
+    b_tridagger:   '高い最高速を誇るスピード特化ボディ。パワーはやや控えめ。',
     b_beakspider:  '超軽量・低重心でコーナリング性能はトップクラス。パワーは控えめ。',
     b_sonic:       '空力特性に優れたコーナリング特化ボディ。',
     b_spinaxe:     '軽快なハンドリングが持ち味のコーナリング特化ボディ。',
@@ -376,10 +376,11 @@ function getPartDescription(id: string): string {
     b_raystinger:  '弱点のないオールラウンダー。安定して走れるバランス型ボディ。',
     c_super1:    '安定した走行性能を発揮するベーシックシャーシ。',
     c_tz:        'コーナー安定性に定評のある人気シャーシ。',
-    c_ar:        '全方位を高い次元でまとめた高耐久アドバンスドシャーシ。',
+    c_ar:        'スタミナ重視の高耐久アドバンスドシャーシ。',
     m_lightdash: '軽量コンパクトなダッシュ系モーター。ただしスタミナの消耗はダッシュ系の中でも大きめ。',
-    m_rev:       '最高速に特化したハイレスポンスモーター。スタミナの蓄えも豊富。',
-    m_torque:    'パワー重視で加速力に優れたトルク系。スタミナの蓄えも豊富。',
+    m_normal:    '標準的なモーター。扱いやすく、スタミナにも優しい。',
+    m_rev:       '最高速に特化したハイレスポンスモーター。スタミナへの負担は少ない。',
+    m_torque:    'パワー重視で加速力に優れたトルク系。スタミナへの負担は少ない。',
     m_powerdash: 'スピードとパワーを高い次元で両立した強化モーター。スタミナ消費はやや大きい。',
     m_hyper:     '圧倒的なパワーを誇る最強モーター。スタミナの消耗が激しく、終盤に失速しやすい諸刃の剣。',
     bat_neochamp:   'スピードとパワーを底上げする充電式のニッケル水素電池。ただしスタミナはやや落ちる。',
@@ -397,14 +398,14 @@ function getPartDescription(id: string): string {
     tr_lowhi:    '重心を下げて安定性を高めるローハイトタイヤ。',
     tr_hardlowhi:'硬めのゴムで転がり抵抗を減らしたローハイトタイヤ。グリップは控えめ。',
     tr_narrowsponge: '幅を絞って軽量化したスポンジタイヤ。標準品よりわずかにグリップは落ちる。',
-    rf_plastic:  'コーナーでの安定性を高める、わずかに速度も乗る定番パーツ。',
+    rf_plastic:  'コーナーでの安定性を高めるパーツ。',
     rf_plastic2low: '低摩擦素材の2段構造プラローラー。速度を落とさずコーナー安定性を高める。',
     rf_alum:     '高精度アルミ製で摩擦が少ないローラー。',
-    rf_alum2:    '2段構造でさらに安定性を高めたアルミローラー。ただし速度はやや犠牲になる。',
-    rr_plastic:  'リアの安定性を向上させる、わずかに速度も乗る定番ローラー。',
+    rf_alum2:    '2段構造でさらに安定性を高めたアルミローラー。',
+    rr_plastic:  'リアの安定性を向上させるローラー。',
     rr_plastic2low: '低摩擦素材の2段構造プラローラー。速度を落とさずコーナー安定性を高める。',
     rr_alum:     '超低摩擦のアルミ製リアローラー。',
-    rr_alum2:    '2段構造でさらに安定性を高めたアルミローラー。ただし速度はやや犠牲になる。',
+    rr_alum2:    '2段構造でさらに安定性を高めたアルミローラー。',
     md_std:      'スタミナを底上げする代わりに、スピードとコーナーを少し犠牲にする重り。',
     stab_pole:   '軽量なポールタイプのスタビライザー。わずかな重量でコーナー安定性を上げる。',
     stab_hitube: '高い位置で車体を支えるチューブスタビライザー。コーナー安定性は高いが少し重い。',

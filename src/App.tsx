@@ -9,7 +9,7 @@ import './index.css';
 const BASE_SETTING: MachineSetting = {
   body: 'b_magnum',
   chassis: 'c_super1',
-  motor: 'm_torque',
+  motor: 'm_normal',
   battery: 'bat_powerchamp',
   gear: 'g_std',
   tire_front: 'tf_slick',
