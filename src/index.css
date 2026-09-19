@@ -168,11 +168,23 @@ button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
   0%, 100% { opacity: 0.55; transform: scale(0.85); }
   50%       { opacity: 1; transform: scale(1.1); }
 }
-@keyframes fx-blade-shoot {
-  0%   { opacity: 0; transform: translateX(-10px) scaleX(0.6); }
+@keyframes fx-roundblade-shoot {
+  0%   { opacity: 0; transform: translate(-10px, 0) scale(0.5) rotate(0deg); }
   25%  { opacity: 1; }
-  70%  { opacity: 0.9; transform: translateX(70px) scaleX(1.3); }
-  100% { opacity: 0; transform: translateX(95px) scaleX(1.3); }
+  70%  { opacity: 0.9; transform: translate(70px, 0) scale(1.1) rotate(360deg); }
+  100% { opacity: 0; transform: translate(95px, 0) scale(1.1) rotate(420deg); }
+}
+@keyframes fx-roundblade-shoot-up {
+  0%   { opacity: 0; transform: translate(-10px, 0) scale(0.5) rotate(0deg); }
+  25%  { opacity: 1; }
+  70%  { opacity: 0.9; transform: translate(60px, -34px) scale(1.05) rotate(360deg); }
+  100% { opacity: 0; transform: translate(82px, -46px) scale(1.05) rotate(420deg); }
+}
+@keyframes fx-roundblade-shoot-down {
+  0%   { opacity: 0; transform: translate(-10px, 0) scale(0.5) rotate(0deg); }
+  25%  { opacity: 1; }
+  70%  { opacity: 0.9; transform: translate(60px, 34px) scale(1.05) rotate(360deg); }
+  100% { opacity: 0; transform: translate(82px, 46px) scale(1.05) rotate(420deg); }
 }
 @keyframes fx-shock-ring {
   0%   { opacity: 0.9; transform: scale(0.3); }
@@ -1171,11 +1183,38 @@ button, .part-card, .loadout-row, .tab-btn, .course-btn, .player-tab,
   filter: blur(2px);
 }
 
-/* ビークスパイダー：鋭い風の刃が前方へ飛ぶ */
+/* ビークスパイダー：円形の刃を前方と斜め前方（上下）の3方向へ飛ばす */
 .mc-special--blade .mc-special-inner {
-  background: var(--special-color);
-  clip-path: polygon(50% 30%, 100% 50%, 50% 70%, 66% 50%);
-  animation: fx-blade-shoot 0.55s ease-out infinite;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, var(--special-color) 55%, transparent 78%);
+  box-shadow: 0 0 8px 2px var(--special-color);
+  animation: fx-roundblade-shoot 0.5s ease-out infinite;
+}
+.mc-special--blade .mc-special-inner::before,
+.mc-special--blade .mc-special-inner::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  top: 50%;
+  left: 50%;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, var(--special-color) 55%, transparent 78%);
+  box-shadow: 0 0 7px 2px var(--special-color);
+}
+.mc-special--blade .mc-special-inner::before {
+  animation: fx-roundblade-shoot-up 0.5s ease-out infinite;
+  animation-delay: 0.06s;
+}
+.mc-special--blade .mc-special-inner::after {
+  animation: fx-roundblade-shoot-down 0.5s ease-out infinite;
+  animation-delay: 0.12s;
 }
 
 /* ブロッケンG：ウイリーから叩きつけた瞬間の衝撃波＋砂煙（JS側でジャンプ→着地も加算） */
