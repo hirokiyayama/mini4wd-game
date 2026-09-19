@@ -107,11 +107,11 @@ export const SPECIAL_MOVES: Record<string, SpecialMove> = {
     bodyId: 'b_raystinger',
     name: '針攻撃',
     quote: 'いけっ！レイスティンガー！',
-    kind: 'attack_homing',
+    kind: 'attack_cone',
     fxKey: 'needle',
     color: '#dc2626',
     glow: '#ff8080',
-    description: '敵をロックオンして追尾攻撃！命中した敵を大幅減速！',
+    description: '前方の敵をまとめてロックオン攻撃！命中した敵を大幅減速！',
     faceImage: faceRayStinger,
   },
 };
