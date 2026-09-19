@@ -88,6 +88,13 @@ const RANDOM_BOOST_MAX = 0.18;
 const RANDOM_STUMBLE_MIN = 0.08; // つまづき：-8%〜-22%（速度ダウン＆コース安定悪化）
 const RANDOM_STUMBLE_MAX = 0.22;
 
+// ── レース運（当日調子）：同一セッティング同士のレースが毎回まったく同じ
+// 結果になってしまわないよう、レース開始時に各マシンへ一度だけ最高速の
+// 補正（±RACE_LUCK_VARIANCE）を抽選する。中盤のランダムイベントと違って
+// レース全体を通して一定なので、僅差の勝負では「今日はこっちが乗ってる」
+// くらいの決着の入れ替わりが起きるようになる
+const RACE_LUCK_VARIANCE = 0.08;
+
 // ── 必殺技：ラスト1周（3周レースなら3周目）に入ってから、各マシンがこの確率で
 // 自分の必殺技を発動する。3週目突入時点で最下位のマシンだけは突入と同時に
 // 抽選、それ以外のマシンは自分が3週目に入った後、他の誰かに追い抜かれた
@@ -131,6 +138,7 @@ interface RacerRuntime {
   specialFxTimer: number; // 自機に表示する必殺技エフェクトの残り時間（演出用）
   specialFxTotal: number; // ↑の開始時の合計時間（経過率の計算用）
   specialFxKind: SpecialFxKey | null; // 発動中の必殺技エフェクト種別
+  raceLuckMul: number; // レース開始時に1度だけ抽選する当日調子（最高速補正）
 }
 
 interface RankEntry {
@@ -189,6 +197,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
     eventMul: 1, eventTimer: 0, eventKind: null, segMulSmooth: 1,
     specialRolled: false, isSlowest: false, specialBoostMul: 1, specialBoostTimer: 0, specialCornerTimer: 0,
     specialDebuffMul: 1, specialDebuffTimer: 0, specialFxTimer: 0, specialFxTotal: 0, specialFxKind: null,
+    raceLuckMul: 1 + (Math.random() * 2 - 1) * RACE_LUCK_VARIANCE,
   })));
   const carRefs = useRef<(RaceCarHandle | null)[]>([]);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -423,7 +432,7 @@ export const Race: React.FC<RaceProps> = ({ players, courseId, onBackToGarage })
           rt.eventTimer = RANDOM_EVENT_MIN_DUR + Math.random() * (RANDOM_EVENT_MAX_DUR - RANDOM_EVENT_MIN_DUR);
         }
 
-        const maxSpeed = basePace * rt.segMulSmooth * staminaMul * slopeMul * rt.eventMul * rt.specialBoostMul * rt.specialDebuffMul * GLOBAL_SPEED_SCALE;
+        const maxSpeed = basePace * rt.segMulSmooth * staminaMul * slopeMul * rt.eventMul * rt.specialBoostMul * rt.specialDebuffMul * rt.raceLuckMul * GLOBAL_SPEED_SCALE;
         // パワーの役割はスタート時の加速の伸びと坂道（slopeMulで別途反映）に
         // 特化させる。ここの係数を控えめにして立ち上がりに時間をかけることで、
         // パワー差がレース序盤にはっきり体感できるようにしている
