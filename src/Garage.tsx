@@ -41,7 +41,7 @@ const SLOT_LABELS: Record<PartType, string> = {
 const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'battery', 'gear', 'tire_front', 'tire_rear', 'roller_front', 'roller_rear', 'mass_damper', 'stabilizer'];
 
 // ゲージの最大値（ステータスのスケーリング用）
-const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 40, weight: 200 };
+const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 200, weight: 200 };
 
 interface StatGaugeProps { label: string; icon: string; value: number; max: number; color: string; centered?: boolean; hint?: string; }
 const StatGauge: React.FC<StatGaugeProps> = ({ label, icon, value, max, color, centered = false, hint }) => {
@@ -380,8 +380,8 @@ function getPartDescription(id: string): string {
     m_lightdash: '軽量コンパクトなダッシュ系モーター。ただしスタミナの蓄えはダッシュ系の中でも少なめ。',
     m_rev:       '最高速に特化したハイレスポンスモーター。スタミナの蓄えも豊富。',
     m_torque:    'パワー重視で加速力に優れたトルク系。スタミナの蓄えも豊富。',
-    m_powerdash: 'スピードとパワーを高い次元で両立した強化モーター。ただしスタミナの蓄えはない。',
-    m_hyper:     '圧倒的なパワーを誇る最強モーター。ただしスタミナの蓄えはなく、終盤は早めに息切れしやすい諸刃の剣。',
+    m_powerdash: 'スピードとパワーを高い次元で両立した強化モーター。スタミナの蓄えは控えめ。',
+    m_hyper:     '圧倒的なパワーを誇る最強モーター。ただしスタミナの蓄えは少なく、終盤は早めに息切れしやすい諸刃の剣。',
     bat_neochamp:   'スピードとパワーを底上げする充電式のニッケル水素電池。他のステータスへの影響はない。',
     bat_powerchamp: 'パワーをしっかり底上げする定番のアルカリ電池。他のステータスへの影響はない。',
     g_std:       'バランスの取れたスタンダードギヤ比。',

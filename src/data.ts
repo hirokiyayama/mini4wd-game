@@ -39,28 +39,28 @@ export const PARTS: Part[] = [
   // groups, not just +/-5) so each machine's role is obvious at a glance.
   // スピード特化
   { id: 'b_magnum', name: 'マグナムセイバー', type: 'body', stats: { speed: 45, power: 0, cornering: -15, stamina: 0, weight: 16 }, image: bodyMagnum },
-  { id: 'b_tridagger', name: 'トライダガーX', type: 'body', stats: { speed: 40, power: 15, cornering: -10, stamina: 0, weight: 19 }, image: bodyTridagger },
+  { id: 'b_tridagger', name: 'トライダガーX', type: 'body', stats: { speed: 40, power: 15, cornering: -10, stamina: 5, weight: 19 }, image: bodyTridagger },
   // コーナー特化
-  { id: 'b_beakspider', name: 'ビークスパイダー', type: 'body', stats: { speed: 20, power: 0, cornering: 30, stamina: 0, weight: 10 }, image: bodyBeakSpider },
-  { id: 'b_sonic', name: 'ソニックセイバー', type: 'body', stats: { speed: -10, power: 0, cornering: 50, stamina: 6, weight: 13 }, image: bodySonic },
-  { id: 'b_spinaxe', name: 'スピンアックス', type: 'body', stats: { speed: -5, power: 0, cornering: 45, stamina: 4, weight: 15 }, image: bodySpinAxe },
+  { id: 'b_beakspider', name: 'ビークスパイダー', type: 'body', stats: { speed: 20, power: 0, cornering: 30, stamina: 20, weight: 10 }, image: bodyBeakSpider },
+  { id: 'b_sonic', name: 'ソニックセイバー', type: 'body', stats: { speed: -10, power: 0, cornering: 50, stamina: 25, weight: 13 }, image: bodySonic },
+  { id: 'b_spinaxe', name: 'スピンアックス', type: 'body', stats: { speed: -5, power: 0, cornering: 45, stamina: 18, weight: 15 }, image: bodySpinAxe },
   // パワー特化
-  { id: 'b_brockeng', name: 'ブロッケンG', type: 'body', stats: { speed: 0, power: 65, cornering: 0, stamina: 10, weight: 26 }, image: bodyBrockenG },
+  { id: 'b_brockeng', name: 'ブロッケンG', type: 'body', stats: { speed: 0, power: 65, cornering: 0, stamina: 30, weight: 26 }, image: bodyBrockenG },
   // バランス型
-  { id: 'b_protosaberjb', name: 'プロトセイバーJB', type: 'body', stats: { speed: 20, power: 20, cornering: 20, stamina: 9, weight: 17 }, image: bodyProtoSaberJB },
-  { id: 'b_raystinger', name: 'レイスティンガー', type: 'body', stats: { speed: 22, power: 18, cornering: 18, stamina: 7, weight: 15 }, image: bodyRayStinger },
+  { id: 'b_protosaberjb', name: 'プロトセイバーJB', type: 'body', stats: { speed: 20, power: 20, cornering: 20, stamina: 25, weight: 17 }, image: bodyProtoSaberJB },
+  { id: 'b_raystinger', name: 'レイスティンガー', type: 'body', stats: { speed: 22, power: 18, cornering: 18, stamina: 22, weight: 15 }, image: bodyRayStinger },
 
   // Chassis
-  { id: 'c_super1', name: 'スーパーIIシャーシ', type: 'chassis', stats: { speed: 10, power: 25, cornering: 20, stamina: 0, weight: 15 }, image: chassisSuper2 },
-  { id: 'c_tz', name: 'スーパーTZシャーシ', type: 'chassis', stats: { speed: 15, power: 10, cornering: 30, stamina: 0, weight: 18 }, image: chassisTz },
-  { id: 'c_ar', name: 'ARシャーシ', type: 'chassis', stats: { speed: 20, power: 15, cornering: 25, stamina: 0, weight: 22 }, image: chassisAr },
+  { id: 'c_super1', name: 'スーパーIIシャーシ', type: 'chassis', stats: { speed: 10, power: 25, cornering: 20, stamina: 15, weight: 15 }, image: chassisSuper2 },
+  { id: 'c_tz', name: 'スーパーTZシャーシ', type: 'chassis', stats: { speed: 15, power: 10, cornering: 30, stamina: 20, weight: 18 }, image: chassisTz },
+  { id: 'c_ar', name: 'ARシャーシ', type: 'chassis', stats: { speed: 20, power: 15, cornering: 25, stamina: 30, weight: 22 }, image: chassisAr },
 
   // Motor
-  { id: 'm_lightdash', name: 'ライトダッシュモーター', type: 'motor', stats: { speed: 40, power: 50, cornering: 0, stamina: 5, weight: 14 }, image: motorLightdash },
-  { id: 'm_rev', name: 'レブチューン2モーター', type: 'motor', stats: { speed: 40, power: 20, cornering: -10, stamina: 20, weight: 17 }, image: motorRev2 },
-  { id: 'm_torque', name: 'トルクチューン2モーター', type: 'motor', stats: { speed: 20, power: 40, cornering: 20, stamina: 20, weight: 17 }, image: motorTorque2 },
-  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 40, power: 60, cornering: 0, stamina: 0, weight: 17 }, image: motorPowerdash },
-  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 50, power: 50, cornering: 0, stamina: 0, weight: 17 }, image: motorHyperdash },
+  { id: 'm_lightdash', name: 'ライトダッシュモーター', type: 'motor', stats: { speed: 40, power: 50, cornering: 0, stamina: 10, weight: 14 }, image: motorLightdash },
+  { id: 'm_rev', name: 'レブチューン2モーター', type: 'motor', stats: { speed: 40, power: 20, cornering: -10, stamina: 40, weight: 17 }, image: motorRev2 },
+  { id: 'm_torque', name: 'トルクチューン2モーター', type: 'motor', stats: { speed: 20, power: 40, cornering: 20, stamina: 40, weight: 17 }, image: motorTorque2 },
+  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 40, power: 60, cornering: 0, stamina: 15, weight: 17 }, image: motorPowerdash },
+  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 50, power: 50, cornering: 0, stamina: 10, weight: 17 }, image: motorHyperdash },
 
   // Battery
   { id: 'bat_neochamp', name: 'ニッケル水素電池 ネオチャンプ', type: 'battery', stats: { speed: 15, power: 5, cornering: 0, stamina: 0, weight: 10 }, image: batteryNeochamp },
@@ -72,16 +72,16 @@ export const PARTS: Part[] = [
   { id: 'g_super', name: '超速ギヤ (3.5:1)', type: 'gear', stats: { speed: 50, power: 20, cornering: 0, stamina: 0, weight: 2 }, image: gearSuper },
 
   // Tires
-  { id: 'tf_slick', name: 'スリックタイヤ(前)', type: 'tire_front', stats: { speed: 30, power: 10, cornering: 10, stamina: 0, weight: 5 } },
-  { id: 'tf_sponge', name: 'スポンジタイヤ(前)', type: 'tire_front', stats: { speed: 20, power: 20, cornering: 30, stamina: 0, weight: 3 }, image: tireSponge },
-  { id: 'tf_lowhi', name: 'ローハイトタイヤ(前)', type: 'tire_front', stats: { speed: 15, power: 5, cornering: 25, stamina: 0, weight: 4 }, image: tireLowhi },
-  { id: 'tf_hardlowhi', name: 'スーパーハード ローハイトタイヤ(前)', type: 'tire_front', stats: { speed: 30, power: 10, cornering: 10, stamina: 0, weight: 4 }, image: tireHardLowhi },
-  { id: 'tf_narrowsponge', name: 'ナローレストンスポンジタイヤ(前)', type: 'tire_front', stats: { speed: 25, power: 15, cornering: 25, stamina: 0, weight: 2 }, image: tireNarrowSponge },
-  { id: 'tr_slick', name: 'スリックタイヤ(後)', type: 'tire_rear', stats: { speed: 30, power: 10, cornering: 10, stamina: 0, weight: 5 } },
-  { id: 'tr_sponge', name: 'スポンジタイヤ(後)', type: 'tire_rear', stats: { speed: 20, power: 20, cornering: 30, stamina: 0, weight: 3 }, image: tireSponge },
-  { id: 'tr_lowhi', name: 'ローハイトタイヤ(後)', type: 'tire_rear', stats: { speed: 15, power: 5, cornering: 25, stamina: 0, weight: 4 }, image: tireLowhi },
-  { id: 'tr_hardlowhi', name: 'スーパーハード ローハイトタイヤ(後)', type: 'tire_rear', stats: { speed: 30, power: 10, cornering: 10, stamina: 0, weight: 4 }, image: tireHardLowhi },
-  { id: 'tr_narrowsponge', name: 'ナローレストンスポンジタイヤ(後)', type: 'tire_rear', stats: { speed: 25, power: 15, cornering: 25, stamina: 0, weight: 2 }, image: tireNarrowSponge },
+  { id: 'tf_slick', name: 'スリックタイヤ(前)', type: 'tire_front', stats: { speed: 30, power: 10, cornering: 10, stamina: 10, weight: 5 } },
+  { id: 'tf_sponge', name: 'スポンジタイヤ(前)', type: 'tire_front', stats: { speed: 20, power: 20, cornering: 30, stamina: 20, weight: 3 }, image: tireSponge },
+  { id: 'tf_lowhi', name: 'ローハイトタイヤ(前)', type: 'tire_front', stats: { speed: 15, power: 5, cornering: 25, stamina: 15, weight: 4 }, image: tireLowhi },
+  { id: 'tf_hardlowhi', name: 'スーパーハード ローハイトタイヤ(前)', type: 'tire_front', stats: { speed: 30, power: 10, cornering: 10, stamina: 10, weight: 4 }, image: tireHardLowhi },
+  { id: 'tf_narrowsponge', name: 'ナローレストンスポンジタイヤ(前)', type: 'tire_front', stats: { speed: 25, power: 15, cornering: 25, stamina: 15, weight: 2 }, image: tireNarrowSponge },
+  { id: 'tr_slick', name: 'スリックタイヤ(後)', type: 'tire_rear', stats: { speed: 30, power: 10, cornering: 10, stamina: 10, weight: 5 } },
+  { id: 'tr_sponge', name: 'スポンジタイヤ(後)', type: 'tire_rear', stats: { speed: 20, power: 20, cornering: 30, stamina: 20, weight: 3 }, image: tireSponge },
+  { id: 'tr_lowhi', name: 'ローハイトタイヤ(後)', type: 'tire_rear', stats: { speed: 15, power: 5, cornering: 25, stamina: 15, weight: 4 }, image: tireLowhi },
+  { id: 'tr_hardlowhi', name: 'スーパーハード ローハイトタイヤ(後)', type: 'tire_rear', stats: { speed: 30, power: 10, cornering: 10, stamina: 10, weight: 4 }, image: tireHardLowhi },
+  { id: 'tr_narrowsponge', name: 'ナローレストンスポンジタイヤ(後)', type: 'tire_rear', stats: { speed: 25, power: 15, cornering: 25, stamina: 15, weight: 2 }, image: tireNarrowSponge },
 
   // Rollers
   { id: 'rf_plastic', name: 'プラローラー(前)', type: 'roller_front', stats: { speed: 0, power: 0, cornering: 20, stamina: 0, weight: 2 }, image: rollerPlastic },

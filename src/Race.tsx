@@ -34,7 +34,7 @@ const ACCEL_EXPONENT = 1.6;
 // ラストラップに入った瞬間、その時点の残りスタミナを「ゴールでちょうど0になる」
 // ペースに再設定し、消費ペースに比例した終盤ブーストを与える（温存できていた
 // マシンほど大きな追い上げを見せ、使い切るタイミングはゴールに揃う）
-const EARLY_STAMINA_DRAIN_PER_LAP = 10; // ラスト1周を除く各ラップで消費するスタミナ量の目安
+const EARLY_STAMINA_DRAIN_PER_LAP = 30; // ラスト1周を除く各ラップで消費するスタミナ量の目安
 const EARLY_STAMINA_DRAIN_PER_RAD = EARLY_STAMINA_DRAIN_PER_LAP / (Math.PI * 2);
 const STAMINA_EMPTY_SLOWDOWN_MUL = 0.65; // スタミナが尽きたときの速度倍率
 const FINAL_LAP_BOOST_MAX = 0.35; // ラストラップ開始時に残っていたスタミナを使い切るペースで得られる最大加速倍率
