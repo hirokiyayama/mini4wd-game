@@ -38,8 +38,8 @@ export const PARTS: Part[] = [
   // Body — grouped into 4 clear archetypes (big stat swings between
   // groups, not just +/-5) so each machine's role is obvious at a glance.
   // スピード特化
-  { id: 'b_magnum', name: 'マグナムセイバー', type: 'body', stats: { speed: 45, power: 0, cornering: -15, stamina: 0, weight: 16 }, image: bodyMagnum },
-  { id: 'b_tridagger', name: 'トライダガーX', type: 'body', stats: { speed: 40, power: 15, cornering: -10, stamina: 5, weight: 19 }, image: bodyTridagger },
+  { id: 'b_magnum', name: 'マグナムセイバー', type: 'body', stats: { speed: 45, power: 0, cornering: -15, stamina: 25, weight: 16 }, image: bodyMagnum },
+  { id: 'b_tridagger', name: 'トライダガーX', type: 'body', stats: { speed: 40, power: 15, cornering: -10, stamina: 25, weight: 19 }, image: bodyTridagger },
   // コーナー特化
   { id: 'b_beakspider', name: 'ビークスパイダー', type: 'body', stats: { speed: 20, power: 0, cornering: 30, stamina: 20, weight: 10 }, image: bodyBeakSpider },
   { id: 'b_sonic', name: 'ソニックセイバー', type: 'body', stats: { speed: -10, power: 0, cornering: 50, stamina: 25, weight: 13 }, image: bodySonic },
@@ -56,14 +56,14 @@ export const PARTS: Part[] = [
   { id: 'c_ar', name: 'ARシャーシ', type: 'chassis', stats: { speed: 20, power: 15, cornering: 25, stamina: 30, weight: 22 }, image: chassisAr },
 
   // Motor
-  { id: 'm_lightdash', name: 'ライトダッシュモーター', type: 'motor', stats: { speed: 40, power: 50, cornering: 0, stamina: 10, weight: 14 }, image: motorLightdash },
+  { id: 'm_lightdash', name: 'ライトダッシュモーター', type: 'motor', stats: { speed: 40, power: 50, cornering: 0, stamina: -10, weight: 14 }, image: motorLightdash },
   { id: 'm_rev', name: 'レブチューン2モーター', type: 'motor', stats: { speed: 40, power: 20, cornering: -10, stamina: 40, weight: 17 }, image: motorRev2 },
   { id: 'm_torque', name: 'トルクチューン2モーター', type: 'motor', stats: { speed: 20, power: 40, cornering: 20, stamina: 40, weight: 17 }, image: motorTorque2 },
-  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 40, power: 60, cornering: 0, stamina: 15, weight: 17 }, image: motorPowerdash },
-  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 50, power: 50, cornering: 0, stamina: 10, weight: 17 }, image: motorHyperdash },
+  { id: 'm_powerdash', name: 'パワーダッシュモーター', type: 'motor', stats: { speed: 40, power: 60, cornering: 0, stamina: -15, weight: 17 }, image: motorPowerdash },
+  { id: 'm_hyper', name: 'ハイパーダッシュモーター', type: 'motor', stats: { speed: 50, power: 50, cornering: 0, stamina: -15, weight: 17 }, image: motorHyperdash },
 
   // Battery
-  { id: 'bat_neochamp', name: 'ニッケル水素電池 ネオチャンプ', type: 'battery', stats: { speed: 15, power: 5, cornering: 0, stamina: 0, weight: 10 }, image: batteryNeochamp },
+  { id: 'bat_neochamp', name: 'ニッケル水素電池 ネオチャンプ', type: 'battery', stats: { speed: 15, power: 5, cornering: 0, stamina: -8, weight: 10 }, image: batteryNeochamp },
   { id: 'bat_powerchamp', name: 'パワーチャンプRX', type: 'battery', stats: { speed: 0, power: 15, cornering: 0, stamina: 0, weight: 8 }, image: batteryPowerchamp },
 
   // Gear
