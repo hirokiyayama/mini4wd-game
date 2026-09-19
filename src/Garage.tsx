@@ -41,7 +41,7 @@ const SLOT_LABELS: Record<PartType, string> = {
 const PART_TABS: PartType[] = ['body', 'chassis', 'motor', 'battery', 'gear', 'tire_front', 'tire_rear', 'roller_front', 'roller_rear', 'mass_damper', 'stabilizer'];
 
 // ゲージの最大値（ステータスのスケーリング用）
-const STAT_MAX = { speed: 400, power: 400, cornering: 300, stamina: 200, weight: 200 };
+const STAT_MAX = { speed: 500, power: 550, cornering: 600, stamina: 200, weight: 350 };
 
 interface StatGaugeProps { label: string; icon: string; value: number; max: number; color: string; centered?: boolean; hint?: string; }
 const StatGauge: React.FC<StatGaugeProps> = ({ label, icon, value, max, color, centered = false, hint }) => {
