@@ -51,9 +51,9 @@ export const PARTS: Part[] = [
   { id: 'b_raystinger', name: 'レイスティンガー', type: 'body', stats: { speed: 22, power: 18, cornering: 18, stamina: 7, weight: 15 }, image: bodyRayStinger },
 
   // Chassis
-  { id: 'c_super1', name: 'スーパーIIシャーシ', type: 'chassis', stats: { speed: 10, power: 10, cornering: 20, stamina: 5, weight: 15 }, image: chassisSuper2 },
-  { id: 'c_tz', name: 'スーパーTZシャーシ', type: 'chassis', stats: { speed: 15, power: 10, cornering: 30, stamina: 6, weight: 18 }, image: chassisTz },
-  { id: 'c_ar', name: 'ARシャーシ', type: 'chassis', stats: { speed: 20, power: 15, cornering: 25, stamina: 10, weight: 22 }, image: chassisAr },
+  { id: 'c_super1', name: 'スーパーIIシャーシ', type: 'chassis', stats: { speed: 10, power: 25, cornering: 20, stamina: 0, weight: 15 }, image: chassisSuper2 },
+  { id: 'c_tz', name: 'スーパーTZシャーシ', type: 'chassis', stats: { speed: 15, power: 10, cornering: 30, stamina: 0, weight: 18 }, image: chassisTz },
+  { id: 'c_ar', name: 'ARシャーシ', type: 'chassis', stats: { speed: 20, power: 15, cornering: 25, stamina: 0, weight: 22 }, image: chassisAr },
 
   // Motor
   { id: 'm_lightdash', name: 'ライトダッシュモーター', type: 'motor', stats: { speed: 40, power: 50, cornering: 0, stamina: -20, weight: 14 }, image: motorLightdash },
