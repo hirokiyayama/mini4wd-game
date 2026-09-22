@@ -42,12 +42,12 @@ export const PARTS: Part[] = [
   // groups, not just +/-5) so each machine's role is obvious at a glance.
   // スピード特化
   { id: 'b_magnum', name: 'マグナムセイバー', type: 'body', stats: { speed: 45, power: 0, cornering: -15, stamina: 0, weight: 16 }, image: bodyMagnum },
-  { id: 'b_victorymagnum', name: 'ビクトリーマグナム', type: 'body', stats: { speed: 45, power: 0, cornering: -15, stamina: 0, weight: 16 }, image: bodyVictoryMagnum },
+  { id: 'b_victorymagnum', name: 'ビクトリーマグナム', type: 'body', stats: { speed: 50, power: 5, cornering: -15, stamina: 0, weight: 16 }, image: bodyVictoryMagnum },
   { id: 'b_tridagger', name: 'トライダガーX', type: 'body', stats: { speed: 40, power: 15, cornering: -10, stamina: 0, weight: 19 }, image: bodyTridagger },
   // コーナー特化
   { id: 'b_beakspider', name: 'ビークスパイダー', type: 'body', stats: { speed: 20, power: 0, cornering: 30, stamina: 0, weight: 10 }, image: bodyBeakSpider },
   { id: 'b_sonic', name: 'ソニックセイバー', type: 'body', stats: { speed: -10, power: 0, cornering: 50, stamina: 6, weight: 13 }, image: bodySonic },
-  { id: 'b_vanguardsonic', name: 'バンガードソニック', type: 'body', stats: { speed: -10, power: 0, cornering: 50, stamina: 6, weight: 13 }, image: bodyVanguardSonic },
+  { id: 'b_vanguardsonic', name: 'バンガードソニック', type: 'body', stats: { speed: -5, power: 5, cornering: 55, stamina: 6, weight: 17 }, image: bodyVanguardSonic },
   { id: 'b_spinaxe', name: 'スピンアックス', type: 'body', stats: { speed: -5, power: 0, cornering: 45, stamina: 4, weight: 15 }, image: bodySpinAxe },
   // パワー特化
   { id: 'b_brockeng', name: 'ブロッケンG', type: 'body', stats: { speed: 0, power: 65, cornering: 0, stamina: 10, weight: 26 }, image: bodyBrockenG },
