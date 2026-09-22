@@ -367,9 +367,11 @@ function getPartIcon(type: PartType): string {
 function getPartDescription(id: string): string {
   const desc: Record<string, string> = {
     b_magnum:      '圧倒的な最高速を誇るスピード特化ボディ。コーナーはやや苦手。',
+    b_victorymagnum: 'マグナムセイバーと同性能のスピード特化ボディ。圧倒的な最高速を誇るが、コーナーはやや苦手。',
     b_tridagger:   '高い最高速を誇るスピード特化ボディ。パワーはやや控えめ。',
     b_beakspider:  '超軽量・低重心でコーナリング性能はトップクラス。パワーは控えめ。',
     b_sonic:       '空力特性に優れたコーナリング特化ボディ。',
+    b_vanguardsonic: 'ソニックセイバーと同性能のコーナリング特化ボディ。空力特性に優れる。',
     b_spinaxe:     '軽快なハンドリングが持ち味のコーナリング特化ボディ。',
     b_brockeng:    '重量級ボディに強力なパワーを秘めたパワーファイター。',
     b_protosaberjb:'スピード・パワー・コーナーを高い次元でまとめたバランス型ボディ。',

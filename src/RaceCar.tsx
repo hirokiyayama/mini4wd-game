@@ -42,7 +42,9 @@ interface Livery {
 
 const LIVERY: Record<string, Livery> = {
   b_magnum: { primary: '#f2f5fa', secondary: '#1d4ed8', accent: '#dc2626', glow: '#5aabff' },
+  b_victorymagnum: { primary: '#f2f5fa', secondary: '#1d4ed8', accent: '#dc2626', glow: '#5aabff' },
   b_sonic: { primary: '#f2f5fa', secondary: '#dc2626', accent: '#0f7a4d', glow: '#ff5a5a' },
+  b_vanguardsonic: { primary: '#dc2626', secondary: '#f2f5fa', accent: '#0f7a4d', glow: '#ff5a5a' },
   b_tridagger: { primary: '#20222b', secondary: '#dc2626', accent: '#f4a300', glow: '#ffb020' },
   b_spinaxe: { primary: '#1d3fae', secondary: '#f4a300', accent: '#f5f5f5', glow: '#5aabff' },
   b_beakspider: { primary: '#15171f', secondary: '#dc2626', accent: '#22d3ee', glow: '#22d3ee' },
