@@ -99,6 +99,7 @@ for k in ['downloadDoc']:
 tpl = re.sub(r'\s*onClick="\{\{ (stop|stopClose) \}\}"', '', tpl)
 tpl = re.sub(r'onClick="\{\{ (\w+) \}\}"', r'data-act="\1"', tpl)
 tpl = tpl.replace('href="{{ formSchool }}"', 'data-link="form_school" href="#"').replace('href="{{ formBoard }}"', 'data-link="form_board" href="#"')
+tpl = tpl.replace('style="{{ consultWrapStyle }}"', 'style="position:fixed;inset:0;z-index:200;background:rgba(15,30,50,.55);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box"')
 assert '{{' not in tpl, re.findall(r'.{60}\{\{.{40}', tpl)[:5]
 # pdf links
 tpl = tpl.replace('href="assets/magna-school-document.pdf"', 'data-link="doc_pdf" href="#"')

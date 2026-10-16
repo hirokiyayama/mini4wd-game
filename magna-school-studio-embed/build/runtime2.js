@@ -24,16 +24,31 @@
   }
   function startTimer(){ clearInterval(timer); timer = setInterval(function(){ showSlide((slide+1)%2); }, 5000); }
   startTimer();
+  /* モーダルは「押した位置の近く」に表示（iframe埋め込みでも画面外に出ないよう fixed を使わない） */
+  function place(name, ev){
+    var wrap = root.querySelector('[data-if="'+name+'"] > div'); if(!wrap) return;
+    var dlg = wrap.querySelector('[role="dialog"], div') || wrap;
+    var rr = root.getBoundingClientRect(), rootTop = rr.top + (window.pageYOffset||0);
+    var y = (ev && ev.clientY != null) ? ev.clientY + (window.pageYOffset||0) : (window.pageYOffset||0) + 200;
+    var vh = Math.min(window.innerHeight || 800, 900);
+    var maxH = Math.min(vh * 0.86, 640);
+    var inner = wrap.firstElementChild && wrap.firstElementChild.tagName==='DIV' ? wrap.firstElementChild : null;
+    if(wrap.getAttribute('role')==='dialog' && wrap.firstElementChild) inner = wrap.firstElementChild;
+    if(inner) inner.style.maxHeight = maxH + 'px';
+    var top = Math.max(0, Math.min(y - rootTop - 180, root.offsetHeight - maxH - 40));
+    wrap.style.position='absolute'; wrap.style.inset='auto'; wrap.style.left='0'; wrap.style.right='0'; wrap.style.top='0';
+    wrap.style.height = root.offsetHeight + 'px'; wrap.style.alignItems='flex-start'; wrap.style.setProperty('padding-top', (top + 20) + 'px', 'important');
+  }
   var A = {
     toggleMenu: function(){ setIf('menuOpen', !isOn('menuOpen')); },
     closeMenu: function(){ setIf('menuOpen', false); },
-    openConsult: function(){ setIf('consultOpen', true); setIf('menuOpen', false); },
+    openConsult: function(ev){ setIf('consultOpen', true); setIf('menuOpen', false); place('consultOpen', ev); },
     closeConsult: function(){ setIf('consultOpen', false); },
     toggleCase1: function(){ setIf('case1Open', !isOn('case1Open')); },
     toggleCase2: function(){ setIf('case2Open', !isOn('case2Open')); },
     toggleSafeDevice: function(){ setIf('safeDevice', !isOn('safeDevice')); },
-    goKimura: function(){ setIf('showProfKimura', true); setIf('showProfTakayama', false); },
-    goTakayama: function(){ setIf('showProfTakayama', true); setIf('showProfKimura', false); },
+    goKimura: function(ev){ setIf('showProfKimura', true); setIf('showProfTakayama', false); place('showProfKimura', ev); },
+    goTakayama: function(ev){ setIf('showProfTakayama', true); setIf('showProfKimura', false); place('showProfTakayama', ev); },
     closeProfModal: function(){ setIf('showProfKimura', false); setIf('showProfTakayama', false); }
   };
   root.addEventListener('click', function(ev){
@@ -44,7 +59,7 @@
       if(act==='faq'){ var box=t.closest('[data-faq]'), a=box.querySelector('[data-faq-a]'), on=a.classList.contains('mg-off');
         a.classList.toggle('mg-off', !on); t.setAttribute('aria-expanded', on); box.querySelector('[data-faq-arrow]').style.transform = on ? 'rotate(180deg)' : 'none'; return; }
       if(act==='slide'){ showSlide(+t.getAttribute('data-dot')); startTimer(); return; }
-      if(A[act]){ if(t.tagName==='A') ev.preventDefault(); A[act](); }
+      if(A[act]){ if(t.tagName==='A') ev.preventDefault(); A[act](ev); }
     }
     var l = ev.target.closest ? ev.target.closest('a[href^="#"]') : null;
     if(l && l.getAttribute('href').length>1){
