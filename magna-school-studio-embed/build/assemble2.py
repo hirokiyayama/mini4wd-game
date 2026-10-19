@@ -14,8 +14,6 @@ extra = '''
 #magna-lp [data-if].mg-pop{display:block}
 #magna-lp [data-if].mg-off{display:none !important}
 #magna-lp .mg-pop{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:40;filter:drop-shadow(0 14px 28px rgba(16,24,40,.22))}
-#magna-lp [data-faq]{position:relative;overflow:visible !important}
-#magna-lp [data-faq-a]{position:absolute;left:0;right:0;top:calc(100% - 2px);z-index:40;background:#fff;border:1px solid var(--line);border-top:0;border-radius:0 0 var(--radius) var(--radius);box-shadow:0 14px 28px rgba(16,24,40,.18)}
 #magna-lp [data-faq-a].mg-off{display:none !important}
 '''
 SEC = {'header':'ヘッダー／メニュー','intro':'オープニング','fv':'ファーストビュー','stats':'導入実績','media':'メディア掲載','ba':'導入前後','why':'アプリでできること','scene':'活用シーン','cases':'導入事例','area':'対応エリア','apply':'導入の流れ','free_reason':'ずっと無料の理由','safe':'導入準備','trust':'信頼・監修','play':'遊びながら学ぶ','faq':'よくある質問','footer':'フッター','spbar':'スマホ固定バー','misc':'その他'}
@@ -57,8 +55,8 @@ var LINKS = %s;
 rt = open(B+'/../build/runtime2.js', encoding='utf-8').read()
 out = '''<!-- ===== マグナとふしぎの少女 For School LP / STUDIO Embed 用（1ファイル完結）===== -->
 <!-- STUDIO：Embedブロックの「コード」欄に、このファイルの中身をそのまま貼り付け -->
-<!-- ★Embedブロックの高さ（ブレイクポイント別）：PC(1081px以上) 10700px ／ タブレット(〜1080px) 15000px ／ スマホ(〜430px) 15900px
-     ページの高さは開閉しても変わりません。多めに設定した分は、フッターと同じ濃い色で埋まります -->
+<!-- ★Embedブロックの高さ（ブレイクポイント別）：PC(1081px以上) 11400px ／ タブレット(〜1080px) 15500px ／ スマホ(〜600px) 16800px
+     FAQを開くとその下が押し下げられ、ページ末尾（フッター下の濃い色の余白）が縮みます。余白が足りないと下が切れるので、上記以上の高さにしてください -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&display=swap');
 %s
