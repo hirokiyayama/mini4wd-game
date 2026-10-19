@@ -57,17 +57,55 @@
       var act = t.getAttribute('data-act');
       if(/position:\s*fixed/.test(t.getAttribute('style')||'') && ev.target !== t) return; /* 背景クリックのみ閉じる */
       if(act==='faq'){ var box=t.closest('[data-faq]'), a=box.querySelector('[data-faq-a]'), on=a.classList.contains('mg-off');
+        if(on) $all('[data-faq]').forEach(function(o){ if(o!==box){ var oa=o.querySelector('[data-faq-a]'); if(!oa.classList.contains('mg-off')){ oa.classList.add('mg-off'); o.querySelector('[data-act="faq"]').setAttribute('aria-expanded','false'); o.querySelector('[data-faq-arrow]').style.transform='none'; } } });
         a.classList.toggle('mg-off', !on); t.setAttribute('aria-expanded', on); box.querySelector('[data-faq-arrow]').style.transform = on ? 'rotate(180deg)' : 'none'; return; }
       if(act==='slide'){ showSlide(+t.getAttribute('data-dot')); startTimer(); return; }
       if(A[act]){ if(t.tagName==='A') ev.preventDefault(); A[act](ev); }
     }
+    var d = ev.target.closest ? ev.target.closest('a[data-doc]') : null;
+    if(d){ ev.preventDefault(); downloadDoc(d.href, LINKS.doc_name || d.getAttribute('download') || 'document.pdf'); return; }
     var l = ev.target.closest ? ev.target.closest('a[href^="#"]') : null;
     if(l && l.getAttribute('href').length>1){
-      var id = l.getAttribute('href').slice(1), el = root.querySelector('[id="'+id+'"]') || document.getElementById(id);
-      if(el){ ev.preventDefault(); el.scrollIntoView({behavior:'smooth', block:'start'}); }
+      var id = l.getAttribute('href').slice(1);
+      if(id==='contact') return;
+      var el = root.querySelector('[id="'+id+'"]');
+      if(el){ ev.preventDefault(); setIf('menuOpen', false); requestAnimationFrame(function(){ requestAnimationFrame(function(){ goTo(el, id); }); }); }
     }
   });
+  /* ページ内リンク：iframe埋め込みでも親ページ側がスクロールするようにする */
+  function goTo(el, id){
+    var framed = false; try{ framed = window.self !== window.top; }catch(e){ framed = true; }
+    if(framed){
+      if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1');
+      el.style.outline = 'none';
+      try{ el.focus({preventScroll:true}); }catch(e){}
+      el.scrollIntoView({block:'start', behavior:'auto'});
+    } else {
+      var top = el.getBoundingClientRect().top + (window.pageYOffset||0) - 90;
+      window.scrollTo({top: Math.max(0, top), behavior:'smooth'});
+    }
+  }
+  /* 資料PDFを「そのままダウンロード」 */
+  function downloadDoc(url, name){
+    function viaLink(){ var a=document.createElement('a'); a.href=url; a.download=name; a.rel='noopener'; document.body.appendChild(a); a.click(); a.remove(); }
+    fetch(url).then(function(r){ if(!r.ok) throw new Error(r.status); return r.blob(); }).then(function(b){
+      var bu = URL.createObjectURL(new Blob([b], {type:'application/pdf'})), a=document.createElement('a');
+      a.href=bu; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(bu); }, 60000);
+    }).catch(viaLink);
+  }
   document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ A.closeConsult(); A.closeProfModal(); } });
+  /* ---- iframe埋め込み時：中身の高さに合わせて枠を伸縮（FAQ等を開いても下まで見られるように） ---- */
+  (function(){
+    var framed=false; try{ framed = window.self !== window.top; }catch(e){ framed = true; }
+    if(!framed) return;
+    document.documentElement.style.background = '#081b1e'; document.body.style.margin='0';
+    function fit(){
+      var h = Math.ceil(root.getBoundingClientRect().height);
+      try{ if(window.frameElement) window.frameElement.style.height = h + 'px'; }catch(e){}
+      try{ window.parent.postMessage({type:'magna-embed-height', height:h}, '*'); }catch(e){}
+    }
+    fit(); if(window.ResizeObserver) new ResizeObserver(fit).observe(root); window.addEventListener('load', fit);
+  })();
   /* ---- スクロール演出（ふわっと表示＋写真の視差） ---- */
   if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   if(!window.IntersectionObserver) return;

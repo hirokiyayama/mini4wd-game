@@ -9,6 +9,7 @@ extra = '''
 #magna-lp.mg-nointro [data-intro="veil"]{display:none !important}
 #magna-lp.mg-nointro [data-sec="fv"]{animation:none !important;opacity:1 !important}
 #magna-lp img{vertical-align:middle}
+#magna-lp [id]{scroll-margin-top:90px}
 '''
 SEC = {'header':'ヘッダー／メニュー','intro':'オープニング','fv':'ファーストビュー','stats':'導入実績','media':'メディア掲載','ba':'導入前後','why':'アプリでできること','scene':'活用シーン','cases':'導入事例','area':'対応エリア','apply':'導入の流れ','free_reason':'ずっと無料の理由','safe':'導入準備','trust':'信頼・監修','play':'遊びながら学ぶ','faq':'よくある質問','footer':'フッター','spbar':'スマホ固定バー','misc':'その他'}
 lines, last = [], None
@@ -21,7 +22,10 @@ text_js = '{' + '\n'.join(lines) + '\n}'
 imgs = '{\n' + ',\n'.join('  %s: %s' % (json.dumps(k), json.dumps(v)) for k, v in M['IMG'].items()) + '\n}'
 alts = '{\n' + ',\n'.join('  %s: %s' % (json.dumps(k), json.dumps(v, ensure_ascii=False)) for k, v in M['ALT'].items()) + '\n}'
 links = '''{
+  doc_name: "マグナ学校版_ご案内資料.pdf",   /* ダウンロード時のファイル名 */
   doc_pdf: "magna-school-document.pdf",   /* 資料ダウンロードのPDF（ファイル名 or URL） */
+  store_google: "https://play.google.com/store/apps/details?id=com.mintflag.magnaForSchool",   /* Google Play（For School版） */
+  store_apple: "https://apps.apple.com/jp/app/%E5%AD%A6%E6%A0%A1%E7%89%88-%E3%83%9E%E3%82%B0%E3%83%8A%E3%81%A8%E3%81%B5%E3%81%97%E3%81%8E%E3%81%AE%E5%B0%91%E5%A5%B3-for-school/id6759899720",   /* App Store（For School版） */
   form_school: "https://docs.google.com/forms/d/e/1FAIpQLSdFfzpaijpvhUgsRaNtiYo9XPpMWGZ09SsCN9AwZx2W9OxSOQ/viewform",   /* 学校担当者様フォーム */
   form_board: "https://docs.google.com/forms/d/e/1FAIpQLSfRhNoXYtUL1V7co8C8DN9M7pc2RSxE4zIixdAG8EaZZRSk3Q/viewform"      /* 教育委員会担当者様フォーム */
 }'''
@@ -46,6 +50,9 @@ var LINKS = %s;
 rt = open(B+'/../build/runtime2.js', encoding='utf-8').read()
 out = '''<!-- ===== マグナとふしぎの少女 For School LP / STUDIO Embed 用（1ファイル完結）===== -->
 <!-- STUDIO：Embedブロックの「コード」欄に、このファイルの中身をそのまま貼り付け -->
+<!-- ★Embedブロックの高さ（ブレイクポイント別に設定）：閉じた状態の高さ＋余白。FAQ等を開くと伸びるため余白が必要です
+     PC(1081px以上)：12000px以上 ／ タブレット(〜1080px)：17000px以上 ／ スマホ(〜430px)：20000px以上
+     余白の部分はフッターと同じ濃い色で埋まります（高さが足りないと下が切れてスクロールできなくなります） -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&display=swap');
 %s

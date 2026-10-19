@@ -1,5 +1,8 @@
 <!-- ===== マグナとふしぎの少女 For School LP / STUDIO Embed 用（1ファイル完結）===== -->
 <!-- STUDIO：Embedブロックの「コード」欄に、このファイルの中身をそのまま貼り付け -->
+<!-- ★Embedブロックの高さ（ブレイクポイント別に設定）：閉じた状態の高さ＋余白。FAQ等を開くと伸びるため余白が必要です
+     PC(1081px以上)：12000px以上 ／ タブレット(〜1080px)：17000px以上 ／ スマホ(〜430px)：20000px以上
+     余白の部分はフッターと同じ濃い色で埋まります（高さが足りないと下が切れてスクロールできなくなります） -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&display=swap');
 #magna-lp{--magna-yellow:        #fbbf24;  
@@ -344,6 +347,7 @@
 #magna-lp.mg-nointro [data-intro="veil"]{display:none !important}
 #magna-lp.mg-nointro [data-sec="fv"]{animation:none !important;opacity:1 !important}
 #magna-lp img{vertical-align:middle}
+#magna-lp [id]{scroll-margin-top:90px}
 
 </style>
 <div id="magna-lp" style="font-family: var(--font-base); color: var(--ink); background: #fff; width: 100%; box-sizing: border-box; position: relative">
@@ -358,7 +362,7 @@
 <div style="display:flex;align-items:center;gap:11px;flex:none"><img data-img="app_icon_for_school" src="" style="display:block;height:52px;width:52px;border-radius:22%"><span style="display:flex;flex-direction:column;line-height:1.2" data-t="header_01"></span></div>
 <nav data-hd="nav" aria-label="メインメニュー" style="display:flex;gap:clamp(20px,2.4vw,40px);font-size:14px;font-weight:800;flex:1;justify-content:center;white-space:nowrap" data-t="header_02"></nav>
 <div style="display:flex;gap:10px;flex:none;align-items:center;margin-left:auto">
-<a data-link="doc_pdf" href="#" data-doc="" target="_blank" rel="noopener" data-hd="cta" style="display:flex;align-items:center;gap:6px;height:36px;box-sizing:border-box;padding:0 12px;border-radius:10px;background:linear-gradient(100deg,#C2185F 0%,#D6317F 55%,#CC1F6C 100%);border:1.5px solid #FF9CC4;box-shadow:0 3px 0 #8E1450;color:#fff;text-decoration:none;font-size:12.5px;font-weight:900;white-space:nowrap;transition:transform .15s ease,box-shadow .15s ease" style-hover="transform:translateY(-1px);box-shadow:0 4px 0 #8E1450" style-active="transform:translateY(2px);box-shadow:0 1px 0 #8E1450"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h4"></path></svg><span data-t="header_03"></span></a>
+<a data-link="doc_pdf" href="#" download="マグナ学校版_ご案内資料.pdf" data-doc="" data-hd="cta" style="display:flex;align-items:center;gap:6px;height:36px;box-sizing:border-box;padding:0 12px;border-radius:10px;background:linear-gradient(100deg,#C2185F 0%,#D6317F 55%,#CC1F6C 100%);border:1.5px solid #FF9CC4;box-shadow:0 3px 0 #8E1450;color:#fff;text-decoration:none;font-size:12.5px;font-weight:900;white-space:nowrap;transition:transform .15s ease,box-shadow .15s ease" style-hover="transform:translateY(-1px);box-shadow:0 4px 0 #8E1450" style-active="transform:translateY(2px);box-shadow:0 1px 0 #8E1450"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h4"></path></svg><span data-t="header_03"></span></a>
 <a href="#contact" data-act="openConsult" data-hd="cta" style="display:flex;align-items:center;gap:6px;height:36px;box-sizing:border-box;padding:0 12px;border-radius:10px;background:#fff;border:2px solid #17345C;color:#17345C;text-decoration:none;font-size:12.5px;font-weight:900;white-space:nowrap;transition:transform .15s ease,background .15s ease" style-hover="background:#F1F5FA;transform:translateY(-1px)" style-active="transform:translateY(1px)"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#17345C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="12" rx="2"></rect><path d="M8 20h8"></path><path d="M12 16.5V20"></path></svg><span data-t="header_04"></span></a>
 <button type="button" data-hd="burger" data-act="toggleMenu" aria-label="メニューを開く" aria-expanded="false" style="display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;border:1px solid var(--line-strong);background:#fff;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path></svg></button>
 </div>
@@ -395,7 +399,7 @@
 <a href="#free-reason" style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;color:var(--magna-mint-deep);text-decoration:none;border:1px solid var(--magna-mint);border-radius:999px;padding:8px 18px;background:#F0FAF6;line-height:1.3;margin-bottom:clamp(4px,.6vw,10px)" style-hover="background:var(--mint-soft);border-color:var(--magna-mint-deep)" data-t="fv_06"></a>
 <div data-fvcta="row" style="display:flex;flex-wrap:nowrap;justify-content:center;align-items:stretch;gap:clamp(20px,2vw,32px);width:100%">
 <div style="flex:1 1 0;max-width:380px;min-width:0;display:flex">
-<a data-link="doc_pdf" href="#" data-doc="" target="_blank" rel="noopener" aria-label="資料をダウンロード" style="display:flex;align-items:center;gap:clamp(8px,.7vw,12px);width:100%;min-height:clamp(64px,5.2vw,92px);box-sizing:border-box;padding:0 clamp(12px,1vw,20px);border-radius:18px;background:#D8246E;box-shadow:0 4px 0 #9E1650,0 12px 24px rgba(200,30,106,.22);color:#fff;text-decoration:none;transition:transform .15s ease,box-shadow .15s ease" style-hover="transform:translateY(-2px);box-shadow:0 6px 0 #9E1650,0 16px 30px rgba(200,30,106,.3)" style-active="transform:translateY(3px);box-shadow:0 1px 0 #9E1650,0 4px 10px rgba(200,30,106,.2)">
+<a data-link="doc_pdf" href="#" download="マグナ学校版_ご案内資料.pdf" data-doc="" aria-label="資料をダウンロード" style="display:flex;align-items:center;gap:clamp(8px,.7vw,12px);width:100%;min-height:clamp(64px,5.2vw,92px);box-sizing:border-box;padding:0 clamp(12px,1vw,20px);border-radius:18px;background:#D8246E;box-shadow:0 4px 0 #9E1650,0 12px 24px rgba(200,30,106,.22);color:#fff;text-decoration:none;transition:transform .15s ease,box-shadow .15s ease" style-hover="transform:translateY(-2px);box-shadow:0 6px 0 #9E1650,0 16px 30px rgba(200,30,106,.3)" style-active="transform:translateY(3px);box-shadow:0 1px 0 #9E1650,0 4px 10px rgba(200,30,106,.2)">
 <span aria-hidden="true" style="flex:none;display:flex;align-items:center;justify-content:center;width:clamp(36px,2.8vw,56px);height:clamp(36px,2.8vw,56px);border-radius:12px;background:#fff"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D8246E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h4"></path></svg></span>
 <span style="flex:1;min-width:0;font-size:clamp(14px,calc(1.65vw - 3.5px),27px);font-weight:900;letter-spacing:.01em;white-space:nowrap" data-fvlabel="dl" data-t="fv_07"></span>
 <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M9 5l7 7-7 7"></path></svg>
@@ -547,7 +551,7 @@
 <span style="font-size:12px;font-weight:800;letter-spacing:.16em;color:var(--magna-mint-deep)" data-t="cases_01"></span>
 <h2 style="margin:0;font-size:clamp(26px,2.8vw,34px);font-weight:900;color:#17345C" data-t="cases_02"></h2>
 </div>
-<div data-cases-row="" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:24px;align-items:stretch;text-align:left">
+<div data-cases-row="" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:24px;align-items:start;text-align:left">
 
 <div style="display:flex;flex-direction:column;gap:18px;width:100%;min-width:0;text-align:left;background:#fff;border:1px solid var(--line);border-radius:16px;padding:clamp(18px,2.4vw,28px)">
 <div style="display:flex;flex-direction:column;gap:14px">
@@ -771,8 +775,8 @@
 <span style="font-size:12px;line-height:1.7;font-weight:700;color:var(--ink-3)" data-t="safe_06"></span>
 </span></div>
 <div data-r="storebadges" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;opacity:.78">
-<a href="https://play.google.com/store/apps/details?id=com.mintflag.magna" target="_blank" rel="noopener noreferrer" style="display:inline-flex;flex:none;border-radius:7px;overflow:hidden"><img data-img="badge_googleplay" src="" style="display:block;height:34px;width:auto"></a>
-<a href="https://apps.apple.com/jp/app/id1112371684" target="_blank" rel="noopener noreferrer" style="display:inline-flex;flex:none;border-radius:7px;overflow:hidden"><img data-img="badge_appstore" src="" style="display:block;height:34px;width:auto"></a>
+<a data-link="store_google" href="#" target="_blank" rel="noopener noreferrer" style="display:inline-flex;flex:none;border-radius:7px;overflow:hidden"><img data-img="badge_googleplay" src="" style="display:block;height:34px;width:auto"></a>
+<a data-link="store_apple" href="#" target="_blank" rel="noopener noreferrer" style="display:inline-flex;flex:none;border-radius:7px;overflow:hidden"><img data-img="badge_appstore" src="" style="display:block;height:34px;width:auto"></a>
 </div>
 </div>
 </div>
@@ -963,7 +967,7 @@
 </div>
 
 <div data-r="spbar" style="position:fixed;left:0;right:0;bottom:0;z-index:70;gap:10px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(16,24,40,.08)">
-<a data-link="doc_pdf" href="#" data-doc="" target="_blank" rel="noopener" style="flex:1.15 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;height:50px;border-radius:12px;background:#D8246E;box-shadow:0 3px 0 #9E1650;color:#fff;text-decoration:none;font-size:15px;font-weight:900;white-space:nowrap"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path></svg><span data-t="spbar_01"></span></a>
+<a data-link="doc_pdf" href="#" download="マグナ学校版_ご案内資料.pdf" data-doc="" style="flex:1.15 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;height:50px;border-radius:12px;background:#D8246E;box-shadow:0 3px 0 #9E1650;color:#fff;text-decoration:none;font-size:15px;font-weight:900;white-space:nowrap"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path></svg><span data-t="spbar_01"></span></a>
 <a href="#contact" data-act="openConsult" style="flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;height:50px;box-sizing:border-box;border-radius:12px;background:#fff;border:2px solid #17345C;color:#17345C;text-decoration:none;font-size:15px;font-weight:900;white-space:nowrap" data-t="spbar_02"></a>
 </div>
 
@@ -1315,7 +1319,10 @@ var ALT = {
   "fv_slide2": "英検2級レベル(3,000単語)まで対応、聞く・話す・読む・書くの4技能で学べる"
 };
 var LINKS = {
+  doc_name: "マグナ学校版_ご案内資料.pdf",   /* ダウンロード時のファイル名 */
   doc_pdf: "magna-school-document.pdf",   /* 資料ダウンロードのPDF（ファイル名 or URL） */
+  store_google: "https://play.google.com/store/apps/details?id=com.mintflag.magnaForSchool",   /* Google Play（For School版） */
+  store_apple: "https://apps.apple.com/jp/app/%E5%AD%A6%E6%A0%A1%E7%89%88-%E3%83%9E%E3%82%B0%E3%83%8A%E3%81%A8%E3%81%B5%E3%81%97%E3%81%8E%E3%81%AE%E5%B0%91%E5%A5%B3-for-school/id6759899720",   /* App Store（For School版） */
   form_school: "https://docs.google.com/forms/d/e/1FAIpQLSdFfzpaijpvhUgsRaNtiYo9XPpMWGZ09SsCN9AwZx2W9OxSOQ/viewform",   /* 学校担当者様フォーム */
   form_board: "https://docs.google.com/forms/d/e/1FAIpQLSfRhNoXYtUL1V7co8C8DN9M7pc2RSxE4zIixdAG8EaZZRSk3Q/viewform"      /* 教育委員会担当者様フォーム */
 };
@@ -1380,17 +1387,55 @@ var LINKS = {
       var act = t.getAttribute('data-act');
       if(/position:\s*fixed/.test(t.getAttribute('style')||'') && ev.target !== t) return; /* 背景クリックのみ閉じる */
       if(act==='faq'){ var box=t.closest('[data-faq]'), a=box.querySelector('[data-faq-a]'), on=a.classList.contains('mg-off');
+        if(on) $all('[data-faq]').forEach(function(o){ if(o!==box){ var oa=o.querySelector('[data-faq-a]'); if(!oa.classList.contains('mg-off')){ oa.classList.add('mg-off'); o.querySelector('[data-act="faq"]').setAttribute('aria-expanded','false'); o.querySelector('[data-faq-arrow]').style.transform='none'; } } });
         a.classList.toggle('mg-off', !on); t.setAttribute('aria-expanded', on); box.querySelector('[data-faq-arrow]').style.transform = on ? 'rotate(180deg)' : 'none'; return; }
       if(act==='slide'){ showSlide(+t.getAttribute('data-dot')); startTimer(); return; }
       if(A[act]){ if(t.tagName==='A') ev.preventDefault(); A[act](ev); }
     }
+    var d = ev.target.closest ? ev.target.closest('a[data-doc]') : null;
+    if(d){ ev.preventDefault(); downloadDoc(d.href, LINKS.doc_name || d.getAttribute('download') || 'document.pdf'); return; }
     var l = ev.target.closest ? ev.target.closest('a[href^="#"]') : null;
     if(l && l.getAttribute('href').length>1){
-      var id = l.getAttribute('href').slice(1), el = root.querySelector('[id="'+id+'"]') || document.getElementById(id);
-      if(el){ ev.preventDefault(); el.scrollIntoView({behavior:'smooth', block:'start'}); }
+      var id = l.getAttribute('href').slice(1);
+      if(id==='contact') return;
+      var el = root.querySelector('[id="'+id+'"]');
+      if(el){ ev.preventDefault(); setIf('menuOpen', false); requestAnimationFrame(function(){ requestAnimationFrame(function(){ goTo(el, id); }); }); }
     }
   });
+  /* ページ内リンク：iframe埋め込みでも親ページ側がスクロールするようにする */
+  function goTo(el, id){
+    var framed = false; try{ framed = window.self !== window.top; }catch(e){ framed = true; }
+    if(framed){
+      if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1');
+      el.style.outline = 'none';
+      try{ el.focus({preventScroll:true}); }catch(e){}
+      el.scrollIntoView({block:'start', behavior:'auto'});
+    } else {
+      var top = el.getBoundingClientRect().top + (window.pageYOffset||0) - 90;
+      window.scrollTo({top: Math.max(0, top), behavior:'smooth'});
+    }
+  }
+  /* 資料PDFを「そのままダウンロード」 */
+  function downloadDoc(url, name){
+    function viaLink(){ var a=document.createElement('a'); a.href=url; a.download=name; a.rel='noopener'; document.body.appendChild(a); a.click(); a.remove(); }
+    fetch(url).then(function(r){ if(!r.ok) throw new Error(r.status); return r.blob(); }).then(function(b){
+      var bu = URL.createObjectURL(new Blob([b], {type:'application/pdf'})), a=document.createElement('a');
+      a.href=bu; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(bu); }, 60000);
+    }).catch(viaLink);
+  }
   document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ A.closeConsult(); A.closeProfModal(); } });
+  /* ---- iframe埋め込み時：中身の高さに合わせて枠を伸縮（FAQ等を開いても下まで見られるように） ---- */
+  (function(){
+    var framed=false; try{ framed = window.self !== window.top; }catch(e){ framed = true; }
+    if(!framed) return;
+    document.documentElement.style.background = '#081b1e'; document.body.style.margin='0';
+    function fit(){
+      var h = Math.ceil(root.getBoundingClientRect().height);
+      try{ if(window.frameElement) window.frameElement.style.height = h + 'px'; }catch(e){}
+      try{ window.parent.postMessage({type:'magna-embed-height', height:h}, '*'); }catch(e){}
+    }
+    fit(); if(window.ResizeObserver) new ResizeObserver(fit).observe(root); window.addEventListener('load', fit);
+  })();
   /* ---- スクロール演出（ふわっと表示＋写真の視差） ---- */
   if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   if(!window.IntersectionObserver) return;
