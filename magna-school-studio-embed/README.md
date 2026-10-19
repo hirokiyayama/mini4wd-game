@@ -11,7 +11,7 @@
 `embed.html` 冒頭の `★ ここだけ編集すればOK ★` エリアのみ編集します。
 - `TEXT` … 全文言（キーは「セクション名_番号」。`<br>` やリンクもHTMLで記述可）
 - `IMAGES` / `ALT` … 画像ファイル名またはURL、代替テキスト
-- `LINKS` … 資料PDF（ファイル名含む）・相談フォーム・Google Play / App Store のリンク
+- `LINKS` … 資料PDF・対応ガイドPDF（ファイル名含む）・相談フォーム・Google Play / App Store のリンク
 - `ASSET_BASE` … 画像を置いた場所（既定は jsDelivr 経由でこのリポジトリを参照）
 - `SHOW_INTRO` … オープニング演出のON/OFF
 

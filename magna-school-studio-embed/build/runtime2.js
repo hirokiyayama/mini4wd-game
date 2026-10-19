@@ -5,7 +5,7 @@
   /* ---- 設定の反映 ---- */
   $all('[data-t]').forEach(function(e){ var k=e.getAttribute('data-t'); if(k in TEXT) e.innerHTML = TEXT[k]; });
   $all('[data-img]').forEach(function(e){ var k=e.getAttribute('data-img'); if(IMAGES[k]) e.src = u(IMAGES[k]); if(ALT[k]) e.alt = ALT[k]; });
-  $all('[data-link]').forEach(function(e){ var k=e.getAttribute('data-link'); if(LINKS[k]) e.href = (k==='doc_pdf' ? u(LINKS[k]) : LINKS[k]); });
+  $all('[data-link]').forEach(function(e){ var k=e.getAttribute('data-link'); if(LINKS[k]) e.href = u(LINKS[k]); });
   if(!SHOW_INTRO) root.classList.add('mg-nointro');
   /* ---- 開閉UI ---- */
   function setIf(name, on){
@@ -95,8 +95,8 @@
       if(act==='slide'){ showSlide(+t.getAttribute('data-dot')); startTimer(); return; }
       if(A[act]){ if(t.tagName==='A') ev.preventDefault(); A[act](ev); }
     }
-    var d = ev.target.closest ? ev.target.closest('a[data-doc]') : null;
-    if(d){ ev.preventDefault(); downloadDoc(d.href, LINKS.doc_name || d.getAttribute('download') || 'document.pdf'); return; }
+    var d = ev.target.closest ? ev.target.closest('a[data-doc], a[data-dl]') : null;
+    if(d){ ev.preventDefault(); downloadDoc(d.href, d.hasAttribute('data-doc') ? (LINKS.doc_name || d.getAttribute('download') || 'document.pdf') : (d.getAttribute('download') || 'document.pdf')); return; }
     var l = ev.target.closest ? ev.target.closest('a[href^="#"]') : null;
     if(l && l.getAttribute('href').length>1){
       var id = l.getAttribute('href').slice(1);

@@ -28,6 +28,8 @@ imgs = '{\n' + ',\n'.join('  %s: %s' % (json.dumps(k), json.dumps(v)) for k, v i
 alts = '{\n' + ',\n'.join('  %s: %s' % (json.dumps(k), json.dumps(v, ensure_ascii=False)) for k, v in M['ALT'].items()) + '\n}'
 links = '''{
   doc_name: "マグナ学校版_ご案内資料.pdf",   /* ダウンロード時のファイル名 */
+  guide_existing: "guide-existing-schools.pdf",   /* 対応ガイド（既存導入校向けPDF） */
+  guide_new: "guide-new-schools.pdf",   /* 対応ガイド（新規導入校向けPDF） */
   doc_pdf: "magna-school-document.pdf",   /* 資料ダウンロードのPDF（ファイル名 or URL） */
   store_google: "https://play.google.com/store/apps/details?id=com.mintflag.magnaForSchool",   /* Google Play（For School版） */
   store_apple: "https://apps.apple.com/jp/app/%E5%AD%A6%E6%A0%A1%E7%89%88-%E3%83%9E%E3%82%B0%E3%83%8A%E3%81%A8%E3%81%B5%E3%81%97%E3%81%8E%E3%81%AE%E5%B0%91%E5%A5%B3-for-school/id6759899720",   /* App Store（For School版） */
