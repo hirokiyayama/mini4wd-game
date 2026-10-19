@@ -151,13 +151,13 @@
     if(!framed) return;
     var hd = root.querySelector('[data-hd="bar"]'), sp = root.querySelector('[data-r="spbar"]');
     if(sp){ sp.style.position='absolute'; sp.style.setProperty('bottom','auto','important'); sp.style.left='0'; sp.style.right='0'; }
-    if(hd){ hd.style.willChange='transform'; }
+    if(hd){ hd.style.willChange='transform'; hd.style.position='relative'; hd.style.top='0'; }  /* sticky だと枠内スクロール量が二重に加算され隙間が空くため relative に */
     function place(top, bot){
       var H = root.offsetHeight;
       if(hd){ var hh=hd.offsetHeight, y=Math.max(0, Math.min(top, H-hh)); hd.style.transform='translate3d(0,'+y.toFixed(1)+'px,0)'; }
       if(sp && sp.offsetHeight){ var y2=Math.max(0, Math.min(bot, H)-sp.offsetHeight); sp.style.setProperty('top', y2.toFixed(1)+'px', 'important'); }
     }
-    function measured(top, bot){ place(top + 2, bot); }
+    function measured(top, bot){ place(top - 1, bot); }
     var fe=null; try{ fe = window.frameElement; }catch(e){}
     var pw=null; try{ if(fe) pw = window.parent; }catch(e){}
     if(fe && pw){
@@ -181,7 +181,7 @@
     }
     function build(){
       if(io) io.disconnect(); cs.innerHTML=''; vis={};
-      var H=root.offsetHeight; STEP=Math.max(8, Math.ceil(H/1600)); var n=Math.ceil(H/STEP);
+      var H=root.offsetHeight; STEP=Math.max(6, Math.ceil(H/2200)); var n=Math.ceil(H/STEP);
       io = new IntersectionObserver(function(entries){ entries.forEach(function(e){ var i=+e.target.getAttribute('data-i'); if(e.isIntersecting) vis[i]=1; else delete vis[i]; }); recompute(); });
       var frag=document.createDocumentFragment();
       for(var i=0;i<n;i++){ var d=document.createElement('div'); d.setAttribute('data-i',i); d.style.cssText='position:absolute;left:0;width:2px;height:'+STEP+'px;top:'+(i*STEP)+'px'; frag.appendChild(d); }
