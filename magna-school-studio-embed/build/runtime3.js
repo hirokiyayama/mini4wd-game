@@ -59,8 +59,7 @@
   /* FAQを開くとその下が押し下げられる。ブロックの高さは変えられないため、末尾の余白が縮んで全体の高さを一定に保つ */
   var fill = null, TOTAL = 0;
   if(root.querySelector('[data-faq]')){
-    var fe=null; try{ fe = window.frameElement; }catch(e){}
-    if(framed && !fe){ fill = document.createElement('div'); fill.setAttribute('aria-hidden','true'); fill.style.cssText='background:'+(typeof FILL_COLOR!=='undefined'?FILL_COLOR:'#FFFDF5')+';height:0'; root.appendChild(fill); }
+    if(framed){ fill = document.createElement('div'); fill.setAttribute('aria-hidden','true'); fill.style.cssText='background:'+(typeof FILL_COLOR!=='undefined'?FILL_COLOR:'#FFFDF5')+';height:0'; root.appendChild(fill); }
   }
   function contentH(){ return root.offsetHeight - (fill ? fill.offsetHeight : 0); }
   function reflow(){ if(fill) fill.style.height = Math.max(0, TOTAL - contentH()) + 'px'; }
@@ -107,7 +106,11 @@
     if(d){ ev.preventDefault(); downloadDoc(d.href, d.hasAttribute('data-doc') ? (LINKS.doc_name || d.getAttribute('download') || 'document.pdf') : (d.getAttribute('download') || 'document.pdf')); }
   });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ A.closeConsult(); A.closeProfModal(); closePops(null); } });
+  function anyFaqOpen(){ return $all('[data-faq-a]').some(function(a){ return !a.classList.contains('mg-off'); }); }
   measureReserve(); window.addEventListener('load', measureReserve);
+  /* 画像・フォントの読み込みで高さが変わったら、FAQが全部閉じているときに余白を測り直す */
+  if(fill){ [800, 2500, 6000].forEach(function(ms){ setTimeout(function(){ if(!anyFaqOpen()) measureReserve(); }, ms); });
+    if(window.ResizeObserver){ var rt, lastC = 0; new ResizeObserver(function(){ clearTimeout(rt); rt=setTimeout(function(){ var c=contentH(); if(!anyFaqOpen() && Math.abs(c-lastC)>2){ lastC=c; measureReserve(); } }, 250); }).observe(root); } }
   (function(){ var t; window.addEventListener('resize', function(){ clearTimeout(t); t=setTimeout(measureReserve, 200); }); })();
   /* ---- 枠を直接伸ばせる環境では、中身の高さに合わせて枠を伸縮 ---- */
   if(framed){

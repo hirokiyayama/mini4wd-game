@@ -38,7 +38,7 @@ FAQBG = '#FFFDF5'
 ENDBG = {'header':'#ffffff','fv':'#F7FAF9','why':'#F7FAF9','cases':'#ffffff','free':'#ffffff','safe':'#FFFDF5','footer':'#081b1e','safeA':'#17345C','faqB':'#FFFDF5'}
 HEIGHTS = {  # (PC 1281px以上, タブレット〜1280px, スマホ〜430px)
  'header':(80,105,100),'fv':(2000,2650,2700),'why':(1750,3350,2500),'cases':(2250,2550,3450),'free':(900,1100,1400),
- 'safe':(4500,5350,6500),'footer':(260,300,550),'safeA':(2800,3700,4100),'faqB':(1800,1750,2500)}
+ 'safe':(4700,5500,6700),'footer':(260,300,550),'safeA':(2800,3700,4100),'faqB':(1800,1750,2500)}
 SPEC = [
  # file, name(MG), title, body chunks, extra css, intro?, consult modal?, anchors?, fill
  ('01-header', 'header', 'メニューヘッダー', ['header'], header_css, False, False),
@@ -94,7 +94,7 @@ for fname, mg, title, parts, xcss, intro, consult in SPEC:
    ================================================================ */
 var MG_NAME = "%s";
 var ASSET_BASE = "%s";   /* ★ 画像・PDFを置いたフォルダのURL（末尾は / ） */
-var PAGE_URL = "";   /* ★ 公開したSTUDIOページのURL（例: https://xxxx.studio.site/）。空欄の場合は自動で取得を試みます */
+var PAGE_URL = "https://mintflag.com/education";   /* ★ 公開したSTUDIOページのURL（例: https://xxxx.studio.site/）。空欄の場合は自動で取得を試みます */
 var ANCHORS = %s;
 %s%s%svar TEXT = %s;
 var IMAGES = %s;
