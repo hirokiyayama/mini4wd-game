@@ -995,6 +995,7 @@
    ・LINKS  : PDF・フォームなどのリンク先
    ================================================================ */
 var ASSET_BASE = "https://cdn.jsdelivr.net/gh/hirokiyayama/mini4wd-game@claude/affectionate-darwin-300fus/magna-school-studio-embed/assets/";   /* ★ 画像を置いたフォルダのURL（末尾は / ） */
+var SCROLL_DEBUG = false;   /* メニュー移動の動作確認用：true にすると画面にどの方法で移動できたか表示します */
 var SHOW_INTRO = true;   /* ページ表示時のオープニング演出：true=あり / false=なし */
 var TEXT = {
   /* ── ヘッダー／メニュー (header) ── */
@@ -1442,18 +1443,45 @@ var LINKS = {
       if(el){ ev.preventDefault(); setIf('menuOpen', false); requestAnimationFrame(function(){ requestAnimationFrame(function(){ goTo(el, id); }); }); }
     }
   });
-  /* ページ内リンク：iframe埋め込みでも親ページ側がスクロールするようにする */
+  /* ページ内リンク：iframe埋め込みでも親ページ側がスクロールするようにする
+     ブラウザ（特にSafari）によっては親ページのスクロールが効かないことがあるため、
+     「実際に目的の場所が見えたか」を確認しながら、複数の方法を順に試します */
+  var VIS = {top:null, bot:null};   /* 親画面に見えている範囲（root座標）。追従処理が更新 */
+  function dbg(msg){
+    if(!window.SCROLL_DEBUG) return;
+    var d=document.getElementById('mg-dbg'); if(!d){ d=document.createElement('div'); d.id='mg-dbg'; d.style.cssText='position:absolute;left:8px;z-index:9999;background:#000c;color:#fff;font:12px/1.4 sans-serif;padding:4px 8px;border-radius:6px;pointer-events:none'; root.appendChild(d); }
+    d.textContent=msg; d.style.top=((VIS.top||0)+8)+'px'; clearTimeout(d._t); d._t=setTimeout(function(){ d.remove(); }, 4000);
+  }
+  function relTop(el){ return el.getBoundingClientRect().top - root.getBoundingClientRect().top; }
+  function inView(el){
+    if(VIS.top==null || VIS.bot==null) return null;       /* 測れない環境では判定しない */
+    var t = relTop(el); return t >= VIS.top - 40 && t <= VIS.bot - 120;
+  }
   function goTo(el, id){
     var framed = false; try{ framed = window.self !== window.top; }catch(e){ framed = true; }
-    if(framed){
-      if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1');
-      el.style.outline = 'none';
-      try{ el.focus({preventScroll:true}); }catch(e){}
-      el.scrollIntoView({block:'start', behavior:'auto'});
-    } else {
+    if(!framed){
       var top = el.getBoundingClientRect().top + (window.pageYOffset||0) - 90;
-      window.scrollTo({top: Math.max(0, top), behavior:'smooth'});
+      window.scrollTo({top: Math.max(0, top), behavior:'smooth'}); return;
     }
+    if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1');
+    el.style.outline = 'none';
+    var methods = [
+      function(){ el.scrollIntoView({block:'start', behavior:'auto'}); },
+      function(){ el.focus({preventScroll:false}); el.scrollIntoView({block:'start', behavior:'auto'}); },
+      function(){ /* iOS Safari 等：入力欄へのフォーカスで親画面をスクロールさせる */
+        var visH = (VIS.top!=null && VIS.bot!=null) ? (VIS.bot - VIS.top) : 700;
+        var inp = document.createElement('input'); inp.type='text'; inp.readOnly=true; inp.setAttribute('inputmode','none'); inp.setAttribute('aria-hidden','true'); inp.tabIndex=-1;
+        inp.style.cssText='position:absolute;left:0;width:1px;height:1px;opacity:0;border:0;padding:0;margin:0;pointer-events:none;top:'+Math.max(0, relTop(el) + visH/2 - 90)+'px';
+        root.appendChild(inp); try{ inp.focus({preventScroll:false}); }catch(e){ inp.focus(); } setTimeout(function(){ inp.blur(); inp.remove(); }, 300); },
+      function(){ el.scrollIntoView({block:'center', behavior:'auto'}); },
+      function(){ try{ location.hash = id; }catch(e){} }
+    ];
+    var i = 0;
+    (function next(){
+      if(i >= methods.length){ dbg('移動できませんでした'); return; }
+      var n = i++; try{ methods[n](); }catch(e){}
+      setTimeout(function(){ var ok = inView(el); if(ok===false){ next(); } else { dbg('移動方法 '+(n+1)+' で成功'); } }, 320);
+    })();
   }
   /* 資料PDFを「そのままダウンロード」 */
   function downloadDoc(url, name){
@@ -1490,6 +1518,7 @@ var LINKS = {
     if(sp){ sp.style.position='absolute'; sp.style.setProperty('bottom','auto','important'); sp.style.left='0'; sp.style.right='0'; }
     if(hd){ hd.style.willChange='transform'; hd.style.position='relative'; hd.style.top='0'; }  /* sticky だと枠内スクロール量が二重に加算され隙間が空くため relative に */
     function place(top, bot){
+      VIS.top = top; VIS.bot = bot;
       var H = root.offsetHeight;
       if(hd){ var hh=hd.offsetHeight, y=Math.max(0, Math.min(top, H-hh)); hd.style.transform='translate3d(0,'+y.toFixed(1)+'px,0)'; }
       if(sp && sp.offsetHeight){ var y2=Math.max(0, Math.min(bot, H)-sp.offsetHeight); sp.style.setProperty('top', y2.toFixed(1)+'px', 'important'); }
