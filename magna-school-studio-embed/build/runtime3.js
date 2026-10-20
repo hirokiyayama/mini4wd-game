@@ -3,7 +3,7 @@
   function u(p){ return /^(https?:)?\/\//.test(p) || p.charAt(0)==='/' || p.indexOf('data:')===0 ? p : ASSET_BASE + p; }
   function $all(s){ return Array.prototype.slice.call(root.querySelectorAll(s)); }
   var framed=false; try{ framed = window.self !== window.top; }catch(e){ framed = true; }
-  if(framed){ try{ document.body.style.margin='0'; if(typeof FILL_COLOR!=='undefined') document.documentElement.style.background = FILL_COLOR; }catch(e){} }
+  if(framed){ try{ document.body.style.margin='0'; document.documentElement.style.webkitTextSizeAdjust='100%'; document.documentElement.style.textSizeAdjust='100%'; if(typeof FILL_COLOR!=='undefined') document.documentElement.style.background = FILL_COLOR; }catch(e){} }
   /* ---- 設定の反映 ---- */
   $all('[data-t]').forEach(function(e){ var k=e.getAttribute('data-t'); if(k in TEXT) e.innerHTML = TEXT[k]; });
   $all('[data-img]').forEach(function(e){ var k=e.getAttribute('data-img'); if(IMAGES[k]) e.src = u(IMAGES[k]); if(ALT[k]) e.alt = ALT[k]; });
@@ -71,7 +71,7 @@
     fill.style.height='0px'; var base = contentH(), max = 0;
     $all('[data-faq-a]').forEach(function(a){ a.classList.remove('mg-off'); max = Math.max(max, contentH()-base); a.classList.add('mg-off'); });
     wasOpen.forEach(function(a){ a.classList.remove('mg-off'); });
-    TOTAL = base + max; reflow();
+    TOTAL = base + max + 160; reflow();   /* +160: 端末のフォント差による高さの揺れの余裕 */
   }
   var A = {
     toggleMenu: function(){ setIf('menuOpen', !isOn('menuOpen')); },
