@@ -521,14 +521,7 @@ var LINKS = {
   if(fill){ [800, 2500, 6000].forEach(function(ms){ setTimeout(function(){ if(!anyFaqOpen()) measureReserve(); }, ms); });
     if(window.ResizeObserver){ var rt, lastC = 0; new ResizeObserver(function(){ clearTimeout(rt); rt=setTimeout(function(){ var c=contentH(); if(!anyFaqOpen() && Math.abs(c-lastC)>2){ lastC=c; measureReserve(); } }, 250); }).observe(root); } }
   (function(){ var t; window.addEventListener('resize', function(){ clearTimeout(t); t=setTimeout(measureReserve, 200); }); })();
-  /* ---- 枠を直接伸ばせる環境では、中身の高さに合わせて枠を伸縮 ---- */
-  if(framed){
-    var h0=0;
-    function fit(){ var h = Math.ceil(root.getBoundingClientRect().height); if(h===h0) return; h0=h;
-      try{ if(window.frameElement) window.frameElement.style.height = h + 'px'; }catch(e){}
-      try{ window.parent.postMessage({type:'magna-embed-height', name:MG_NAME, height:h}, '*'); }catch(e){} }
-    fit(); if(window.ResizeObserver) new ResizeObserver(fit).observe(root); window.addEventListener('load', fit);
-  }
+  /* （ブロックの高さはSTUDIO側の設定で固定。ブロックの大きさを動かすと、メニューの移動位置がずれるため、自動伸縮はしない） */
   /* ---- スクロール演出（ふわっと表示） ---- */
   if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   if(!window.IntersectionObserver) return;
