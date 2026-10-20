@@ -1,6 +1,6 @@
 <!-- ===== マグナとふしぎの少女 For School LP ／ STUDIO Embed（分割版）: 導入はカンタン〜よくあるご質問（手前） ===== -->
 <!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100% -->
-<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 2800px ／ タブレット〜1280px 3700px ／ スマホ〜430px 4100px 以上 -->
+<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 2880px ／ タブレット〜1280px 3815px ／ スマホ〜430px 4195px 以上 -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&display=swap');
 .mg-root{--magna-yellow:        #fbbf24;  
@@ -356,7 +356,7 @@
 
 </style>
 <div class="mg-root" data-mg="safeA" style="font-family: var(--font-base); color: var(--ink); background: #fff; width: 100%; box-sizing: border-box; position: relative">
-<div id="safe" data-sec="safe" style="background:#fff;padding:40px 32px 70px">
+<div data-topspace aria-hidden="true" style="height:80px;background:#ffffff"></div><div id="safe" data-sec="safe" style="background:#fff;padding:40px 32px 70px">
 <div style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:30px;align-items:center">
 <div data-r="safehead" style="display:flex;align-items:flex-end;justify-content:center;gap:clamp(12px,3vw,40px);width:100%">
 <img data-img="chara_boy2" src="" aria-hidden="true" style="display:block;height:clamp(90px,11vw,150px);width:auto;flex:none">
@@ -552,6 +552,7 @@ var ANCHORS = {
   "faq": "faq",   /* よくある質問 → 「よくあるご質問」ブロック（07）のID */
   "consult": "fv"   /* 相談リンク（ヘッダー等）→ 「ファーストビュー」ブロックのID */
 };
+var TOP_SPACE = { pc: 80, tablet: 115, phone: 95 };   /* ★ ヘッダーを固定にしている場合：ブロック先頭の余白(px)。メニューで飛んだとき固定ヘッダーに隠れないための、ヘッダーの高さ分 */
 var FILL_COLOR = "#17345C";   /* ブロックの高さが余ったとき（FAQを開いて縮む余白を含む）の下側の色 */
 var TEXT = {
   /* ── 導入準備 (safe) ── */
@@ -672,6 +673,12 @@ var LINKS = {
   $all('[data-img]').forEach(function(e){ var k=e.getAttribute('data-img'); if(IMAGES[k]) e.src = u(IMAGES[k]); if(ALT[k]) e.alt = ALT[k]; });
   $all('[data-link]').forEach(function(e){ var k=e.getAttribute('data-link'); if(LINKS[k]) e.href = u(LINKS[k]); });
   if(typeof SHOW_INTRO!=='undefined' && !SHOW_INTRO) root.classList.add('mg-nointro');
+  /* ---- ヘッダー固定用の先頭余白（メニューで飛んだとき、固定ヘッダーに見出しが隠れないように） ---- */
+  (function(){
+    var sp = root.querySelector('[data-topspace]'); if(!sp || typeof TOP_SPACE==='undefined') return;
+    function apply(){ var w=window.innerWidth||1200; sp.style.height = (w<=760 ? TOP_SPACE.phone : w<=1000 ? TOP_SPACE.tablet : TOP_SPACE.pc) + 'px'; }
+    apply(); window.addEventListener('resize', apply);
+  })();
   /* ---- 他のブロックへのリンク（STUDIOページ内の別Embedへ移動） ---- */
   var hasConsult = !!root.querySelector('[data-if="consultOpen"]');
   var page = PAGE_URL || ''; if(!page){ try{ page = document.referrer || ''; }catch(e){} if(!page){ try{ page = location.ancestorOrigins[0] + '/'; }catch(e){} } }

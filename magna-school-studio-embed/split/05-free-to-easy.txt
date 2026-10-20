@@ -1,6 +1,6 @@
 <!-- ===== マグナとふしぎの少女 For School LP ／ STUDIO Embed（分割版）: なぜ、マグナはずっと無料なの？〜導入はカンタン（手前） ===== -->
 <!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100% -->
-<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 900px ／ タブレット〜1280px 1100px ／ スマホ〜430px 1400px 以上 -->
+<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 980px ／ タブレット〜1280px 1215px ／ スマホ〜430px 1495px 以上 -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&display=swap');
 .mg-root{--magna-yellow:        #fbbf24;  
@@ -356,7 +356,7 @@
 
 </style>
 <div class="mg-root" data-mg="free" style="font-family: var(--font-base); color: var(--ink); background: #fff; width: 100%; box-sizing: border-box; position: relative">
-<div data-sec="apply" style="background:#fff;padding:0 32px"><div id="free-reason" style="scroll-margin-top:90px;max-width:1000px;margin:0 auto 30px;background:#F7FCFA;border:2px solid var(--magna-mint);border-radius:20px;padding:0 clamp(22px,2.6vw,38px) clamp(24px,2.6vw,34px);display:flex;flex-direction:column;gap:22px">
+<div data-topspace aria-hidden="true" style="height:80px;background:#ffffff"></div><div data-sec="apply" style="background:#fff;padding:0 32px"><div id="free-reason" style="scroll-margin-top:90px;max-width:1000px;margin:0 auto 30px;background:#F7FCFA;border:2px solid var(--magna-mint);border-radius:20px;padding:0 clamp(22px,2.6vw,38px) clamp(24px,2.6vw,34px);display:flex;flex-direction:column;gap:22px">
 <div style="margin:0 calc(-1 * clamp(22px,2.6vw,38px));background:linear-gradient(100deg,#17345C 0%,#1F4C86 100%);border-radius:18px 18px 0 0;padding:clamp(26px,3vw,38px) clamp(22px,2.6vw,38px);display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
 <span style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;letter-spacing:.14em;color:#17345C;background:#FFE066;border-radius:999px;padding:6px 16px;line-height:1.3" data-t="free_reason_01"></span>
 <p style="margin:0;font-size:clamp(28px,3.4vw,44px);font-weight:900;line-height:1.3;color:#fff;text-wrap:balance" data-t="free_reason_02"></p>
@@ -411,6 +411,7 @@ var ANCHORS = {
   "faq": "faq",   /* よくある質問 → 「よくあるご質問」ブロック（07）のID */
   "consult": "fv"   /* 相談リンク（ヘッダー等）→ 「ファーストビュー」ブロックのID */
 };
+var TOP_SPACE = { pc: 80, tablet: 115, phone: 95 };   /* ★ ヘッダーを固定にしている場合：ブロック先頭の余白(px)。メニューで飛んだとき固定ヘッダーに隠れないための、ヘッダーの高さ分 */
 var FILL_COLOR = "#ffffff";   /* ブロックの高さが余ったとき（FAQを開いて縮む余白を含む）の下側の色 */
 var TEXT = {
   /* ── なぜ、マグナはずっと無料なの？ (free_reason) ── */
@@ -454,6 +455,12 @@ var LINKS = {
   $all('[data-img]').forEach(function(e){ var k=e.getAttribute('data-img'); if(IMAGES[k]) e.src = u(IMAGES[k]); if(ALT[k]) e.alt = ALT[k]; });
   $all('[data-link]').forEach(function(e){ var k=e.getAttribute('data-link'); if(LINKS[k]) e.href = u(LINKS[k]); });
   if(typeof SHOW_INTRO!=='undefined' && !SHOW_INTRO) root.classList.add('mg-nointro');
+  /* ---- ヘッダー固定用の先頭余白（メニューで飛んだとき、固定ヘッダーに見出しが隠れないように） ---- */
+  (function(){
+    var sp = root.querySelector('[data-topspace]'); if(!sp || typeof TOP_SPACE==='undefined') return;
+    function apply(){ var w=window.innerWidth||1200; sp.style.height = (w<=760 ? TOP_SPACE.phone : w<=1000 ? TOP_SPACE.tablet : TOP_SPACE.pc) + 'px'; }
+    apply(); window.addEventListener('resize', apply);
+  })();
   /* ---- 他のブロックへのリンク（STUDIOページ内の別Embedへ移動） ---- */
   var hasConsult = !!root.querySelector('[data-if="consultOpen"]');
   var page = PAGE_URL || ''; if(!page){ try{ page = document.referrer || ''; }catch(e){} if(!page){ try{ page = location.ancestorOrigins[0] + '/'; }catch(e){} } }

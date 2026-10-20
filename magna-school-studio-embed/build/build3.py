@@ -43,8 +43,8 @@ ROOT_STYLE = 'font-family: var(--font-base); color: var(--ink); background: #fff
 FAQBG = '#FFFDF5'
 ENDBG = {'header':'transparent','fv':'#F7FAF9','why':'#F7FAF9','cases':'#ffffff','free':'#ffffff','safe':'#FFFDF5','footer':'#081b1e','safeA':'#17345C','faqB':'#FFFDF5'}
 HEIGHTS = {  # (PC 1281px以上, タブレット〜1280px, スマホ〜430px)
- 'header':(85,115,110),'fv':(2000,2650,2700),'why':(1750,3350,2500),'cases':(2250,2550,3450),'free':(900,1100,1400),
- 'safe':(4700,5500,6700),'footer':(260,300,550),'safeA':(2800,3700,4100),'faqB':(2000,1900,2900)}
+ 'header':(85,115,110),'fv':(2080,2765,2795),'why':(1830,3465,2595),'cases':(2250,2550,3450),'free':(980,1215,1495),
+ 'safe':(4700,5500,6700),'footer':(260,300,550),'safeA':(2880,3815,4195),'faqB':(2080,2015,2995)}
 SPEC = [
  ('01-header', 'header', 'メニューヘッダー', ['header'], header_css, False, False),
  ('02-first-view', 'fv', 'ファーストビュー〜マグナでできること（手前）', ['fv'], '', True, True),
@@ -65,6 +65,9 @@ for fname, mg, title, parts, xcss, intro, consult in SPEC:
         body = re.sub(r'<button [^>]*data-hd="burger"[^>]*>.*?</button>', '', body, flags=re.S)
         body = re.sub(r'<div style="display:flex;gap:10px;flex:none;align-items:center;margin-left:auto">\s*</div>', '', body)
     if mg == 'safeA': body = body  # includes prof modals
+    SPACER_BG = {'fv':'#ffffff','why':'#ffffff','free':'#ffffff','safeA':'#ffffff','faqB':'#FFFDF5'}
+    if mg in SPACER_BG:
+        body = '<div data-topspace aria-hidden="true" style="height:80px;background:%s"></div>' % SPACER_BG[mg] + body
     if intro: body = chunk('intro') + body
     if consult: body += chunk('consult')
     keys = re.findall(r'data-t="([^"]+)"', body)
@@ -110,7 +113,7 @@ var ALT = %s;
 var LINKS = %s;
 /* ============ ↑ 設定エリアここまで（以下は触らなくてOK） ============ */
 ''' % (title, mg, BASE, ANCH, 'var SHOW_INTRO = true;   /* ページ表示時のオープニング演出：true=あり / false=なし */\n' if intro else '',
-       'var FILL_COLOR = "%s";   /* ブロックの高さが余ったとき（FAQを開いて縮む余白を含む）の下側の色 */\n' % ENDBG[mg], '', text_js, obj(IM), obj(AL), obj(LINKS))
+       ('var TOP_SPACE = { pc: 80, tablet: 115, phone: 95 };   /* ★ ヘッダーを固定にしている場合：ブロック先頭の余白(px)。メニューで飛んだとき固定ヘッダーに隠れないための、ヘッダーの高さ分 */\n' if mg in SPACER_BG else '') + 'var FILL_COLOR = "%s";   /* ブロックの高さが余ったとき（FAQを開いて縮む余白を含む）の下側の色 */\n' % ENDBG[mg], '', text_js, obj(IM), obj(AL), obj(LINKS))
     out = '''<!-- ===== マグナとふしぎの少女 For School LP ／ STUDIO Embed（分割版）: %s ===== -->
 <!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100%% -->
 <!-- ★高さ（ブレイクポイント別）：PC(1281px以上) %dpx ／ タブレット〜1280px %dpx ／ スマホ〜430px %dpx 以上 -->
