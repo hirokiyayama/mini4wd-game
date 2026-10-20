@@ -1,0 +1,714 @@
+<!-- ===== マグナとふしぎの少女 For School LP ／ STUDIO Embed（分割版）: ファーストビュー〜マグナでできること（手前） ===== -->
+<!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100% -->
+<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 2000px ／ タブレット〜1280px 2650px ／ スマホ〜430px 2700px 以上 -->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&display=swap');
+.mg-root{--magna-yellow:        #fbbf24;  
+  --magna-yellow-deep:   #f59e0b;  
+  --magna-yellow-deeper: #d97706;  
+  --magna-pink:          #ec4899;  
+  --magna-pink-deep:     #db2777;
+  --magna-pink-deeper:   #be185d;  
+  --magna-mint:          #2DB39A;  
+  --magna-mint-light:    #34c4a8;
+  --magna-mint-deep:     #0c5e50;
+  --magna-sky:           #38bdf8;  
+  --magna-sky-deep:      #0ea5e9;
+  --magna-blue:          #2563eb;  
+  --magna-navy:          #1e3a8a;  
+  --magna-purple:        #8b5cf6;  
+  --magna-purple-deep:   #7c3aed;
+  --magna-green:         #10b981;  
+  --magna-red:           #ef4444;  
+
+  
+  --yellow-soft:   #fef3c7;
+  --yellow-soft-2: #fff9c3;
+  --yellow-wash:   #fefce8;
+  --pink-soft:     #fce7f3;
+  --pink-wash:     #fdf2f8;
+  --mint-soft:     #d7f5ee;
+  --mint-wash:     #f0fdf4;
+  --sky-soft:      #e0f2fe;
+  --sky-wash:      #eff6ff;
+  --purple-soft:   #ede9fe;
+  --green-soft:    #dcfce7;
+
+  
+  --ink:    #1a2332;  
+  --ink-2:  #4a5568;  
+  --ink-3:  #7a8699;  
+  --ink-inverse: #ffffff;
+
+  
+  --surface:      #ffffff;  
+  --bg:           #f6f8fb;  
+  --bg-alt:       #f8fafc;  
+  --line:         #e3e8ef;  
+  --line-strong:  #cbd5e1;
+
+  
+  --course-method:      var(--magna-yellow-deep);
+  --course-method-ink:  #92400e;
+  --course-method-soft: var(--yellow-soft);
+  --course-party:       var(--magna-pink);
+  --course-party-ink:   #831843;
+  --course-party-soft:  var(--pink-soft);
+  --course-eiken:       var(--magna-purple);
+  --course-eiken-ink:   #4c1d95;
+  --course-eiken-soft:  var(--purple-soft);
+
+  
+  --grad-primary:  linear-gradient(135deg, #ec4899, #f59e0b);   
+  --grad-party:    linear-gradient(135deg, #ec4899, #db2777);   
+  --grad-method:   linear-gradient(135deg, #f59e0b, #d97706);   
+  --grad-eiken:    linear-gradient(135deg, #8b5cf6, #7c3aed);   
+  --grad-mint:     linear-gradient(90deg, #2DB39A, #34c4a8);    
+  --grad-sunny:    linear-gradient(180deg, #fefce8, #fff9c3);   
+
+  
+  --wash-playful:
+    radial-gradient(circle at 15% 25%, rgba(251, 191, 36, 0.18), transparent 45%),
+    radial-gradient(circle at 85% 75%, rgba(236, 72, 153, 0.18), transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.12), transparent 60%),
+    linear-gradient(135deg, #fefce8 0%, #fff9c3 50%, #fef3c7 100%); 
+
+  
+  --text-heading:  var(--ink);
+  --text-body:     var(--ink);
+  --text-muted:    var(--ink-3);
+  --accent:        var(--magna-pink);
+  --accent-2:      var(--magna-yellow-deep);
+  --surface-card:  var(--surface);}
+.mg-root{--font-base: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans",
+               "Yu Gothic", "Meiryo", -apple-system, system-ui, sans-serif;
+  --font-display: "Baloo 2", "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN",
+               sans-serif;               
+
+  
+  --font-heading: var(--font-base);
+  --font-body:    var(--font-base);
+
+  
+  --fw-normal:   400;   
+  --fw-medium:   500;   
+  --fw-bold:     700;   
+  --fw-heavy:    800;   
+  --fw-black:    900;   
+
+  
+  --fs-caption: 11px;   
+  --fs-small:   12px;
+  --fs-body:    13px;   
+  --fs-body-lg: 14px;
+  --fs-lead:    15px;
+  --fs-h3:      16px;
+  --fs-h2:      22px;   
+  --fs-h1:      26px;   
+  --fs-display: 32px;   
+  --fs-stat:    40px;   
+  --fs-stat-xl: 64px;   
+
+  
+  --lh-tight:   1.2;    
+  --lh-snug:    1.4;    
+  --lh-normal:  1.6;    
+  --lh-relaxed: 1.75;   
+
+  
+  --ls-tight:  -0.02em; 
+  --ls-normal: 0;       
+  --ls-eyebrow: 0.1em;  
+
+  
+  --text-body-size:    var(--fs-body-lg);
+  --text-heading-size: var(--fs-h2);}
+.mg-root{--space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  28px;
+  --space-8:  36px;
+  --space-9:  40px;
+  --space-10: 48px;
+  --space-12: 60px;
+
+  
+  --section-pad-sp: 36px 16px;
+  --section-pad-pc: 60px 80px;
+
+  
+  --radius-sm:   8px;
+  --radius:      12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-2xl:  28px;   
+  --radius-pill: 999px;
+
+  
+  
+  --shadow-pop-sm: 0 3px 0 rgba(0,0,0,0.08);
+  --shadow-pop:    0 4px 0 rgba(0,0,0,0.08);
+  --shadow-pop-ink: 0 3px 0 var(--ink);       
+  
+  --shadow-xs:   0 1px 3px rgba(0,0,0,0.04);
+  --shadow-sm:   0 2px 8px rgba(0,0,0,0.06);
+  --shadow-card: 0 3px 10px rgba(0,0,0,0.05);
+  --shadow-md:   0 6px 20px rgba(0,0,0,0.08);
+  --shadow-pink: 0 6px 24px rgba(236, 72, 153, 0.15);
+  --shadow-float: 0 -4px 12px rgba(0,0,0,0.08);  
+
+  
+  --border-hair:   1px solid var(--line);
+  --border-card:   2px solid var(--line);
+  --border-dashed: 2px dashed var(--magna-pink);
+  --border-accent: 3px solid var(--magna-yellow);}
+.mg-root{margin:0;background:#fff}
+.mg-root *,.mg-root *::before,.mg-root *::after{box-sizing:border-box}
+.mg-root a{color:var(--magna-mint-deep)}
+.mg-root a:hover{color:var(--magna-mint-deep)}
+
+.mg-root .cta-a{box-shadow:0 2px 0 rgba(20,110,90,.18),0 4px 12px rgba(45,179,154,.22);transition:transform .16s ease,box-shadow .16s ease}
+.mg-root .cta-a:hover{transform:translateY(-2px);box-shadow:0 4px 0 rgba(20,110,90,.22),0 12px 24px rgba(45,179,154,.28)}
+.mg-root .cta-b:hover{background:#F4FBF9 !important;border-color:var(--magna-mint) !important}
+.mg-root .ba-card{transition:transform .18s,box-shadow .18s}
+.mg-root .ba-card:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(16,24,40,.12)}
+.mg-root .why-card{transition:transform .18s,box-shadow .18s,border-color .18s}
+.mg-root .why-card:hover{transform:translateY(-3px);border-color:var(--magna-mint);box-shadow:0 10px 24px rgba(16,24,40,.1)}
+.mg-root #faq button{font-size:17px !important;padding:18px 20px !important;gap:14px !important}
+.mg-root #faq button > span:first-child{width:30px !important;height:30px !important;font-size:14px !important}
+.mg-root #faq button > span:last-child{font-size:17px !important}
+.mg-root #faq button + div{font-size:15.5px !important;line-height:1.9 !important;padding:0 20px 20px 64px !important}
+.mg-root #faq button + div p{font-size:15.5px !important;line-height:1.9 !important}
+.mg-root #cases p[style*="font-size: 13.5px"],.mg-root #cases p[style*="font-size: 14px"],.mg-root #free-reason p[style*="font-size: 13.5px"],.mg-root #free-reason div[style*="font-size: 13.5px"],.mg-root #safe p[style*="font-size: 13.5px"],.mg-root #safe p[style*="font-size: 14px"],.mg-root #safe p[style*="font-size: 14.5px"],.mg-root #safe li,.mg-root #safe span[style*="font-size: 14px"],.mg-root #area p[style*="font-size: 14.5px"],.mg-root #area p[style*="font-size: 15px"],.mg-root #why p[style*="font-size: 13.5px"],.mg-root #play p[style*="font-size: 15.5px"]{font-size:16px !important;line-height:1.9 !important}
+.mg-root #cases p[style*="font-size: 14.5px"][style*="font-weight: 900"]{font-size:17.5px !important}
+.mg-root #cases h4,.mg-root #free-reason h4{font-size:17px !important}
+.mg-root #why h3[style*="font-size: 17px"]{font-size:20px !important}
+.mg-root #cases figcaption,.mg-root #cases span[style*="font-size: 13.5px"],.mg-root span[style*="font-size: 11px"],.mg-root span[style*="font-size: 12px"][style*="color: var(--ink-3)"],.mg-root p[style*="font-size: 12px"][style*="color: rgba(255, 255, 255, 0.6)"],.mg-root #safe p[style*="font-size: 13px"],.mg-root #safe p[style*="font-size: 12px"],.mg-root #safe p[style*="font-size: 12.5px"],.mg-root #safe span[style*="font-size: 11px"],.mg-root #safe span[style*="font-size: 12px"],.mg-root #safe span[style*="font-size: 12.5px"],.mg-root #safe span[style*="font-size: 13px"],.mg-root #area p[style*="font-size: 12px"]{font-size:14px !important}
+.mg-root #cases button[style*="font-size: 13px"]{font-size:15px !important}
+.mg-root span[style*="letter-spacing: 0.16em"][style*="font-size: 12px"]{font-size:13px !important}
+.mg-root p[style*="font-size: 15px"][style*="color: var(--magna-mint-deep)"][style*="font-weight: 700"]{font-size:17px !important}
+@media (max-width:1280px){.mg-root [data-hd="nav"]{display:none !important}
+.mg-root [data-hd="burger"]{display:flex !important}}
+@media (max-width:1080px){.mg-root [data-hd="cta"]{height:34px !important;padding:0 10px !important;font-size:12px !important}
+.mg-root [data-fv="grid"]{flex-direction:column !important;min-height:0 !important;align-items:stretch !important}
+.mg-root [data-fv="right"]{position:relative !important;left:auto !important;width:100% !important;aspect-ratio:1447/1087}
+.mg-root [data-fv="panel"]{display:none !important}
+.mg-root [data-fvcta="row"] a > span:nth-of-type(2){font-size:20px !important}
+.mg-root [data-fvcta="row"] a > span[data-fvlabel="dl"]{font-size:23px !important}
+.mg-root [data-fv="left"]{width:100% !important;padding:32px 32px 40px !important;align-items:center !important;text-align:center}
+.mg-root [data-stat="row"]{grid-template-columns:repeat(3,1fr) !important;gap:20px !important}
+.mg-root [data-ba="grid"]{grid-template-columns:1fr !important}
+.mg-root #scene .ba-card p{white-space:normal !important;letter-spacing:normal !important}
+.mg-root [data-why="grid"]{grid-template-columns:1fr !important}
+.mg-root [data-why="free"]{grid-template-columns:1fr !important}
+.mg-root [data-r="stack-md"]{grid-template-columns:1fr !important}
+.mg-root [data-ba="grid"]{grid-template-columns:1fr !important}
+.mg-root [data-ba="chara"]{display:none !important}
+.mg-root [data-ba="spc"]{display:block !important}
+.mg-root [data-ba="row"]{grid-template-columns:1fr auto !important;gap:6px 12px !important}
+.mg-root [data-ba="row"] > div:nth-child(2){grid-column:1 / -1;order:3}
+.mg-root [data-ba="col2"]{border-left:0 !important;padding-left:0 !important;border-top:1px solid var(--line);padding-top:20px}
+.mg-root [data-area="battle"] img{min-height:220px !important}}
+@media (max-width:760px){.mg-root [data-sec],.mg-root [data-r="pad"],.mg-root [data-hd="bar"]{padding-left:18px !important;padding-right:18px !important}
+.mg-root [data-hd="bar"]{padding-top:10px !important;padding-bottom:10px !important}
+.mg-root [data-hd="cta"]{display:none !important}
+.mg-root [data-r="stack"]{grid-template-columns:1fr !important}
+.mg-root [data-r="h2"]{font-size:clamp(22px,6.2vw,30px) !important}
+.mg-root [data-r="h2"] br{display:none}
+.mg-root [data-r="tvlogo"]{height:60px !important}
+.mg-root [data-r="logos"]{gap:16px 20px !important}
+.mg-root [data-r="logos"] img{height:58px !important}
+.mg-root [data-r="trial"]{grid-template-columns:1fr !important}
+.mg-root [data-r="trial"] > div:last-child{justify-content:center !important}
+.mg-root [data-r="float"]{padding:10px 14px !important;flex-wrap:nowrap !important;gap:10px !important}
+.mg-root [data-r="float"] p{font-size:12.5px !important;line-height:1.45}
+.mg-root [data-r="float"] a{width:clamp(150px,50vw,240px) !important}
+.mg-root [data-r="fnav"]{gap:14px 22px !important}
+.mg-root [data-r="modal"]{padding:20px 18px 24px !important}
+.mg-root [data-r="modal-wrap"]{padding:14px !important}
+.mg-root [data-r="dev"]{padding:20px 16px !important}}
+@media (max-width:640px){.mg-root [data-stat="row"]{grid-template-columns:1fr !important;gap:16px !important}
+.mg-root [data-stat="mid"]{border:0 !important;border-top:1px solid var(--line) !important;border-bottom:1px solid var(--line) !important;padding:16px 0}
+.mg-root [data-media="row"]{gap:20px !important}
+.mg-root [data-fv="h1"]{font-size:clamp(24px,7.4vw,36px) !important}
+.mg-root [data-fv="lead"] br{display:none}
+.mg-root [data-cta="row"] > img{width:92px !important;margin-right:-10px !important}
+.mg-root [data-r="prof"]{grid-template-columns:1fr !important}
+.mg-root [data-fvcta="row"]{flex-direction:column !important;align-items:stretch !important;gap:20px !important}
+.mg-root [data-fvcta="row"] > div{flex:none !important;max-width:none !important}
+.mg-root [data-fvcta="row"] a > span:nth-of-type(2){font-size:clamp(16px,5.4vw,20px) !important}
+.mg-root [data-fvcta="row"] a > span[data-fvlabel="dl"]{font-size:clamp(16px,6vw,23px) !important}}
+@media (max-width:360px){.mg-root [data-fvcta="row"] a > span[data-fvlabel="dl"]{font-size:14.5px !important;letter-spacing:0 !important}
+.mg-root [data-fvcta="row"] a{gap:6px !important}}
+.mg-root [data-r="spbar"]{display:none}
+.mg-root #why,.mg-root #safe,.mg-root #faq,.mg-root #free-reason{scroll-margin-top:90px}
+.mg-root,.mg-root{font-synthesis:none;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.mg-root [style*="font-weight:600"],.mg-root [style*="font-weight: 600"]{font-weight:700 !important}
+@media (max-width:760px){.mg-root [data-hd="bar"]{gap:10px !important}
+.mg-root [data-hd="bar"] img[alt^="マグナとふしぎ"]{height:40px !important;width:40px !important}
+.mg-root [data-hd="bar"] > div:first-child > span > span:first-child{font-size:15px !important}
+.mg-root [data-hd="bar"] > div:first-child > span > span:last-child{font-size:11px !important}
+.mg-root [data-hd="burger"]{width:44px !important;height:44px !important}
+.mg-root [data-hd="drawer"] a{padding:16px 20px !important;font-size:15px !important}
+.mg-root [data-fv="left"]{padding:28px 18px 36px !important}
+.mg-root [data-cta="row"] > a{max-width:100%;box-sizing:border-box;flex-wrap:wrap;justify-content:center;text-align:center}
+.mg-root #cases,.mg-root #area,.mg-root #trust,.mg-root #play,.mg-root #faq{padding-top:52px !important;padding-bottom:52px !important}
+.mg-root #apply{padding-top:52px !important}
+.mg-root #safe{padding-bottom:52px !important}
+.mg-root [data-r="pad"]:not([data-foot]){padding-bottom:52px !important}
+.mg-root [data-sec="media"] [data-r="stack"]{width:100% !important}
+.mg-root [data-ba="grid"] > div{padding-left:16px !important;padding-right:16px !important;padding-top:8px !important}
+.mg-root #apply [data-r="stack"] > div{flex-direction:column !important;align-items:flex-start !important;gap:14px !important;padding:22px 20px !important}
+.mg-root #apply [data-r="stack"] > div > span[aria-hidden]{width:56px !important;height:56px !important}
+.mg-root #apply [data-r="stack"] > div p[style*="font-size: 22px"]{font-size:20px !important}
+.mg-root [data-why="free"] > div{padding:22px 18px 20px !important}
+.mg-root #trust p br,.mg-root #area p br,.mg-root #apply p br,.mg-root [data-r="pad"] p br{display:none}
+.mg-root #trust [data-r="stack-md"]{padding:22px 18px !important}
+.mg-root #cases button{min-height:44px}
+.mg-root [data-r="spbar"]{display:flex !important}
+.mg-root [data-foot]{padding-bottom:110px !important}}
+@media (max-width:640px){.mg-root [data-r="safehead"]{flex-wrap:wrap !important;align-items:center !important;gap:8px 20px !important}
+.mg-root [data-r="safehead"] > div{order:-1;flex:1 1 100% !important}
+.mg-root [data-r="safehead"] > img{height:84px !important}
+.mg-root [data-r="safehead"] h2{font-size:clamp(22px,6.2vw,28px) !important}
+.mg-root #apply h2,.mg-root [id="free-reason"] p[style*="font-size: clamp(28px"]{font-size:clamp(24px,7vw,30px) !important}
+.mg-root #why h2,.mg-root #faq h2,.mg-root #play h2{font-size:clamp(24px,7vw,30px) !important}
+.mg-root [data-sec="stats"] h2{font-size:21px !important}
+.mg-root [data-sec="media"] h3{font-size:clamp(22px,6.4vw,28px) !important}
+.mg-root [data-area="battle"] p[style*="font-size: 24px"]{font-size:20px !important}}
+@media (max-width:640px){.mg-root [data-stat="row"]{grid-template-columns:1fr 1fr !important;gap:18px 0 !important}
+.mg-root [data-stat="row"] > div:last-child{grid-column:1 / -1;border-top:1px solid var(--line);padding-top:16px}
+.mg-root [data-stat="mid"]{border:0 !important;border-left:1px solid var(--line) !important;padding:0 !important}
+.mg-root [data-stat="row"] span[style*="font-size: 19px"]{font-size:14px !important}
+.mg-root [data-stat="row"] span[style*="clamp(44px"]{font-size:clamp(32px,10vw,40px) !important}
+.mg-root [data-stat="row"] img{height:76px !important}
+.mg-root [data-sec="media"] [data-r="stack"]:has([data-r="tvlogo"]){gap:10px !important}
+.mg-root [data-sec="media"] [data-r="stack"]:has([data-r="tvlogo"]) > div{display:grid !important;grid-template-columns:minmax(0,1fr) auto;align-items:center !important;gap:4px 12px !important;padding:12px 14px !important;text-align:left !important}
+.mg-root [data-sec="media"] [data-r="tvlogo"]{grid-row:1 / span 2;height:auto !important;max-height:58px;max-width:100%;justify-self:start}
+.mg-root [data-sec="media"] [data-r="stack"]:has([data-r="tvlogo"]) a{padding:10px 16px !important;min-height:44px;box-sizing:border-box;justify-content:center !important;text-align:center}
+.mg-root [data-sec="media"] [data-r="stack"]:has([data-r="tvlogo"]) span[style*="font-size"]{font-size:11px !important;text-align:center}
+.mg-root [data-r="logos"]{gap:14px 20px !important}
+.mg-root [data-r="logos"] img{height:clamp(60px,17vw,72px) !important;max-width:42vw;width:auto !important;object-fit:contain}
+.mg-root [data-r="fnav"]{display:grid !important;grid-template-columns:1fr 1fr;gap:0 !important;width:100%}
+.mg-root [data-r="fnav"] a{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.12)}
+.mg-root [data-fv="right"] button{width:28px !important;height:28px !important;padding:9px !important;box-sizing:border-box;background-clip:content-box !important;box-shadow:none !important}
+.mg-root [data-fv="right"] > div{gap:2px !important;bottom:6px !important}
+.mg-root [data-fvcta="row"] a{min-height:58px !important}
+.mg-root [data-fv="left"]{gap:12px !important}
+.mg-root [data-fv="h1"]{margin:4px 0 6px !important}}
+@media (max-width:760px){.mg-root [data-sec] p[style*="font-size: 13.5px"],.mg-root [data-sec] span[style*="font-size: 13.5px"],.mg-root [data-sec] p[style*="font-size: 13px"],.mg-root [data-sec] span[style*="font-size: 13px"]{font-size:14px !important}
+.mg-root [data-r="spbar"]{transform:none !important}
+.mg-root [data-r="notes"]{flex-direction:column !important;align-items:center}
+.mg-root [data-r="spbr"]{display:block !important;padding-left:1em}
+.mg-root [data-r="spbrc"]{display:block !important}
+.mg-root [data-r="freelink"]{flex-direction:column !important}
+.mg-root [data-r="whyimg"]{margin-top:16px !important}
+.mg-root [data-r="supimg"]{width:calc(100% + 28px) !important;max-width:none !important;height:auto !important;margin:0 -14px !important}
+.mg-root [data-r="storebadges"]{justify-content:center !important;align-self:center !important;width:100%}
+.mg-root [data-r="tvtitle"]{display:inline-flex !important;flex-direction:column;align-items:flex-start;text-align:left}
+.mg-root h3:has(> [data-r="tvtitle"]){gap:12px !important}}
+@media (max-width:400px){.mg-root [data-hd="bar"] > div:first-child > span > span:first-child{font-size:13px !important}
+.mg-root [data-hd="bar"] > div:first-child > span > span:last-child{font-size:10px !important}
+.mg-root [data-hd="bar"]{padding-left:12px !important;padding-right:12px !important;gap:8px !important}
+.mg-root [data-hd="bar"] > div:first-child{gap:7px !important}
+.mg-root [data-hd="bar"] img[alt^="マグナとふしぎ"]{height:34px !important;width:34px !important}
+.mg-root [data-hd="burger"]{width:40px !important;height:40px !important}
+.mg-root [data-hd="bar"] > div:first-child{min-width:0;flex:1 1 auto !important}
+.mg-root [data-stat="row"] img{max-width:100%;height:auto !important;max-height:80px}
+.mg-root [data-stat="row"] span{max-width:100%}}
+@media (max-width:430px){.mg-root [data-ba="grid"] img[data-ba="spc"][src*="rei"]{height:clamp(70px,21vw,88px) !important;margin:-8px calc(-0.25 * clamp(70px,21vw,88px)) -8px calc(-0.27 * clamp(70px,21vw,88px)) !important}
+.mg-root [data-ba="grid"] p{white-space:nowrap !important;flex-wrap:nowrap !important}
+.mg-root [data-ba="grid"] p > span[style*="clamp(38px"]{font-size:clamp(28px,9.6vw,40px) !important;letter-spacing:-.03em !important}
+.mg-root [data-ba="grid"] p > span[style*="clamp(15px"]{font-size:14px !important}
+.mg-root [data-ba="grid"] p > span[style*="clamp(18px"]{font-size:17px !important}
+.mg-root [data-ba="grid"] p[style*="nowrap"]{gap:3px !important}
+.mg-root [data-r="spbar"] a{font-size:13.5px !important}}
+@media (max-width:1080px){.mg-root [data-ba="grid"]{grid-template-columns:minmax(0,1fr) !important}}
+@media (max-width:360px){.mg-root [data-ba="grid"] > div{padding-left:12px !important;padding-right:12px !important}
+.mg-root [data-ba="grid"] img[data-ba="spc"][src*="rei"]{height:82px !important;margin:-10px -22px -10px -24px !important}
+.mg-root [data-ba="grid"] p > span[style*="clamp(38px"]{font-size:clamp(26px,9vw,40px) !important}
+.mg-root [data-ba="grid"] p > span[style*="clamp(15px"]{font-size:13px !important}
+.mg-root [data-ba="grid"] p > span[style*="clamp(18px"]{font-size:16px !important}}
+@keyframes introTextIn{0%{opacity:0;transform:scale(.96);filter:blur(8px)}30%{opacity:1;transform:scale(1);filter:blur(0)}57%{opacity:1;transform:scale(1);filter:blur(0)}100%{opacity:0;transform:scale(1);filter:blur(0)}}
+@keyframes introVeilOut{0%{opacity:1}76%{opacity:1}100%{opacity:0;visibility:hidden}}
+@keyframes introFvIn{0%{opacity:0}63%{opacity:0}100%{opacity:1}}
+.mg-root [data-intro="veil"]{animation:introVeilOut 2.6s cubic-bezier(.4,0,.2,1) forwards}
+.mg-root [data-intro="text"]{animation:introTextIn 2.5s cubic-bezier(.4,0,.2,1) forwards}
+.mg-root [data-sec="fv"]{animation:introFvIn 2.5s cubic-bezier(.4,0,.2,1) forwards}
+@media (prefers-reduced-motion:reduce){.mg-root [data-intro="veil"]{display:none !important}
+.mg-root [data-sec="fv"]{animation:none !important;opacity:1 !important;transform:none !important}}
+
+.mg-root [data-if]{display:contents}
+.mg-root .mg-off{display:none !important}
+.mg-root.mg-nointro [data-intro="veil"]{display:none !important}
+.mg-root.mg-nointro [data-sec="fv"]{animation:none !important;opacity:1 !important}
+.mg-root img{vertical-align:middle}
+.mg-root [data-if].mg-pop{display:block}
+.mg-root [data-if].mg-off{display:none !important}
+.mg-root .mg-popwrap{position:relative}
+.mg-root .mg-pop{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:40;filter:drop-shadow(0 14px 28px rgba(16,24,40,.22))}
+.mg-root [data-faq-a].mg-off{display:none !important}
+
+
+</style>
+<div class="mg-root" data-mg="fv" style="font-family: var(--font-base); color: var(--ink); background: #fff; width: 100%; box-sizing: border-box; position: relative">
+<div data-intro="veil" aria-hidden="true" style="position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: #fff; pointer-events: none; padding: 24px; left: -4px; top: -117px">
+<p data-intro="text" style="margin:0;display:flex;flex-direction:column;align-items:center;gap:clamp(8px,1vw,14px);text-align:center;letter-spacing:-.01em;color:#17345C" data-t="intro_01"></p>
+</div><div data-sec="fv" data-screen-label="FV" style="position:relative;overflow:hidden;background:#fff;padding:0">
+<div data-fv="grid" style="position:relative;min-height:clamp(520px,44vw,760px);display:flex;align-items:center">
+<div data-fv="right" style="position:absolute;top:0;right:0;bottom:0;left:47%;min-width:0;overflow:hidden">
+<img data-slide="0" data-img="fv_slide1" src="" style="display:block;position:absolute;inset:0;opacity:1;transition:opacity .6s ease;width:100%;height:100%;max-width:none;margin:0;object-fit:cover;object-position:0% center"><img data-slide="1" data-img="fv_slide2" src="" style="display:block;position:absolute;inset:0;opacity:0;transition:opacity .6s ease;width:100%;height:100%;max-width:none;margin:0;object-fit:cover;object-position:100% 50%">
+<div style="position:absolute;left:0;right:0;bottom:14px;z-index:2;display:flex;justify-content:center;gap:8px">
+<button type="button" data-dot="0" data-act="slide" aria-label="1枚目を表示" style="width:9px;height:9px;border-radius:999px;border:0;padding:0;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.25);background:var(--magna-mint-deep)"></button><button type="button" data-dot="1" data-act="slide" aria-label="2枚目を表示" style="width:9px;height:9px;border-radius:999px;border:0;padding:0;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.25);background:#fff"></button>
+</div>
+</div>
+<div data-fv="panel" aria-hidden="true" style="position:absolute;top:0;left:0;bottom:0;width:50%;overflow:hidden;background:linear-gradient(180deg,#F6FAFC 0%,#fff 55%);clip-path:polygon(0 0,94% 0,100% 100%,0 100%)">
+<span style="position:absolute;left:-90px;top:-70px;width:300px;height:200px;border-radius:50%;background:#EAF5F2"></span>
+<span style="position:absolute;right:14%;top:5%;width:90px;height:90px;border-radius:50%;background:#EAF3FA"></span>
+<span style="position:absolute;left:-70px;top:56%;width:150px;height:170px;border-radius:50%;background:#E8F2F8"></span>
+</div>
+<div data-fv="left" style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:flex-start;gap:clamp(14px,1.3vw,22px);width:48%;min-width:0;box-sizing:border-box;padding:clamp(40px,4vw,72px) 0 clamp(32px,3vw,56px) clamp(24px,4.6vw,88px)">
+<p data-fv="eyebrow" style="margin:0;display:flex;align-items:center;flex-wrap:wrap;gap:4px 14px;line-height:1.4"><span style="display:inline-flex;align-items:center;gap:6px;font-size:clamp(13px,1vw,17px);line-height:1.4;font-weight:800;color:var(--magna-mint-deep);border:1.5px solid var(--magna-mint);border-radius:6px;padding:3px 10px;background:transparent"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="11" rx="1.5"></rect><path d="M2 19h20"></path></svg><span data-t="fv_01"></span></span><span style="font-size:clamp(14px,1.1vw,19px);font-weight:800;letter-spacing:.04em;line-height:1.4;color:#252C2A" data-t="fv_02"></span></p>
+
+
+
+
+
+<h1 data-fv="h1" style="margin:clamp(10px,1.2vw,22px) 0 clamp(14px,1.6vw,28px);width:fit-content;font-size:clamp(36px,4.6vw,76px);line-height:1.28;font-weight:900;letter-spacing:-.03em;color:#252C2A" data-t="fv_03"></h1>
+<p data-fv="lead" style="margin:0;font-size:clamp(15px,1.15vw,20px);line-height:1.7;font-weight:600;color:#252C2A;max-width:none;white-space:normal" data-t="fv_04"></p>
+<div data-cta="row" style="display:flex;flex-direction:column;align-items:center;gap:clamp(14px,1.2vw,20px);width:100%;max-width:780px;margin-top:clamp(6px,.8vw,14px)">
+<p style="margin:0;text-align:center;font-size:clamp(14px,1.2vw,19px);font-weight:800;color:#252C2A;line-height:1.3" data-t="fv_05"></p>
+<a href="#free-reason" style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;color:var(--magna-mint-deep);text-decoration:none;border:1px solid var(--magna-mint);border-radius:999px;padding:8px 18px;background:#F0FAF6;line-height:1.3;margin-bottom:clamp(4px,.6vw,10px)" style-hover="background:var(--mint-soft);border-color:var(--magna-mint-deep)" data-t="fv_06"></a>
+<div data-fvcta="row" style="display:flex;flex-wrap:nowrap;justify-content:center;align-items:stretch;gap:clamp(20px,2vw,32px);width:100%">
+<div style="flex:1 1 0;max-width:380px;min-width:0;display:flex">
+<a data-link="doc_pdf" href="#" download="マグナ学校版_ご案内資料.pdf" data-doc="" aria-label="資料をダウンロード" style="display:flex;align-items:center;gap:clamp(8px,.7vw,12px);width:100%;min-height:clamp(64px,5.2vw,92px);box-sizing:border-box;padding:0 clamp(12px,1vw,20px);border-radius:18px;background:#D8246E;box-shadow:0 4px 0 #9E1650,0 12px 24px rgba(200,30,106,.22);color:#fff;text-decoration:none;transition:transform .15s ease,box-shadow .15s ease" style-hover="transform:translateY(-2px);box-shadow:0 6px 0 #9E1650,0 16px 30px rgba(200,30,106,.3)" style-active="transform:translateY(3px);box-shadow:0 1px 0 #9E1650,0 4px 10px rgba(200,30,106,.2)">
+<span aria-hidden="true" style="flex:none;display:flex;align-items:center;justify-content:center;width:clamp(36px,2.8vw,56px);height:clamp(36px,2.8vw,56px);border-radius:12px;background:#fff"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D8246E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h4"></path></svg></span>
+<span style="flex:1;min-width:0;font-size:clamp(14px,calc(1.65vw - 3.5px),27px);font-weight:900;letter-spacing:.01em;white-space:nowrap" data-fvlabel="dl" data-t="fv_07"></span>
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M9 5l7 7-7 7"></path></svg>
+</a>
+</div>
+<div style="flex:1 1 0;max-width:380px;min-width:0;display:flex">
+<a href="#contact" data-act="openConsult" aria-label="気軽に相談する" style="display:flex;align-items:center;gap:clamp(10px,1vw,16px);width:100%;min-height:clamp(64px,5.2vw,92px);box-sizing:border-box;padding:0 clamp(14px,1.4vw,24px);border-radius:18px;background:#fff;border:2px solid #17345C;color:#17345C;text-decoration:none;transition:transform .15s ease,background .15s ease" style-hover="background:#F1F5FA;transform:translateY(-1px)" style-active="transform:translateY(1px)">
+<span aria-hidden="true" style="flex:none;display:flex;align-items:center;justify-content:center;width:clamp(36px,2.8vw,56px);height:clamp(36px,2.8vw,56px);border-radius:12px;background:#EEF3F9"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#17345C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="12" rx="2"></rect><path d="M8 20h8"></path><path d="M12 16.5V20"></path></svg></span>
+<span style="flex:1;min-width:0;text-align:center;font-size:clamp(14px,calc(1.7vw - 2.5px),28px);font-weight:900;letter-spacing:.01em;white-space:nowrap" data-t="fv_08"></span>
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17345C" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M9 5l7 7-7 7"></path></svg>
+</a>
+</div>
+</div>
+<p style="margin:4px 0 0;font-size:clamp(11px,.85vw,14px);font-weight:600;color:var(--ink-2);text-align:center" data-t="fv_09"></p>
+</div>
+</div>
+</div>
+</div><div id="stats" data-sec="stats" data-screen-label="導入実績" style="background:linear-gradient(180deg,#F0F9F6,#EAF6F1);padding:44px 32px">
+<div style="max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:28px;align-items:center">
+<h2 style="margin: 0; font-size: 25px; font-weight: 900; color: #17345C; text-align: center" data-t="stats_01"></h2>
+<div data-stat="row" style="display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 32px; width: 100%; text-align: center; font-size: 20px">
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px" data-t="stats_02"></div>
+<div data-stat="mid" style="display:flex;flex-direction:column;align-items:center;gap:6px;border-left:1px solid var(--line);border-right:1px solid var(--line)" data-t="stats_03"></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+<span style="font-size: 19px; font-weight: 800; color: var(--ink-2)" data-t="stats_04"></span>
+<img data-img="award_elearning_16" src="" style="display:block;height:92px;width:auto;object-fit:contain">
+</div>
+</div>
+
+</div>
+</div><div data-sec="media" style="background:#F7FAF9;padding:clamp(48px,5vw,64px) 32px">
+<div style="max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:34px;align-items:center">
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;margin:0 auto 4px">
+<h3 style="margin:0;display:flex;align-items:center;justify-content:center;gap:clamp(10px,1.4vw,18px);font-size:clamp(26px,3.2vw,40px);font-weight:900;line-height:1.35;letter-spacing:-.01em;color:#17345C"><svg aria-hidden="true" width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="var(--magna-mint-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><rect x="2.5" y="6.5" width="19" height="13" rx="2.5"></rect><path d="M8.5 2.5L12 6l3.5-3.5"></path></svg><span data-r="tvtitle" data-t="media_01"></span></h3>
+</div>
+
+<div data-r="stack" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;width:100%">
+<div style="background:#fff;border:1.5px solid #CFE9E0;border-radius:16px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+
+<img data-img="media_logo_tbs_thetime" src="" data-r="tvlogo" style="height:78px;width:auto;object-fit:contain">
+<a href="https://www.youtube.com/watch?v=3EOaCe7JDOQ" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;background:#0F5FF0;border-radius:999px;padding:10px 22px;font-size:13.5px;font-weight:900;color:#fff;text-decoration:none" data-t="media_02"></a>
+<span style="font-size:11px;font-weight:600;color:var(--ink-3)" data-t="media_03"></span>
+</div>
+<div style="background:#fff;border:1.5px solid #CFE9E0;border-radius:16px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+
+<img data-img="media_logo_tbs_gacchiri" src="" data-r="tvlogo" style="height:78px;width:auto;object-fit:contain">
+<a href="https://video.unext.jp/title/SID0021394?utm_source=copy&amp;utm_medium=social&amp;utm_campaign=nonad-sns&amp;rid=PM028738362" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;background:#0F5FF0;border-radius:999px;padding:10px 22px;font-size:13.5px;font-weight:900;color:#fff;text-decoration:none" data-t="media_04"></a>
+<span style="font-size:11px;font-weight:600;color:var(--ink-3)" data-t="media_05"></span>
+</div>
+<div style="background:#fff;border:1.5px solid #CFE9E0;border-radius:16px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+
+<img data-img="media_logo_fuji_nonstop" src="" data-r="tvlogo" style="height:78px;width:auto;object-fit:contain">
+<a href="https://www.youtube.com/watch?v=RSD7ZCatEnI" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;background:#0F5FF0;border-radius:999px;padding:10px 22px;font-size:13.5px;font-weight:900;color:#fff;text-decoration:none" data-t="media_06"></a>
+<span style="font-size:11px;font-weight:600;color:var(--ink-3)" data-t="media_07"></span>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;align-items:center;gap:24px">
+<div data-r="logos" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:32px">
+<img data-img="media_logo2_nhk_ohayou" src="" style="height:92px;width:auto;object-fit:contain"><img data-img="media_logo2_fuji_honma" src="" style="height:92px;width:auto;object-fit:contain"><img data-img="media_logo2_fuji_livenews" src="" style="height:92px;width:auto;object-fit:contain"><img data-img="media_logo2_shizuoka_shimbun" src="" style="height:92px;width:auto;object-fit:contain"><img data-img="media_logo2_sbs" src="" style="height:92px;width:auto;object-fit:contain">
+</div>
+</div>
+
+<h2 style="margin:16px 0 0;font-size:clamp(19px,2vw,24px);font-weight:900;color:#17345C;text-align:center;text-wrap:balance" data-t="media_08"></h2>
+
+<div data-r="stack" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;width:80%;margin:0 auto">
+<div style="background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(16,24,40,.05)"><img data-img="logo_meti_mirai_kyoshitsu_cropped" src="" style="display:block;max-width:100%;height:auto;max-height:150px;object-fit:contain"></div>
+<div style="background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;box-shadow:0 4px 14px rgba(16,24,40,.05)"><img data-img="logo_manabitai" src="" style="display:block;max-width:100%;height:auto;max-height:150px;object-fit:contain"><img data-img="logo_mext" src="" style="display:block;height:44px;width:auto;object-fit:contain"></div>
+</div>
+
+
+
+</div>
+</div><div data-if="consultOpen" class="mg-off">
+<div role="dialog" aria-modal="true" aria-labelledby="consult-title" data-act="closeConsult" style="position:fixed;inset:0;z-index:200;background:rgba(15,30,50,.55);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box">
+<div style="position:relative;width:100%;max-width:460px;background:#fff;border-radius:20px;padding:36px 28px 28px;box-sizing:border-box;box-shadow:0 20px 50px rgba(16,24,40,.25);display:flex;flex-direction:column;gap:20px;font-family:var(--font-base)">
+<button type="button" data-act="closeConsult" aria-label="閉じる" style="position:absolute;top:10px;right:10px;width:44px;height:44px;border:0;background:transparent;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#F2F5F8"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17345C" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+<div style="display:flex;flex-direction:column;gap:8px;text-align:center">
+<span style="font-size:12px;font-weight:800;letter-spacing:.16em;color:var(--magna-mint-deep)" data-t="modal_consultOpen_01"></span>
+<p id="consult-title" style="margin:0;font-size:22px;font-weight:900;line-height:1.4;color:#17345C" data-t="modal_consultOpen_02"></p>
+<p style="margin:0;font-size:14px;font-weight:500;line-height:1.7;color:var(--ink-2)" data-t="modal_consultOpen_03"></p>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<a data-link="form_school" href="#" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;padding:0 22px;box-sizing:border-box;border-radius:14px;background:linear-gradient(100deg,#C2185F 0%,#D6317F 100%);box-shadow:0 4px 0 #9E1650;color:#fff;text-decoration:none;font-size:17px;font-weight:900" style-hover="opacity:.92"><span data-t="modal_consultOpen_04"></span><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></a>
+<a data-link="form_board" href="#" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;padding:0 22px;box-sizing:border-box;border-radius:14px;background:#fff;border:2px solid #17345C;box-shadow:0 4px 0 #17345C;color:#17345C;text-decoration:none;font-size:17px;font-weight:900" style-hover="background:#F2F6FB"><span data-t="modal_consultOpen_05"></span><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17345C" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></a>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+/* ================================================================
+   ★ ここだけ編集すればOK ★  文字・画像・リンクの設定エリア（ファーストビュー〜マグナでできること（手前））
+   ・TEXT   : 画面の文字（キーは「セクション名_番号」）。改行は <br> 、リンクや装飾のHTMLもそのまま書けます
+   ・IMAGES : 画像ファイル名 or URL（https:// から始まるURLならそのURLを使用。ファイル名だけなら ASSET_BASE が前に付きます）
+   ・ALT    : 画像の代替テキスト（IMAGES と同じキー）
+   ・LINKS  : PDF・フォームなどのリンク先
+   ・PAGE_URL / ANCHORS : メニューなど「他のブロック」へ移動するときの、STUDIOページのURLと移動先ID
+   ================================================================ */
+var MG_NAME = "fv";
+var ASSET_BASE = "https://cdn.jsdelivr.net/gh/hirokiyayama/mini4wd-game@claude/affectionate-darwin-300fus/magna-school-studio-embed/assets/";   /* ★ 画像・PDFを置いたフォルダのURL（末尾は / ） */
+var PAGE_URL = "";   /* ★ 公開したSTUDIOページのURL（例: https://xxxx.studio.site/）。空欄の場合は自動で取得を試みます */
+var ANCHORS = {
+  "free-reason": "free-reason",   /* ずっと無料の理由 → STUDIOで「なぜ、マグナはずっと無料なの？」ブロックに付けるID */
+  "why": "why",   /* アプリでできること → 「マグナでできること」ブロックのID */
+  "safe": "safe",   /* 導入準備 → 「導入はカンタン」ブロックのID */
+  "faq": "faq",   /* よくある質問 → 「よくあるご質問」ブロックのID（06を1つで貼る場合は06のID） */
+  "consult": "fv"   /* 気軽に相談する → 「ファーストビュー」ブロックのID */
+};
+var SHOW_INTRO = true;   /* ページ表示時のオープニング演出：true=あり / false=なし */
+var FILL_COLOR = "#F7FAF9";   /* ブロックの高さが余ったとき（FAQを開いて縮む余白を含む）の下側の色 */
+var TEXT = {
+  /* ── オープニング (intro) ── */
+  "intro_01": "<span style=\"display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap\"> <span style=\"display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:var(--magna-mint);color:#fff;font-size:13.5px;font-weight:900;letter-spacing:0;box-shadow:0 2px 0 rgba(20,110,90,.25)\">小</span> <span aria-hidden=\"true\" style=\"font-size:13px;font-weight:900;color:var(--magna-mint)\">›</span> <span style=\"display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:var(--magna-mint);color:#fff;font-size:13.5px;font-weight:900;letter-spacing:0;box-shadow:0 2px 0 rgba(20,110,90,.25)\">中</span> <span aria-hidden=\"true\" style=\"font-size:13px;font-weight:900;color:var(--magna-mint)\">›</span> <span style=\"display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:var(--magna-mint);color:#fff;font-size:13.5px;font-weight:900;letter-spacing:0;box-shadow:0 2px 0 rgba(20,110,90,.25)\">高</span> <span style=\"margin-left:4px;font-size:clamp(13px,1.5vw,20px);font-weight:800;color:var(--ink-2);line-height:1.4\">低学年から高校生まで対応</span> </span> <span style=\"font-size:clamp(30px,4.6vw,68px);font-weight:900;line-height:1.25;letter-spacing:-.03em;color:var(--magna-mint-deep)\">マグナとふしぎの少女 For School</span>",
+
+  /* ── ファーストビュー (fv) ── */
+  "fv_01": "Chromebook・iPad対応",
+  "fv_02": "学校向けAI英語学習アプリ",
+  "fv_03": "<span style=\"display:block;white-space:nowrap;line-height:1.25\">「楽しい」が</span><span style=\"display:block;white-space:nowrap;line-height:1.25;margin-top:.12em\">「得意」につながる</span>",
+  "fv_04": "<span style=\"display:inline-block\">AI英会話×英単語クイズで、<span style=\"display:inline-block\">子どもたちが楽しみながら</span></span><br><span style=\"display:inline-block\">英語を話す力が自然と育ちます。</span>",
+  "fv_05": "＼ 公的教育機関は<a href=\"#free-reason\" title=\"ずっと無料で使える理由を見る\" style=\"font-size:1.8em;color:inherit;text-decoration:none;cursor:pointer;background:linear-gradient(transparent 70%,#FFE066 70%,#FFE066 90%,transparent 90%)\" style-hover=\"background:linear-gradient(transparent 40%,#FFE066 40%,#FFE066 90%,transparent 90%)\">ずっと無料</a> ／",
+  "fv_06": "<span data-r=\"freelink\" style=\"display:inline-flex;align-items:center;flex-wrap:wrap;justify-content:center;column-gap:1em\"><span style=\"display:inline-block\">なぜマグナはずっと無料なの？</span><span style=\"display:inline-block\">その答えは<span style=\"text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1.5px\">コチラ</span></span></span><span aria-hidden=\"true\">→</span>",
+  "fv_07": "資料をダウンロード",
+  "fv_08": "気軽に相談する",
+  "fv_09": "※無料アプリのため、しつこい営業やお電話は一切おこないません。",
+
+  /* ── 導入実績 (stats) ── */
+  "stats_01": "全国の教育現場で活用されています",
+  "stats_02": "<span style=\"font-size: 19px; font-weight: 800; color: var(--ink-2)\">導入都道府県</span> <span style=\"font-size:clamp(44px,5vw,66px);font-weight:900;line-height:1;color:#17345C\">43<span style=\"font-size:.4em;font-weight:800;margin-left:2px\">都道府県</span></span>",
+  "stats_03": "<span style=\"font-size: 19px; font-weight: 800; color: var(--ink-2)\">合計利用ユーザー数</span> <span style=\"font-size:clamp(44px,5vw,66px);font-weight:900;line-height:1;color:#17345C\">45<span style=\"font-size:.4em;font-weight:800;margin-left:2px\">万人</span></span>",
+  "stats_04": "主な受賞歴",
+
+  /* ── メディア掲載 (media) ── */
+  "media_01": "<span style=\"display:inline-block\">テレビ・新聞でも</span><span style=\"display:inline-block\">紹介されました</span>",
+  "media_02": "動画を見る<span aria-hidden=\"true\">›</span>",
+  "media_03": "※外部サイトに移動します",
+  "media_04": "動画を見る<span aria-hidden=\"true\">›</span>",
+  "media_05": "※外部サイトに移動します",
+  "media_06": "動画を見る<span aria-hidden=\"true\">›</span>",
+  "media_07": "※外部サイトに移動します",
+  "media_08": "経済産業省「未来の教室」、文部科学省「たのしくまなび隊」に掲載されています！",
+
+  /* ── 相談窓口の選択画面 (modal_consultOpen) ── */
+  "modal_consultOpen_01": "CONTACT",
+  "modal_consultOpen_02": "ご相談窓口を選んでください",
+  "modal_consultOpen_03": "ご担当に合わせたフォームへ移動します。",
+  "modal_consultOpen_04": "学校担当者様はこちら",
+  "modal_consultOpen_05": "教育委員会担当者様はこちら",
+};
+var IMAGES = {
+  "fv_slide1": "fv-bg-classroom-tablet-v2.jpg",
+  "fv_slide2": "fv-slide-eiken-tablet-v11.jpg",
+  "award_elearning_16": "award-elearning-16.png",
+  "media_logo_tbs_thetime": "media-logo-tbs-thetime.jpg",
+  "media_logo_tbs_gacchiri": "media-logo-tbs-gacchiri.jpg",
+  "media_logo_fuji_nonstop": "media-logo-fuji-nonstop.jpg",
+  "media_logo2_nhk_ohayou": "media-logo2-nhk-ohayou.png",
+  "media_logo2_fuji_honma": "media-logo2-fuji-honma.png",
+  "media_logo2_fuji_livenews": "media-logo2-fuji-livenews.png",
+  "media_logo2_shizuoka_shimbun": "media-logo2-shizuoka-shimbun.png",
+  "media_logo2_sbs": "media-logo2-sbs.png",
+  "logo_meti_mirai_kyoshitsu_cropped": "logo-meti-mirai-kyoshitsu-cropped.png",
+  "logo_manabitai": "logo-manabitai.png",
+  "logo_mext": "logo-mext.jpg"
+};
+var ALT = {
+  "fv_slide1": "教室でGIGA端末を使い、AIキャラクターと英会話する子どもたち",
+  "fv_slide2": "英検2級レベル(3,000単語)まで対応、聞く・話す・読む・書くの4技能で学べる",
+  "award_elearning_16": "第16回 日本e-Learning大賞 受賞",
+  "media_logo_tbs_thetime": "TBS THE TIME,",
+  "media_logo_tbs_gacchiri": "TBS がっちりマンデー!!",
+  "media_logo_fuji_nonstop": "フジテレビ ノンストップ！",
+  "media_logo2_nhk_ohayou": "NHK おはよう日本",
+  "media_logo2_fuji_honma": "フジテレビ ホンマでっか!?TV",
+  "media_logo2_fuji_livenews": "フジテレビ Live News α",
+  "media_logo2_shizuoka_shimbun": "静岡新聞",
+  "media_logo2_sbs": "SBS",
+  "logo_meti_mirai_kyoshitsu_cropped": "経済産業省 未来の教室 LEARNING INNOVATION",
+  "logo_manabitai": "きみの好き！応援サイト たのしくまなび隊",
+  "logo_mext": "文部科学省"
+};
+var LINKS = {
+  "doc_name": "マグナ学校版_ご案内資料.pdf",
+  "doc_pdf": "magna-school-document.pdf",
+  "form_school": "https://docs.google.com/forms/d/e/1FAIpQLSdFfzpaijpvhUgsRaNtiYo9XPpMWGZ09SsCN9AwZx2W9OxSOQ/viewform",
+  "form_board": "https://docs.google.com/forms/d/e/1FAIpQLSfRhNoXYtUL1V7co8C8DN9M7pc2RSxE4zIixdAG8EaZZRSk3Q/viewform"
+};
+/* ============ ↑ 設定エリアここまで（以下は触らなくてOK） ============ */
+
+(function(){
+  var root = document.querySelector('.mg-root[data-mg="'+MG_NAME+'"]'); if(!root) return;
+  function u(p){ return /^(https?:)?\/\//.test(p) || p.charAt(0)==='/' || p.indexOf('data:')===0 ? p : ASSET_BASE + p; }
+  function $all(s){ return Array.prototype.slice.call(root.querySelectorAll(s)); }
+  var framed=false; try{ framed = window.self !== window.top; }catch(e){ framed = true; }
+  if(framed){ try{ document.body.style.margin='0'; if(typeof FILL_COLOR!=='undefined') document.documentElement.style.background = FILL_COLOR; }catch(e){} }
+  /* ---- 設定の反映 ---- */
+  $all('[data-t]').forEach(function(e){ var k=e.getAttribute('data-t'); if(k in TEXT) e.innerHTML = TEXT[k]; });
+  $all('[data-img]').forEach(function(e){ var k=e.getAttribute('data-img'); if(IMAGES[k]) e.src = u(IMAGES[k]); if(ALT[k]) e.alt = ALT[k]; });
+  $all('[data-link]').forEach(function(e){ var k=e.getAttribute('data-link'); if(LINKS[k]) e.href = u(LINKS[k]); });
+  if(typeof SHOW_INTRO!=='undefined' && !SHOW_INTRO) root.classList.add('mg-nointro');
+  /* ---- 他のブロックへのリンク（STUDIOページ内の別Embedへ移動） ---- */
+  var hasConsult = !!root.querySelector('[data-if="consultOpen"]');
+  var page = PAGE_URL || ''; if(!page){ try{ page = document.referrer || ''; }catch(e){} if(!page){ try{ page = location.ancestorOrigins[0] + '/'; }catch(e){} } }
+  page = page.replace(/#.*$/, '');
+  function toPage(a, id){ var t = (ANCHORS && ANCHORS[id]) || id; a.setAttribute('href', page ? page + '#' + t : '#' + t); a.setAttribute('target','_top'); a.setAttribute('rel','noopener'); a.removeAttribute('data-act'); }
+  $all('a[href^="#"]').forEach(function(a){
+    var id = a.getAttribute('href').slice(1);
+    if(id==='contact' || a.getAttribute('data-act')==='openConsult'){ if(hasConsult) return; toPage(a,'consult'); return; }
+    if(id) toPage(a, id);
+  });
+  /* ---- 開閉UI ---- */
+  function setIf(name, on){
+    $all('[data-if="'+name+'"]').forEach(function(e){ e.classList.toggle('mg-off', !on); });
+    var mk = {case1Open:'case1', case2Open:'case2', safeDevice:'safe'}[name];
+    if(mk) $all('[data-mark="'+mk+'"]').forEach(function(e){ e.textContent = on ? '▲' : '▼'; });
+    if(name==='safeDevice') $all('[data-style-open]').forEach(function(b){ b.setAttribute('style', b.getAttribute(on?'data-style-open':'data-style-closed')); b.setAttribute('aria-expanded', on); });
+  }
+  function isOn(name){ var e=root.querySelector('[data-if="'+name+'"]'); return !!e && !e.classList.contains('mg-off'); }
+  var slide = 0, timer;
+  function showSlide(i){
+    slide = i;
+    $all('[data-slide]').forEach(function(img){ img.style.opacity = (+img.getAttribute('data-slide')===i) ? 1 : 0; });
+    $all('[data-dot]').forEach(function(d){ d.style.background = (+d.getAttribute('data-dot')===i) ? 'var(--magna-mint-deep)' : '#fff'; });
+  }
+  function startTimer(){ clearInterval(timer); timer = setInterval(function(){ showSlide((slide+1)%2); }, 5000); }
+  if(root.querySelector('[data-slide]')) startTimer();
+  /* モーダルは「押した位置の近く」に表示（iframe内でfixedが画面外になるのを避ける） */
+  function place(name, ev){
+    var wrap = root.querySelector('[data-if="'+name+'"] > div'); if(!wrap) return;
+    var rr = root.getBoundingClientRect(), rootTop = rr.top + (window.pageYOffset||0);
+    var y = (ev && ev.clientY != null) ? ev.clientY + (window.pageYOffset||0) : (window.pageYOffset||0) + 200;
+    var vh = Math.min(window.innerHeight || 800, 900), maxH = Math.min(vh * 0.86, 640);
+    var inner = wrap.firstElementChild; if(inner) inner.style.maxHeight = maxH + 'px';
+    var top = Math.max(0, Math.min(y - rootTop - 180, root.offsetHeight - maxH - 40));
+    wrap.style.position='absolute'; wrap.style.inset='auto'; wrap.style.left='0'; wrap.style.right='0'; wrap.style.top='0';
+    wrap.style.height = root.offsetHeight + 'px'; wrap.style.alignItems='flex-start'; wrap.style.setProperty('padding-top', (top + 20) + 'px', 'important');
+  }
+  /* 開閉コンテンツは「重ねて表示」（ブロックの高さが変わらず、はみ出さない） */
+  ['case1Open','case2Open','safeDevice'].forEach(function(n){
+    $all('[data-if="'+n+'"]').forEach(function(e){ e.classList.add('mg-pop'); e.parentElement.classList.add('mg-popwrap'); });
+  });
+  function closePops(except){
+    ['case1Open','case2Open','safeDevice'].forEach(function(n){
+      var e = root.querySelector('[data-if="'+n+'"]');
+      if(e && !e.classList.contains('mg-off') && !(except && e.parentElement===except)) setIf(n,false);
+    });
+  }
+  /* FAQを開くとその下が押し下げられる。ブロックの高さは変えられないため、末尾の余白が縮んで全体の高さを一定に保つ */
+  var fill = null, TOTAL = 0;
+  if(root.querySelector('[data-faq]')){
+    var fe=null; try{ fe = window.frameElement; }catch(e){}
+    if(framed && !fe){ fill = document.createElement('div'); fill.setAttribute('aria-hidden','true'); fill.style.cssText='background:'+(typeof FILL_COLOR!=='undefined'?FILL_COLOR:'#FFFDF5')+';height:0'; root.appendChild(fill); }
+  }
+  function contentH(){ return root.offsetHeight - (fill ? fill.offsetHeight : 0); }
+  function reflow(){ if(fill) fill.style.height = Math.max(0, TOTAL - contentH()) + 'px'; }
+  function measureReserve(){
+    if(!fill) return;
+    var wasOpen = $all('[data-faq-a]').filter(function(a){ return !a.classList.contains('mg-off'); });
+    $all('[data-faq-a]').forEach(function(a){ a.classList.add('mg-off'); });
+    fill.style.height='0px'; var base = contentH(), max = 0;
+    $all('[data-faq-a]').forEach(function(a){ a.classList.remove('mg-off'); max = Math.max(max, contentH()-base); a.classList.add('mg-off'); });
+    wasOpen.forEach(function(a){ a.classList.remove('mg-off'); });
+    TOTAL = base + max; reflow();
+  }
+  var A = {
+    openConsult: function(ev){ setIf('consultOpen', true); place('consultOpen', ev); },
+    closeConsult: function(){ setIf('consultOpen', false); },
+    toggleCase1: function(){ setIf('case1Open', !isOn('case1Open')); },
+    toggleCase2: function(){ setIf('case2Open', !isOn('case2Open')); },
+    toggleSafeDevice: function(){ setIf('safeDevice', !isOn('safeDevice')); },
+    goKimura: function(ev){ setIf('showProfKimura', true); setIf('showProfTakayama', false); place('showProfKimura', ev); },
+    goTakayama: function(ev){ setIf('showProfTakayama', true); setIf('showProfKimura', false); place('showProfTakayama', ev); },
+    closeProfModal: function(){ setIf('showProfKimura', false); setIf('showProfTakayama', false); }
+  };
+  function downloadDoc(url, name){
+    function viaLink(){ var a=document.createElement('a'); a.href=url; a.download=name; a.rel='noopener'; document.body.appendChild(a); a.click(); a.remove(); }
+    fetch(url).then(function(r){ if(!r.ok) throw new Error(r.status); return r.blob(); }).then(function(b){
+      var bu = URL.createObjectURL(new Blob([b], {type:'application/pdf'})), a=document.createElement('a');
+      a.href=bu; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(bu); }, 60000);
+    }).catch(viaLink);
+  }
+  root.addEventListener('click', function(ev){
+    var within = ev.target.closest ? ev.target.closest('.mg-popwrap') : null;
+    closePops(within);
+    var t = ev.target.closest ? ev.target.closest('[data-act]') : null;
+    if(t && root.contains(t)){
+      var act = t.getAttribute('data-act');
+      if(/position:\s*fixed/.test(t.getAttribute('style')||'') && ev.target !== t) return; /* 背景クリックのみ閉じる */
+      if(act==='faq'){ var box=t.closest('[data-faq]'), a=box.querySelector('[data-faq-a]'), on=a.classList.contains('mg-off');
+        if(on) $all('[data-faq]').forEach(function(o){ if(o!==box){ var oa=o.querySelector('[data-faq-a]'); if(!oa.classList.contains('mg-off')){ oa.classList.add('mg-off'); o.querySelector('[data-act="faq"]').setAttribute('aria-expanded','false'); o.querySelector('[data-faq-arrow]').style.transform='none'; } } });
+        a.classList.toggle('mg-off', !on); t.setAttribute('aria-expanded', on); box.querySelector('[data-faq-arrow]').style.transform = on ? 'rotate(180deg)' : 'none'; reflow(); return; }
+      if(act==='slide'){ showSlide(+t.getAttribute('data-dot')); startTimer(); return; }
+      if(A[act]){ if(t.tagName==='A') ev.preventDefault(); A[act](ev); }
+    }
+    var d = ev.target.closest ? ev.target.closest('a[data-doc], a[data-dl]') : null;
+    if(d){ ev.preventDefault(); downloadDoc(d.href, d.hasAttribute('data-doc') ? (LINKS.doc_name || d.getAttribute('download') || 'document.pdf') : (d.getAttribute('download') || 'document.pdf')); }
+  });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ A.closeConsult(); A.closeProfModal(); closePops(null); } });
+  measureReserve(); window.addEventListener('load', measureReserve);
+  (function(){ var t; window.addEventListener('resize', function(){ clearTimeout(t); t=setTimeout(measureReserve, 200); }); })();
+  /* ---- 枠を直接伸ばせる環境では、中身の高さに合わせて枠を伸縮 ---- */
+  if(framed){
+    var h0=0;
+    function fit(){ var h = Math.ceil(root.getBoundingClientRect().height); if(h===h0) return; h0=h;
+      try{ if(window.frameElement) window.frameElement.style.height = h + 'px'; }catch(e){}
+      try{ window.parent.postMessage({type:'magna-embed-height', name:MG_NAME, height:h}, '*'); }catch(e){} }
+    fit(); if(window.ResizeObserver) new ResizeObserver(fit).observe(root); window.addEventListener('load', fit);
+  }
+  /* ---- スクロール演出（ふわっと表示） ---- */
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if(!window.IntersectionObserver) return;
+  var items = [], seen = [];
+  $all('[data-sec] > div > *, [data-sec] > div').filter(function(el){ return el.offsetHeight>40 && el.offsetHeight<2400; }).forEach(function(el){
+    if(seen.indexOf(el)>-1 || el.closest('[data-reveal]')) return; seen.push(el);
+    el.setAttribute('data-reveal',''); el.style.opacity='0'; el.style.transform='translateY(26px)';
+    el.style.transition='opacity .7s cubic-bezier(.22,.7,.3,1), transform .7s cubic-bezier(.22,.7,.3,1)'; items.push(el);
+  });
+  var io = new IntersectionObserver(function(entries){ entries.forEach(function(e){
+    if(!e.isIntersecting) return; var el=e.target, i=Array.prototype.indexOf.call(el.parentNode.children, el);
+    el.style.transitionDelay = Math.min(i,4)*70+'ms'; el.style.opacity='1'; el.style.transform='none'; io.unobserve(el);
+  }); }, {rootMargin:'0px 0px -12% 0px', threshold:0.08});
+  items.forEach(function(el){ io.observe(el); });
+  /* 念のため：一定時間後に未表示のものを強制表示 */
+  setTimeout(function(){ items.forEach(function(el){ if(el.style.opacity==='0'){ el.style.opacity='1'; el.style.transform='none'; } }); }, 6000);
+})();
+
+</script>

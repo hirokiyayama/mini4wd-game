@@ -1,0 +1,764 @@
+<!-- ===== マグナとふしぎの少女 For School LP ／ STUDIO Embed（分割版）: 導入はカンタン〜英語を学べる学校劇（FAQを別ブロックにする場合） ===== -->
+<!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100% -->
+<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 2800px ／ タブレット〜1280px 3700px ／ スマホ〜430px 4100px 以上 -->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&display=swap');
+.mg-root{--magna-yellow:        #fbbf24;  
+  --magna-yellow-deep:   #f59e0b;  
+  --magna-yellow-deeper: #d97706;  
+  --magna-pink:          #ec4899;  
+  --magna-pink-deep:     #db2777;
+  --magna-pink-deeper:   #be185d;  
+  --magna-mint:          #2DB39A;  
+  --magna-mint-light:    #34c4a8;
+  --magna-mint-deep:     #0c5e50;
+  --magna-sky:           #38bdf8;  
+  --magna-sky-deep:      #0ea5e9;
+  --magna-blue:          #2563eb;  
+  --magna-navy:          #1e3a8a;  
+  --magna-purple:        #8b5cf6;  
+  --magna-purple-deep:   #7c3aed;
+  --magna-green:         #10b981;  
+  --magna-red:           #ef4444;  
+
+  
+  --yellow-soft:   #fef3c7;
+  --yellow-soft-2: #fff9c3;
+  --yellow-wash:   #fefce8;
+  --pink-soft:     #fce7f3;
+  --pink-wash:     #fdf2f8;
+  --mint-soft:     #d7f5ee;
+  --mint-wash:     #f0fdf4;
+  --sky-soft:      #e0f2fe;
+  --sky-wash:      #eff6ff;
+  --purple-soft:   #ede9fe;
+  --green-soft:    #dcfce7;
+
+  
+  --ink:    #1a2332;  
+  --ink-2:  #4a5568;  
+  --ink-3:  #7a8699;  
+  --ink-inverse: #ffffff;
+
+  
+  --surface:      #ffffff;  
+  --bg:           #f6f8fb;  
+  --bg-alt:       #f8fafc;  
+  --line:         #e3e8ef;  
+  --line-strong:  #cbd5e1;
+
+  
+  --course-method:      var(--magna-yellow-deep);
+  --course-method-ink:  #92400e;
+  --course-method-soft: var(--yellow-soft);
+  --course-party:       var(--magna-pink);
+  --course-party-ink:   #831843;
+  --course-party-soft:  var(--pink-soft);
+  --course-eiken:       var(--magna-purple);
+  --course-eiken-ink:   #4c1d95;
+  --course-eiken-soft:  var(--purple-soft);
+
+  
+  --grad-primary:  linear-gradient(135deg, #ec4899, #f59e0b);   
+  --grad-party:    linear-gradient(135deg, #ec4899, #db2777);   
+  --grad-method:   linear-gradient(135deg, #f59e0b, #d97706);   
+  --grad-eiken:    linear-gradient(135deg, #8b5cf6, #7c3aed);   
+  --grad-mint:     linear-gradient(90deg, #2DB39A, #34c4a8);    
+  --grad-sunny:    linear-gradient(180deg, #fefce8, #fff9c3);   
+
+  
+  --wash-playful:
+    radial-gradient(circle at 15% 25%, rgba(251, 191, 36, 0.18), transparent 45%),
+    radial-gradient(circle at 85% 75%, rgba(236, 72, 153, 0.18), transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.12), transparent 60%),
+    linear-gradient(135deg, #fefce8 0%, #fff9c3 50%, #fef3c7 100%); 
+
+  
+  --text-heading:  var(--ink);
+  --text-body:     var(--ink);
+  --text-muted:    var(--ink-3);
+  --accent:        var(--magna-pink);
+  --accent-2:      var(--magna-yellow-deep);
+  --surface-card:  var(--surface);}
+.mg-root{--font-base: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans",
+               "Yu Gothic", "Meiryo", -apple-system, system-ui, sans-serif;
+  --font-display: "Baloo 2", "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN",
+               sans-serif;               
+
+  
+  --font-heading: var(--font-base);
+  --font-body:    var(--font-base);
+
+  
+  --fw-normal:   400;   
+  --fw-medium:   500;   
+  --fw-bold:     700;   
+  --fw-heavy:    800;   
+  --fw-black:    900;   
+
+  
+  --fs-caption: 11px;   
+  --fs-small:   12px;
+  --fs-body:    13px;   
+  --fs-body-lg: 14px;
+  --fs-lead:    15px;
+  --fs-h3:      16px;
+  --fs-h2:      22px;   
+  --fs-h1:      26px;   
+  --fs-display: 32px;   
+  --fs-stat:    40px;   
+  --fs-stat-xl: 64px;   
+
+  
+  --lh-tight:   1.2;    
+  --lh-snug:    1.4;    
+  --lh-normal:  1.6;    
+  --lh-relaxed: 1.75;   
+
+  
+  --ls-tight:  -0.02em; 
+  --ls-normal: 0;       
+  --ls-eyebrow: 0.1em;  
+
+  
+  --text-body-size:    var(--fs-body-lg);
+  --text-heading-size: var(--fs-h2);}
+.mg-root{--space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  28px;
+  --space-8:  36px;
+  --space-9:  40px;
+  --space-10: 48px;
+  --space-12: 60px;
+
+  
+  --section-pad-sp: 36px 16px;
+  --section-pad-pc: 60px 80px;
+
+  
+  --radius-sm:   8px;
+  --radius:      12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-2xl:  28px;   
+  --radius-pill: 999px;
+
+  
+  
+  --shadow-pop-sm: 0 3px 0 rgba(0,0,0,0.08);
+  --shadow-pop:    0 4px 0 rgba(0,0,0,0.08);
+  --shadow-pop-ink: 0 3px 0 var(--ink);       
+  
+  --shadow-xs:   0 1px 3px rgba(0,0,0,0.04);
+  --shadow-sm:   0 2px 8px rgba(0,0,0,0.06);
+  --shadow-card: 0 3px 10px rgba(0,0,0,0.05);
+  --shadow-md:   0 6px 20px rgba(0,0,0,0.08);
+  --shadow-pink: 0 6px 24px rgba(236, 72, 153, 0.15);
+  --shadow-float: 0 -4px 12px rgba(0,0,0,0.08);  
+
+  
+  --border-hair:   1px solid var(--line);
+  --border-card:   2px solid var(--line);
+  --border-dashed: 2px dashed var(--magna-pink);
+  --border-accent: 3px solid var(--magna-yellow);}
+.mg-root{margin:0;background:#fff}
+.mg-root *,.mg-root *::before,.mg-root *::after{box-sizing:border-box}
+.mg-root a{color:var(--magna-mint-deep)}
+.mg-root a:hover{color:var(--magna-mint-deep)}
+
+.mg-root .cta-a{box-shadow:0 2px 0 rgba(20,110,90,.18),0 4px 12px rgba(45,179,154,.22);transition:transform .16s ease,box-shadow .16s ease}
+.mg-root .cta-a:hover{transform:translateY(-2px);box-shadow:0 4px 0 rgba(20,110,90,.22),0 12px 24px rgba(45,179,154,.28)}
+.mg-root .cta-b:hover{background:#F4FBF9 !important;border-color:var(--magna-mint) !important}
+.mg-root .ba-card{transition:transform .18s,box-shadow .18s}
+.mg-root .ba-card:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(16,24,40,.12)}
+.mg-root .why-card{transition:transform .18s,box-shadow .18s,border-color .18s}
+.mg-root .why-card:hover{transform:translateY(-3px);border-color:var(--magna-mint);box-shadow:0 10px 24px rgba(16,24,40,.1)}
+.mg-root #faq button{font-size:17px !important;padding:18px 20px !important;gap:14px !important}
+.mg-root #faq button > span:first-child{width:30px !important;height:30px !important;font-size:14px !important}
+.mg-root #faq button > span:last-child{font-size:17px !important}
+.mg-root #faq button + div{font-size:15.5px !important;line-height:1.9 !important;padding:0 20px 20px 64px !important}
+.mg-root #faq button + div p{font-size:15.5px !important;line-height:1.9 !important}
+.mg-root #cases p[style*="font-size: 13.5px"],.mg-root #cases p[style*="font-size: 14px"],.mg-root #free-reason p[style*="font-size: 13.5px"],.mg-root #free-reason div[style*="font-size: 13.5px"],.mg-root #safe p[style*="font-size: 13.5px"],.mg-root #safe p[style*="font-size: 14px"],.mg-root #safe p[style*="font-size: 14.5px"],.mg-root #safe li,.mg-root #safe span[style*="font-size: 14px"],.mg-root #area p[style*="font-size: 14.5px"],.mg-root #area p[style*="font-size: 15px"],.mg-root #why p[style*="font-size: 13.5px"],.mg-root #play p[style*="font-size: 15.5px"]{font-size:16px !important;line-height:1.9 !important}
+.mg-root #cases p[style*="font-size: 14.5px"][style*="font-weight: 900"]{font-size:17.5px !important}
+.mg-root #cases h4,.mg-root #free-reason h4{font-size:17px !important}
+.mg-root #why h3[style*="font-size: 17px"]{font-size:20px !important}
+.mg-root #cases figcaption,.mg-root #cases span[style*="font-size: 13.5px"],.mg-root span[style*="font-size: 11px"],.mg-root span[style*="font-size: 12px"][style*="color: var(--ink-3)"],.mg-root p[style*="font-size: 12px"][style*="color: rgba(255, 255, 255, 0.6)"],.mg-root #safe p[style*="font-size: 13px"],.mg-root #safe p[style*="font-size: 12px"],.mg-root #safe p[style*="font-size: 12.5px"],.mg-root #safe span[style*="font-size: 11px"],.mg-root #safe span[style*="font-size: 12px"],.mg-root #safe span[style*="font-size: 12.5px"],.mg-root #safe span[style*="font-size: 13px"],.mg-root #area p[style*="font-size: 12px"]{font-size:14px !important}
+.mg-root #cases button[style*="font-size: 13px"]{font-size:15px !important}
+.mg-root span[style*="letter-spacing: 0.16em"][style*="font-size: 12px"]{font-size:13px !important}
+.mg-root p[style*="font-size: 15px"][style*="color: var(--magna-mint-deep)"][style*="font-weight: 700"]{font-size:17px !important}
+@media (max-width:1280px){.mg-root [data-hd="nav"]{display:none !important}
+.mg-root [data-hd="burger"]{display:flex !important}}
+@media (max-width:1080px){.mg-root [data-hd="cta"]{height:34px !important;padding:0 10px !important;font-size:12px !important}
+.mg-root [data-fv="grid"]{flex-direction:column !important;min-height:0 !important;align-items:stretch !important}
+.mg-root [data-fv="right"]{position:relative !important;left:auto !important;width:100% !important;aspect-ratio:1447/1087}
+.mg-root [data-fv="panel"]{display:none !important}
+.mg-root [data-fvcta="row"] a > span:nth-of-type(2){font-size:20px !important}
+.mg-root [data-fvcta="row"] a > span[data-fvlabel="dl"]{font-size:23px !important}
+.mg-root [data-fv="left"]{width:100% !important;padding:32px 32px 40px !important;align-items:center !important;text-align:center}
+.mg-root [data-stat="row"]{grid-template-columns:repeat(3,1fr) !important;gap:20px !important}
+.mg-root [data-ba="grid"]{grid-template-columns:1fr !important}
+.mg-root #scene .ba-card p{white-space:normal !important;letter-spacing:normal !important}
+.mg-root [data-why="grid"]{grid-template-columns:1fr !important}
+.mg-root [data-why="free"]{grid-template-columns:1fr !important}
+.mg-root [data-r="stack-md"]{grid-template-columns:1fr !important}
+.mg-root [data-ba="grid"]{grid-template-columns:1fr !important}
+.mg-root [data-ba="chara"]{display:none !important}
+.mg-root [data-ba="spc"]{display:block !important}
+.mg-root [data-ba="row"]{grid-template-columns:1fr auto !important;gap:6px 12px !important}
+.mg-root [data-ba="row"] > div:nth-child(2){grid-column:1 / -1;order:3}
+.mg-root [data-ba="col2"]{border-left:0 !important;padding-left:0 !important;border-top:1px solid var(--line);padding-top:20px}
+.mg-root [data-area="battle"] img{min-height:220px !important}}
+@media (max-width:760px){.mg-root [data-sec],.mg-root [data-r="pad"],.mg-root [data-hd="bar"]{padding-left:18px !important;padding-right:18px !important}
+.mg-root [data-hd="bar"]{padding-top:10px !important;padding-bottom:10px !important}
+.mg-root [data-hd="cta"]{display:none !important}
+.mg-root [data-r="stack"]{grid-template-columns:1fr !important}
+.mg-root [data-r="h2"]{font-size:clamp(22px,6.2vw,30px) !important}
+.mg-root [data-r="h2"] br{display:none}
+.mg-root [data-r="tvlogo"]{height:60px !important}
+.mg-root [data-r="logos"]{gap:16px 20px !important}
+.mg-root [data-r="logos"] img{height:58px !important}
+.mg-root [data-r="trial"]{grid-template-columns:1fr !important}
+.mg-root [data-r="trial"] > div:last-child{justify-content:center !important}
+.mg-root [data-r="float"]{padding:10px 14px !important;flex-wrap:nowrap !important;gap:10px !important}
+.mg-root [data-r="float"] p{font-size:12.5px !important;line-height:1.45}
+.mg-root [data-r="float"] a{width:clamp(150px,50vw,240px) !important}
+.mg-root [data-r="fnav"]{gap:14px 22px !important}
+.mg-root [data-r="modal"]{padding:20px 18px 24px !important}
+.mg-root [data-r="modal-wrap"]{padding:14px !important}
+.mg-root [data-r="dev"]{padding:20px 16px !important}}
+@media (max-width:640px){.mg-root [data-stat="row"]{grid-template-columns:1fr !important;gap:16px !important}
+.mg-root [data-stat="mid"]{border:0 !important;border-top:1px solid var(--line) !important;border-bottom:1px solid var(--line) !important;padding:16px 0}
+.mg-root [data-media="row"]{gap:20px !important}
+.mg-root [data-fv="h1"]{font-size:clamp(24px,7.4vw,36px) !important}
+.mg-root [data-fv="lead"] br{display:none}
+.mg-root [data-cta="row"] > img{width:92px !important;margin-right:-10px !important}
+.mg-root [data-r="prof"]{grid-template-columns:1fr !important}
+.mg-root [data-fvcta="row"]{flex-direction:column !important;align-items:stretch !important;gap:20px !important}
+.mg-root [data-fvcta="row"] > div{flex:none !important;max-width:none !important}
+.mg-root [data-fvcta="row"] a > span:nth-of-type(2){font-size:clamp(16px,5.4vw,20px) !important}
+.mg-root [data-fvcta="row"] a > span[data-fvlabel="dl"]{font-size:clamp(16px,6vw,23px) !important}}
+@media (max-width:360px){.mg-root [data-fvcta="row"] a > span[data-fvlabel="dl"]{font-size:14.5px !important;letter-spacing:0 !important}
+.mg-root [data-fvcta="row"] a{gap:6px !important}}
+.mg-root [data-r="spbar"]{display:none}
+.mg-root #why,.mg-root #safe,.mg-root #faq,.mg-root #free-reason{scroll-margin-top:90px}
+.mg-root,.mg-root{font-synthesis:none;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.mg-root [style*="font-weight:600"],.mg-root [style*="font-weight: 600"]{font-weight:700 !important}
+@media (max-width:760px){.mg-root [data-hd="bar"]{gap:10px !important}
+.mg-root [data-hd="bar"] img[alt^="マグナとふしぎ"]{height:40px !important;width:40px !important}
+.mg-root [data-hd="bar"] > div:first-child > span > span:first-child{font-size:15px !important}
+.mg-root [data-hd="bar"] > div:first-child > span > span:last-child{font-size:11px !important}
+.mg-root [data-hd="burger"]{width:44px !important;height:44px !important}
+.mg-root [data-hd="drawer"] a{padding:16px 20px !important;font-size:15px !important}
+.mg-root [data-fv="left"]{padding:28px 18px 36px !important}
+.mg-root [data-cta="row"] > a{max-width:100%;box-sizing:border-box;flex-wrap:wrap;justify-content:center;text-align:center}
+.mg-root #cases,.mg-root #area,.mg-root #trust,.mg-root #play,.mg-root #faq{padding-top:52px !important;padding-bottom:52px !important}
+.mg-root #apply{padding-top:52px !important}
+.mg-root #safe{padding-bottom:52px !important}
+.mg-root [data-r="pad"]:not([data-foot]){padding-bottom:52px !important}
+.mg-root [data-sec="media"] [data-r="stack"]{width:100% !important}
+.mg-root [data-ba="grid"] > div{padding-left:16px !important;padding-right:16px !important;padding-top:8px !important}
+.mg-root #apply [data-r="stack"] > div{flex-direction:column !important;align-items:flex-start !important;gap:14px !important;padding:22px 20px !important}
+.mg-root #apply [data-r="stack"] > div > span[aria-hidden]{width:56px !important;height:56px !important}
+.mg-root #apply [data-r="stack"] > div p[style*="font-size: 22px"]{font-size:20px !important}
+.mg-root [data-why="free"] > div{padding:22px 18px 20px !important}
+.mg-root #trust p br,.mg-root #area p br,.mg-root #apply p br,.mg-root [data-r="pad"] p br{display:none}
+.mg-root #trust [data-r="stack-md"]{padding:22px 18px !important}
+.mg-root #cases button{min-height:44px}
+.mg-root [data-r="spbar"]{display:flex !important}
+.mg-root [data-foot]{padding-bottom:110px !important}}
+@media (max-width:640px){.mg-root [data-r="safehead"]{flex-wrap:wrap !important;align-items:center !important;gap:8px 20px !important}
+.mg-root [data-r="safehead"] > div{order:-1;flex:1 1 100% !important}
+.mg-root [data-r="safehead"] > img{height:84px !important}
+.mg-root [data-r="safehead"] h2{font-size:clamp(22px,6.2vw,28px) !important}
+.mg-root #apply h2,.mg-root [id="free-reason"] p[style*="font-size: clamp(28px"]{font-size:clamp(24px,7vw,30px) !important}
+.mg-root #why h2,.mg-root #faq h2,.mg-root #play h2{font-size:clamp(24px,7vw,30px) !important}
+.mg-root [data-sec="stats"] h2{font-size:21px !important}
+.mg-root [data-sec="media"] h3{font-size:clamp(22px,6.4vw,28px) !important}
+.mg-root [data-area="battle"] p[style*="font-size: 24px"]{font-size:20px !important}}
+@media (max-width:640px){.mg-root [data-stat="row"]{grid-template-columns:1fr 1fr !important;gap:18px 0 !important}
+.mg-root [data-stat="row"] > div:last-child{grid-column:1 / -1;border-top:1px solid var(--line);padding-top:16px}
+.mg-root [data-stat="mid"]{border:0 !important;border-left:1px solid var(--line) !important;padding:0 !important}
+.mg-root [data-stat="row"] span[style*="font-size: 19px"]{font-size:14px !important}
+.mg-root [data-stat="row"] span[style*="clamp(44px"]{font-size:clamp(32px,10vw,40px) !important}
+.mg-root [data-stat="row"] img{height:76px !important}
+.mg-root [data-sec="media"] [data-r="stack"]:has([data-r="tvlogo"]){gap:10px !important}
+.mg-root [data-sec="media"] [data-r="stack"]:has([data-r="tvlogo"]) > div{display:grid !important;grid-template-columns:minmax(0,1fr) auto;align-items:center !important;gap:4px 12px !important;padding:12px 14px !important;text-align:left !important}
+.mg-root [data-sec="media"] [data-r="tvlogo"]{grid-row:1 / span 2;height:auto !important;max-height:58px;max-width:100%;justify-self:start}
+.mg-root [data-sec="media"] [data-r="stack"]:has([data-r="tvlogo"]) a{padding:10px 16px !important;min-height:44px;box-sizing:border-box;justify-content:center !important;text-align:center}
+.mg-root [data-sec="media"] [data-r="stack"]:has([data-r="tvlogo"]) span[style*="font-size"]{font-size:11px !important;text-align:center}
+.mg-root [data-r="logos"]{gap:14px 20px !important}
+.mg-root [data-r="logos"] img{height:clamp(60px,17vw,72px) !important;max-width:42vw;width:auto !important;object-fit:contain}
+.mg-root [data-r="fnav"]{display:grid !important;grid-template-columns:1fr 1fr;gap:0 !important;width:100%}
+.mg-root [data-r="fnav"] a{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.12)}
+.mg-root [data-fv="right"] button{width:28px !important;height:28px !important;padding:9px !important;box-sizing:border-box;background-clip:content-box !important;box-shadow:none !important}
+.mg-root [data-fv="right"] > div{gap:2px !important;bottom:6px !important}
+.mg-root [data-fvcta="row"] a{min-height:58px !important}
+.mg-root [data-fv="left"]{gap:12px !important}
+.mg-root [data-fv="h1"]{margin:4px 0 6px !important}}
+@media (max-width:760px){.mg-root [data-sec] p[style*="font-size: 13.5px"],.mg-root [data-sec] span[style*="font-size: 13.5px"],.mg-root [data-sec] p[style*="font-size: 13px"],.mg-root [data-sec] span[style*="font-size: 13px"]{font-size:14px !important}
+.mg-root [data-r="spbar"]{transform:none !important}
+.mg-root [data-r="notes"]{flex-direction:column !important;align-items:center}
+.mg-root [data-r="spbr"]{display:block !important;padding-left:1em}
+.mg-root [data-r="spbrc"]{display:block !important}
+.mg-root [data-r="freelink"]{flex-direction:column !important}
+.mg-root [data-r="whyimg"]{margin-top:16px !important}
+.mg-root [data-r="supimg"]{width:calc(100% + 28px) !important;max-width:none !important;height:auto !important;margin:0 -14px !important}
+.mg-root [data-r="storebadges"]{justify-content:center !important;align-self:center !important;width:100%}
+.mg-root [data-r="tvtitle"]{display:inline-flex !important;flex-direction:column;align-items:flex-start;text-align:left}
+.mg-root h3:has(> [data-r="tvtitle"]){gap:12px !important}}
+@media (max-width:400px){.mg-root [data-hd="bar"] > div:first-child > span > span:first-child{font-size:13px !important}
+.mg-root [data-hd="bar"] > div:first-child > span > span:last-child{font-size:10px !important}
+.mg-root [data-hd="bar"]{padding-left:12px !important;padding-right:12px !important;gap:8px !important}
+.mg-root [data-hd="bar"] > div:first-child{gap:7px !important}
+.mg-root [data-hd="bar"] img[alt^="マグナとふしぎ"]{height:34px !important;width:34px !important}
+.mg-root [data-hd="burger"]{width:40px !important;height:40px !important}
+.mg-root [data-hd="bar"] > div:first-child{min-width:0;flex:1 1 auto !important}
+.mg-root [data-stat="row"] img{max-width:100%;height:auto !important;max-height:80px}
+.mg-root [data-stat="row"] span{max-width:100%}}
+@media (max-width:430px){.mg-root [data-ba="grid"] img[data-ba="spc"][src*="rei"]{height:clamp(70px,21vw,88px) !important;margin:-8px calc(-0.25 * clamp(70px,21vw,88px)) -8px calc(-0.27 * clamp(70px,21vw,88px)) !important}
+.mg-root [data-ba="grid"] p{white-space:nowrap !important;flex-wrap:nowrap !important}
+.mg-root [data-ba="grid"] p > span[style*="clamp(38px"]{font-size:clamp(28px,9.6vw,40px) !important;letter-spacing:-.03em !important}
+.mg-root [data-ba="grid"] p > span[style*="clamp(15px"]{font-size:14px !important}
+.mg-root [data-ba="grid"] p > span[style*="clamp(18px"]{font-size:17px !important}
+.mg-root [data-ba="grid"] p[style*="nowrap"]{gap:3px !important}
+.mg-root [data-r="spbar"] a{font-size:13.5px !important}}
+@media (max-width:1080px){.mg-root [data-ba="grid"]{grid-template-columns:minmax(0,1fr) !important}}
+@media (max-width:360px){.mg-root [data-ba="grid"] > div{padding-left:12px !important;padding-right:12px !important}
+.mg-root [data-ba="grid"] img[data-ba="spc"][src*="rei"]{height:82px !important;margin:-10px -22px -10px -24px !important}
+.mg-root [data-ba="grid"] p > span[style*="clamp(38px"]{font-size:clamp(26px,9vw,40px) !important}
+.mg-root [data-ba="grid"] p > span[style*="clamp(15px"]{font-size:13px !important}
+.mg-root [data-ba="grid"] p > span[style*="clamp(18px"]{font-size:16px !important}}
+@keyframes introTextIn{0%{opacity:0;transform:scale(.96);filter:blur(8px)}30%{opacity:1;transform:scale(1);filter:blur(0)}57%{opacity:1;transform:scale(1);filter:blur(0)}100%{opacity:0;transform:scale(1);filter:blur(0)}}
+@keyframes introVeilOut{0%{opacity:1}76%{opacity:1}100%{opacity:0;visibility:hidden}}
+@keyframes introFvIn{0%{opacity:0}63%{opacity:0}100%{opacity:1}}
+.mg-root [data-intro="veil"]{animation:introVeilOut 2.6s cubic-bezier(.4,0,.2,1) forwards}
+.mg-root [data-intro="text"]{animation:introTextIn 2.5s cubic-bezier(.4,0,.2,1) forwards}
+.mg-root [data-sec="fv"]{animation:introFvIn 2.5s cubic-bezier(.4,0,.2,1) forwards}
+@media (prefers-reduced-motion:reduce){.mg-root [data-intro="veil"]{display:none !important}
+.mg-root [data-sec="fv"]{animation:none !important;opacity:1 !important;transform:none !important}}
+
+.mg-root [data-if]{display:contents}
+.mg-root .mg-off{display:none !important}
+.mg-root.mg-nointro [data-intro="veil"]{display:none !important}
+.mg-root.mg-nointro [data-sec="fv"]{animation:none !important;opacity:1 !important}
+.mg-root img{vertical-align:middle}
+.mg-root [data-if].mg-pop{display:block}
+.mg-root [data-if].mg-off{display:none !important}
+.mg-root .mg-popwrap{position:relative}
+.mg-root .mg-pop{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:40;filter:drop-shadow(0 14px 28px rgba(16,24,40,.22))}
+.mg-root [data-faq-a].mg-off{display:none !important}
+
+
+</style>
+<div class="mg-root" data-mg="safeA" style="font-family: var(--font-base); color: var(--ink); background: #fff; width: 100%; box-sizing: border-box; position: relative">
+<div id="safe" data-sec="safe" style="background:#fff;padding:40px 32px 70px">
+<div style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:30px;align-items:center">
+<div data-r="safehead" style="display:flex;align-items:flex-end;justify-content:center;gap:clamp(12px,3vw,40px);width:100%">
+<img data-img="chara_boy2" src="" aria-hidden="true" style="display:block;height:clamp(90px,11vw,150px);width:auto;flex:none">
+<div style="flex:0 1 auto;min-width:0">
+<div style="display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center">
+<span style="font-size:12px;font-weight:800;letter-spacing:.16em;color:var(--magna-mint-deep)" data-t="safe_01"></span>
+<h2 style="margin:0;display:flex;flex-direction:column;align-items:center;gap:12px;font-weight:900;color:#17345C" data-t="safe_02"></h2>
+<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px" data-t="safe_03"></div>
+</div>
+</div>
+<img data-img="chara_girl" src="" aria-hidden="true" style="display:block;height:clamp(90px,11vw,150px);width:auto;flex:none">
+</div>
+<div style="width:100%;background:#F7FCFA;border:1px solid #D9EDE6;border-radius:20px;padding:clamp(18px,2vw,26px);display:flex;flex-direction:column;gap:16px">
+
+<button type="button" data-act="toggleSafeDevice" aria-expanded="false" style="box-sizing:border-box;display:flex;align-items:flex-start;gap:14px;border-radius:16px;padding:20px 22px;font-family:inherit;cursor:pointer;text-align:left;transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;background:#fff;border:1px solid var(--line);box-shadow:0 2px 6px rgba(16,24,40,.04)" data-style-open="box-sizing:border-box;display:flex;align-items:flex-start;gap:14px;border-radius:16px;padding:20px 22px;font-family:inherit;cursor:pointer;text-align:left;transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;background:var(--mint-soft);border:1.5px solid var(--magna-mint);box-shadow:0 4px 12px rgba(45,179,154,.14)" data-style-closed="box-sizing:border-box;display:flex;align-items:flex-start;gap:14px;border-radius:16px;padding:20px 22px;font-family:inherit;cursor:pointer;text-align:left;transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;background:#fff;border:1px solid var(--line);box-shadow:0 2px 6px rgba(16,24,40,.04)">
+<span aria-hidden="true" style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:999px;background:var(--mint-soft);flex:none"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--magna-mint-deep)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="2"></rect><path d="M2 19h20"></path><path d="m9.6 11 1.7 1.7L15 9.6"></path></svg></span>
+<span style="display:flex;flex-direction:column;gap:5px;text-align:left"><span style="font-size:16px;font-weight:900;line-height:1.45;color:var(--ink)">学校の端末にそのまま導入</span><span style="margin-top:4px;font-size:12.5px;font-weight:800;color:var(--magna-mint-deep)">対応端末・ログイン方法を見る <span data-mark="safe">▼</span></span></span>
+</button>
+
+<div data-if="safeDevice" class="mg-off">
+<div style="box-sizing:border-box;align-self:stretch;width:100%;background:#F7FAF9;border:1px solid var(--line);border-radius:16px;padding:26px 30px;display:flex;flex-direction:column;gap:20px" data-r="dev">
+<p style="margin:0;font-size:19px;font-weight:900;line-height:1.5" data-t="modal_safeDevice_01"></p>
+<div data-r="stack" style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:13px">
+<p style="margin:0;display:flex;align-items:center;gap:10px;font-size:15.5px;font-weight:900"><span aria-hidden="true" style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;background:var(--mint-soft);flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--magna-mint-deep)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="2"></rect><path d="M2 19h20"></path></svg></span><span data-t="modal_safeDevice_02"></span></p>
+<ul style="margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;font-size:14.5px;font-weight:500;line-height:1.7;color:var(--ink-2)">
+<li data-t="modal_safeDevice_03"></li>
+<li data-t="modal_safeDevice_04"></li>
+<li data-t="modal_safeDevice_05"></li>
+
+</ul>
+<p style="margin:0;font-size:13px;font-weight:600;line-height:1.75;color:var(--ink-3)" data-t="modal_safeDevice_06"></p>
+</div>
+<div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:13px">
+<p style="margin:0;display:flex;align-items:center;gap:10px;font-size:15.5px;font-weight:900"><span aria-hidden="true" style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;background:var(--mint-soft);flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--magna-mint-deep)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2.5"></rect><path d="M8.2 10.5V7.8a3.8 3.8 0 0 1 7.6 0v2.7"></path></svg></span><span data-t="modal_safeDevice_07"></span></p>
+<div style="display:flex;flex-direction:column;gap:10px" data-t="modal_safeDevice_08"></div>
+
+</div>
+</div>
+</div>
+</div>
+
+
+
+</div>
+
+<div data-r="trial" style="background:#FFFDF7;border:1px solid #F0E6CE;border-radius:14px;padding:16px 20px;display:grid;grid-template-columns:1fr auto;gap:14px 20px;align-items:center;font-family:'M PLUS Rounded 1c','Hiragino Maru Gothic ProN','Hiragino Sans',sans-serif;font-synthesis:none;-webkit-font-smoothing:antialiased">
+<div style="display:flex;flex-direction:column;gap:5px;text-align:left">
+<span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><img data-img="app_icon_forschool" src="" style="width:44px;height:44px;border-radius:22%;overflow:hidden;object-fit:cover;flex:none"><span style="display:flex;align-items:center;gap:9px;flex-wrap:wrap" data-t="safe_04"></span>
+<span style="font-size:13px;line-height:1.75;font-weight:500;color:var(--ink-2)" data-t="safe_05"></span>
+<span style="font-size:12px;line-height:1.7;font-weight:700;color:var(--ink-3)" data-t="safe_06"></span>
+</span></div>
+<div data-r="storebadges" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;opacity:.78">
+<a data-link="store_google" href="#" target="_blank" rel="noopener noreferrer" style="display:inline-flex;flex:none;border-radius:7px;overflow:hidden"><img data-img="badge_googleplay" src="" style="display:block;height:34px;width:auto"></a>
+<a data-link="store_apple" href="#" target="_blank" rel="noopener noreferrer" style="display:inline-flex;flex:none;border-radius:7px;overflow:hidden"><img data-img="badge_appstore" src="" style="display:block;height:34px;width:auto"></a>
+</div>
+</div>
+</div>
+
+</div><div data-r="pad" style="background:#fff;padding:0 32px 70px">
+<div style="max-width:1100px;margin:0 auto">
+<div style="position:relative;background:#F7FAF9;border-radius:24px;padding:clamp(28px,4vw,44px);display:flex;flex-direction:column;gap:0;overflow:hidden">
+
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:0;align-items:center;padding-bottom:32px">
+
+<div style="display:flex;flex-direction:column;justify-content:center;gap:12px">
+
+
+
+
+</div>
+</div>
+
+<div style="background:linear-gradient(170deg,#EAF6F1,#DFF2EA);border-radius:20px;padding:clamp(24px,3vw,34px);display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap">
+<span style="display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:#fff;flex:none;box-shadow:0 3px 10px rgba(16,24,40,.1)"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="11" r="6" fill="none" stroke="var(--magna-mint-deep)" stroke-width="2.2"></circle><path d="M4 27c1.5-6 6-9 11-9s9.5 3 11 9" fill="none" stroke="var(--magna-mint-deep)" stroke-width="2.2" stroke-linecap="round"></path><path d="M6 12a9 9 0 0118 0" fill="none" stroke="var(--magna-mint-deep)" stroke-width="2.2" stroke-linecap="round"></path><rect x="4" y="12" width="4" height="6" rx="2" fill="var(--magna-mint-deep)"></rect><rect x="22" y="12" width="4" height="6" rx="2" fill="var(--magna-mint-deep)"></rect><path d="M24 18v2a3 3 0 01-3 3h-2" fill="none" stroke="var(--magna-mint-deep)" stroke-width="2.2" stroke-linecap="round"></path></svg></span>
+<h4 style="margin:0;font-size:clamp(18px,2.2vw,22px);font-weight:900;color:var(--ink);text-align:center" data-t="misc_01"></h4>
+</div>
+<div data-r="stack" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px">
+<div style="background:#fff;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:center;gap:10px"><span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;background:var(--mint-soft);color:var(--magna-mint-deep);font-size:14px;font-weight:900;flex:none" data-t="misc_02"></span><p style="margin:0;font-size:17px;font-weight:900;color:var(--ink);line-height:1.5" data-t="misc_03"></p></div>
+<img data-img="battle_speaking_game" src="" data-r="supimg" style="display:block;width:100%;border-radius:10px;box-shadow:0 4px 14px rgba(16,24,40,.08)">
+<p style="margin:0;font-size:13.5px;font-weight:500;color:var(--ink-2);line-height:1.75;text-align:center" data-t="misc_04"></p>
+</div>
+<div style="background:#fff;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:center;gap:10px"><span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;background:var(--mint-soft);color:var(--magna-mint-deep);font-size:14px;font-weight:900;flex:none" data-t="misc_05"></span><p style="margin:0;font-size:17px;font-weight:900;color:var(--ink);line-height:1.5" data-t="misc_06"></p></div>
+<img data-img="dashboard_vocab_progress" src="" data-r="supimg" style="display:block;width:100%;border-radius:10px;border:1px solid var(--line);box-shadow:0 4px 14px rgba(16,24,40,.08)">
+<p style="margin:0;font-size:13.5px;font-weight:500;color:var(--ink-2);line-height:1.75;text-align:center" data-t="misc_07"></p>
+</div>
+</div>
+</div>
+
+<a href="#contact" data-act="openConsult" style="display:block;width:80%;max-width:380px;margin:28px auto 0;line-height:0"><img data-img="cta_btn_consult_v4" src="" style="display:block;width:100%;height:auto"></a>
+</div>
+</div>
+</div><div id="trust" data-sec="trust" style="background:#F7FAF9;padding:70px 32px">
+<div style="max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:30px;align-items:center">
+<div style="font-family:var(--font-base);text-align:center;margin-bottom:20px">
+<span style="display:inline-block;font-size:11px;font-weight:800;letter-spacing:var(--ls-eyebrow);color:var(--magna-mint);margin-bottom:8px" data-t="trust_01"></span>
+<h2 style="margin: 0; font-size: var(--fs-h2); font-weight: 900; line-height: 1.35; letter-spacing: var(--ls-tight); color: var(--ink); text-decoration-line: none" data-t="trust_02"></h2>
+<p style="margin:10px 0 0;font-size:15px;font-weight:700;line-height:1.8;color:var(--ink-2)" data-t="trust_03"></p>
+</div>
+<div style="display:grid;grid-template-columns:1fr;gap:22px;width:100%;align-items:start">
+
+<div data-r="stack-md" style="background:linear-gradient(165deg,#F4FBF9,#EAF7F3);border:1px solid #D6EEE7;border-radius:20px;padding:26px 28px;display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:28px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+<div style="display:flex;align-items:center;gap:13px">
+<span aria-hidden="true" style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:14px;background:var(--mint-soft);flex:none"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--magna-mint-deep)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5z"></path><path d="M6 12.2V17c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-4.8"></path></svg></span>
+<h3 style="margin:0;font-size:19px;font-weight:900;line-height:1.4" data-t="trust_04"></h3>
+</div>
+<div style="display:flex;flex-direction:column;align-items:flex-start;gap:22px;flex-wrap:wrap">
+<img data-img="logo_gakugei_univ" src="" style="display:block;height:46px;width:auto;object-fit:contain">
+<img data-img="logo_kodomo_mirai" src="" style="display:block;height:46px;width:auto;object-fit:contain">
+</div>
+</div>
+<div data-r="prof" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+<button type="button" data-act="goKimura" aria-expanded="false" style="display:flex;flex-direction:column;gap:12px;align-items:stretch;text-align:left;background:#fff;border:1px solid #DCEFE9;border-radius:16px;padding:18px;font-family:inherit;cursor:pointer;box-shadow:0 2px 6px rgba(16,24,40,.04)">
+<span style="display:flex;align-items:center;gap:14px"><img data-prof-img="" data-img="portrait_kimura" src="" style="display:block;flex:none;width:80px;height:80px;border-radius:999px;object-fit:cover;object-position:center 22%;border:2px solid #DCEFE9"><span style="font-size:16.5px;font-weight:900;color:var(--ink);line-height:1.4" data-t="trust_05"></span></span>
+<span style="display:flex;gap:8px;align-items:flex-start;text-align:left" data-t="trust_06"></span>
+<span style="align-self:flex-start;margin-top:auto;display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:var(--magna-mint-deep);text-decoration:underline;text-underline-offset:3px" data-t="trust_07"></span>
+</button>
+<button type="button" data-act="goTakayama" aria-expanded="false" style="display:flex;flex-direction:column;gap:12px;align-items:stretch;text-align:left;background:#fff;border:1px solid #DCEFE9;border-radius:16px;padding:18px;font-family:inherit;cursor:pointer;box-shadow:0 2px 6px rgba(16,24,40,.04)">
+<span style="display:flex;align-items:center;gap:14px"><img data-prof-img="" data-img="portrait_takayama" src="" style="display:block;flex:none;width:80px;height:80px;border-radius:999px;object-fit:cover;object-position:center 18%;border:2px solid #DCEFE9"><span style="font-size:16.5px;font-weight:900;color:var(--ink);line-height:1.4" data-t="trust_08"></span></span>
+<span style="display:flex;gap:8px;align-items:flex-start;text-align:left" data-t="trust_09"></span>
+<span style="align-self:flex-start;margin-top:auto;display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:var(--magna-mint-deep);text-decoration:underline;text-underline-offset:3px" data-t="trust_10"></span>
+</button>
+</div>
+</div>
+
+
+</div>
+</div>
+</div><div id="play" data-sec="play" style="background:#17345C;padding:70px 32px;color:#fff">
+<div data-r="stack-md" style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,0.9fr);gap:clamp(28px,4vw,52px);align-items:center">
+<div style="display:flex;flex-direction:column;gap:20px">
+
+<h2 style="margin:0;font-size:clamp(30px,3.2vw,44px);font-weight:900;line-height:1.38" data-t="play_01"></h2><p style="margin:0;font-size:15.5px;line-height:1.95;font-weight:500;color:rgba(255,255,255,.85)" data-t="play_02"></p>
+<a href="https://mintflag.com/musical" target="_blank" rel="noopener noreferrer" style="align-self:flex-start;display:inline-flex;align-items:center;gap:10px;border:1.5px solid rgba(255,255,255,.6);border-radius:999px;padding:14px 28px;font-size:15px;font-weight:800;color:#fff;text-decoration:none" data-t="play_03"></a>
+</div>
+<img data-img="school_play_photo2_soft" src="" style="display:block;width:100%;height:auto;border-radius:14px;object-fit:cover">
+</div>
+</div><div data-if="consultOpen" class="mg-off">
+<div role="dialog" aria-modal="true" aria-labelledby="consult-title" data-act="closeConsult" style="position:fixed;inset:0;z-index:200;background:rgba(15,30,50,.55);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box">
+<div style="position:relative;width:100%;max-width:460px;background:#fff;border-radius:20px;padding:36px 28px 28px;box-sizing:border-box;box-shadow:0 20px 50px rgba(16,24,40,.25);display:flex;flex-direction:column;gap:20px;font-family:var(--font-base)">
+<button type="button" data-act="closeConsult" aria-label="閉じる" style="position:absolute;top:10px;right:10px;width:44px;height:44px;border:0;background:transparent;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#F2F5F8"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17345C" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+<div style="display:flex;flex-direction:column;gap:8px;text-align:center">
+<span style="font-size:12px;font-weight:800;letter-spacing:.16em;color:var(--magna-mint-deep)" data-t="modal_consultOpen_01"></span>
+<p id="consult-title" style="margin:0;font-size:22px;font-weight:900;line-height:1.4;color:#17345C" data-t="modal_consultOpen_02"></p>
+<p style="margin:0;font-size:14px;font-weight:500;line-height:1.7;color:var(--ink-2)" data-t="modal_consultOpen_03"></p>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<a data-link="form_school" href="#" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;padding:0 22px;box-sizing:border-box;border-radius:14px;background:linear-gradient(100deg,#C2185F 0%,#D6317F 100%);box-shadow:0 4px 0 #9E1650;color:#fff;text-decoration:none;font-size:17px;font-weight:900" style-hover="opacity:.92"><span data-t="modal_consultOpen_04"></span><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></a>
+<a data-link="form_board" href="#" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;padding:0 22px;box-sizing:border-box;border-radius:14px;background:#fff;border:2px solid #17345C;box-shadow:0 4px 0 #17345C;color:#17345C;text-decoration:none;font-size:17px;font-weight:900" style-hover="background:#F2F6FB"><span data-t="modal_consultOpen_05"></span><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17345C" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></a>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+/* ================================================================
+   ★ ここだけ編集すればOK ★  文字・画像・リンクの設定エリア（導入はカンタン〜英語を学べる学校劇（FAQを別ブロックにする場合））
+   ・TEXT   : 画面の文字（キーは「セクション名_番号」）。改行は <br> 、リンクや装飾のHTMLもそのまま書けます
+   ・IMAGES : 画像ファイル名 or URL（https:// から始まるURLならそのURLを使用。ファイル名だけなら ASSET_BASE が前に付きます）
+   ・ALT    : 画像の代替テキスト（IMAGES と同じキー）
+   ・LINKS  : PDF・フォームなどのリンク先
+   ・PAGE_URL / ANCHORS : メニューなど「他のブロック」へ移動するときの、STUDIOページのURLと移動先ID
+   ================================================================ */
+var MG_NAME = "safeA";
+var ASSET_BASE = "https://cdn.jsdelivr.net/gh/hirokiyayama/mini4wd-game@claude/affectionate-darwin-300fus/magna-school-studio-embed/assets/";   /* ★ 画像・PDFを置いたフォルダのURL（末尾は / ） */
+var PAGE_URL = "";   /* ★ 公開したSTUDIOページのURL（例: https://xxxx.studio.site/）。空欄の場合は自動で取得を試みます */
+var ANCHORS = {
+  "free-reason": "free-reason",   /* ずっと無料の理由 → STUDIOで「なぜ、マグナはずっと無料なの？」ブロックに付けるID */
+  "why": "why",   /* アプリでできること → 「マグナでできること」ブロックのID */
+  "safe": "safe",   /* 導入準備 → 「導入はカンタン」ブロックのID */
+  "faq": "faq",   /* よくある質問 → 「よくあるご質問」ブロックのID（06を1つで貼る場合は06のID） */
+  "consult": "fv"   /* 気軽に相談する → 「ファーストビュー」ブロックのID */
+};
+var FILL_COLOR = "#17345C";   /* ブロックの高さが余ったとき（FAQを開いて縮む余白を含む）の下側の色 */
+var TEXT = {
+  /* ── 導入準備 (safe) ── */
+  "safe_01": "SUPPORT",
+  "safe_02": "<span style=\"display:inline-block;background:var(--magna-mint-deep);color:#fff;border-radius:999px;padding:6px 22px;font-size:clamp(17px,1.8vw,20px);line-height:1.4\">導入はカンタン</span><span style=\"font-size:clamp(28px,3.6vw,40px);line-height:1.35;word-break:keep-all;overflow-wrap:anywhere\"><span style=\"display:inline-block\">Googleアカウント</span><span style=\"display:inline-block\">でログインできます</span></span>",
+  "safe_03": "<span style=\"display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #CFE9E0;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:800;color:var(--ink)\"><span aria-hidden=\"true\" style=\"color:var(--magna-mint-deep)\">✓</span>Google</span><span style=\"display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #CFE9E0;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:800;color:var(--ink)\"><span aria-hidden=\"true\" style=\"color:var(--magna-mint-deep)\">✓</span>Microsoft</span><span style=\"font-size:13px;font-weight:700;color:var(--ink-2)\">のSSO（シングルサインオン）に対応</span>",
+
+  /* ── 対応端末・ログイン方法 (modal_safeDevice) ── */
+  "modal_safeDevice_01": "対応端末・ログイン方法",
+  "modal_safeDevice_02": "対応端末",
+  "modal_safeDevice_03": "Android タブレット・Android 端末",
+  "modal_safeDevice_04": "ChromeOS 端末（Chromebook）",
+  "modal_safeDevice_05": "iPad・iPhone（iOS / iPadOS）",
+  "modal_safeDevice_06": "学校で導入済みのGIGAスクール端末でご利用いただけます。<br>OSのバージョンや端末の仕様により動作が異なる場合があるため、詳細は個別にお問い合わせください。",
+  "modal_safeDevice_07": "ログイン方法",
+  "modal_safeDevice_08": "<span style=\"display:flex;align-items:flex-start;gap:10px;font-size:14px;font-weight:500;line-height:1.7;color:var(--ink-2)\"><span aria-hidden=\"true\" style=\"display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;background:var(--mint-soft);color:var(--magna-mint-deep);font-size:11px;font-weight:900;flex:none;margin-top:2px\">✓</span><span><b style=\"font-weight: 900;\">Googleアカウント・Microsoftアカウント</b>　<br>SSO（シングルサインオン）ログインに対応</span></span> <span style=\"display:flex;align-items:flex-start;gap:10px;font-size:14px;font-weight:500;line-height:1.7;color:var(--ink-2)\"><span aria-hidden=\"true\" style=\"display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;background:var(--mint-soft);color:var(--magna-mint-deep);font-size:11px;font-weight:900;flex:none;margin-top:2px\">✓</span><span><b style=\"font-weight: 900;\">SSO（シングルサインオン）を利用しない場合</b><br>通常ログインでも利用可能</span></span>",
+
+  /* ── 導入準備 (safe) ── */
+  "safe_04": "<span style=\"font-size:11px;font-weight:800;color:#B98A1C;background:#FDF4DE;border-radius:999px;padding:3px 10px;line-height:1.3\">まず試したい先生へ</span><span style=\"font-size:15px;font-weight:900;color:var(--ink)\">For Schoolアプリをそのまま体験できます</span>",
+  "safe_05": "学校への導入前に、アプリをお試しいただけます。（Chromebook・iPad対応）",
+  "safe_06": "※学習管理ダッシュボードを利用する場合は、別途申請が必要です。",
+
+  /* ── サポート (misc) ── */
+  "misc_01": "<span style=\"display:inline-block\">＼専任の担当者による</span><span style=\"display:inline-block\"><span style=\"color:var(--magna-mint-deep)\">こんなサポートも受けられます</span>／</span>",
+  "misc_02": "01",
+  "misc_03": "<u style=\"text-decoration-line: none\">英単語バトル大会を無料で開催できます</u>",
+  "misc_04": "学年・クラス・学校全体で楽しめる<br>英単語バトル大会を無料でサポート。",
+  "misc_05": "02",
+  "misc_06": "イベント前後の学習成果を確認できます",
+  "misc_07": "<span style=\"display:block\">イベント前後の語彙数・学習時間などを可視化し、</span><span style=\"display:inline-block\">子どもたちの</span><span data-r=\"spbrc\" style=\"display:inline-block\">成長をチェックできます。</span>",
+
+  /* ── 専門家・大学との連携 (trust) ── */
+  "trust_01": "ACTIVITIES",
+  "trust_02": "<span style=\"background:linear-gradient(transparent 62%, #FFE14D 62%, #FFE14D 92%, transparent 92%)\">専門家・大学</span>との連携",
+  "trust_03": "東京学芸大学と共同研究を実施。学校現場での授業を通して学習効果を検証し、<br>AI英語学習アプリ「マグナとふしぎの少女」を開発しました。",
+  "trust_04": "連携機関",
+  "trust_05": "木村 守 教授",
+  "trust_06": "<span aria-hidden=\"true\" style=\"font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--magna-mint);line-height:.9;flex:none\">\"</span><span style=\"font-size:13px;font-weight:500;line-height:1.75;color:var(--ink-2)\">子どもたちが英語を主体的に学び、英語を話したいというモチベーションを高める環境を整える。</span>",
+  "trust_07": "木村教授のコメントを読む<span aria-hidden=\"true\">→</span>",
+  "trust_08": "高山 芳樹 教授",
+  "trust_09": "<span aria-hidden=\"true\" style=\"font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--magna-mint);line-height:.9;flex:none\">\"</span><span style=\"font-size:13px;font-weight:500;line-height:1.75;color:var(--ink-2)\">子どもたちの「話したい」「伝えたい」思いを大切にする、日英バイリンガルの会話相手です。</span>",
+  "trust_10": "高山教授のコメントを読む<span aria-hidden=\"true\">→</span>",
+
+  /* ── 学校劇 (play) ── */
+  "play_01": "英語を学べる学校劇を<br>出張公演しています",
+  "play_02": "「子どもたちが、生の体験を通して、英語を好きになれる場を作りたい」。そんな想いで生まれたのが、楽しみながら英語を学べるマグナの学校劇です。<br><br>全国の学校、または町の公民館などで、出張公演を行っています。",
+  "play_03": "学校劇について詳しく<span aria-hidden=\"true\">→</span>",
+
+  /* ── 相談窓口の選択画面 (modal_consultOpen) ── */
+  "modal_consultOpen_01": "CONTACT",
+  "modal_consultOpen_02": "ご相談窓口を選んでください",
+  "modal_consultOpen_03": "ご担当に合わせたフォームへ移動します。",
+  "modal_consultOpen_04": "学校担当者様はこちら",
+  "modal_consultOpen_05": "教育委員会担当者様はこちら",
+};
+var IMAGES = {
+  "chara_boy2": "chara-boy2.png",
+  "chara_girl": "chara-girl.png",
+  "app_icon_forschool": "app-icon-forschool.png",
+  "badge_googleplay": "badge-googleplay.png",
+  "badge_appstore": "badge-appstore.png",
+  "battle_speaking_game": "battle-speaking-game.jpg",
+  "dashboard_vocab_progress": "dashboard-vocab-progress.jpg",
+  "cta_btn_consult_v4": "cta-btn-consult-v4.png",
+  "logo_gakugei_univ": "logo-gakugei-univ.png",
+  "logo_kodomo_mirai": "logo-kodomo-mirai.png",
+  "portrait_kimura": "portrait-kimura.png",
+  "portrait_takayama": "portrait-takayama.png",
+  "school_play_photo2_soft": "school-play-photo2-soft.jpg"
+};
+var ALT = {
+  "app_icon_forschool": "マグナとふしぎの少女ForSchool アプリアイコン",
+  "badge_googleplay": "Google Play で手に入れよう",
+  "badge_appstore": "App Store からダウンロード",
+  "battle_speaking_game": "英単語バトル大会のゲーム画面",
+  "dashboard_vocab_progress": "累計マスター数の推移ダッシュボード",
+  "cta_btn_consult_v4": "気軽に相談する",
+  "logo_gakugei_univ": "国立大学法人 東京学芸大学",
+  "logo_kodomo_mirai": "特定非営利活動法人 東京学芸大こども未来研究所",
+  "portrait_kimura": "木村守教授",
+  "portrait_takayama": "高山芳樹教授",
+  "school_play_photo2_soft": "マグナの英語劇 出張公演の様子"
+};
+var LINKS = {
+  "store_google": "https://play.google.com/store/apps/details?id=com.mintflag.magnaForSchool",
+  "store_apple": "https://apps.apple.com/jp/app/%E5%AD%A6%E6%A0%A1%E7%89%88-%E3%83%9E%E3%82%B0%E3%83%8A%E3%81%A8%E3%81%B5%E3%81%97%E3%81%8E%E3%81%AE%E5%B0%91%E5%A5%B3-for-school/id6759899720",
+  "form_school": "https://docs.google.com/forms/d/e/1FAIpQLSdFfzpaijpvhUgsRaNtiYo9XPpMWGZ09SsCN9AwZx2W9OxSOQ/viewform",
+  "form_board": "https://docs.google.com/forms/d/e/1FAIpQLSfRhNoXYtUL1V7co8C8DN9M7pc2RSxE4zIixdAG8EaZZRSk3Q/viewform"
+};
+/* ============ ↑ 設定エリアここまで（以下は触らなくてOK） ============ */
+
+(function(){
+  var root = document.querySelector('.mg-root[data-mg="'+MG_NAME+'"]'); if(!root) return;
+  function u(p){ return /^(https?:)?\/\//.test(p) || p.charAt(0)==='/' || p.indexOf('data:')===0 ? p : ASSET_BASE + p; }
+  function $all(s){ return Array.prototype.slice.call(root.querySelectorAll(s)); }
+  var framed=false; try{ framed = window.self !== window.top; }catch(e){ framed = true; }
+  if(framed){ try{ document.body.style.margin='0'; if(typeof FILL_COLOR!=='undefined') document.documentElement.style.background = FILL_COLOR; }catch(e){} }
+  /* ---- 設定の反映 ---- */
+  $all('[data-t]').forEach(function(e){ var k=e.getAttribute('data-t'); if(k in TEXT) e.innerHTML = TEXT[k]; });
+  $all('[data-img]').forEach(function(e){ var k=e.getAttribute('data-img'); if(IMAGES[k]) e.src = u(IMAGES[k]); if(ALT[k]) e.alt = ALT[k]; });
+  $all('[data-link]').forEach(function(e){ var k=e.getAttribute('data-link'); if(LINKS[k]) e.href = u(LINKS[k]); });
+  if(typeof SHOW_INTRO!=='undefined' && !SHOW_INTRO) root.classList.add('mg-nointro');
+  /* ---- 他のブロックへのリンク（STUDIOページ内の別Embedへ移動） ---- */
+  var hasConsult = !!root.querySelector('[data-if="consultOpen"]');
+  var page = PAGE_URL || ''; if(!page){ try{ page = document.referrer || ''; }catch(e){} if(!page){ try{ page = location.ancestorOrigins[0] + '/'; }catch(e){} } }
+  page = page.replace(/#.*$/, '');
+  function toPage(a, id){ var t = (ANCHORS && ANCHORS[id]) || id; a.setAttribute('href', page ? page + '#' + t : '#' + t); a.setAttribute('target','_top'); a.setAttribute('rel','noopener'); a.removeAttribute('data-act'); }
+  $all('a[href^="#"]').forEach(function(a){
+    var id = a.getAttribute('href').slice(1);
+    if(id==='contact' || a.getAttribute('data-act')==='openConsult'){ if(hasConsult) return; toPage(a,'consult'); return; }
+    if(id) toPage(a, id);
+  });
+  /* ---- 開閉UI ---- */
+  function setIf(name, on){
+    $all('[data-if="'+name+'"]').forEach(function(e){ e.classList.toggle('mg-off', !on); });
+    var mk = {case1Open:'case1', case2Open:'case2', safeDevice:'safe'}[name];
+    if(mk) $all('[data-mark="'+mk+'"]').forEach(function(e){ e.textContent = on ? '▲' : '▼'; });
+    if(name==='safeDevice') $all('[data-style-open]').forEach(function(b){ b.setAttribute('style', b.getAttribute(on?'data-style-open':'data-style-closed')); b.setAttribute('aria-expanded', on); });
+  }
+  function isOn(name){ var e=root.querySelector('[data-if="'+name+'"]'); return !!e && !e.classList.contains('mg-off'); }
+  var slide = 0, timer;
+  function showSlide(i){
+    slide = i;
+    $all('[data-slide]').forEach(function(img){ img.style.opacity = (+img.getAttribute('data-slide')===i) ? 1 : 0; });
+    $all('[data-dot]').forEach(function(d){ d.style.background = (+d.getAttribute('data-dot')===i) ? 'var(--magna-mint-deep)' : '#fff'; });
+  }
+  function startTimer(){ clearInterval(timer); timer = setInterval(function(){ showSlide((slide+1)%2); }, 5000); }
+  if(root.querySelector('[data-slide]')) startTimer();
+  /* モーダルは「押した位置の近く」に表示（iframe内でfixedが画面外になるのを避ける） */
+  function place(name, ev){
+    var wrap = root.querySelector('[data-if="'+name+'"] > div'); if(!wrap) return;
+    var rr = root.getBoundingClientRect(), rootTop = rr.top + (window.pageYOffset||0);
+    var y = (ev && ev.clientY != null) ? ev.clientY + (window.pageYOffset||0) : (window.pageYOffset||0) + 200;
+    var vh = Math.min(window.innerHeight || 800, 900), maxH = Math.min(vh * 0.86, 640);
+    var inner = wrap.firstElementChild; if(inner) inner.style.maxHeight = maxH + 'px';
+    var top = Math.max(0, Math.min(y - rootTop - 180, root.offsetHeight - maxH - 40));
+    wrap.style.position='absolute'; wrap.style.inset='auto'; wrap.style.left='0'; wrap.style.right='0'; wrap.style.top='0';
+    wrap.style.height = root.offsetHeight + 'px'; wrap.style.alignItems='flex-start'; wrap.style.setProperty('padding-top', (top + 20) + 'px', 'important');
+  }
+  /* 開閉コンテンツは「重ねて表示」（ブロックの高さが変わらず、はみ出さない） */
+  ['case1Open','case2Open','safeDevice'].forEach(function(n){
+    $all('[data-if="'+n+'"]').forEach(function(e){ e.classList.add('mg-pop'); e.parentElement.classList.add('mg-popwrap'); });
+  });
+  function closePops(except){
+    ['case1Open','case2Open','safeDevice'].forEach(function(n){
+      var e = root.querySelector('[data-if="'+n+'"]');
+      if(e && !e.classList.contains('mg-off') && !(except && e.parentElement===except)) setIf(n,false);
+    });
+  }
+  /* FAQを開くとその下が押し下げられる。ブロックの高さは変えられないため、末尾の余白が縮んで全体の高さを一定に保つ */
+  var fill = null, TOTAL = 0;
+  if(root.querySelector('[data-faq]')){
+    var fe=null; try{ fe = window.frameElement; }catch(e){}
+    if(framed && !fe){ fill = document.createElement('div'); fill.setAttribute('aria-hidden','true'); fill.style.cssText='background:'+(typeof FILL_COLOR!=='undefined'?FILL_COLOR:'#FFFDF5')+';height:0'; root.appendChild(fill); }
+  }
+  function contentH(){ return root.offsetHeight - (fill ? fill.offsetHeight : 0); }
+  function reflow(){ if(fill) fill.style.height = Math.max(0, TOTAL - contentH()) + 'px'; }
+  function measureReserve(){
+    if(!fill) return;
+    var wasOpen = $all('[data-faq-a]').filter(function(a){ return !a.classList.contains('mg-off'); });
+    $all('[data-faq-a]').forEach(function(a){ a.classList.add('mg-off'); });
+    fill.style.height='0px'; var base = contentH(), max = 0;
+    $all('[data-faq-a]').forEach(function(a){ a.classList.remove('mg-off'); max = Math.max(max, contentH()-base); a.classList.add('mg-off'); });
+    wasOpen.forEach(function(a){ a.classList.remove('mg-off'); });
+    TOTAL = base + max; reflow();
+  }
+  var A = {
+    openConsult: function(ev){ setIf('consultOpen', true); place('consultOpen', ev); },
+    closeConsult: function(){ setIf('consultOpen', false); },
+    toggleCase1: function(){ setIf('case1Open', !isOn('case1Open')); },
+    toggleCase2: function(){ setIf('case2Open', !isOn('case2Open')); },
+    toggleSafeDevice: function(){ setIf('safeDevice', !isOn('safeDevice')); },
+    goKimura: function(ev){ setIf('showProfKimura', true); setIf('showProfTakayama', false); place('showProfKimura', ev); },
+    goTakayama: function(ev){ setIf('showProfTakayama', true); setIf('showProfKimura', false); place('showProfTakayama', ev); },
+    closeProfModal: function(){ setIf('showProfKimura', false); setIf('showProfTakayama', false); }
+  };
+  function downloadDoc(url, name){
+    function viaLink(){ var a=document.createElement('a'); a.href=url; a.download=name; a.rel='noopener'; document.body.appendChild(a); a.click(); a.remove(); }
+    fetch(url).then(function(r){ if(!r.ok) throw new Error(r.status); return r.blob(); }).then(function(b){
+      var bu = URL.createObjectURL(new Blob([b], {type:'application/pdf'})), a=document.createElement('a');
+      a.href=bu; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(bu); }, 60000);
+    }).catch(viaLink);
+  }
+  root.addEventListener('click', function(ev){
+    var within = ev.target.closest ? ev.target.closest('.mg-popwrap') : null;
+    closePops(within);
+    var t = ev.target.closest ? ev.target.closest('[data-act]') : null;
+    if(t && root.contains(t)){
+      var act = t.getAttribute('data-act');
+      if(/position:\s*fixed/.test(t.getAttribute('style')||'') && ev.target !== t) return; /* 背景クリックのみ閉じる */
+      if(act==='faq'){ var box=t.closest('[data-faq]'), a=box.querySelector('[data-faq-a]'), on=a.classList.contains('mg-off');
+        if(on) $all('[data-faq]').forEach(function(o){ if(o!==box){ var oa=o.querySelector('[data-faq-a]'); if(!oa.classList.contains('mg-off')){ oa.classList.add('mg-off'); o.querySelector('[data-act="faq"]').setAttribute('aria-expanded','false'); o.querySelector('[data-faq-arrow]').style.transform='none'; } } });
+        a.classList.toggle('mg-off', !on); t.setAttribute('aria-expanded', on); box.querySelector('[data-faq-arrow]').style.transform = on ? 'rotate(180deg)' : 'none'; reflow(); return; }
+      if(act==='slide'){ showSlide(+t.getAttribute('data-dot')); startTimer(); return; }
+      if(A[act]){ if(t.tagName==='A') ev.preventDefault(); A[act](ev); }
+    }
+    var d = ev.target.closest ? ev.target.closest('a[data-doc], a[data-dl]') : null;
+    if(d){ ev.preventDefault(); downloadDoc(d.href, d.hasAttribute('data-doc') ? (LINKS.doc_name || d.getAttribute('download') || 'document.pdf') : (d.getAttribute('download') || 'document.pdf')); }
+  });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ A.closeConsult(); A.closeProfModal(); closePops(null); } });
+  measureReserve(); window.addEventListener('load', measureReserve);
+  (function(){ var t; window.addEventListener('resize', function(){ clearTimeout(t); t=setTimeout(measureReserve, 200); }); })();
+  /* ---- 枠を直接伸ばせる環境では、中身の高さに合わせて枠を伸縮 ---- */
+  if(framed){
+    var h0=0;
+    function fit(){ var h = Math.ceil(root.getBoundingClientRect().height); if(h===h0) return; h0=h;
+      try{ if(window.frameElement) window.frameElement.style.height = h + 'px'; }catch(e){}
+      try{ window.parent.postMessage({type:'magna-embed-height', name:MG_NAME, height:h}, '*'); }catch(e){} }
+    fit(); if(window.ResizeObserver) new ResizeObserver(fit).observe(root); window.addEventListener('load', fit);
+  }
+  /* ---- スクロール演出（ふわっと表示） ---- */
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if(!window.IntersectionObserver) return;
+  var items = [], seen = [];
+  $all('[data-sec] > div > *, [data-sec] > div').filter(function(el){ return el.offsetHeight>40 && el.offsetHeight<2400; }).forEach(function(el){
+    if(seen.indexOf(el)>-1 || el.closest('[data-reveal]')) return; seen.push(el);
+    el.setAttribute('data-reveal',''); el.style.opacity='0'; el.style.transform='translateY(26px)';
+    el.style.transition='opacity .7s cubic-bezier(.22,.7,.3,1), transform .7s cubic-bezier(.22,.7,.3,1)'; items.push(el);
+  });
+  var io = new IntersectionObserver(function(entries){ entries.forEach(function(e){
+    if(!e.isIntersecting) return; var el=e.target, i=Array.prototype.indexOf.call(el.parentNode.children, el);
+    el.style.transitionDelay = Math.min(i,4)*70+'ms'; el.style.opacity='1'; el.style.transform='none'; io.unobserve(el);
+  }); }, {rootMargin:'0px 0px -12% 0px', threshold:0.08});
+  items.forEach(function(el){ io.observe(el); });
+  /* 念のため：一定時間後に未表示のものを強制表示 */
+  setTimeout(function(){ items.forEach(function(el){ if(el.style.opacity==='0'){ el.style.opacity='1'; el.style.transform='none'; } }); }, 6000);
+})();
+
+</script>
