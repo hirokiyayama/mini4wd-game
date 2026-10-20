@@ -13,7 +13,7 @@ const fs=require('fs');
   return {
    check:{wcN:wc.length, sc:sc.map(e=>(e.id||e.dataset.r||e.dataset.if||e.tagName)+':'+e.textContent.trim().slice(0,20))},
    header:o(bar), fv:o(fv)+o(stats)+o(media), why:o(why)+o(scene), cases:o(cases)+o(area)+o(apply), free:frWrap,
-   safe:o(safe)+o(trial)+o(trust)+o(play)+o(faq)+o(kim)+o(tak), safeA:o(safe)+o(trial)+o(trust)+o(play), faqB:o(faq)+o(kim)+o(tak), foot:o(foot), consult:o(consult), intro:o(intro), spbar:o(spbar), drawer:o(wc[1])
+   safe:o(safe)+o(trial)+o(trust)+o(play)+o(faq)+o(kim)+o(tak), safeA:o(safe)+o(trial)+o(trust)+o(play)+o(kim)+o(tak), faqB:o(faq), foot:o(foot), consult:o(consult), intro:o(intro), spbar:o(spbar), drawer:o(wc[1])
   };});
  console.log(JSON.stringify(out.check));
  for (const k of Object.keys(out)) if(k!=='check') fs.writeFileSync('chunk_'+k+'.html', out[k]);

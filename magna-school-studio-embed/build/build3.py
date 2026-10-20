@@ -20,14 +20,15 @@ extra = '''
 .mg-root [data-faq-a].mg-off{display:none !important}
 '''
 header_css = '''
-.mg-root[data-mg="header"] [data-hd="bar"]{position:relative !important;flex-wrap:wrap !important;row-gap:6px !important}
+.mg-root[data-mg="header"] [data-hd="bar"]{position:relative !important;flex-wrap:wrap !important;row-gap:0 !important}
 .mg-root[data-mg="header"] [data-hd="burger"]{display:none !important}
-@media (max-width:1280px){
-.mg-root[data-mg="header"] [data-hd="nav"]{display:grid !important;grid-template-columns:repeat(4,auto) !important;order:3 !important;flex:1 1 100% !important;gap:4px 22px !important;justify-content:center !important;font-size:13px !important;white-space:nowrap !important}
-}
+.mg-root[data-mg="header"] [data-hd="nav"]{display:flex !important}
 @media (max-width:760px){
-.mg-root[data-mg="header"] [data-hd="nav"]{grid-template-columns:repeat(4,1fr) !important;gap:4px !important;font-size:12px !important;white-space:normal !important;text-align:center !important;line-height:1.35 !important}
-.mg-root[data-mg="header"] [data-hd="nav"] a{white-space:normal !important}
+.mg-root[data-mg="header"] [data-hd="bar"]{padding-bottom:0 !important}
+.mg-root[data-mg="header"] [data-hd="bar"] > div:first-child{flex:1 1 100% !important}
+.mg-root[data-mg="header"] [data-hd="nav"]{order:3 !important;flex:1 1 100% !important;gap:0 !important;justify-content:space-between !important;margin:8px -18px 0 !important;padding:0 !important;border-top:1px solid var(--line);font-size:clamp(10px,3.1vw,13px) !important;white-space:nowrap !important}
+.mg-root[data-mg="header"] [data-hd="nav"] a{flex:1 1 auto;text-align:center;padding:11px 2px;white-space:nowrap !important;letter-spacing:-.02em}
+.mg-root[data-mg="header"] [data-hd="nav"] a + a{border-left:1px solid var(--line)}
 }
 '''
 SEC = {'header':'ヘッダー／メニュー','intro':'オープニング','fv':'ファーストビュー','stats':'導入実績','media':'メディア掲載','ba':'導入前後','why':'アプリでできること','scene':'活用シーン','cases':'先生方の声','area':'対応エリア','apply':'安心・安全／なぜ無料','free_reason':'なぜ、マグナはずっと無料なの？','safe':'導入準備','trust':'専門家・大学との連携','play':'学校劇','faq':'よくある質問','footer':'フッター','spbar':'スマホ固定バー','misc':'サポート','modal_consultOpen':'相談窓口の選択画面','modal_showProfKimura':'木村教授コメント','modal_showProfTakayama':'高山教授コメント','modal_case1Open':'先生の声（青森）','modal_case2Open':'先生の声（静岡）','modal_safeDevice':'対応端末・ログイン方法'}
@@ -37,25 +38,27 @@ ROOT_STYLE = 'font-family: var(--font-base); color: var(--ink); background: #fff
 FAQBG = '#FFFDF5'
 ENDBG = {'header':'#ffffff','fv':'#F7FAF9','why':'#F7FAF9','cases':'#ffffff','free':'#ffffff','safe':'#FFFDF5','footer':'#081b1e','safeA':'#17345C','faqB':'#FFFDF5'}
 HEIGHTS = {  # (PC 1281px以上, タブレット〜1280px, スマホ〜430px)
- 'header':(80,105,100),'fv':(2000,2650,2700),'why':(1750,3350,2500),'cases':(2250,2550,3450),'free':(900,1100,1400),
+ 'header':(85,85,100),'fv':(2000,2650,2700),'why':(1750,3350,2500),'cases':(2250,2550,3450),'free':(900,1100,1400),
  'safe':(4700,5500,6700),'footer':(260,300,550),'safeA':(2800,3700,4100),'faqB':(1800,1750,2500)}
 SPEC = [
- # file, name(MG), title, body chunks, extra css, intro?, consult modal?, anchors?, fill
  ('01-header', 'header', 'メニューヘッダー', ['header'], header_css, False, False),
  ('02-first-view', 'fv', 'ファーストビュー〜マグナでできること（手前）', ['fv'], '', True, True),
  ('03-why-to-voice', 'why', 'マグナでできること〜先生方の声（手前）', ['why'], '', False, False),
  ('04-voice-to-free', 'cases', '先生方の声〜なぜ、マグナはずっと無料なの？（手前）', ['cases'], '', False, False),
  ('05-free-to-easy', 'free', 'なぜ、マグナはずっと無料なの？〜導入はカンタン（手前）', ['free'], '', False, False),
- ('06-easy-to-faq', 'safe', '導入はカンタン〜よくあるご質問', ['safe'], '', False, True),
- ('07-footer', 'footer', 'フッターメニュー', ['foot'], '', False, False),
- ('alt-06a-easy-to-play', 'safeA', '導入はカンタン〜英語を学べる学校劇（FAQを別ブロックにする場合）', ['safeA'], '', False, True),
- ('alt-06b-faq', 'faqB', 'よくあるご質問（FAQを別ブロックにする場合）', ['faqB'], '', False, False),
+ ('06-easy-to-faq', 'safeA', '導入はカンタン〜よくあるご質問（手前）', ['safeA'], '', False, True),
+ ('07-faq-to-footer', 'faqB', 'よくあるご質問〜フッターメニュー（手前）', ['faqB'], '', False, False),
+ ('08-footer', 'footer', 'フッターメニュー', ['foot'], '', False, False),
 ]
-ANCH = '{\n  "free-reason": "free-reason",   /* ずっと無料の理由 → STUDIOで「なぜ、マグナはずっと無料なの？」ブロックに付けるID */\n  "why": "why",   /* アプリでできること → 「マグナでできること」ブロックのID */\n  "safe": "safe",   /* 導入準備 → 「導入はカンタン」ブロックのID */\n  "faq": "faq",   /* よくある質問 → 「よくあるご質問」ブロックのID（06を1つで貼る場合は06のID） */\n  "consult": "fv"   /* 気軽に相談する → 「ファーストビュー」ブロックのID */\n}'
+ANCH = '{\n  "free-reason": "free-reason",   /* ずっと無料の理由 → STUDIOで「なぜ、マグナはずっと無料なの？」ブロックに付けるID */\n  "why": "why",   /* アプリでできること → 「マグナでできること」ブロックのID */\n  "safe": "safe",   /* 導入準備 → 「導入はカンタン」ブロックのID */\n  "faq": "faq",   /* よくある質問 → 「よくあるご質問」ブロック（07）のID */\n  "consult": "fv"   /* 相談リンク（ヘッダー等）→ 「ファーストビュー」ブロックのID */\n}'
 rt = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'runtime3.js'), encoding='utf-8').read()
 sizes = {}
 for fname, mg, title, parts, xcss, intro, consult in SPEC:
     body = ''.join(chunk(p) for p in parts)
+    if mg == 'header':
+        body = re.sub(r'<a [^>]*data-hd="cta"[^>]*>.*?</a>', '', body, flags=re.S)
+        body = re.sub(r'<button [^>]*data-hd="burger"[^>]*>.*?</button>', '', body, flags=re.S)
+        body = re.sub(r'<div style="display:flex;gap:10px;flex:none;align-items:center;margin-left:auto">\s*</div>', '', body)
     if mg == 'safeA': body = body  # includes prof modals
     if intro: body = chunk('intro') + body
     if consult: body += chunk('consult')

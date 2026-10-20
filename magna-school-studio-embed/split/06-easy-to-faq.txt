@@ -1,6 +1,6 @@
-<!-- ===== マグナとふしぎの少女 For School LP ／ STUDIO Embed（分割版）: 導入はカンタン〜よくあるご質問 ===== -->
+<!-- ===== マグナとふしぎの少女 For School LP ／ STUDIO Embed（分割版）: 導入はカンタン〜よくあるご質問（手前） ===== -->
 <!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100% -->
-<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 4700px ／ タブレット〜1280px 5500px ／ スマホ〜430px 6700px 以上 -->
+<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 2800px ／ タブレット〜1280px 3700px ／ スマホ〜430px 4100px 以上 -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&display=swap');
 .mg-root{--magna-yellow:        #fbbf24;  
@@ -354,7 +354,7 @@
 
 
 </style>
-<div class="mg-root" data-mg="safe" style="font-family: var(--font-base); color: var(--ink); background: #fff; width: 100%; box-sizing: border-box; position: relative">
+<div class="mg-root" data-mg="safeA" style="font-family: var(--font-base); color: var(--ink); background: #fff; width: 100%; box-sizing: border-box; position: relative">
 <div id="safe" data-sec="safe" style="background:#fff;padding:40px 32px 70px">
 <div style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:30px;align-items:center">
 <div data-r="safehead" style="display:flex;align-items:flex-end;justify-content:center;gap:clamp(12px,3vw,40px);width:100%">
@@ -497,45 +497,6 @@
 </div>
 <img data-img="school_play_photo2_soft" src="" style="display:block;width:100%;height:auto;border-radius:14px;object-fit:cover">
 </div>
-</div><div id="faq" data-sec="faq" style="background:#FFFDF5;padding:70px 32px">
-<div style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:26px;align-items:center">
-<div style="display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center">
-<span style="font-size:12px;font-weight:800;letter-spacing:.16em;color:var(--magna-mint-deep)" data-t="faq_01"></span>
-<h2 style="margin:0;font-size:clamp(28px,3.2vw,40px);font-weight:900;line-height:1.35;color:#17345C" data-t="faq_02"></h2>
-
-</div>
-<div style="width:100%">
-<div data-faq="" style="font-family:var(--font-base);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:10px"><button type="button" data-act="faq" aria-expanded="false" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit;padding:13px 14px;font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.5" data-t="faq_03"></button><div data-faq-a="" class="mg-off" style="padding:0 14px 14px 48px;font-size:12.5px;font-weight:600;color:var(--ink-2);line-height:1.75" data-t="faq_04"></div></div>
-<div data-faq="" style="font-family:var(--font-base);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:10px"><button type="button" data-act="faq" aria-expanded="false" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit;padding:13px 14px;font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.5" data-t="faq_05"></button><div data-faq-a="" class="mg-off" style="padding:0 14px 14px 48px;font-size:12.5px;font-weight:600;color:var(--ink-2);line-height:1.75" data-t="faq_06"></div></div>
-<div data-faq="" style="font-family:var(--font-base);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:10px"><button type="button" data-act="faq" aria-expanded="false" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit;padding:13px 14px;font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.5" data-t="faq_07"></button><div data-faq-a="" class="mg-off" style="padding:0 14px 14px 48px;font-size:12.5px;font-weight:600;color:var(--ink-2);line-height:1.75" data-t="faq_08"></div></div>
-<div data-faq="" style="font-family:var(--font-base);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:10px"><button type="button" data-act="faq" aria-expanded="false" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit;padding:13px 14px;font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.5" data-t="faq_09"></button><div data-faq-a="" class="mg-off" style="padding:0 14px 14px 48px;font-size:12.5px;font-weight:600;color:var(--ink-2);line-height:1.75" data-t="faq_10"></div></div>
-<div data-faq="" style="font-family:var(--font-base);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:10px"><button type="button" data-act="faq" aria-expanded="false" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit;padding:13px 14px;font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.5" data-t="faq_11"></button><div data-faq-a="" class="mg-off" style="padding:0 14px 14px 48px;font-size:12.5px;font-weight:600;color:var(--ink-2);line-height:1.75" data-t="faq_12"></div></div>
-<div data-faq="" style="font-family:var(--font-base);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:10px"><button type="button" data-act="faq" aria-expanded="false" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit;padding:13px 14px;font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.5" data-t="faq_13"></button><div data-faq-a="" class="mg-off" style="padding:0 14px 14px 48px;font-size:12.5px;font-weight:600;color:var(--ink-2);line-height:1.75" data-t="faq_14"></div></div>
-<div data-faq="" style="font-family:var(--font-base);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:10px"><button type="button" data-act="faq" aria-expanded="false" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit;padding:13px 14px;font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.5" data-t="faq_15"></button><div data-faq-a="" class="mg-off" style="padding:0 14px 14px 48px;font-size:12.5px;font-weight:600;color:var(--ink-2);line-height:1.75" data-t="faq_16"></div></div>
-<div data-faq="" style="font-family:var(--font-base);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:10px"><button type="button" data-act="faq" aria-expanded="false" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit;padding:13px 14px;font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.5" data-t="faq_17"></button><div data-faq-a="" class="mg-off" style="padding:0 14px 14px 48px;font-size:12.5px;font-weight:600;color:var(--ink-2);line-height:1.75" data-t="faq_18"></div></div>
-<div data-faq="" style="font-family:var(--font-base);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:10px"><button type="button" data-act="faq" aria-expanded="false" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit;padding:13px 14px;font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.5" data-t="faq_19"></button><div data-faq-a="" class="mg-off" style="padding:0 14px 14px 48px;font-size:12.5px;font-weight:600;color:var(--ink-2);line-height:1.75" data-t="faq_20"></div></div>
-<div data-faq="" style="font-family:var(--font-base);background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:10px"><button type="button" data-act="faq" aria-expanded="false" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit;padding:13px 14px;font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.5" data-t="faq_21"></button><div data-faq-a="" class="mg-off" style="padding:0 14px 14px 48px;font-size:12.5px;font-weight:600;color:var(--ink-2);line-height:1.75">
-<div style="display:flex;flex-direction:column;gap:14px">
-<div style="display:inline-flex;align-self:flex-start;align-items:center;gap:7px;background:#EAF7F4;border:1.5px solid var(--magna-mint);border-radius:999px;padding:6px 14px" data-t="faq_22"></div>
-<p style="margin:0" data-t="faq_23"></p>
-<p style="margin:0" data-t="faq_24"></p>
-<div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
-<p style="margin:0 0 10px;font-size:13px;font-weight:800;color:var(--ink);line-height:1.4" data-t="faq_25"></p>
-<ol style="margin:0;padding-left:1.35em;display:flex;flex-direction:column;gap:7px;line-height:1.75">
-<li data-t="faq_26"></li>
-<li data-t="faq_27"></li>
-<li data-t="faq_28"></li>
-<li data-t="faq_29"></li>
-<li data-t="faq_30"></li>
-<li data-t="faq_31"></li>
-</ol>
-</div>
-<div style="background:#FFF8E6;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;line-height:1.7;font-size:13px;color:var(--ink-2)" data-t="faq_32"></div>
-<a href="https://knowledge.workspace.google.com/admin/getting-started/editions/manage-access-to-unconfigured-third-party-apps-for-users-designated-as-under-18?hl=ja" target="_blank" rel="noopener noreferrer" style="align-self:flex-start;display:inline-flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--magna-mint-deep);border-radius:999px;padding:11px 22px;font-size:13.5px;font-weight:800;color:var(--magna-mint-deep);text-decoration:none" data-t="faq_33"></a>
-</div>
-</div></div>
-</div>
-</div>
 </div><div data-if="showProfKimura" class="mg-off">
 <div data-act="closeProfModal" style="position:fixed;inset:0;z-index:80;background:rgba(16,22,34,.55);display:flex;align-items:center;justify-content:center;padding:32px" data-r="modal-wrap">
 <div role="dialog" aria-modal="true" aria-label="木村守教授 コメント" style="position:relative;box-sizing:border-box;width:min(760px,100%);max-height:86vh;overflow-y:auto;background:#fff;border-radius:18px;padding:26px 30px 30px;display:flex;flex-direction:column;gap:16px;box-shadow:0 24px 60px rgba(16,24,40,.24)" data-r="modal">
@@ -573,24 +534,24 @@
 </div>
 <script>
 /* ================================================================
-   ★ ここだけ編集すればOK ★  文字・画像・リンクの設定エリア（導入はカンタン〜よくあるご質問）
+   ★ ここだけ編集すればOK ★  文字・画像・リンクの設定エリア（導入はカンタン〜よくあるご質問（手前））
    ・TEXT   : 画面の文字（キーは「セクション名_番号」）。改行は <br> 、リンクや装飾のHTMLもそのまま書けます
    ・IMAGES : 画像ファイル名 or URL（https:// から始まるURLならそのURLを使用。ファイル名だけなら ASSET_BASE が前に付きます）
    ・ALT    : 画像の代替テキスト（IMAGES と同じキー）
    ・LINKS  : PDF・フォームなどのリンク先
    ・PAGE_URL / ANCHORS : メニューなど「他のブロック」へ移動するときの、STUDIOページのURLと移動先ID
    ================================================================ */
-var MG_NAME = "safe";
+var MG_NAME = "safeA";
 var ASSET_BASE = "https://cdn.jsdelivr.net/gh/hirokiyayama/mini4wd-game@claude/affectionate-darwin-300fus/magna-school-studio-embed/assets/";   /* ★ 画像・PDFを置いたフォルダのURL（末尾は / ） */
 var PAGE_URL = "https://mintflag.com/education";   /* ★ 公開したSTUDIOページのURL（例: https://xxxx.studio.site/）。空欄の場合は自動で取得を試みます */
 var ANCHORS = {
   "free-reason": "free-reason",   /* ずっと無料の理由 → STUDIOで「なぜ、マグナはずっと無料なの？」ブロックに付けるID */
   "why": "why",   /* アプリでできること → 「マグナでできること」ブロックのID */
   "safe": "safe",   /* 導入準備 → 「導入はカンタン」ブロックのID */
-  "faq": "faq",   /* よくある質問 → 「よくあるご質問」ブロックのID（06を1つで貼る場合は06のID） */
-  "consult": "fv"   /* 気軽に相談する → 「ファーストビュー」ブロックのID */
+  "faq": "faq",   /* よくある質問 → 「よくあるご質問」ブロック（07）のID */
+  "consult": "fv"   /* 相談リンク（ヘッダー等）→ 「ファーストビュー」ブロックのID */
 };
-var FILL_COLOR = "#FFFDF5";   /* ブロックの高さが余ったとき（FAQを開いて縮む余白を含む）の下側の色 */
+var FILL_COLOR = "#17345C";   /* ブロックの高さが余ったとき（FAQを開いて縮む余白を含む）の下側の色 */
 var TEXT = {
   /* ── 導入準備 (safe) ── */
   "safe_01": "SUPPORT",
@@ -637,41 +598,6 @@ var TEXT = {
   "play_01": "英語を学べる学校劇を<br>出張公演しています",
   "play_02": "「子どもたちが、生の体験を通して、英語を好きになれる場を作りたい」。そんな想いで生まれたのが、楽しみながら英語を学べるマグナの学校劇です。<br><br>全国の学校、または町の公民館などで、出張公演を行っています。",
   "play_03": "学校劇について詳しく<span aria-hidden=\"true\">→</span>",
-
-  /* ── よくある質問 (faq) ── */
-  "faq_01": "FAQ",
-  "faq_02": "よくあるご質問",
-  "faq_03": "<span style=\"flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--magna-mint);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800\">Q</span><span style=\"flex:1\">利用料金はかかりますか？</span><span data-faq-arrow=\"\" style=\"flex-shrink:0;color:var(--ink-3);font-size:14px;transition:transform .2s ease\">▾</span>",
-  "faq_04": "公的教育機関では、アプリを継続して無料でご利用いただけます。期間限定の無料提供ではありません。",
-  "faq_05": "<span style=\"flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--magna-mint);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800\">Q</span><span style=\"flex:1\"><span style=\"display:inline-block\">どの端末・アカウントで</span><span style=\"display:inline-block\">利用できますか？</span></span><span data-faq-arrow=\"\" style=\"flex-shrink:0;color:var(--ink-3);font-size:14px;transition:transform .2s ease\">▾</span>",
-  "faq_06": "対応するGIGAスクール端末で利用できます。学校のGoogleアカウント・Microsoftアカウントを利用したSSO（シングルサインオン）ログインに対応しています。SSOを利用しない場合でもログインできます。動作環境の詳細は、資料または個別のご相談でご確認ください。",
-  "faq_07": "<span style=\"flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--magna-mint);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800\">Q</span><span style=\"flex:1\"><span style=\"display:inline-block\">For Schoolアプリを</span><span style=\"display:inline-block\">導入する手順は？</span></span><span data-faq-arrow=\"\" style=\"flex-shrink:0;color:var(--ink-3);font-size:14px;transition:transform .2s ease\">▾</span>",
-  "faq_08": "詳しい手順はこちらの資料をご覧ください。<br><a data-link=\"guide_existing\" href=\"#\" download=\"マグナForSchool_既存導入校向けご案内.pdf\" data-dl=\"\" style=\"color:#2DB39A;text-decoration:underline;font-weight:700\">既存導入校向け</a>／<a data-link=\"guide_new\" href=\"#\" download=\"マグナForSchool_新規導入校向けご案内.pdf\" data-dl=\"\" style=\"color:#2DB39A;text-decoration:underline;font-weight:700\">新規導入校向け</a>",
-  "faq_09": "<span style=\"flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--magna-mint);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800\">Q</span><span style=\"flex:1\"><span style=\"display:inline-block\">学校単位・自治体単位のどちらで</span><span style=\"display:inline-block\">導入できますか？</span></span><span data-faq-arrow=\"\" style=\"flex-shrink:0;color:var(--ink-3);font-size:14px;transition:transform .2s ease\">▾</span>",
-  "faq_10": "学校単位・自治体単位のどちらでも導入いただけます。お問い合わせ後、オンライン説明会（所要30分）で機能と導入方法をご説明します。その後、校内でご検討いただき、導入手続きを経てご利用を開始いただきます。",
-  "faq_11": "<span style=\"flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--magna-mint);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800\">Q</span><span style=\"flex:1\">導入後のサポートはありますか？</span><span data-faq-arrow=\"\" style=\"flex-shrink:0;color:var(--ink-3);font-size:14px;transition:transform .2s ease\">▾</span>",
-  "faq_12": "先生用の学習管理ダッシュボードで子どもたちの取り組み状況を確認できます。導入後も、活用方法や校内での活用の広げ方についてご相談いただけます。ご希望に応じて教員向けの研修も実施します。",
-  "faq_13": "<span style=\"flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--magna-mint);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800\">Q</span><span style=\"flex:1\"><span style=\"display:inline-block\">子どもの使いすぎを</span><span style=\"display:inline-block\">防ぐことはできますか？</span></span><span data-faq-arrow=\"\" style=\"flex-shrink:0;color:var(--ink-3);font-size:14px;transition:transform .2s ease\">▾</span>",
-  "faq_14": "みまもり機能で、利用時間を15分単位で設定できます。設定は先生側で行い、必要に応じて弊社でも対応します。保護者の方が直接設定する機能ではありません。",
-  "faq_15": "<span style=\"flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--magna-mint);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800\">Q</span><span style=\"flex:1\"><span style=\"display:inline-block\">英単語バトル大会への参加は</span><span style=\"display:inline-block\">必須ですか？</span></span><span data-faq-arrow=\"\" style=\"flex-shrink:0;color:var(--ink-3);font-size:14px;transition:transform .2s ease\">▾</span>",
-  "faq_16": "英単語バトル大会への参加は任意です。大会へ参加しなくても、アプリの各機能をご利用いただけます。大会への参加はアプリ導入の条件ではありません。",
-  "faq_17": "<span style=\"flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--magna-mint);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800\">Q</span><span style=\"flex:1\">アプリが動きません。どうすればいいですか？</span><span data-faq-arrow=\"\" style=\"flex-shrink:0;color:var(--ink-3);font-size:14px;transition:transform .2s ease\">▾</span>",
-  "faq_18": "<a data-link=\"guide_existing\" href=\"#\" download=\"マグナForSchool_既存導入校向けご案内.pdf\" data-dl=\"\" style=\"color:var(--magna-mint-deep);font-weight:700;text-decoration:underline;text-underline-offset:3px\">対応ガイド（既存導入校）</a>／<a data-link=\"guide_new\" href=\"#\" download=\"マグナForSchool_新規導入校向けご案内.pdf\" data-dl=\"\" style=\"color:var(--magna-mint-deep);font-weight:700;text-decoration:underline;text-underline-offset:3px\">対応ガイド（新規導入校）</a>をご参照ください。それでも問題が解決しない場合は、エラー画面のスクリーンショットを添付の上、<a href=\"mailto:support@mintflag.com?subject=%E3%81%8A%E5%95%8F%E3%81%84%E5%90%88%E3%82%8F%E3%81%9B\" style=\"color:var(--magna-mint-deep);font-weight:700;text-decoration:underline;text-underline-offset:3px\">support@mintflag.com</a> までお問い合わせください。",
-  "faq_19": "<span style=\"flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--magna-mint);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800\">Q</span><span style=\"flex:1\">ChromebookでGoogle Play ストアに「インストール」「更新」ボタンが表示されません</span><span data-faq-arrow=\"\" style=\"flex-shrink:0;color:var(--ink-3);font-size:14px;transition:transform .2s ease\">▾</span>",
-  "faq_20": "Chromebookの画面下部にある「Play ストア」アイコンを右クリック（または長押し）し、「アプリ情報」→「Androidのその他の設定と権限」→「ストレージとキャッシュ」→「ストレージを消去」の順に操作してください。<br><br>改善しない場合は、Chromebookを再起動するか、時間をおいて再度お試しください。",
-  "faq_21": "<span style=\"flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--magna-mint);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800\">Q</span><span style=\"flex:1\">児童・生徒がGoogleアカウントでログインできません</span><span data-faq-arrow=\"\" style=\"flex-shrink:0;color:var(--ink-3);font-size:14px;transition:transform .2s ease\">▾</span>",
-  "faq_22": "<span aria-hidden=\"true\" style=\"font-size:13px\">🛡️</span><span style=\"font-size:12px;font-weight:800;color:var(--magna-mint-deep);line-height:1.3\">Google Workspace 管理者向けの設定</span>",
-  "faq_23": "Google Workspace for Educationでユーザーが「18歳未満」に設定されている場合、未設定のサードパーティ製アプリへのアクセスが制限されることがあります。",
-  "faq_24": "Google Workspaceの管理者にて、管理コンソールから「マグナとふしぎの少女ForSchool」のアクセス設定をご確認ください。",
-  "faq_25": "■ 設定の流れ",
-  "faq_26": "Google管理コンソールにログイン",
-  "faq_27": "「セキュリティ」→「アクセスとデータ管理」→「APIの制御」を開く",
-  "faq_28": "「アプリのアクセス制御」から対象アプリを選択",
-  "faq_29": "対象となる組織部門を選択",
-  "faq_30": "Googleデータへのアクセスを設定する",
-  "faq_31": "設定後、アプリで再度Googleログインを行う",
-  "faq_32": "<span>※この操作は、Google Workspaceの管理者権限をお持ちの方が行ってください。</span> <span>※設定の反映に時間がかかる場合があります。</span>",
-  "faq_33": "Google公式の設定方法を確認する<span aria-hidden=\"true\" style=\"font-size:12px\">↗</span>",
 
   /* ── 木村教授コメント (modal_showProfKimura) ── */
   "modal_showProfKimura_01": "×",
@@ -727,8 +653,6 @@ var ALT = {
   "portrait_takayama_2": "高山芳樹教授の顔写真"
 };
 var LINKS = {
-  "guide_existing": "guide-existing-schools.pdf",
-  "guide_new": "guide-new-schools.pdf",
   "store_google": "https://play.google.com/store/apps/details?id=com.mintflag.magnaForSchool",
   "store_apple": "https://apps.apple.com/jp/app/%E5%AD%A6%E6%A0%A1%E7%89%88-%E3%83%9E%E3%82%B0%E3%83%8A%E3%81%A8%E3%81%B5%E3%81%97%E3%81%8E%E3%81%AE%E5%B0%91%E5%A5%B3-for-school/id6759899720",
   "form_school": "https://docs.google.com/forms/d/e/1FAIpQLSdFfzpaijpvhUgsRaNtiYo9XPpMWGZ09SsCN9AwZx2W9OxSOQ/viewform",

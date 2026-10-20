@@ -1,4 +1,4 @@
-<!-- ===== マグナとふしぎの少女 For School LP ／ STUDIO Embed（分割版）: よくあるご質問（FAQを別ブロックにする場合） ===== -->
+<!-- ===== マグナとふしぎの少女 For School LP ／ STUDIO Embed（分割版）: よくあるご質問〜フッターメニュー（手前） ===== -->
 <!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100% -->
 <!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 1800px ／ タブレット〜1280px 1750px ／ スマホ〜430px 2500px 以上 -->
 <style>
@@ -394,29 +394,11 @@
 </div></div>
 </div>
 </div>
-</div><div data-if="showProfKimura" class="mg-off">
-<div data-act="closeProfModal" style="position:fixed;inset:0;z-index:80;background:rgba(16,22,34,.55);display:flex;align-items:center;justify-content:center;padding:32px" data-r="modal-wrap">
-<div role="dialog" aria-modal="true" aria-label="木村守教授 コメント" style="position:relative;box-sizing:border-box;width:min(760px,100%);max-height:86vh;overflow-y:auto;background:#fff;border-radius:18px;padding:26px 30px 30px;display:flex;flex-direction:column;gap:16px;box-shadow:0 24px 60px rgba(16,24,40,.24)" data-r="modal">
-<div style="display:flex;align-items:flex-start;justify-content:flex-end;gap:16px"><button type="button" data-act="closeProfModal" style="flex:none;width:36px;height:36px;border-radius:999px;border:1px solid var(--line-strong);background:#fff;font-size:19px;line-height:1;color:var(--ink-2);cursor:pointer" data-t="modal_showProfKimura_01"></button></div>
-<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><img data-img="portrait_kimura_2" src="" style="display:block;width:96px;height:96px;border-radius:18px;object-fit:cover;object-position:center 22%;flex:none"><div><h3 style="margin:0;font-size:22px;font-weight:900;line-height:1.4" data-t="modal_showProfKimura_02"></h3><p style="margin:5px 0 0;font-size:13.5px;font-weight:700;line-height:1.7;color:var(--ink-3)" data-t="modal_showProfKimura_03"></p></div></div>
-<p style="margin:0;font-size:10.5px;font-weight:800;letter-spacing:.12em;color:var(--magna-mint-deep);line-height:1.3" data-t="modal_showProfKimura_04"></p>
-<p style="margin:0;max-width:62ch;font-size:16px;line-height:1.8;font-weight:500;color:var(--ink-2);white-space:pre-line" data-t="modal_showProfKimura_05"></p>
-</div>
-</div>
-</div><div data-if="showProfTakayama" class="mg-off">
-<div data-act="closeProfModal" style="position:fixed;inset:0;z-index:80;background:rgba(16,22,34,.55);display:flex;align-items:center;justify-content:center;padding:32px" data-r="modal-wrap">
-<div role="dialog" aria-modal="true" aria-label="高山芳樹教授 コメント" style="position:relative;box-sizing:border-box;width:min(760px,100%);max-height:86vh;overflow-y:auto;background:#fff;border-radius:18px;padding:26px 30px 30px;display:flex;flex-direction:column;gap:16px;box-shadow:0 24px 60px rgba(16,24,40,.24)" data-r="modal">
-<div style="display:flex;align-items:flex-start;justify-content:flex-end;gap:16px"><button type="button" data-act="closeProfModal" style="flex:none;width:36px;height:36px;border-radius:999px;border:1px solid var(--line-strong);background:#fff;font-size:19px;line-height:1;color:var(--ink-2);cursor:pointer" data-t="modal_showProfTakayama_01"></button></div>
-<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><img data-img="portrait_takayama_2" src="" style="display:block;width:96px;height:96px;border-radius:18px;object-fit:cover;object-position:center 18%;flex:none"><div><h3 style="margin:0;font-size:22px;font-weight:900;line-height:1.4" data-t="modal_showProfTakayama_02"></h3><p style="margin:5px 0 0;font-size:13.5px;font-weight:700;line-height:1.7;color:var(--ink-3)" data-t="modal_showProfTakayama_03"></p></div></div>
-<p style="margin:0;font-size:10.5px;font-weight:800;letter-spacing:.12em;color:var(--magna-mint-deep);line-height:1.3" data-t="modal_showProfTakayama_04"></p>
-<div style="background:#F7FAF9;border:1px solid var(--line);border-radius:12px;padding:20px 22px;max-width:64ch"><p style="margin:0;font-size:15px;line-height:1.8;font-weight:500;color:var(--ink-2);white-space:pre-line" data-t="modal_showProfTakayama_05"></p></div>
-</div>
-</div>
 </div>
 </div>
 <script>
 /* ================================================================
-   ★ ここだけ編集すればOK ★  文字・画像・リンクの設定エリア（よくあるご質問（FAQを別ブロックにする場合））
+   ★ ここだけ編集すればOK ★  文字・画像・リンクの設定エリア（よくあるご質問〜フッターメニュー（手前））
    ・TEXT   : 画面の文字（キーは「セクション名_番号」）。改行は <br> 、リンクや装飾のHTMLもそのまま書けます
    ・IMAGES : 画像ファイル名 or URL（https:// から始まるURLならそのURLを使用。ファイル名だけなら ASSET_BASE が前に付きます）
    ・ALT    : 画像の代替テキスト（IMAGES と同じキー）
@@ -430,8 +412,8 @@ var ANCHORS = {
   "free-reason": "free-reason",   /* ずっと無料の理由 → STUDIOで「なぜ、マグナはずっと無料なの？」ブロックに付けるID */
   "why": "why",   /* アプリでできること → 「マグナでできること」ブロックのID */
   "safe": "safe",   /* 導入準備 → 「導入はカンタン」ブロックのID */
-  "faq": "faq",   /* よくある質問 → 「よくあるご質問」ブロックのID（06を1つで貼る場合は06のID） */
-  "consult": "fv"   /* 気軽に相談する → 「ファーストビュー」ブロックのID */
+  "faq": "faq",   /* よくある質問 → 「よくあるご質問」ブロック（07）のID */
+  "consult": "fv"   /* 相談リンク（ヘッダー等）→ 「ファーストビュー」ブロックのID */
 };
 var FILL_COLOR = "#FFFDF5";   /* ブロックの高さが余ったとき（FAQを開いて縮む余白を含む）の下側の色 */
 var TEXT = {
@@ -469,28 +451,12 @@ var TEXT = {
   "faq_31": "設定後、アプリで再度Googleログインを行う",
   "faq_32": "<span>※この操作は、Google Workspaceの管理者権限をお持ちの方が行ってください。</span> <span>※設定の反映に時間がかかる場合があります。</span>",
   "faq_33": "Google公式の設定方法を確認する<span aria-hidden=\"true\" style=\"font-size:12px\">↗</span>",
-
-  /* ── 木村教授コメント (modal_showProfKimura) ── */
-  "modal_showProfKimura_01": "×",
-  "modal_showProfKimura_02": "木村 守 教授",
-  "modal_showProfKimura_03": "東京学芸大学 副学長（学部教育・国際）",
-  "modal_showProfKimura_04": "専門家コメント",
-  "modal_showProfKimura_05": "AI時代と言われる現在（いま）、学びのかたちが大きく変化している中で、教員の果たすべき役割もどんどん変化しています。特にことばの教育に関わる我々は、もはや知識を教えるだけの存在ではいられません。 子どもたちに英語を教えるのではなく、子どもたちが英語を主体的に学んでいくことができる環境を調えたり、英語を話したいというモチベーションを高めることができるサポートを適時行っていくこと、そんな役割が求められる時代になっていきます。 「マグナとふしぎの少女」はきっと先生方の強い味方になってくれると確信しています。",
-
-  /* ── 高山教授コメント (modal_showProfTakayama) ── */
-  "modal_showProfTakayama_01": "×",
-  "modal_showProfTakayama_02": "高山 芳樹 教授",
-  "modal_showProfTakayama_03": "東京学芸大学 外国語・外国文化研究講座 英語科教育学分野 教授<br>NHK Eテレ「エイエイGO!」（2015〜2018年度）／「即レス英会話」（2020〜2021年度）講師",
-  "modal_showProfTakayama_04": "専門家コメント",
-  "modal_showProfTakayama_05": "「相手にこれを伝えたい！」でも「英語で言えない！」というジレンマを、多くの英語学習者は経験してきました。伝えたいことを英語で言えず、沈黙したり、笑ってごまかしたりしているとそこで会話は止まってしまいます。AIキャラクターレイちゃんは、英語でのおしゃべりを楽しみたい子どもたちの「話したい」「伝えたい」思いを大切にする日英バイリンガルの会話相手です。日本語で話しかけても、英語で話しかけても、レイちゃんはそれに対してやさしい英語で応答してくれます。自分の話したい内容に関する英語のシャワーを浴びながら、英語のやりとりを何往復も楽しむことで、自力で言える英語表現が徐々に徐々に膨らんでいくことでしょう。",
 };
 var IMAGES = {
-  "portrait_kimura_2": "portrait-kimura.png",
-  "portrait_takayama_2": "portrait-takayama.png"
+
 };
 var ALT = {
-  "portrait_kimura_2": "木村守教授の顔写真",
-  "portrait_takayama_2": "高山芳樹教授の顔写真"
+
 };
 var LINKS = {
   "guide_existing": "guide-existing-schools.pdf",

@@ -1,6 +1,6 @@
 <!-- ===== マグナとふしぎの少女 For School LP ／ STUDIO Embed（分割版）: メニューヘッダー ===== -->
 <!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100% -->
-<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 80px ／ タブレット〜1280px 105px ／ スマホ〜430px 100px 以上 -->
+<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 85px ／ タブレット〜1280px 85px ／ スマホ〜430px 100px 以上 -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&display=swap');
 .mg-root{--magna-yellow:        #fbbf24;  
@@ -353,14 +353,15 @@
 .mg-root [data-faq-a].mg-off{display:none !important}
 
 
-.mg-root[data-mg="header"] [data-hd="bar"]{position:relative !important;flex-wrap:wrap !important;row-gap:6px !important}
+.mg-root[data-mg="header"] [data-hd="bar"]{position:relative !important;flex-wrap:wrap !important;row-gap:0 !important}
 .mg-root[data-mg="header"] [data-hd="burger"]{display:none !important}
-@media (max-width:1280px){
-.mg-root[data-mg="header"] [data-hd="nav"]{display:grid !important;grid-template-columns:repeat(4,auto) !important;order:3 !important;flex:1 1 100% !important;gap:4px 22px !important;justify-content:center !important;font-size:13px !important;white-space:nowrap !important}
-}
+.mg-root[data-mg="header"] [data-hd="nav"]{display:flex !important}
 @media (max-width:760px){
-.mg-root[data-mg="header"] [data-hd="nav"]{grid-template-columns:repeat(4,1fr) !important;gap:4px !important;font-size:12px !important;white-space:normal !important;text-align:center !important;line-height:1.35 !important}
-.mg-root[data-mg="header"] [data-hd="nav"] a{white-space:normal !important}
+.mg-root[data-mg="header"] [data-hd="bar"]{padding-bottom:0 !important}
+.mg-root[data-mg="header"] [data-hd="bar"] > div:first-child{flex:1 1 100% !important}
+.mg-root[data-mg="header"] [data-hd="nav"]{order:3 !important;flex:1 1 100% !important;gap:0 !important;justify-content:space-between !important;margin:8px -18px 0 !important;padding:0 !important;border-top:1px solid var(--line);font-size:clamp(10px,3.1vw,13px) !important;white-space:nowrap !important}
+.mg-root[data-mg="header"] [data-hd="nav"] a{flex:1 1 auto;text-align:center;padding:11px 2px;white-space:nowrap !important;letter-spacing:-.02em}
+.mg-root[data-mg="header"] [data-hd="nav"] a + a{border-left:1px solid var(--line)}
 }
 
 </style>
@@ -368,11 +369,7 @@
 <div data-hd="bar" style="position:sticky;top:0;z-index:80;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);display:flex;align-items:center;gap:20px;padding:12px 32px;border-bottom:1px solid var(--line)">
 <div style="display:flex;align-items:center;gap:11px;flex:none"><img data-img="app_icon_for_school" src="" style="display:block;height:52px;width:52px;border-radius:22%"><span style="display:flex;flex-direction:column;line-height:1.2" data-t="header_01"></span></div>
 <nav data-hd="nav" aria-label="メインメニュー" style="display:flex;gap:clamp(20px,2.4vw,40px);font-size:14px;font-weight:800;flex:1;justify-content:center;white-space:nowrap" data-t="header_02"></nav>
-<div style="display:flex;gap:10px;flex:none;align-items:center;margin-left:auto">
-<a data-link="doc_pdf" href="#" download="マグナ学校版_ご案内資料.pdf" data-doc="" data-hd="cta" style="display:flex;align-items:center;gap:6px;height:36px;box-sizing:border-box;padding:0 12px;border-radius:10px;background:linear-gradient(100deg,#C2185F 0%,#D6317F 55%,#CC1F6C 100%);border:1.5px solid #FF9CC4;box-shadow:0 3px 0 #8E1450;color:#fff;text-decoration:none;font-size:12.5px;font-weight:900;white-space:nowrap;transition:transform .15s ease,box-shadow .15s ease" style-hover="transform:translateY(-1px);box-shadow:0 4px 0 #8E1450" style-active="transform:translateY(2px);box-shadow:0 1px 0 #8E1450"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h4"></path></svg><span data-t="header_03"></span></a>
-<a href="#contact" data-act="openConsult" data-hd="cta" style="display:flex;align-items:center;gap:6px;height:36px;box-sizing:border-box;padding:0 12px;border-radius:10px;background:#fff;border:2px solid #17345C;color:#17345C;text-decoration:none;font-size:12.5px;font-weight:900;white-space:nowrap;transition:transform .15s ease,background .15s ease" style-hover="background:#F1F5FA;transform:translateY(-1px)" style-active="transform:translateY(1px)"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#17345C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="12" rx="2"></rect><path d="M8 20h8"></path><path d="M12 16.5V20"></path></svg><span data-t="header_04"></span></a>
-<button type="button" data-hd="burger" data-act="toggleMenu" aria-label="メニューを開く" aria-expanded="false" style="display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;border:1px solid var(--line-strong);background:#fff;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path></svg></button>
-</div>
+
 </div>
 </div>
 <script>
@@ -391,16 +388,14 @@ var ANCHORS = {
   "free-reason": "free-reason",   /* ずっと無料の理由 → STUDIOで「なぜ、マグナはずっと無料なの？」ブロックに付けるID */
   "why": "why",   /* アプリでできること → 「マグナでできること」ブロックのID */
   "safe": "safe",   /* 導入準備 → 「導入はカンタン」ブロックのID */
-  "faq": "faq",   /* よくある質問 → 「よくあるご質問」ブロックのID（06を1つで貼る場合は06のID） */
-  "consult": "fv"   /* 気軽に相談する → 「ファーストビュー」ブロックのID */
+  "faq": "faq",   /* よくある質問 → 「よくあるご質問」ブロック（07）のID */
+  "consult": "fv"   /* 相談リンク（ヘッダー等）→ 「ファーストビュー」ブロックのID */
 };
 var FILL_COLOR = "#ffffff";   /* ブロックの高さが余ったとき（FAQを開いて縮む余白を含む）の下側の色 */
 var TEXT = {
   /* ── ヘッダー／メニュー (header) ── */
   "header_01": "<span style=\"font-family:'Baloo 2',var(--font-base);font-size:20px;font-weight:800;color:var(--magna-mint-deep);white-space:nowrap\">マグナとふしぎの少女 For School</span><span style=\"font-size:12.5px;font-weight:700;color:var(--ink-3);white-space:nowrap\">小・中・高・特別支援学校向け</span>",
   "header_02": "<a href=\"#free-reason\" style=\"color:var(--ink);text-decoration:none\">ずっと無料の理由</a><a href=\"#why\" style=\"color:var(--ink);text-decoration:none\">アプリでできること</a><a href=\"#safe\" style=\"color:var(--ink);text-decoration:none\">導入準備</a><a href=\"#faq\" style=\"color:var(--ink);text-decoration:none\">よくある質問</a>",
-  "header_03": "資料をダウンロード",
-  "header_04": "気軽に相談する",
 };
 var IMAGES = {
   "app_icon_for_school": "app-icon-for-school.png"
@@ -409,8 +404,7 @@ var ALT = {
   "app_icon_for_school": "マグナとふしぎの少女ForSchool"
 };
 var LINKS = {
-  "doc_name": "マグナ学校版_ご案内資料.pdf",
-  "doc_pdf": "magna-school-document.pdf"
+
 };
 /* ============ ↑ 設定エリアここまで（以下は触らなくてOK） ============ */
 
