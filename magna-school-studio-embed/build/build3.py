@@ -20,15 +20,14 @@ extra = '''
 .mg-root [data-faq-a].mg-off{display:none !important}
 '''
 header_css = '''
-.mg-root[data-mg="header"] [data-hd="bar"]{position:relative !important;flex-wrap:wrap !important;row-gap:0 !important}
+.mg-root[data-mg="header"]{background:transparent !important}
+.mg-root[data-mg="header"] [data-hd="bar"]{position:relative !important}
+.mg-root[data-mg="header"] [data-hd="nav"]{display:flex !important;font-size:16px !important;gap:clamp(22px,2.6vw,44px) !important}
 .mg-root[data-mg="header"] [data-hd="burger"]{display:none !important}
-.mg-root[data-mg="header"] [data-hd="nav"]{display:flex !important}
 @media (max-width:760px){
-.mg-root[data-mg="header"] [data-hd="bar"]{padding-bottom:0 !important}
-.mg-root[data-mg="header"] [data-hd="bar"] > div:first-child{flex:1 1 100% !important}
-.mg-root[data-mg="header"] [data-hd="nav"]{order:3 !important;flex:1 1 100% !important;gap:0 !important;justify-content:space-between !important;margin:8px -18px 0 !important;padding:0 !important;border-top:1px solid var(--line);font-size:clamp(10px,3.1vw,13px) !important;white-space:nowrap !important}
-.mg-root[data-mg="header"] [data-hd="nav"] a{flex:1 1 auto;text-align:center;padding:11px 2px;white-space:nowrap !important;letter-spacing:-.02em}
-.mg-root[data-mg="header"] [data-hd="nav"] a + a{border-left:1px solid var(--line)}
+.mg-root[data-mg="header"] [data-hd="nav"]{display:none !important}
+.mg-root[data-mg="header"] [data-hd="burger"]{display:flex !important}
+.mg-root[data-mg="header"] [data-hd="drawer"] a{font-size:17px !important}
 }
 '''
 SEC = {'header':'ヘッダー／メニュー','intro':'オープニング','fv':'ファーストビュー','stats':'導入実績','media':'メディア掲載','ba':'導入前後','why':'アプリでできること','scene':'活用シーン','cases':'先生方の声','area':'対応エリア','apply':'安心・安全／なぜ無料','free_reason':'なぜ、マグナはずっと無料なの？','safe':'導入準備','trust':'専門家・大学との連携','play':'学校劇','faq':'よくある質問','footer':'フッター','spbar':'スマホ固定バー','misc':'サポート','modal_consultOpen':'相談窓口の選択画面','modal_showProfKimura':'木村教授コメント','modal_showProfTakayama':'高山教授コメント','modal_case1Open':'先生の声（青森）','modal_case2Open':'先生の声（静岡）','modal_safeDevice':'対応端末・ログイン方法'}
@@ -36,12 +35,12 @@ def js(o): return json.dumps(o, ensure_ascii=False)
 chunk = lambda n: open(os.path.join(B, 'chunk_%s.html' % n), encoding='utf-8').read()
 ROOT_STYLE = 'font-family: var(--font-base); color: var(--ink); background: #fff; width: 100%; box-sizing: border-box; position: relative'
 FAQBG = '#FFFDF5'
-ENDBG = {'header':'#ffffff','fv':'#F7FAF9','why':'#F7FAF9','cases':'#ffffff','free':'#ffffff','safe':'#FFFDF5','footer':'#081b1e','safeA':'#17345C','faqB':'#FFFDF5'}
+ENDBG = {'header':'transparent','fv':'#F7FAF9','why':'#F7FAF9','cases':'#ffffff','free':'#ffffff','safe':'#FFFDF5','footer':'#081b1e','safeA':'#17345C','faqB':'#FFFDF5'}
 HEIGHTS = {  # (PC 1281px以上, タブレット〜1280px, スマホ〜430px)
- 'header':(85,85,100),'fv':(2000,2650,2700),'why':(1750,3350,2500),'cases':(2250,2550,3450),'free':(900,1100,1400),
+ 'header':(85,85,300),'fv':(2000,2650,2700),'why':(1750,3350,2500),'cases':(2250,2550,3450),'free':(900,1100,1400),
  'safe':(4700,5500,6700),'footer':(260,300,550),'safeA':(2800,3700,4100),'faqB':(1800,1750,2500)}
 SPEC = [
- ('01-header', 'header', 'メニューヘッダー', ['header'], header_css, False, False),
+ ('01-header', 'header', 'メニューヘッダー', ['header','drawer'], header_css, False, False),
  ('02-first-view', 'fv', 'ファーストビュー〜マグナでできること（手前）', ['fv'], '', True, True),
  ('03-why-to-voice', 'why', 'マグナでできること〜先生方の声（手前）', ['why'], '', False, False),
  ('04-voice-to-free', 'cases', '先生方の声〜なぜ、マグナはずっと無料なの？（手前）', ['cases'], '', False, False),
@@ -57,8 +56,6 @@ for fname, mg, title, parts, xcss, intro, consult in SPEC:
     body = ''.join(chunk(p) for p in parts)
     if mg == 'header':
         body = re.sub(r'<a [^>]*data-hd="cta"[^>]*>.*?</a>', '', body, flags=re.S)
-        body = re.sub(r'<button [^>]*data-hd="burger"[^>]*>.*?</button>', '', body, flags=re.S)
-        body = re.sub(r'<div style="display:flex;gap:10px;flex:none;align-items:center;margin-left:auto">\s*</div>', '', body)
     if mg == 'safeA': body = body  # includes prof modals
     if intro: body = chunk('intro') + body
     if consult: body += chunk('consult')

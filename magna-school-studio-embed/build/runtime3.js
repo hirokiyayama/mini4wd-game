@@ -24,6 +24,7 @@
     $all('[data-if="'+name+'"]').forEach(function(e){ e.classList.toggle('mg-off', !on); });
     var mk = {case1Open:'case1', case2Open:'case2', safeDevice:'safe'}[name];
     if(mk) $all('[data-mark="'+mk+'"]').forEach(function(e){ e.textContent = on ? '▲' : '▼'; });
+    if(name==='menuOpen') $all('[data-act="toggleMenu"]').forEach(function(b){ b.setAttribute('aria-expanded', on); });
     if(name==='safeDevice') $all('[data-style-open]').forEach(function(b){ b.setAttribute('style', b.getAttribute(on?'data-style-open':'data-style-closed')); b.setAttribute('aria-expanded', on); });
   }
   function isOn(name){ var e=root.querySelector('[data-if="'+name+'"]'); return !!e && !e.classList.contains('mg-off'); }
@@ -73,6 +74,7 @@
     TOTAL = base + max; reflow();
   }
   var A = {
+    toggleMenu: function(){ setIf('menuOpen', !isOn('menuOpen')); },
     openConsult: function(ev){ setIf('consultOpen', true); place('consultOpen', ev); },
     closeConsult: function(){ setIf('consultOpen', false); },
     toggleCase1: function(){ setIf('case1Open', !isOn('case1Open')); },
@@ -102,6 +104,7 @@
       if(act==='slide'){ showSlide(+t.getAttribute('data-dot')); startTimer(); return; }
       if(A[act]){ if(t.tagName==='A') ev.preventDefault(); A[act](ev); }
     }
+    if(ev.target.closest && ev.target.closest('[data-hd="drawer"] a')) setTimeout(function(){ setIf('menuOpen', false); }, 150);
     var d = ev.target.closest ? ev.target.closest('a[data-doc], a[data-dl]') : null;
     if(d){ ev.preventDefault(); downloadDoc(d.href, d.hasAttribute('data-doc') ? (LINKS.doc_name || d.getAttribute('download') || 'document.pdf') : (d.getAttribute('download') || 'document.pdf')); }
   });
