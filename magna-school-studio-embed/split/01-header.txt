@@ -1,6 +1,6 @@
 <!-- ===== マグナとふしぎの少女 For School LP ／ STUDIO Embed（分割版）: メニューヘッダー ===== -->
 <!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100% -->
-<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 85px ／ タブレット〜1280px 130px ／ スマホ〜430px 140px 以上 -->
+<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 85px ／ タブレット〜1280px 85px ／ スマホ〜430px 300px 以上 -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&display=swap');
 .mg-root{--magna-yellow:        #fbbf24;  
@@ -354,14 +354,13 @@
 
 
 .mg-root[data-mg="header"]{background:transparent !important}
-.mg-root[data-mg="header"] [data-hd="bar"]{position:relative !important;flex-wrap:wrap !important}
-.mg-root[data-mg="header"] [data-hd="burger"]{display:none !important}
+.mg-root[data-mg="header"] [data-hd="bar"]{position:relative !important}
 .mg-root[data-mg="header"] [data-hd="nav"]{display:flex !important;font-size:16px !important;gap:clamp(22px,2.6vw,44px) !important}
+.mg-root[data-mg="header"] [data-hd="burger"]{display:none !important}
 @media (max-width:760px){
-.mg-root[data-mg="header"] [data-hd="bar"]{row-gap:2px !important;padding-bottom:8px !important}
-.mg-root[data-mg="header"] [data-hd="bar"] > div:first-child{flex:1 1 100% !important}
-.mg-root[data-mg="header"] [data-hd="nav"]{order:3 !important;flex:1 1 100% !important;flex-wrap:wrap !important;justify-content:center !important;gap:2px 22px !important;font-size:15px !important;white-space:nowrap !important}
-.mg-root[data-mg="header"] [data-hd="nav"] a{padding:6px 0}
+.mg-root[data-mg="header"] [data-hd="nav"]{display:none !important}
+.mg-root[data-mg="header"] [data-hd="burger"]{display:flex !important}
+.mg-root[data-mg="header"] [data-hd="drawer"] a{font-size:17px !important}
 }
 
 </style>
@@ -369,7 +368,13 @@
 <div data-hd="bar" style="position:sticky;top:0;z-index:80;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);display:flex;align-items:center;gap:20px;padding:12px 32px;border-bottom:1px solid var(--line)">
 <div style="display:flex;align-items:center;gap:11px;flex:none"><img data-img="app_icon_for_school" src="" style="display:block;height:52px;width:52px;border-radius:22%"><span style="display:flex;flex-direction:column;line-height:1.2" data-t="header_01"></span></div>
 <nav data-hd="nav" aria-label="メインメニュー" style="display:flex;gap:clamp(20px,2.4vw,40px);font-size:14px;font-weight:800;flex:1;justify-content:center;white-space:nowrap" data-t="header_02"></nav>
+<div style="display:flex;gap:10px;flex:none;align-items:center;margin-left:auto">
 
+
+<button type="button" data-hd="burger" data-act="toggleMenu" aria-label="メニューを開く" aria-expanded="false" style="display:none;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;border:1px solid var(--line-strong);background:#fff;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16"></path><path d="M4 12h16"></path><path d="M4 17h16"></path></svg></button>
+</div>
+</div><div data-if="menuOpen" class="mg-off">
+<nav data-hd="drawer" aria-label="メインメニュー" style="display:flex;flex-direction:column;border-bottom:1px solid var(--line);background:#fff" data-t="header_05"></nav>
 </div>
 </div>
 <script>
@@ -396,6 +401,7 @@ var TEXT = {
   /* ── ヘッダー／メニュー (header) ── */
   "header_01": "<span style=\"font-family:'Baloo 2',var(--font-base);font-size:20px;font-weight:800;color:var(--magna-mint-deep);white-space:nowrap\">マグナとふしぎの少女 For School</span><span style=\"font-size:12.5px;font-weight:700;color:var(--ink-3);white-space:nowrap\">小・中・高・特別支援学校向け</span>",
   "header_02": "<a href=\"#free-reason\" style=\"color:var(--ink);text-decoration:none\">ずっと無料の理由</a><a href=\"#why\" style=\"color:var(--ink);text-decoration:none\">アプリでできること</a><a href=\"#safe\" style=\"color:var(--ink);text-decoration:none\">導入準備</a><a href=\"#faq\" style=\"color:var(--ink);text-decoration:none\">よくある質問</a>",
+  "header_05": "<a href=\"#free-reason\" data-act=\"closeMenu\" style=\"padding:14px 24px;font-size:14px;font-weight:800;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)\">ずっと無料の理由</a> <a href=\"#why\" data-act=\"closeMenu\" style=\"padding:14px 24px;font-size:14px;font-weight:800;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)\">アプリでできること</a> <a href=\"#safe\" data-act=\"closeMenu\" style=\"padding:14px 24px;font-size:14px;font-weight:800;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line)\">導入準備</a> <a href=\"#faq\" data-act=\"closeMenu\" style=\"padding:14px 24px;font-size:14px;font-weight:800;color:var(--ink);text-decoration:none\">よくある質問</a>",
 };
 var IMAGES = {
   "app_icon_for_school": "app-icon-for-school.png"
