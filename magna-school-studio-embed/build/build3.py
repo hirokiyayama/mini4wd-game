@@ -19,6 +19,7 @@ extra = '''
 .mg-root .mg-popwrap{position:relative}
 .mg-root .mg-pop{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:40;filter:drop-shadow(0 14px 28px rgba(16,24,40,.22))}
 .mg-root [data-faq-a].mg-off{display:none !important}
+.mg-root [data-foot]{padding-bottom:0 !important}
 '''
 header_css = '''
 .mg-root[data-mg="header"]{background:transparent !important}
@@ -44,7 +45,7 @@ FAQBG = '#FFFDF5'
 ENDBG = {'header':'transparent','fv':'#F7FAF9','why':'#F7FAF9','cases':'#ffffff','free':'#ffffff','safe':'#FFFDF5','footer':'#081b1e','safeA':'#17345C','faqB':'#FFFDF5'}
 HEIGHTS = {  # (PC 1281px以上, タブレット〜1280px, スマホ〜430px)
  'header':(85,115,110),'fv':(2080,2765,2795),'why':(1830,3465,2595),'cases':(2250,2550,3450),'free':(980,1215,1495),
- 'safe':(4700,5500,6700),'footer':(260,300,550),'safeA':(2880,3815,4195),'faqB':(2080,2015,2995)}
+ 'safe':(4700,5500,6700),'footer':(400,410,520),'safeA':(2880,3815,4195),'faqB':(2080,2015,2995)}
 SPEC = [
  ('01-header', 'header', 'メニューヘッダー', ['header'], header_css, False, False),
  ('02-first-view', 'fv', 'ファーストビュー〜マグナでできること（手前）', ['fv'], '', True, True),
@@ -107,6 +108,7 @@ var MG_NAME = "%s";
 var ASSET_BASE = "%s";   /* ★ 画像・PDFを置いたフォルダのURL（末尾は / ） */
 var PAGE_URL = "https://mintflag.com/education";   /* ★ 公開したSTUDIOページのURL（例: https://xxxx.studio.site/）。空欄の場合は自動で取得を試みます */
 var ANCHORS = %s;
+var EXTERNAL_TARGET = "_top";   /* 外部サイトへのリンクの開き方："_top"=同じタブ / "_blank"=新しいタブ（同じタブで開けない場合は "_blank" に） */
 %s%s%svar TEXT = %s;
 var IMAGES = %s;
 var ALT = %s;
@@ -118,7 +120,7 @@ var LINKS = %s;
 <!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100%% -->
 <!-- ★高さ（ブレイクポイント別）：PC(1281px以上) %dpx ／ タブレット〜1280px %dpx ／ スマホ〜430px %dpx 以上 -->
 <style>
-@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&family=Poppins:wght@500;600&display=swap');
 %s
 %s
 %s

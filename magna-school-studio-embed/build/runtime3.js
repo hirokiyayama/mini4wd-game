@@ -9,6 +9,11 @@
   $all('[data-img]').forEach(function(e){ var k=e.getAttribute('data-img'); if(IMAGES[k]) e.src = u(IMAGES[k]); if(ALT[k]) e.alt = ALT[k]; });
   $all('[data-link]').forEach(function(e){ var k=e.getAttribute('data-link'); if(LINKS[k]) e.href = u(LINKS[k]); });
   if(typeof SHOW_INTRO!=='undefined' && !SHOW_INTRO) root.classList.add('mg-nointro');
+  /* ---- 外部サイトへのリンク（target指定がないものは EXTERNAL_TARGET で開く） ---- */
+  $all('a[href^="http"]').forEach(function(a){
+    if(a.hasAttribute('target') || a.hasAttribute('data-doc') || a.hasAttribute('data-dl')) return;
+    a.setAttribute('target', (typeof EXTERNAL_TARGET!=='undefined' && EXTERNAL_TARGET) || '_top'); a.setAttribute('rel','noopener');
+  });
   /* ---- ヘッダー固定用の先頭余白（メニューで飛んだとき、固定ヘッダーに見出しが隠れないように） ---- */
   (function(){
     var sp = root.querySelector('[data-topspace]'); if(!sp || typeof TOP_SPACE==='undefined') return;
@@ -114,6 +119,9 @@
     var d = ev.target.closest ? ev.target.closest('a[data-doc], a[data-dl]') : null;
     if(d){ ev.preventDefault(); downloadDoc(d.href, d.hasAttribute('data-doc') ? (LINKS.doc_name || d.getAttribute('download') || 'document.pdf') : (d.getAttribute('download') || 'document.pdf')); }
   });
+  /* style-hover 属性（デザインツール由来のホバー表示）を再現 */
+  root.addEventListener('mouseover', function(ev){ var t=ev.target.closest ? ev.target.closest('[style-hover]') : null; if(!t || t._mgHover) return; t._mgHover=t.getAttribute('style')||''; t.setAttribute('style', t._mgHover + ';' + t.getAttribute('style-hover')); });
+  root.addEventListener('mouseout', function(ev){ var t=ev.target.closest ? ev.target.closest('[style-hover]') : null; if(!t || t._mgHover===undefined) return; if(ev.relatedTarget && t.contains(ev.relatedTarget)) return; t.setAttribute('style', t._mgHover); delete t._mgHover; });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ A.closeConsult(); A.closeProfModal(); closePops(null); } });
   function anyFaqOpen(){ return $all('[data-faq-a]').some(function(a){ return !a.classList.contains('mg-off'); }); }
   measureReserve(); window.addEventListener('load', measureReserve);

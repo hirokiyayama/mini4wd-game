@@ -2,7 +2,7 @@
 <!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100% -->
 <!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 2080px ／ タブレット〜1280px 2765px ／ スマホ〜430px 2795px 以上 -->
 <style>
-@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&family=Poppins:wght@500;600&display=swap');
 .mg-root{--magna-yellow:        #fbbf24;  
   --magna-yellow-deep:   #f59e0b;  
   --magna-yellow-deeper: #d97706;  
@@ -269,7 +269,8 @@
 .mg-root #trust [data-r="stack-md"]{padding:22px 18px !important}
 .mg-root #cases button{min-height:44px}
 .mg-root [data-r="spbar"]{display:flex !important}
-.mg-root [data-foot]{padding-bottom:110px !important}}
+.mg-root [data-foot]{padding-bottom:76px !important}
+.mg-root [data-foot] > div:first-child{padding-top:40px !important;padding-bottom:40px !important}}
 @media (max-width:640px){.mg-root [data-r="safehead"]{flex-wrap:wrap !important;align-items:center !important;gap:8px 20px !important}
 .mg-root [data-r="safehead"] > div{order:-1;flex:1 1 100% !important}
 .mg-root [data-r="safehead"] > img{height:84px !important}
@@ -352,6 +353,7 @@
 .mg-root .mg-popwrap{position:relative}
 .mg-root .mg-pop{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:40;filter:drop-shadow(0 14px 28px rgba(16,24,40,.22))}
 .mg-root [data-faq-a].mg-off{display:none !important}
+.mg-root [data-foot]{padding-bottom:0 !important}
 
 
 </style>
@@ -495,6 +497,7 @@ var ANCHORS = {
   "faq": "faq",   /* よくある質問 → 「よくあるご質問」ブロック（07）のID */
   "consult": "fv"   /* 相談リンク（ヘッダー等）→ 「ファーストビュー」ブロックのID */
 };
+var EXTERNAL_TARGET = "_top";   /* 外部サイトへのリンクの開き方："_top"=同じタブ / "_blank"=新しいタブ（同じタブで開けない場合は "_blank" に） */
 var SHOW_INTRO = true;   /* ページ表示時のオープニング演出：true=あり / false=なし */
 var TOP_SPACE = { pc: 80, tablet: 115, phone: 95 };   /* ★ ヘッダーを固定にしている場合：ブロック先頭の余白(px)。メニューで飛んだとき固定ヘッダーに隠れないための、ヘッダーの高さ分 */
 var FILL_COLOR = "#F7FAF9";   /* ブロックの高さが余ったとき（FAQを開いて縮む余白を含む）の下側の色 */
@@ -587,6 +590,11 @@ var LINKS = {
   $all('[data-img]').forEach(function(e){ var k=e.getAttribute('data-img'); if(IMAGES[k]) e.src = u(IMAGES[k]); if(ALT[k]) e.alt = ALT[k]; });
   $all('[data-link]').forEach(function(e){ var k=e.getAttribute('data-link'); if(LINKS[k]) e.href = u(LINKS[k]); });
   if(typeof SHOW_INTRO!=='undefined' && !SHOW_INTRO) root.classList.add('mg-nointro');
+  /* ---- 外部サイトへのリンク（target指定がないものは EXTERNAL_TARGET で開く） ---- */
+  $all('a[href^="http"]').forEach(function(a){
+    if(a.hasAttribute('target') || a.hasAttribute('data-doc') || a.hasAttribute('data-dl')) return;
+    a.setAttribute('target', (typeof EXTERNAL_TARGET!=='undefined' && EXTERNAL_TARGET) || '_top'); a.setAttribute('rel','noopener');
+  });
   /* ---- ヘッダー固定用の先頭余白（メニューで飛んだとき、固定ヘッダーに見出しが隠れないように） ---- */
   (function(){
     var sp = root.querySelector('[data-topspace]'); if(!sp || typeof TOP_SPACE==='undefined') return;
@@ -692,6 +700,9 @@ var LINKS = {
     var d = ev.target.closest ? ev.target.closest('a[data-doc], a[data-dl]') : null;
     if(d){ ev.preventDefault(); downloadDoc(d.href, d.hasAttribute('data-doc') ? (LINKS.doc_name || d.getAttribute('download') || 'document.pdf') : (d.getAttribute('download') || 'document.pdf')); }
   });
+  /* style-hover 属性（デザインツール由来のホバー表示）を再現 */
+  root.addEventListener('mouseover', function(ev){ var t=ev.target.closest ? ev.target.closest('[style-hover]') : null; if(!t || t._mgHover) return; t._mgHover=t.getAttribute('style')||''; t.setAttribute('style', t._mgHover + ';' + t.getAttribute('style-hover')); });
+  root.addEventListener('mouseout', function(ev){ var t=ev.target.closest ? ev.target.closest('[style-hover]') : null; if(!t || t._mgHover===undefined) return; if(ev.relatedTarget && t.contains(ev.relatedTarget)) return; t.setAttribute('style', t._mgHover); delete t._mgHover; });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ A.closeConsult(); A.closeProfModal(); closePops(null); } });
   function anyFaqOpen(){ return $all('[data-faq-a]').some(function(a){ return !a.classList.contains('mg-off'); }); }
   measureReserve(); window.addEventListener('load', measureReserve);
