@@ -44,8 +44,8 @@ ROOT_STYLE = 'font-family: var(--font-base); color: var(--ink); background: #fff
 FAQBG = '#FFFDF5'
 ENDBG = {'header':'transparent','fv':'#F7FAF9','why':'#F7FAF9','cases':'#ffffff','free':'#ffffff','safe':'#FFFDF5','footer':'#081b1e','safeA':'#17345C','faqB':'#FFFDF5'}
 HEIGHTS = {  # (PC 1281px以上, タブレット768〜1280px, スマホ360〜430px) 実測の最大値＋約20px
- 'header':(85,115,100),'fv':(2090,2655,2735),'why':(1705,3400,2520),'cases':(2125,2540,3345),'free':(885,1165,1440),
- 'safeA':(2760,3730,4105),'faqB':(1935,1975,2680),'footer':(390,390,520)}
+ 'header':(85,115,100),'fv':(2090,2655,2730),'why':(1620,3340,2465),'cases':(2125,2545,3345),'free':(885,1165,1435),
+ 'safeA':(2720,3690,4055),'faqB':(1865,1905,2615),'footer':(390,390,520)}
 SPEC = [
  ('01-header', 'header', 'メニューヘッダー', ['header'], header_css, False, False),
  ('02-first-view', 'fv', 'ファーストビュー〜マグナでできること（手前）', ['fv'], '', True, True),

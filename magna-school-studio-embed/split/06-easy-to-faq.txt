@@ -1,6 +1,6 @@
 <!-- ===== マグナとふしぎの少女 For School LP ／ STUDIO Embed（分割版）: 導入はカンタン〜よくあるご質問（手前） ===== -->
 <!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100% -->
-<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 2760px ／ タブレット〜1280px 3730px ／ スマホ〜430px 4105px 以上 -->
+<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 2720px ／ タブレット〜1280px 3690px ／ スマホ〜430px 4055px 以上 -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&family=Poppins:wght@500;600&display=swap');
 .mg-root{--magna-yellow:        #fbbf24;  
@@ -681,10 +681,18 @@ var LINKS = {
     if(a.hasAttribute('target') || a.hasAttribute('data-doc') || a.hasAttribute('data-dl')) return;
     a.setAttribute('target', (typeof EXTERNAL_TARGET!=='undefined' && EXTERNAL_TARGET) || '_top'); a.setAttribute('rel','noopener');
   });
-  /* ---- ヘッダー固定用の先頭余白（メニューで飛んだとき、固定ヘッダーに見出しが隠れないように） ---- */
+  /* ---- ヘッダー固定用の先頭余白（メニューで飛んだとき、固定ヘッダーに見出しが隠れないように） ----
+     余白の分だけ、先頭セクション本来の上余白を減らして、見た目の空きが増えすぎないようにします */
   (function(){
     var sp = root.querySelector('[data-topspace]'); if(!sp || typeof TOP_SPACE==='undefined') return;
-    function apply(){ var w=window.innerWidth||1200; sp.style.height = (w<=760 ? TOP_SPACE.phone : w<=1000 ? TOP_SPACE.tablet : TOP_SPACE.pc) + 'px'; }
+    var first = sp.nextElementSibling;
+    function apply(){
+      var w = window.innerWidth || 1200, h;
+      if(w<=760) h = Math.min(TOP_SPACE.phone, Math.max(TOP_SPACE.phone-10, TOP_SPACE.phone-10 + (w-360)/7));
+      else if(w<=1000) h = TOP_SPACE.tablet; else h = TOP_SPACE.pc;
+      h = Math.round(h); sp.style.height = h + 'px';
+      if(first){ first.style.removeProperty('padding-top'); var pad = parseFloat(getComputedStyle(first).paddingTop) || 0; first.style.setProperty('padding-top', Math.max(0, pad - h) + 'px', 'important'); }
+    }
     apply(); window.addEventListener('resize', apply);
   })();
   /* ---- 他のブロックへのリンク（STUDIOページ内の別Embedへ移動） ---- */
