@@ -1,6 +1,6 @@
 <!-- ===== マグナとふしぎの少女 For School LP ／ STUDIO Embed（分割版）: 先生方の声〜なぜ、マグナはずっと無料なの？（手前） ===== -->
 <!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100% -->
-<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 2250px ／ タブレット〜1280px 2550px ／ スマホ〜430px 3450px 以上 -->
+<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 2125px ／ タブレット〜1280px 2540px ／ スマホ〜430px 3345px 以上 -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&family=Baloo+2:wght@600;700;800&family=Poppins:wght@500;600&display=swap');
 .mg-root{--magna-yellow:        #fbbf24;  

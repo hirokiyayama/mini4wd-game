@@ -43,9 +43,9 @@ chunk = lambda n: open(os.path.join(B, 'chunk_%s.html' % n), encoding='utf-8').r
 ROOT_STYLE = 'font-family: var(--font-base); color: var(--ink); background: #fff; width: 100%; box-sizing: border-box; position: relative'
 FAQBG = '#FFFDF5'
 ENDBG = {'header':'transparent','fv':'#F7FAF9','why':'#F7FAF9','cases':'#ffffff','free':'#ffffff','safe':'#FFFDF5','footer':'#081b1e','safeA':'#17345C','faqB':'#FFFDF5'}
-HEIGHTS = {  # (PC 1281px以上, タブレット〜1280px, スマホ〜430px)
- 'header':(85,115,110),'fv':(2080,2765,2795),'why':(1830,3465,2595),'cases':(2250,2550,3450),'free':(980,1215,1495),
- 'safe':(4700,5500,6700),'footer':(400,410,520),'safeA':(2880,3815,4195),'faqB':(2080,2015,2995)}
+HEIGHTS = {  # (PC 1281px以上, タブレット768〜1280px, スマホ360〜430px) 実測の最大値＋約20px
+ 'header':(85,115,100),'fv':(2090,2655,2735),'why':(1705,3400,2520),'cases':(2125,2540,3345),'free':(885,1165,1440),
+ 'safeA':(2760,3730,4105),'faqB':(1935,1975,2680),'footer':(390,390,520)}
 SPEC = [
  ('01-header', 'header', 'メニューヘッダー', ['header'], header_css, False, False),
  ('02-first-view', 'fv', 'ファーストビュー〜マグナでできること（手前）', ['fv'], '', True, True),
