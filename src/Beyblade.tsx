@@ -161,6 +161,7 @@ export function Beyblade() {
   const [phase, setPhase] = useState<'select' | 'launch' | 'count' | 'battle' | 'result' | 'over'>('select');
   const [shotMode, setShotMode] = useState<'flat' | 'diag'>('flat');
   const [hasDrop, setHasDrop] = useState(false);
+  const [mySide, setMySide] = useState<'left' | 'right'>('left'); // 自分が立つ側（左の人は左半分、右の人は右半分にしか落とせない）
   const [count, setCount] = useState<number | null>(null);
   const [myType, setMyType] = useState<BeyType>('balance');
   const [cpuType, setCpuType] = useState<BeyType>('attack');
@@ -175,6 +176,8 @@ export function Beyblade() {
   const aimRef = useRef<{ x: number; y: number } | null>(null);
   const gaugeEls = useRef<(HTMLDivElement | null)[]>([]); // [自分SPIN, 自分BURST, CPU SPIN, CPU BURST]
   const modeRef = useRef<'flat' | 'diag'>('flat');
+  const sideRef = useRef<'left' | 'right'>('left');
+  const cpuLastMode = useRef<'flat' | 'diag'>('flat');
   const typeRef = useRef<BeyType>('balance');
   const countTimers = useRef<number[]>([]);
   const phaseRef = useRef(phase);
@@ -184,6 +187,7 @@ export function Beyblade() {
   const timerRef = useRef<number | undefined>(undefined);
   phaseRef.current = phase;
   modeRef.current = shotMode;
+  sideRef.current = mySide;
   typeRef.current = myType;
 
   const startMatch = () => {
@@ -216,18 +220,32 @@ export function Beyblade() {
     if (phaseRef.current !== 'count' || !my) return;
     countTimers.current.forEach(window.clearTimeout);
     const power = 0.85;
-    // CPUは毎回ランダムな場所・角度・パワーから落とす
-    const cpuDiag = Math.random() < 0.5;
-    let cx = 0, cy = 0;
-    for (let i = 0; i < 20; i++) {
-      const ang = Math.random() * Math.PI * 2;
-      const rr = (cpuDiag ? 0.2 + 0.5 * Math.random() : 0.6 + 0.25 * Math.random()) * R;
-      cx = Math.cos(ang) * rr; cy = Math.sin(ang) * rr;
-      if (Math.hypot(cx - my.x, cy - my.y) > BEY_R * 4) break;
+    // CPUは自分の半分の中で、毎回ちがう場所・シュートの仕方・向きで落とす
+    const cpuSx = sideRef.current === 'left' ? 1 : -1; // 自分と反対側
+    const cpuDiag = Math.random() < (cpuLastMode.current === 'diag' ? 0.3 : 0.7); // 前回と違うほうを選びやすい
+    cpuLastMode.current = cpuDiag ? 'diag' : 'flat';
+    const lim = R - BEY_R - 8, m = BEY_R + 8;
+    const rr = (cpuDiag ? 0.12 + 0.6 * Math.random() : 0.55 + 0.35 * Math.random()) * lim;
+    const phi = (Math.random() - 0.5) * Math.PI * 0.92; // 自陣の半分の中の角度
+    let cx = cpuSx * Math.max(m, Math.cos(phi) * rr);
+    const cy = Math.sin(phi) * rr;
+    cx = cpuSx * Math.min(Math.abs(cx), Math.sqrt(Math.max(m * m, lim * lim - cy * cy)));
+    // 向き：リングをたどる向き / 相手側へ / ランダム、のどれか
+    const pick = Math.random();
+    let cpuAim: { x: number; y: number } | null = null;
+    if (pick < 0.35) {
+      const a0 = defaultAim(cx, cy), rot = (Math.random() - 0.5) * 1.2;
+      cpuAim = { x: a0.x * Math.cos(rot) - a0.y * Math.sin(rot), y: a0.x * Math.sin(rot) + a0.y * Math.cos(rot) };
+    } else if (pick < 0.65) {
+      const dx = my.x - cx, dy = my.y - cy, l = Math.hypot(dx, dy) || 1;
+      cpuAim = { x: dx / l, y: dy / l };
+    } else {
+      const a = Math.random() * Math.PI * 2;
+      cpuAim = { x: Math.cos(a), y: Math.sin(a) };
     }
     beysRef.current = [
       makeBey(myType, my.x, my.y, modeRef.current === 'diag', aimRef.current, power),
-      makeBey(cpuType, cx, cy, cpuDiag, null, 0.7 + Math.random() * 0.3),
+      makeBey(cpuType, cx, cy, cpuDiag, cpuAim, 0.7 + Math.random() * 0.3),
     ];
     endedRef.current = false;
     setPhase('battle');
@@ -259,9 +277,13 @@ export function Beyblade() {
   // タップで落とす場所を決め、ドラッグで走らせる向きを決める
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (phaseRef.current !== 'launch') return;
-    let { x, y } = toStadium(e);
-    const d = Math.hypot(x, y), lim = R - BEY_R - 8;
-    if (d > lim) { x *= lim / d; y *= lim / d; }
+    const p = toStadium(e);
+    const lim = R - BEY_R - 8, m = BEY_R + 8;
+    const sx = sideRef.current === 'left' ? -1 : 1;
+    // 左側の人は左半分、右側の人は右半分にしか落とせない
+    const ax = Math.min(Math.max(p.x * sx, m), lim);
+    const maxY = Math.sqrt(Math.max(0, lim * lim - ax * ax));
+    const x = ax * sx, y = Math.max(-maxY, Math.min(maxY, p.y));
     dropRef.current = { x, y };
     aimRef.current = null;
     setHasDrop(true);
@@ -496,6 +518,18 @@ export function Beyblade() {
       ctx.save();
       ctx.translate(CX, CY);
       drawStadium(ctx);
+      if (phaseRef.current === 'launch' || phaseRef.current === 'count') {
+        // 自分が落とせる半分をハイライト
+        const sx = sideRef.current === 'left' ? -1 : 1;
+        ctx.save();
+        ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.clip();
+        ctx.fillStyle = 'rgba(90,171,255,0.16)';
+        ctx.fillRect(sx < 0 ? -R : 0, -R, R, R * 2);
+        ctx.setLineDash([8, 8]); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(40,90,170,0.55)';
+        ctx.beginPath(); ctx.moveTo(0, -R); ctx.lineTo(0, R); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
 
       const beys = beysRef.current;
       if (beys && phaseRef.current !== 'count') {
@@ -513,6 +547,8 @@ export function Beyblade() {
           ctx.translate(b.x, b.y);
           ctx.fillStyle = 'rgba(0,0,0,0.22)';
           ctx.beginPath(); ctx.ellipse(3, 5, BEY_R, BEY_R * 0.85, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = i === 0 ? '#5aabff' : '#ef4444'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(0, 0, BEY_R + 4, 0, Math.PI * 2); ctx.stroke();
           ctx.rotate(b.angle);
           ctx.fillStyle = t.color;
           for (let k = 0; k < 3; k++) {
@@ -648,15 +684,18 @@ export function Beyblade() {
       {phase === 'select' ? (
         <h2 style={{ margin: 0, letterSpacing: 2 }}>BEYBLADE X BATTLE</h2>
       ) : (
-        // 上部：名前を大きく + スピン / バーストゲージ
+        // 上部：名前 + スピン / バーストゲージ（自分が選んだ側に自分を表示）
         <div style={{ display: 'flex', width: `min(96vw, 900px)`, gap: 24 }}>
-          {([['あなた', '#5aabff', 0, 'left'], ['CPU', '#ef4444', 2, 'right']] as const).map(([name, color, k, align]) => (
-            <div key={name} style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1.1, color, textAlign: align, letterSpacing: 1 }}>{name}</div>
-              {([['SPIN', '#5aabff', k], ['BURST', '#ef4444', k + 1]] as const).map(([label, c, idx]) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexDirection: align === 'left' ? 'row' : 'row-reverse' }}>
-                  <span style={{ width: 52, fontSize: 12, fontWeight: 700, opacity: 0.85, textAlign: align }}>{label}</span>
-                  <div style={{ flex: 1, height: 12, background: '#1b2551', borderRadius: 6, overflow: 'hidden', transform: align === 'right' ? 'scaleX(-1)' : undefined }}>
+          {(mySide === 'left'
+            ? [['あなた', '#5aabff', 0, 'left'], ['CPU', '#ef4444', 2, 'right']]
+            : [['CPU', '#ef4444', 2, 'left'], ['あなた', '#5aabff', 0, 'right']]
+          ).map(([name, color, k, align]) => (
+            <div key={name as string} style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1.1, color: color as string, textAlign: align as 'left' | 'right' }}>{name}</div>
+              {([['SPIN', '#5aabff', k as number], ['BURST', '#ef4444', (k as number) + 1]] as const).map(([label, c, idx]) => (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexDirection: align === 'left' ? 'row' : 'row-reverse' }}>
+                  <span style={{ width: 40, fontSize: 10, fontWeight: 700, opacity: 0.85, textAlign: align as 'left' | 'right' }}>{label}</span>
+                  <div style={{ flex: 1, height: 7, background: '#1b2551', borderRadius: 4, overflow: 'hidden', transform: align === 'right' ? 'scaleX(-1)' : undefined }}>
                     <div ref={el => { gaugeEls.current[idx] = el; }} style={{ width: idx % 2 ? '0%' : '100%', height: '100%', background: c }} />
                   </div>
                 </div>
@@ -673,6 +712,20 @@ export function Beyblade() {
           <div style={{ fontSize: 13, opacity: 0.8, textAlign: 'center', lineHeight: 1.7 }}>
             スピン 1pt / オーバー 2pt / バースト 2pt / エクストリーム 3pt<br />
             下の中央（金色）から場外に出すとエクストリーム、左右の赤いポケットはオーバー！<br />ステータスは100が標準です。
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <span style={{ fontSize: 15 }}>あなたの立ち位置：</span>
+            {([['left', '左側（左半分に落とす）'], ['right', '右側（右半分に落とす）']] as const).map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => setMySide(k)}
+                style={{
+                  padding: '8px 16px', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 700,
+                  border: `3px solid ${mySide === k ? '#ffd740' : '#2a3566'}`,
+                  background: mySide === k ? '#14204f' : '#0a1030',
+                }}
+              >{label}</button>
+            ))}
           </div>
           <button style={btn} onClick={startMatch}>バトル開始</button>
         </div>
@@ -718,28 +771,35 @@ export function Beyblade() {
         </div>
       )}
       {phase !== 'select' && (
-        // 下中央：ポイントと、それぞれが使っているベイの名前
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, width: 'min(96vw, 900px)' }}>
-          <div style={{ flex: 1, textAlign: 'right' }}>
-            <div style={{ fontSize: 11, opacity: 0.7 }}>あなたのベイ</div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: TYPES[myType].color }}>{TYPES[myType].name}</div>
-          </div>
-          <div style={{ fontSize: 44, fontWeight: 900, lineHeight: 1, textAlign: 'center' }}>
-            <span style={{ color: '#5aabff' }}>{score.me}</span>
-            <span style={{ opacity: 0.6 }}> - </span>
-            <span style={{ color: '#ef4444' }}>{score.cpu}</span>
-            <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 600 }}>{WIN_POINTS}ポイント先取</div>
-          </div>
-          <div style={{ flex: 1, textAlign: 'left' }}>
-            <div style={{ fontSize: 11, opacity: 0.7 }}>CPUのベイ</div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: TYPES[cpuType].color }}>{TYPES[cpuType].name}</div>
-          </div>
-        </div>
+        // 下中央：ポイントと、それぞれが使っているベイの名前（自分が選んだ側に合わせて左右を入れ替え）
+        (() => {
+          const me = { label: 'あなたのベイ', bey: TYPES[myType], pt: score.me, color: '#5aabff' };
+          const cpu = { label: 'CPUのベイ', bey: TYPES[cpuType], pt: score.cpu, color: '#ef4444' };
+          const [L, Rr] = mySide === 'left' ? [me, cpu] : [cpu, me];
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, width: 'min(96vw, 900px)' }}>
+              <div style={{ flex: 1, textAlign: 'right' }}>
+                <div style={{ fontSize: 11, opacity: 0.7 }}>{L.label}</div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: L.bey.color }}>{L.bey.name}</div>
+              </div>
+              <div style={{ fontSize: 44, fontWeight: 900, lineHeight: 1, textAlign: 'center' }}>
+                <span style={{ color: L.color }}>{L.pt}</span>
+                <span style={{ opacity: 0.6 }}> - </span>
+                <span style={{ color: Rr.color }}>{Rr.pt}</span>
+                <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 600 }}>{WIN_POINTS}ポイント先取</div>
+              </div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={{ fontSize: 11, opacity: 0.7 }}>{Rr.label}</div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: Rr.bey.color }}>{Rr.bey.name}</div>
+              </div>
+            </div>
+          );
+        })()
       )}
       {phase === 'launch' && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <div style={{ fontWeight: 800, fontSize: 15 }}>
-            {hasDrop ? '② ドラッグで走らせる向きを決めて、スタート！' : '① スタジアムをタップして、落とす場所を決めよう'}
+            {hasDrop ? '② ドラッグで走らせる向きを決めて、スタート！' : `① 青い${mySide === 'left' ? '左' : '右'}半分をタップして、落とす場所を決めよう`}
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'stretch' }}>
             {([['flat', '水平シュート', 'すぐリングに乗ってダッシュ'], ['diag', '斜めシュート', 'その場にとどまり、最初は飛ばされにくい']] as const).map(([k, label, sub]) => (
