@@ -10,18 +10,62 @@ const W = 900, H = 700, CX = W / 2, CY = 335;
 const EXIT_HALF = 0.24; // 出口の幅（rad）
 const OVER_PHI = 0.6; // 下方向から左右ポケットまでの角度（rad）
 
-type BeyType = 'attack' | 'defense' | 'stamina' | 'balance';
+// 'me' = 自分のベイ, 'cpu' = 相手のベイ（ブレード・ラチェット・ビットの組み合わせから作る）
+type BeyType = 'me' | 'cpu';
 type Finish = 'spin' | 'over' | 'burst' | 'extreme';
 
 // ステータスは100が標準
 interface Stats { atk: number; def: number; sta: number; dash: number; burst: number }
-const STAT_LABELS: [keyof Stats, string][] = [
-  ['atk', '攻撃'], ['def', '防御'], ['sta', '持久'], ['dash', 'ダッシュ'], ['burst', 'バースト耐性'],
+const STAT_LABELS: [keyof Stats, string, string][] = [
+  ['atk', '攻撃', '攻'], ['def', '防御', '防'], ['sta', '持久', '持'], ['dash', 'ダッシュ', 'ダ'], ['burst', 'バースト耐性', '耐'],
 ];
 
-function mkType(name: string, color: string, desc: string, st: Stats) {
+// パーツ：ブレード（見た目・性格）/ ラチェット / ビット。ステータスは「100 + パーツごとの増減」の合計
+interface PartDef { id: string; name: string; desc: string; d: Partial<Stats>; color?: string; blades?: number }
+const BLADES: PartDef[] = [
+  { id: 'dran', name: 'ドランソード', desc: '攻撃型。鋭い羽根で弾き飛ばす', d: { atk: 25, def: -10, sta: -15, dash: 10, burst: -10 }, color: '#ef4444', blades: 3 },
+  { id: 'hells', name: 'ヘルズサイズ', desc: '攻撃と防御のバランス型', d: { atk: 15, def: 10, sta: -10 }, color: '#a855f7', blades: 3 },
+  { id: 'wizard', name: 'ウィザードロッド', desc: '持久型。長く回り続ける', d: { atk: -15, sta: 30, dash: -10, burst: -5 }, color: '#22c55e', blades: 4 },
+  { id: 'knight', name: 'ナイトシールド', desc: '防御型。バーストしにくい', d: { atk: -15, def: 25, dash: -15, burst: 20 }, color: '#3b82f6', blades: 6 },
+  { id: 'aero', name: 'エアロペガサス', desc: 'スピード型。ダッシュが得意', d: { atk: 5, def: -10, sta: 5, dash: 25, burst: -5 }, color: '#38bdf8', blades: 5 },
+];
+const RATCHETS: PartDef[] = [
+  { id: 'r360', name: '3-60', desc: '軽く攻撃寄り。バーストしやすい', d: { atk: 10, def: -5, dash: 5, burst: -10 } },
+  { id: 'r460', name: '4-60', desc: '標準的なバランス', d: {} },
+  { id: 'r560', name: '5-60', desc: '防御寄り。バースト耐性が高い', d: { atk: -5, def: 10, dash: -5, burst: 10 } },
+  { id: 'r960', name: '9-60', desc: '重くて頑丈。動きは鈍い', d: { def: 15, sta: -10, dash: -10, burst: 20 } },
+];
+const BITS: PartDef[] = [
+  { id: 'F', name: 'F（フラット）', desc: '攻撃的で素早い。持久は短め', d: { atk: 15, def: -5, sta: -20, dash: 20 } },
+  { id: 'B', name: 'B（ボール）', desc: '安定。持久と防御がやや上がる', d: { atk: -5, def: 5, sta: 10, dash: -5 } },
+  { id: 'N', name: 'N（ニードル）', desc: '持久特化。ダッシュは弱い', d: { atk: -10, sta: 25, dash: -20, burst: 5 } },
+  { id: 'R', name: 'R（ラッシュ）', desc: 'ダッシュ特化。回転は落ちやすい', d: { atk: 5, def: -5, sta: -15, dash: 30, burst: -5 } },
+  { id: 'GF', name: 'GF（ギアフラット）', desc: '攻撃とダッシュに強い', d: { atk: 20, def: -10, sta: -25, dash: 25, burst: -10 } },
+];
+
+interface Custom { blade: string; ratchet: string; bit: string }
+const DEFAULT_CUSTOM: Custom = { blade: 'hells', ratchet: 'r460', bit: 'B' };
+const pick = (list: PartDef[], id: string) => list.find(p => p.id === id) ?? list[0];
+const randomCustom = (): Custom => ({
+  blade: BLADES[Math.floor(Math.random() * BLADES.length)].id,
+  ratchet: RATCHETS[Math.floor(Math.random() * RATCHETS.length)].id,
+  bit: BITS[Math.floor(Math.random() * BITS.length)].id,
+});
+
+function calcStats(c: Custom): Stats {
+  const st: Stats = { atk: 100, def: 100, sta: 100, dash: 100, burst: 100 };
+  for (const part of [pick(BLADES, c.blade), pick(RATCHETS, c.ratchet), pick(BITS, c.bit)]) {
+    for (const [k, v] of Object.entries(part.d)) st[k as keyof Stats] += v as number;
+  }
+  for (const k of Object.keys(st) as (keyof Stats)[]) st[k] = Math.max(40, Math.min(200, st[k]));
+  return st;
+}
+
+function buildBey(c: Custom) {
+  const bl = pick(BLADES, c.blade), st = calcStats(c);
   return {
-    name, color, desc, stats: st,
+    name: `${bl.name} ${pick(RATCHETS, c.ratchet).name} ${c.bit}`,
+    color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, stats: st,
     atk: st.atk / 100, // 与ダメージ
     def: st.def / 100, // 被スピンダメージ軽減
     decay: 0.85 * (100 / st.sta), // 持久が高いほど回転が減りにくい
@@ -32,12 +76,8 @@ function mkType(name: string, color: string, desc: string, st: Stats) {
   };
 }
 
-const TYPES: Record<BeyType, ReturnType<typeof mkType>> = {
-  attack: mkType('アタック', '#ef4444', '高火力でダッシュ連発。でも失速しやすい', { atk: 130, def: 80, sta: 70, dash: 130, burst: 80 }),
-  defense: mkType('ディフェンス', '#3b82f6', '重くて頑丈。バーストしにくい', { atk: 80, def: 130, sta: 100, dash: 80, burst: 130 }),
-  stamina: mkType('スタミナ', '#22c55e', '長く回る。スピン勝ち狙い', { atk: 80, def: 100, sta: 140, dash: 80, burst: 100 }),
-  balance: mkType('バランス', '#f59e0b', 'クセがない万能型', { atk: 100, def: 100, sta: 100, dash: 100, burst: 100 }),
-};
+// バトルで使うベイ（スタート時に、カスタマイズ内容から作り直す）
+const TYPES: Record<BeyType, ReturnType<typeof buildBey>> = { me: buildBey(DEFAULT_CUSTOM), cpu: buildBey(DEFAULT_CUSTOM) };
 
 const FINISH_INFO: Record<Finish, { label: string; points: number }> = {
   spin: { label: 'スピンフィニッシュ', points: 1 },
@@ -94,7 +134,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
 }
 
 // 高速回転のベイは止まって見えるほど速く回っているので、残像（ブラー）で描く。回転が落ちると羽根がはっきり見えてくる
-function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, angle: number, ratio: number, cap: string) {
+function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, angle: number, ratio: number, cap: string, nBlades = 3) {
   // 回転が落ちてくるとふらつく
   if (ratio > 0.001 && ratio < 0.3) {
     const t = performance.now(), A = (0.3 - ratio) * 14;
@@ -103,10 +143,11 @@ function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, ang
   ctx.strokeStyle = ring; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.arc(0, 0, BEY_R + 4, 0, Math.PI * 2); ctx.stroke();
   const blades = () => {
-    for (let k = 0; k < 3; k++) {
-      ctx.rotate((Math.PI * 2) / 3);
+    const hw = 30 / nBlades; // 羽根が多いほど細い
+    for (let k = 0; k < nBlades; k++) {
+      ctx.rotate((Math.PI * 2) / nBlades);
       ctx.beginPath();
-      ctx.moveTo(0, 0); ctx.lineTo(BEY_R, -9); ctx.lineTo(BEY_R + 3, 11); ctx.closePath();
+      ctx.moveTo(0, 0); ctx.lineTo(BEY_R, -hw * 0.9); ctx.lineTo(BEY_R + 3, hw * 1.1); ctx.closePath();
       ctx.fill();
     }
   };
@@ -215,8 +256,8 @@ export function Beyblade() {
   const [hasDrop, setHasDrop] = useState(false);
   const [mySide, setMySide] = useState<'left' | 'right'>('left'); // 自分が立つ側（左の人は左半分、右の人は右半分にしか落とせない）
   const [count, setCount] = useState<number | null>(null);
-  const [myType, setMyType] = useState<BeyType>('balance');
-  const [cpuType, setCpuType] = useState<BeyType>('attack');
+  const [custom, setCustom] = useState<Custom>(DEFAULT_CUSTOM);
+  const [, setCpuCustom] = useState<Custom>(DEFAULT_CUSTOM); // 再描画用（中身は TYPES.cpu に入る）
   const [score, setScore] = useState({ me: 0, cpu: 0 });
   const [message, setMessage] = useState<{ winner: 'me' | 'cpu'; finish: Finish } | null>(null);
 
@@ -226,12 +267,12 @@ export function Beyblade() {
   const partsRef = useRef<Part[]>([]);
   const dropRef = useRef<{ x: number; y: number } | null>(null);
   const aimRef = useRef<{ x: number; y: number } | null>(null);
+  const previewRef = useRef<HTMLCanvasElement>(null);
   const gaugeEls = useRef<(HTMLDivElement | null)[]>([]); // [自分SPIN, 自分BURST, CPU SPIN, CPU BURST]
   const modeRef = useRef<'flat' | 'diag'>('flat');
   const sideRef = useRef<'left' | 'right'>('left');
   const cpuLastMode = useRef<'flat' | 'diag'>('flat');
-  const cpuPlanRef = useRef<{ x: number; y: number; diag: boolean; aim: { x: number; y: number }; type: BeyType } | null>(null);
-  const typeRef = useRef<BeyType>('balance');
+  const cpuPlanRef = useRef<{ x: number; y: number; diag: boolean; aim: { x: number; y: number } } | null>(null);
   const countTimers = useRef<number[]>([]);
   const phaseRef = useRef(phase);
   const flashRef = useRef(0);
@@ -241,49 +282,9 @@ export function Beyblade() {
   phaseRef.current = phase;
   modeRef.current = shotMode;
   sideRef.current = mySide;
-  typeRef.current = myType;
 
-  const startMatch = () => {
-    window.clearTimeout(timerRef.current);
-    scoreRef.current = { me: 0, cpu: 0 };
-    setScore({ me: 0, cpu: 0 });
-    setMessage(null);
-    setCpuType((['attack', 'defense', 'stamina', 'balance'] as BeyType[])[Math.floor(Math.random() * 4)]);
-    beysRef.current = null;
-    partsRef.current = [];
-    dropRef.current = null;
-    aimRef.current = null;
-    cpuPlanRef.current = null;
-    setHasDrop(false);
-    setPhase('launch');
-  };
-
-  const nextRound = () => {
-    beysRef.current = null;
-    partsRef.current = [];
-    setMessage(null);
-    dropRef.current = null;
-    aimRef.current = null;
-    cpuPlanRef.current = null;
-    setHasDrop(false);
-    setPhase('launch');
-  };
-
-  // 「GO!シュート!」の表示が消えたら、ベイを落とす
-  const fireNow = useCallback(() => {
-    const my = dropRef.current, cpu = cpuPlanRef.current;
-    if (phaseRef.current !== 'count' || !my || !cpu) return;
-    countTimers.current.forEach(window.clearTimeout);
-    beysRef.current = [
-      makeBey(myType, my.x, my.y, modeRef.current === 'diag', aimRef.current, 0.85),
-      makeBey(cpu.type, cpu.x, cpu.y, cpu.diag, cpu.aim, 0.7 + Math.random() * 0.3),
-    ];
-    endedRef.current = false;
-    setPhase('battle');
-  }, [myType]);
-
-  // CPUは自分の半分の中で、毎回ちがう場所・シュートの仕方・向きで落とす（スタート時に決めて、相手にも見える）
-  const planCpu = (my: { x: number; y: number }) => {
+  // CPUは自分の半分の中で、毎回ちがう場所・シュートの仕方・向きで落とす（ラウンド開始時に決まり、向きを決めるときから見える）
+  const planCpu = () => {
     const cpuSx = sideRef.current === 'left' ? 1 : -1; // 自分と反対側
     const diag = Math.random() < (cpuLastMode.current === 'diag' ? 0.3 : 0.7); // 前回と違うほうを選びやすい
     cpuLastMode.current = diag ? 'diag' : 'flat';
@@ -294,27 +295,69 @@ export function Beyblade() {
     const y = Math.sin(phi) * rr;
     x = cpuSx * Math.min(Math.abs(x), Math.sqrt(Math.max(m * m, lim * lim - y * y)));
     // 向き：リングをたどる向き / 相手側へ / ランダム、のどれか
-    const pick = Math.random();
+    const roll = Math.random();
     let aim: { x: number; y: number };
-    if (pick < 0.35) {
+    if (roll < 0.35) {
       const a0 = defaultAim(x, y), rot = (Math.random() - 0.5) * 1.2;
       aim = { x: a0.x * Math.cos(rot) - a0.y * Math.sin(rot), y: a0.x * Math.sin(rot) + a0.y * Math.cos(rot) };
-    } else if (pick < 0.65) {
-      const dx = my.x - x, dy = my.y - y, l = Math.hypot(dx, dy) || 1;
+    } else if (roll < 0.65) {
+      const tx = -cpuSx * R * 0.45, dx = tx - x, dy = -y, l = Math.hypot(dx, dy) || 1; // 相手側の半分の中央へ
       aim = { x: dx / l, y: dy / l };
     } else {
       const a = Math.random() * Math.PI * 2;
       aim = { x: Math.cos(a), y: Math.sin(a) };
     }
-    return { x, y, diag, aim, type: cpuType };
+    return { x, y, diag, aim };
   };
+
+  const startMatch = () => {
+    window.clearTimeout(timerRef.current);
+    scoreRef.current = { me: 0, cpu: 0 };
+    setScore({ me: 0, cpu: 0 });
+    setMessage(null);
+    // カスタマイズした自分のベイと、ランダムなCPUのベイをここで作る
+    const cc = randomCustom();
+    TYPES.me = buildBey(custom);
+    TYPES.cpu = buildBey(cc);
+    setCpuCustom(cc);
+    beysRef.current = null;
+    partsRef.current = [];
+    dropRef.current = null;
+    aimRef.current = null;
+    cpuPlanRef.current = planCpu();
+    setHasDrop(false);
+    setPhase('launch');
+  };
+
+  const nextRound = () => {
+    beysRef.current = null;
+    partsRef.current = [];
+    setMessage(null);
+    dropRef.current = null;
+    aimRef.current = null;
+    cpuPlanRef.current = planCpu();
+    setHasDrop(false);
+    setPhase('launch');
+  };
+
+  // 「GO!シュート!」の表示が消えたら、ベイを落とす
+  const fireNow = useCallback(() => {
+    const my = dropRef.current, cpu = cpuPlanRef.current;
+    if (phaseRef.current !== 'count' || !my || !cpu) return;
+    countTimers.current.forEach(window.clearTimeout);
+    beysRef.current = [
+      makeBey('me', my.x, my.y, modeRef.current === 'diag', aimRef.current, 0.85),
+      makeBey('cpu', cpu.x, cpu.y, cpu.diag, cpu.aim, 0.7 + Math.random() * 0.3),
+    ];
+    endedRef.current = false;
+    setPhase('battle');
+  }, []);
 
   // スタート：3・2・1・GO!シュート! → 表示が消えたらベイが落ちる
   const shoot = useCallback(() => {
     if (phaseRef.current !== 'launch' || !dropRef.current) return;
     beysRef.current = null;
     partsRef.current = [];
-    cpuPlanRef.current = planCpu(dropRef.current);
     setPhase('count');
     setCount(3);
     countTimers.current.forEach(window.clearTimeout);
@@ -324,7 +367,7 @@ export function Beyblade() {
       window.setTimeout(() => setCount(0), 2400),
       window.setTimeout(() => { setCount(null); fireNow(); }, 3200),
     ];
-  }, [fireNow, cpuType]);
+  }, [fireNow]);
 
   const toStadium = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -395,6 +438,24 @@ export function Beyblade() {
 
   // メインループ（固定タイムステップ物理 + 描画）
   const inSelect = phase === 'select';
+  // カスタマイズ画面のベイのプレビュー（回転している）
+  useEffect(() => {
+    if (!inSelect) return;
+    const c = previewRef.current;
+    if (!c) return;
+    const ctx = c.getContext('2d')!;
+    const bey = buildBey(custom);
+    let raf = 0;
+    const loop = () => {
+      ctx.clearRect(0, 0, 170, 170);
+      ctx.save(); ctx.translate(85, 85); ctx.scale(1.9, 1.9);
+      drawBey(ctx, bey.color, '#5aabff', performance.now() / 14, 0.4, '#fff', bey.blades);
+      ctx.restore();
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [inSelect, custom]);
   useEffect(() => {
     const canvas = canvasRef.current;
     if (inSelect || !canvas) return;
@@ -632,7 +693,7 @@ export function Beyblade() {
           ctx.translate(b.x, b.y);
           ctx.fillStyle = 'rgba(0,0,0,0.22)';
           ctx.beginPath(); ctx.ellipse(3, 5, BEY_R, BEY_R * 0.85, 0, 0, Math.PI * 2); ctx.fill();
-          drawBey(ctx, t.color, i === 0 ? '#5aabff' : '#ef4444', b.angle, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4');
+          drawBey(ctx, t.color, i === 0 ? '#5aabff' : '#ef4444', b.angle, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades);
           ctx.restore();
           if (b.dashFx > 0) {
             ctx.fillStyle = `rgba(230,110,0,${Math.min(1, b.dashFx * 1.5)})`;
@@ -643,10 +704,10 @@ export function Beyblade() {
         });
       }
       // 落とす場所・向き・シュート方法のプレビュー（スタート時は相手のものも見える）
-      const drawGhost = (g: { x: number; y: number }, aim: { x: number; y: number }, diag: boolean, color: string, ring: string, arrow: string, label: string) => {
+      const drawGhost = (g: { x: number; y: number }, aim: { x: number; y: number }, diag: boolean, color: string, ring: string, arrow: string, label: string, nb: number) => {
         ctx.save(); ctx.translate(g.x, g.y);
         ctx.globalAlpha = 0.85;
-        drawBey(ctx, color, ring, performance.now() / 18, 1, '#fff');
+        drawBey(ctx, color, ring, performance.now() / 18, 1, '#fff', nb);
         ctx.globalAlpha = 1;
         ctx.strokeStyle = arrow; ctx.fillStyle = arrow; ctx.lineWidth = 4;
         const len = diag ? 46 : 84;
@@ -669,11 +730,11 @@ export function Beyblade() {
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current) {
         const g = dropRef.current;
         const diag = modeRef.current === 'diag';
-        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y), diag, TYPES[typeRef.current].color, '#5aabff', '#e8590c', `あなた：${diag ? '斜めシュート' : '水平シュート'}`);
+        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y), diag, TYPES.me.color, '#5aabff', '#e8590c', `あなた：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades);
       }
-      if (phaseRef.current === 'count' && cpuPlanRef.current) {
+      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current) {
         const c = cpuPlanRef.current;
-        drawGhost(c, c.aim, c.diag, TYPES[c.type].color, '#ef4444', '#d62828', `CPU：${c.diag ? '斜めシュート' : '水平シュート'}`);
+        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ef4444', '#d62828', `CPU：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades);
       }
       // バースト：パーツが飛び散る
       const parts = partsRef.current;
@@ -724,31 +785,55 @@ export function Beyblade() {
     return () => cancelAnimationFrame(raf);
   }, [endRound, inSelect]);
 
-  const typeButtons = (selected: BeyType, onPick: (t: BeyType) => void) => (
-    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-      {(Object.keys(TYPES) as BeyType[]).map(k => (
+  // ベイのカスタマイズ画面：ブレード / ラチェット / ビットを組み合わせる
+  const myBey = buildBey(custom);
+  const partPicker = (title: string, list: PartDef[], value: string, onPick: (id: string) => void) => (
+    <div style={{ flex: '1 1 200px', minWidth: 190 }}>
+      <div style={{ fontWeight: 800, marginBottom: 6, fontSize: 15 }}>{title}</div>
+      {list.map(pt => (
         <button
-          key={k}
-          onClick={() => onPick(k)}
+          key={pt.id}
+          onClick={() => onPick(pt.id)}
           style={{
-            padding: '12px 16px', minWidth: 200, borderRadius: 10, cursor: 'pointer',
-            border: `3px solid ${selected === k ? TYPES[k].color : '#2a3566'}`,
-            background: selected === k ? '#14204f' : '#0a1030', color: '#fff',
+            display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', marginBottom: 6, borderRadius: 8, cursor: 'pointer', color: '#fff',
+            border: `3px solid ${value === pt.id ? (pt.color ?? '#ffd740') : '#2a3566'}`,
+            background: value === pt.id ? '#14204f' : '#0a1030',
           }}
         >
-          <div style={{ fontWeight: 700, color: TYPES[k].color }}>{TYPES[k].name}</div>
-          <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8, maxWidth: 170 }}>{TYPES[k].desc}</div>
-          {STAT_LABELS.map(([key, label]) => (
-            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, marginTop: 3 }}>
-              <span style={{ width: 70, textAlign: 'left' }}>{label}</span>
-              <div style={{ flex: 1, height: 6, background: '#1b2551', borderRadius: 3 }}>
-                <div style={{ width: `${Math.min(100, (TYPES[k].stats[key] / 150) * 100)}%`, height: '100%', borderRadius: 3, background: TYPES[k].stats[key] >= 100 ? TYPES[k].color : '#6b7bb0' }} />
-              </div>
-              <span style={{ width: 26, textAlign: 'right' }}>{TYPES[k].stats[key]}</span>
-            </div>
-          ))}
+          <div style={{ fontWeight: 700, color: pt.color ?? '#fff' }}>{pt.name}</div>
+          <div style={{ fontSize: 11, opacity: 0.8 }}>{pt.desc}</div>
+          <div style={{ fontSize: 11, marginTop: 2 }}>
+            {STAT_LABELS.filter(([k]) => pt.d[k]).map(([k, , short]) => (
+              <span key={k} style={{ marginRight: 8, color: (pt.d[k] as number) > 0 ? '#7ee787' : '#ff8b8b' }}>
+                {short}{(pt.d[k] as number) > 0 ? '+' : ''}{pt.d[k]}
+              </span>
+            ))}
+            {Object.keys(pt.d).length === 0 && <span style={{ opacity: 0.6 }}>増減なし</span>}
+          </div>
         </button>
       ))}
+    </div>
+  );
+  const customizer = (
+    <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', justifyContent: 'center', width: 'min(96vw, 1000px)' }}>
+      <div style={{ flex: '0 0 220px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: 12, borderRadius: 12, background: '#0a1030', border: '2px solid #2a3566' }}>
+        <canvas ref={previewRef} width={170} height={170} />
+        <div style={{ fontWeight: 900, fontSize: 17, color: myBey.color, textAlign: 'center' }}>{myBey.name}</div>
+        <div style={{ width: '100%' }}>
+          {STAT_LABELS.map(([key, label]) => (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, marginTop: 4 }}>
+              <span style={{ width: 74 }}>{label}</span>
+              <div style={{ flex: 1, height: 6, background: '#1b2551', borderRadius: 3 }}>
+                <div style={{ width: `${Math.min(100, (myBey.stats[key] / 160) * 100)}%`, height: '100%', borderRadius: 3, background: myBey.stats[key] >= 100 ? myBey.color : '#6b7bb0' }} />
+              </div>
+              <span style={{ width: 28, textAlign: 'right' }}>{myBey.stats[key]}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      {partPicker('ブレード', BLADES, custom.blade, id => setCustom(c => ({ ...c, blade: id })))}
+      {partPicker('ラチェット', RATCHETS, custom.ratchet, id => setCustom(c => ({ ...c, ratchet: id })))}
+      {partPicker('ビット', BITS, custom.bit, id => setCustom(c => ({ ...c, bit: id })))}
     </div>
   );
 
@@ -785,11 +870,11 @@ export function Beyblade() {
 
       {phase === 'select' ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, marginTop: 40 }}>
-          <div style={{ fontSize: 18 }}>あなたのベイを選ぼう（{WIN_POINTS}ポイント先取）</div>
-          {typeButtons(myType, setMyType)}
+          <div style={{ fontSize: 18 }}>ベイをカスタマイズしよう（{WIN_POINTS}ポイント先取）</div>
+          {customizer}
           <div style={{ fontSize: 13, opacity: 0.8, textAlign: 'center', lineHeight: 1.7 }}>
             スピン 1pt / オーバー 2pt / バースト 2pt / エクストリーム 3pt<br />
-            下の中央（金色）から場外に出すとエクストリーム、左右の赤いポケットはオーバー！<br />ステータスは100が標準です。
+            下の中央（金色）から場外に出すとエクストリーム、左右の赤いポケットはオーバー！<br />ステータスは100が標準。パーツの組み合わせで強みと弱みが変わります。
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <span style={{ fontSize: 15 }}>あなたの立ち位置：</span>
@@ -851,8 +936,8 @@ export function Beyblade() {
       {phase !== 'select' && (
         // 下中央：ポイントと、それぞれが使っているベイの名前（自分が選んだ側に合わせて左右を入れ替え）
         (() => {
-          const me = { label: 'あなたのベイ', bey: TYPES[myType], pt: score.me, color: '#5aabff' };
-          const cpu = { label: 'CPUのベイ', bey: TYPES[cpuType], pt: score.cpu, color: '#ef4444' };
+          const me = { label: 'あなたのベイ', bey: TYPES.me, pt: score.me, color: '#5aabff' };
+          const cpu = { label: 'CPUのベイ', bey: TYPES.cpu, pt: score.cpu, color: '#ef4444' };
           const [L, Rr] = mySide === 'left' ? [me, cpu] : [cpu, me];
           return (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, width: 'min(96vw, 900px)' }}>
