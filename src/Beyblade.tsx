@@ -223,8 +223,8 @@ export function Beyblade() {
     countTimers.current = [
       window.setTimeout(() => setCount(2), 800),
       window.setTimeout(() => setCount(1), 1600),
-      window.setTimeout(() => setCount(0), 2400),
-      window.setTimeout(() => { setCount(null); setPhase('battle'); }, 3100),
+      window.setTimeout(() => { setCount(0); setPhase('battle'); }, 2400),
+      window.setTimeout(() => setCount(null), 3300),
     ];
   }, [myType, cpuType]);
 
@@ -402,8 +402,8 @@ export function Beyblade() {
           a.vx -= (j / ma) * nx; a.vy -= (j / ma) * ny;
           b.vx += (j / mb) * nx; b.vy += (j / mb) * ny;
           const impact = rel * ((a.dashT > 0 || b.dashT > 0) ? 1.5 : 1);
-          a.burst += (impact * tb.atk * 0.03) / ta.burstRes;
-          b.burst += (impact * ta.atk * 0.03) / tb.burstRes;
+          a.burst += (impact * tb.atk * 0.04) / ta.burstRes;
+          b.burst += (impact * ta.atk * 0.04) / tb.burstRes;
           a.spin = Math.max(0, a.spin - (impact * tb.atk * 0.35) / ta.def);
           b.spin = Math.max(0, b.spin - (impact * ta.atk * 0.35) / tb.def);
           spark((a.x + b.x) / 2, (a.y + b.y) / 2, 8 + Math.floor(impact / 40));
@@ -437,7 +437,7 @@ export function Beyblade() {
       drawStadium(ctx);
 
       const beys = beysRef.current;
-      if (beys) {
+      if (beys && phaseRef.current !== 'count') {
         beys.forEach((b, i) => {
           if (b.dead) return;
           const t = TYPES[b.type];
@@ -475,7 +475,7 @@ export function Beyblade() {
         });
       }
       // 落とす場所のプレビュー
-      if (phaseRef.current === 'launch' && dropRef.current) {
+      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current) {
         const g = dropRef.current;
         const diag = modeRef.current === 'diag';
         ctx.save(); ctx.translate(g.x, g.y);
@@ -611,15 +611,17 @@ export function Beyblade() {
           <button style={btn} onClick={startMatch}>バトル開始</button>
         </div>
       ) : (
-        <div style={{ position: 'relative', width: 'min(96vw, 900px)', aspectRatio: `${W} / ${H}` }}>
+        <div style={{ position: 'relative', width: `min(96vw, 900px, calc((100vh - 250px) * ${W / H}))`, aspectRatio: `${W} / ${H}` }}>
           <canvas
             ref={canvasRef} width={W} height={H}
             onPointerDown={setDrop} onPointerMove={e => { if (e.buttons) setDrop(e); }}
             style={{ width: '100%', height: '100%', cursor: phase === 'launch' ? 'crosshair' : 'default', touchAction: 'none' }}
           />
-          {phase === 'count' && count !== null && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', fontSize: count === 0 ? 120 : 150, fontWeight: 900, color: count === 0 ? '#ffd740' : '#fff', textShadow: '0 6px 24px #000, 0 0 40px rgba(90,171,255,0.8)' }}>
-              {count === 0 ? 'GO!' : count}
+          {count !== null && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', fontSize: count === 0 ? 110 : 150, fontWeight: 900, color: count === 0 ? '#ffd740' : '#fff', textShadow: '0 6px 24px #000, 0 0 40px rgba(90,171,255,0.8)' }}>
+              {count === 0 ? (
+                <div style={{ textAlign: 'center', lineHeight: 1.1 }}>GO!<div style={{ fontSize: 64 }}>シュート！</div></div>
+              ) : count}
             </div>
           )}
           {phase === 'battle' && message && (
@@ -652,7 +654,7 @@ export function Beyblade() {
       {phase === 'launch' && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
           <div style={{ fontWeight: 800, fontSize: 18 }}>
-            {hasDrop ? 'この場所から発射！' : 'スタジアムをタップして、落とす場所を決めよう'}
+            {hasDrop ? '準備OK！ スタートを押すと 3・2・1・GO!シュート!' : '① スタジアムをタップして、落とす場所を決めよう'}
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             {([['flat', '水平シュート', 'すぐリングに乗ってダッシュ'], ['diag', '斜めシュート', 'その場にとどまり、最初は飛ばされにくい']] as const).map(([k, label, sub]) => (
@@ -670,7 +672,7 @@ export function Beyblade() {
               </button>
             ))}
           </div>
-          <button style={{ ...btn, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={shoot}>シュート！ (Space)</button>
+          <button style={{ ...btn, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={shoot}>スタート！ (Space)</button>
         </div>
       )}
     </div>
