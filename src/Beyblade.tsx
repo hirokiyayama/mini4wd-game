@@ -29,7 +29,7 @@ interface PartDef {
   id: string; name: string; desc: string;
   s: Partial<Stats>; weight: number; height?: number; // 重量(g) / 高さ（ラチェットのみ）
   color?: string; blades?: number; img?: string;
-  dashSpeed?: number; // Xダッシュの速さの倍率（Rビット系はギヤの歯数でダッシュの速度が抑えられる）
+  dashSpeed?: number; // Xダッシュの速さの倍率（現在はどのビットも等倍。R/LRはダッシュの回数だけが増える）
   mobility?: number; // 動き回りやすさ（R系は斜めシュートでも動く / Hは水平シュートでもあまり動かない）
 }
 const BLADES: PartDef[] = [
@@ -47,8 +47,8 @@ const RATCHETS: PartDef[] = [
 const BITS: PartDef[] = [
   { id: 'B', name: 'B', desc: '球状の軸先による、程よい動きで攻撃をかわし高い持久力を実現。', s: { atk: 15, def: 25, sta: 50, dash: 10, burst: 30 }, weight: 2.1 },
   { id: 'FB', name: 'FB', desc: 'ラチェットに対してフリー回転するビット。細めで球状の軸先により回転のロスを減らす設計。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
-  { id: 'R', name: 'R', desc: '10枚歯ギヤでXダッシュの速度を抑える分、ダッシュ回数を増やす設計。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, dashSpeed: 0.8, mobility: 1.8 },
-  { id: 'LR', name: 'LR', desc: 'Rビットより1mm低く設計され、アッパー攻撃を得意とする。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, dashSpeed: 0.85, mobility: 1.8 },
+  { id: 'R', name: 'R', desc: '10枚歯ギヤでXダッシュの速度を抑える分、ダッシュ回数を増やす設計。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
+  { id: 'LR', name: 'LR', desc: 'Rビットより1mm低く設計され、アッパー攻撃を得意とする。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, mobility: 1.8 },
   { id: 'H', name: 'H', desc: '軸先側の6つの平面形状がベイの傾きを抑制し、常に安定した体勢を保持し続ける設計。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, weight: 2.6, mobility: 0.45 },
 ];
 
@@ -616,6 +616,7 @@ export function Beyblade() {
             b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
             b.riding = false;
             b.dashT = 0.4; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
+            b.rideChance = 1; // 1回ダッシュしたら、斜めシュートでも水平と同じ（R/LRはここから何度もダッシュ）
             spark(b.x, b.y, 14);
           } else if (b.rideT > 3.2) {
             b.riding = false; b.dashCd = 0.6;
@@ -674,6 +675,7 @@ export function Beyblade() {
           // 動き出す前に当てられたら、弾かれて進行方向が変わる（矢印の向きには戻らない）
           for (const x of [a, b]) {
             x.hit = true;
+            x.rideChance = 1; // 当たったあとは水平シュートと同じ（リングに乗れる）
             if (x.holdT > 0) { x.holdT = 0; x.dashCd = Math.max(x.dashCd, 0.8); }
           }
         }
