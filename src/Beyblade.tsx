@@ -54,6 +54,7 @@ interface Bey {
   trail: { x: number; y: number }[];
   out: boolean; dead: boolean;
   holdT: number; // 斜めシュート：その場にとどまる残り時間
+  riding: boolean; rideT: number; // Xライン（リング）に乗って走行中
 }
 interface Spark { x: number; y: number; vx: number; vy: number; life: number }
 interface Part { x: number; y: number; vx: number; vy: number; rot: number; vr: number; color: string; size: number; life: number }
@@ -66,20 +67,20 @@ function exitKind(x: number, y: number): 'extreme' | 'over' | null {
 }
 
 // 水平シュート：すぐにリングへ向かいエクストリームダッシュ / 斜めシュート：その場にとどまってから動き出す（その間は飛ばされにくい）
-function makeBey(type: BeyType, x: number, y: number, side: 1 | -1, diag: boolean): Bey {
+function makeBey(type: BeyType, x: number, y: number, diag: boolean): Bey {
   const spinMax = 3000;
   const d = Math.hypot(x, y) || 1;
   let vx = 0, vy = 0;
   if (!diag) {
     const sp = 640;
-    vx = ((-y / d) * side * 0.9 + (x / d) * 0.45) * sp;
-    vy = ((x / d) * side * 0.9 + (y / d) * 0.45) * sp;
+    vx = ((y / d) * 0.9 + (x / d) * 0.45) * sp;
+    vy = ((-x / d) * 0.9 + (y / d) * 0.45) * sp;
   }
   return {
     type, x, y, vx, vy,
     spin: spinMax, spinMax, burst: 0, angle: 0,
-    curl: side * 1.1, dashT: 0, dashCd: 0, dashFx: 0, trail: [], out: false, dead: false,
-    holdT: diag ? 1.4 : 0,
+    curl: 1.1, dashT: 0, dashCd: 0, dashFx: 0, trail: [], out: false, dead: false,
+    holdT: diag ? 1.4 : 0, riding: false, rideT: 0,
   };
 }
 
@@ -212,8 +213,8 @@ export function Beyblade() {
       if (Math.hypot(cx - my.x, cy - my.y) > BEY_R * 4) break;
     }
     beysRef.current = [
-      makeBey(myType, my.x, my.y, 1, modeRef.current === 'diag'),
-      makeBey(cpuType, cx, cy, -1, cpuDiag),
+      makeBey(myType, my.x, my.y, modeRef.current === 'diag'),
+      makeBey(cpuType, cx, cy, cpuDiag),
     ];
     endedRef.current = false;
     // 3・2・1・GO!
@@ -354,16 +355,37 @@ export function Beyblade() {
           b.vy += (Math.random() - 0.5) * 2400 * (0.25 - ratio) * DT;
         }
         const dist = Math.hypot(b.x, b.y);
-        // エクストリームダッシュ：リングに乗ると加速して中へ飛び出す
-        if (b.dashCd <= 0 && ratio > 0.15 && speed > 180 && dist > R * 0.84) {
-          const ux = b.vx / speed, uy = b.vy / speed;
-          const nx = -b.x / dist, ny = -b.y / dist;
-          let dx = ux * 0.6 + nx * 0.8, dy = uy * 0.6 + ny * 0.8;
-          const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
-          const dashSpeed = (560 + 200 * ratio) * t.dash;
-          b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
-          b.dashT = 0.4; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
-          spark(b.x, b.y, 12);
+        // エクストリームライン：右回転のベイはリングに乗ると反時計回りに走り、
+        // スタジアムの右側を駆け上がって、上側から中央に向かって発射される（下から上へのダッシュはない）
+        if (!b.riding && b.dashCd <= 0 && ratio > 0.15 && speed > 120 && dist > R * 0.8) {
+          b.riding = true; b.rideT = 0;
+        }
+        if (b.riding) {
+          b.rideT += DT;
+          const d = Math.hypot(b.x, b.y) || 1;
+          const tx = b.y / d, ty = -b.x / d; // 反時計回りの接線
+          const rs = 560 * t.dash;
+          const fix = (R * 0.9 - d) * 8; // リングの上に保つ
+          b.vx = tx * rs + (b.x / d) * fix; b.vy = ty * rs + (b.y / d) * fix;
+          b.x += b.vx * DT; b.y += b.vy * DT;
+          b.trail.push({ x: b.x, y: b.y });
+          if (b.trail.length > 14) b.trail.shift();
+          b.spin = Math.max(0, b.spin - (6 + rs * 0.02) * t.decay * DT * 6);
+          const atTop = Math.abs(Math.atan2(b.y, b.x) + Math.PI / 2) < 0.2;
+          if (atTop && b.rideT > 0.05) {
+            // 上側から中央へ発射
+            const nx = -b.x / d, ny = -b.y / d;
+            let dx = nx * 0.85 + tx * 0.35, dy = ny * 0.85 + ty * 0.35;
+            const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
+            const dashSpeed = (560 + 200 * ratio) * t.dash;
+            b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
+            b.riding = false;
+            b.dashT = 0.4; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
+            spark(b.x, b.y, 14);
+          } else if (b.rideT > 3.2) {
+            b.riding = false; b.dashCd = 0.6;
+          }
+          continue;
         }
         const damp = 1 - (0.08 + (1 - ratio) * 0.7) * DT;
         b.vx *= damp; b.vy *= damp;
@@ -398,6 +420,7 @@ export function Beyblade() {
         // 斜めシュートで固定されている間は飛ばされにくい
         const ma = ta.mass * (a.holdT > 0 ? 3 : 1), mb = tb.mass * (b.holdT > 0 ? 3 : 1);
         if (rel > 0) {
+          for (const x of [a, b]) if (x.riding) { x.riding = false; x.dashCd = Math.max(x.dashCd, 0.6); }
           const j = (2.0 * rel) / (1 / ma + 1 / mb);
           a.vx -= (j / ma) * nx; a.vy -= (j / ma) * ny;
           b.vx += (j / mb) * nx; b.vy += (j / mb) * ny;
@@ -442,8 +465,8 @@ export function Beyblade() {
           if (b.dead) return;
           const t = TYPES[b.type];
           if (b.trail.length > 1) {
-            ctx.strokeStyle = b.dashT > 0 ? 'rgba(255,140,0,0.75)' : 'rgba(80,100,140,0.25)';
-            ctx.lineWidth = b.dashT > 0 ? 9 : 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.strokeStyle = b.dashT > 0 || b.riding ? 'rgba(255,140,0,0.75)' : 'rgba(80,100,140,0.25)';
+            ctx.lineWidth = b.dashT > 0 || b.riding ? 9 : 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             ctx.beginPath(); ctx.moveTo(b.trail[0].x, b.trail[0].y);
             for (const q of b.trail) ctx.lineTo(q.x, q.y);
             ctx.stroke();
@@ -492,7 +515,7 @@ export function Beyblade() {
           ctx.setLineDash([]);
         } else {
           const d = Math.hypot(g.x, g.y) || 1;
-          const ux = (-g.y / d) * 0.9 + (g.x / d) * 0.45, uy = (g.x / d) * 0.9 + (g.y / d) * 0.45;
+          const ux = (g.y / d) * 0.9 + (g.x / d) * 0.45, uy = (-g.x / d) * 0.9 + (g.y / d) * 0.45;
           const ul = Math.hypot(ux, uy);
           const ex = (ux / ul) * 80, ey = (uy / ul) * 80;
           ctx.beginPath(); ctx.moveTo(ux / ul * BEY_R, uy / ul * BEY_R); ctx.lineTo(ex, ey); ctx.stroke();
