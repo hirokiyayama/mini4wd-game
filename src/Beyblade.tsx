@@ -38,6 +38,7 @@ interface PartDef {
   burstMod?: number; // ブレードの形状によるバーストしやすさ（大きいほどバーストしにくい）
   smash?: number; // Xダッシュ中の打撃力の倍率（Eビットのスマッシュ攻撃）
   absorbBit?: number; // ビット側の回転吸収の得意さ
+  dashLimit?: [number, number]; // 1ラウンドでXダッシュできる回数の上限（最小〜最大からランダム）。Eビットは2〜3回
 }
 const BLADES: PartDef[] = [
   { id: 'meteor', name: 'メテオドラグーン', desc: '大型ラバー軸が搭載された3枚刃で、強烈な一撃を繰り出す。メタルが塗装され性能がアップしている。', s: { atk: 75, def: 15, sta: 35 }, weight: 39.0, color: '#c4b5fd', blades: 3, img: meteorImg, spinDir: -1, absorb: 0.45, burstMod: 1.8 },
@@ -54,7 +55,7 @@ const RATCHETS: PartDef[] = [
   { id: 'r960', name: '9-60', desc: 'ベイを低めにセットするパーツ。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 7 }, height: 60, weight: 6.1 },
 ];
 const BITS: PartDef[] = [
-  { id: 'E', name: 'E', desc: '大型のガイドが付いた設計で姿勢をキープしやすく、Xダッシュ時に軸先が浮き上がりスマッシュ攻撃が可能。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, weight: 3.1, smash: 1.35, absorbBit: 1 },
+  { id: 'E', name: 'E', desc: '大型のガイドが付いた設計で姿勢をキープしやすく、Xダッシュ時に軸先が浮き上がりスマッシュ攻撃が可能。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, weight: 3.1, smash: 1.35, absorbBit: 1, dashLimit: [2, 3] },
   { id: 'B', name: 'B', desc: '球状の軸先による、程よい動きで攻撃をかわし高い持久力を実現。', s: { atk: 15, def: 25, sta: 50, dash: 10, burst: 30 }, weight: 2.1 },
   { id: 'FB', name: 'FB', desc: 'ラチェットに対してフリー回転するビット。細めで球状の軸先により回転のロスを減らす設計。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
   { id: 'R', name: 'R', desc: '10枚歯ギヤでXダッシュの速度を抑える分、ダッシュ回数を増やす設計。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
@@ -114,6 +115,7 @@ function buildBey(c: Custom) {
     burstRes: norm(st.burst, 55, 0.35) * (1 + ((bl.burstMod ?? 1) - 1) * (bit.id === 'E' ? 1 : 0.3)), // ブレードの形状による差は、Eビットのときに大きく出る // バースト耐性（ビットの値）
     dash: bit.dashSpeed ?? 1, // Xダッシュの速さ
     smash: bit.smash ?? 1, // Eビット：Xダッシュ中の打撃力
+    dashLimit: bit.dashLimit ?? null,
     spinDir: bl.spinDir ?? 1, // 左回転ブレードは -1
     absorb: (bl.absorb ?? 0) * (bit.absorbBit ?? 0.25), // 左回転の回転吸収力（Eビットで大きく発揮される）
     mobility: bit.mobility ?? 1,
@@ -144,6 +146,7 @@ interface Bey {
   ax: number; ay: number; push: number; // 走らせる向きと、斜めシュートで動き出すときの勢い
   hit: boolean; // 動き出す前に当てられたか（当てられたら矢印の向きではなく、弾かれた向きに進む）
   rideChance: number; onRing: boolean; // 斜めシュートはリングに乗りにくい
+  dashesLeft: number; // 残りXダッシュ回数（Eビットは2〜3回まで）
 }
 interface Spark { x: number; y: number; vx: number; vy: number; life: number }
 interface Part { x: number; y: number; vx: number; vy: number; rot: number; vr: number; color: string; size: number; life: number }
@@ -169,7 +172,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
   const spinMax = 3000 * (0.6 + 0.4 * power);
   const a = aim ?? defaultAim(x, y, TYPES[type].spinDir);
   const mob = TYPES[type].mobility;
-  const sp = (520 + 420 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない
+  const sp = (700 + 500 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない
   return {
     type, x, y, vx: diag ? 0 : a.x * sp, vy: diag ? 0 : a.y * sp,
     spin: spinMax, spinMax, burst: 0, angle: 0,
@@ -178,6 +181,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.8 : 1.4) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
+    dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
 
@@ -403,6 +407,7 @@ export function Beyblade() {
       makeBey('cpu', cpu.x, cpu.y, cpu.diag, cpu.aim, 0.7 + Math.random() * 0.3),
     ];
     endedRef.current = false;
+    (window as unknown as { __dashes?: number[] }).__dashes = [0, 0];
     setPhase('battle');
   }, []);
 
@@ -599,7 +604,7 @@ export function Beyblade() {
         const dist = Math.hypot(b.x, b.y);
         // エクストリームライン：右回転のベイはリングに乗ると反時計回りに走り、
         // スタジアムの右側を駆け上がって、上側から中央に向かって発射される（下から上へのダッシュはない）
-        if (!b.riding && b.dashCd <= 0 && ratio > 0.15 && speed > 120 && dist > R * 0.8) {
+        if (!b.riding && b.dashesLeft > 0 && b.dashCd <= 0 && ratio > 0.15 && speed > 120 && dist > R * 0.8) {
           if (b.rideChance >= 1) { b.riding = true; b.rideT = 0; }
           else if (!b.onRing) {
             // 斜めシュートはリングに乗りにくい（乗れないぶん、自爆しにくい）
@@ -614,7 +619,7 @@ export function Beyblade() {
           const d = Math.hypot(b.x, b.y) || 1;
           // 右回転は反時計回りにリングを走る（右側を駆け上がる）。左回転はその鏡写し（左側を駆け上がる）
           const tx = (b.dir * b.y) / d, ty = (-b.dir * b.x) / d;
-          const rs = 700 * t.dash;
+          const rs = 900 * t.dash;
           const fix = (R * 0.9 - d) * 8; // リングの上に保つ
           b.vx = tx * rs + (b.x / d) * fix; b.vy = ty * rs + (b.y / d) * fix;
           b.x += b.vx * DT; b.y += b.vy * DT;
@@ -627,11 +632,13 @@ export function Beyblade() {
             const nx = -b.x / d, ny = -b.y / d;
             let dx = nx * 0.85 + tx * 0.35, dy = ny * 0.85 + ty * 0.35;
             const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
-            const dashSpeed = (820 + 280 * ratio) * t.dash;
+            const dashSpeed = (1100 + 350 * ratio) * t.dash;
             b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
             b.riding = false;
             b.dashT = 0.4; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
             b.rideChance = 1; // 1回ダッシュしたら、斜めシュートでも水平と同じ（R/LRはここから何度もダッシュ）
+            b.dashesLeft--;
+            { const w = window as unknown as { __dashes?: number[] }; (w.__dashes ??= [0, 0])[beys.indexOf(b)]++; } // 動作確認用のダッシュ回数カウンタ
             spark(b.x, b.y, 14);
           } else if (b.rideT > 3.2) {
             b.riding = false; b.dashCd = 0.6;
@@ -641,6 +648,7 @@ export function Beyblade() {
         const damp = 1 - (0.08 + (1 - ratio) * 0.7 + (b.dashT > 0 ? 1.3 : 0)) * DT; // ダッシュ中は失速し、反対側のライン付近まで届く
         b.vx *= damp; b.vy *= damp;
         speed = Math.hypot(b.vx, b.vy);
+        if (speed > 1800) { b.vx *= 1800 / speed; b.vy *= 1800 / speed; speed = 1800; } // 速すぎて突き抜けないように上限
         b.x += b.vx * DT; b.y += b.vy * DT;
         b.trail.push({ x: b.x, y: b.y });
         if (b.trail.length > 14) b.trail.shift();
@@ -677,7 +685,7 @@ export function Beyblade() {
           for (const x of [a, b]) if (x.riding) { x.riding = false; x.dashCd = Math.max(x.dashCd, 0.6); }
           // 回転しているベイは、ダッシュしていなくても当たれば相手を弾き飛ばせる
           const spinKick = 150 * ((a.spin / a.spinMax) * ta.atk + (b.spin / b.spinMax) * tb.atk) / 2;
-          const j = (2.8 * (rel + spinKick)) / (1 / ma + 1 / mb);
+          const j = (3.6 * (rel + spinKick)) / (1 / ma + 1 / mb);
           a.vx -= (j / ma) * nx; a.vy -= (j / ma) * ny;
           b.vx += (j / mb) * nx; b.vy += (j / mb) * ny;
           // Xダッシュ中の打撃は強い（Eビットはスマッシュ攻撃でさらに強い）
