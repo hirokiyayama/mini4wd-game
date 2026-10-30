@@ -23,28 +23,27 @@ const STAT_LABELS: [keyof Stats, string, string][] = [
 // パーツ：ブレード（見た目・性格）/ ラチェット / ビット。ステータスは「100 + パーツごとの増減」の合計
 interface PartDef { id: string; name: string; desc: string; d: Partial<Stats>; color?: string; blades?: number }
 const BLADES: PartDef[] = [
-  { id: 'dran', name: 'ドランソード', desc: '攻撃型。鋭い羽根で弾き飛ばす', d: { atk: 25, def: -10, sta: -15, dash: 10, burst: -10 }, color: '#ef4444', blades: 3 },
-  { id: 'hells', name: 'ヘルズサイズ', desc: '攻撃と防御のバランス型', d: { atk: 15, def: 10, sta: -10 }, color: '#a855f7', blades: 3 },
-  { id: 'wizard', name: 'ウィザードロッド', desc: '持久型。長く回り続ける', d: { atk: -15, sta: 30, dash: -10, burst: -5 }, color: '#22c55e', blades: 4 },
-  { id: 'knight', name: 'ナイトシールド', desc: '防御型。バーストしにくい', d: { atk: -15, def: 25, dash: -15, burst: 20 }, color: '#3b82f6', blades: 6 },
-  { id: 'aero', name: 'エアロペガサス', desc: 'スピード型。ダッシュが得意', d: { atk: 5, def: -10, sta: 5, dash: 25, burst: -5 }, color: '#38bdf8', blades: 5 },
+  { id: 'wizard', name: 'ウィザードロッド', desc: '持久寄り。長く回り続ける', d: { atk: -15, sta: 30, dash: -10, burst: -5 }, color: '#22c55e', blades: 4 },
+  { id: 'shark', name: 'シャークスケイル', desc: '攻防のバランス寄り。当たり負けしにくい', d: { atk: 10, def: 15, sta: -10, dash: 5 }, color: '#6366f1', blades: 3 },
+  { id: 'aero', name: 'エアロペガサス', desc: 'スピード寄り。ダッシュが得意', d: { atk: 5, def: -10, sta: 5, dash: 25, burst: -5 }, color: '#38bdf8', blades: 5 },
 ];
 const RATCHETS: PartDef[] = [
+  { id: 'r160', name: '1-60', desc: '最も軽い。ダッシュ向きだがバーストしやすい', d: { atk: 5, def: -10, sta: 5, dash: 10, burst: -15 } },
   { id: 'r360', name: '3-60', desc: '軽く攻撃寄り。バーストしやすい', d: { atk: 10, def: -5, dash: 5, burst: -10 } },
-  { id: 'r460', name: '4-60', desc: '標準的なバランス', d: {} },
   { id: 'r560', name: '5-60', desc: '防御寄り。バースト耐性が高い', d: { atk: -5, def: 10, dash: -5, burst: 10 } },
-  { id: 'r960', name: '9-60', desc: '重くて頑丈。動きは鈍い', d: { def: 15, sta: -10, dash: -10, burst: 20 } },
+  { id: 'r760', name: '7-60', desc: '重め。バースト耐性が高く、動きはやや鈍い', d: { def: 12, sta: -5, dash: -8, burst: 15 } },
+  { id: 'r960', name: '9-60', desc: '最も重い。頑丈だが動きは鈍い', d: { def: 15, sta: -10, dash: -10, burst: 20 } },
 ];
 const BITS: PartDef[] = [
-  { id: 'F', name: 'F（フラット）', desc: '攻撃的で素早い。持久は短め', d: { atk: 15, def: -5, sta: -20, dash: 20 } },
-  { id: 'B', name: 'B（ボール）', desc: '安定。持久と防御がやや上がる', d: { atk: -5, def: 5, sta: 10, dash: -5 } },
-  { id: 'N', name: 'N（ニードル）', desc: '持久特化。ダッシュは弱い', d: { atk: -10, sta: 25, dash: -20, burst: 5 } },
-  { id: 'R', name: 'R（ラッシュ）', desc: 'ダッシュ特化。回転は落ちやすい', d: { atk: 5, def: -5, sta: -15, dash: 30, burst: -5 } },
-  { id: 'GF', name: 'GF（ギアフラット）', desc: '攻撃とダッシュに強い', d: { atk: 20, def: -10, sta: -25, dash: 25, burst: -10 } },
+  { id: 'B', name: 'B', desc: '安定。持久と防御がやや上がる', d: { atk: -5, def: 5, sta: 10, dash: -5 } },
+  { id: 'FB', name: 'FB', desc: '持久特化。ダッシュと攻撃は弱め', d: { atk: -10, sta: 20, dash: -10 } },
+  { id: 'R', name: 'R', desc: 'ダッシュ特化。回転は落ちやすい', d: { atk: 5, def: -5, sta: -15, dash: 30, burst: -5 } },
+  { id: 'LR', name: 'LR', desc: 'ダッシュと攻撃に強い。持久はやや落ちる', d: { atk: 5, sta: -5, dash: 20 } },
+  { id: 'H', name: 'H', desc: '防御寄り。バーストしにくいが動きは鈍い', d: { atk: -5, def: 15, dash: -15, burst: 10 } },
 ];
 
 interface Custom { blade: string; ratchet: string; bit: string }
-const DEFAULT_CUSTOM: Custom = { blade: 'hells', ratchet: 'r460', bit: 'B' };
+const DEFAULT_CUSTOM: Custom = { blade: 'shark', ratchet: 'r560', bit: 'B' };
 const pick = (list: PartDef[], id: string) => list.find(p => p.id === id) ?? list[0];
 const randomCustom = (): Custom => ({
   blade: BLADES[Math.floor(Math.random() * BLADES.length)].id,
@@ -438,23 +437,17 @@ export function Beyblade() {
 
   // メインループ（固定タイムステップ物理 + 描画）
   const inSelect = phase === 'select';
-  // カスタマイズ画面のベイのプレビュー（回転している）
+  // カスタマイズ画面のベイのプレビュー（回さずに静止して表示）
   useEffect(() => {
     if (!inSelect) return;
     const c = previewRef.current;
     if (!c) return;
     const ctx = c.getContext('2d')!;
     const bey = buildBey(custom);
-    let raf = 0;
-    const loop = () => {
-      ctx.clearRect(0, 0, 170, 170);
-      ctx.save(); ctx.translate(85, 85); ctx.scale(1.9, 1.9);
-      drawBey(ctx, bey.color, '#5aabff', performance.now() / 14, 0.4, '#fff', bey.blades);
-      ctx.restore();
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    ctx.clearRect(0, 0, 170, 170);
+    ctx.save(); ctx.translate(85, 85); ctx.scale(1.9, 1.9);
+    drawBey(ctx, bey.color, '#5aabff', -Math.PI / 2, 0, '#fff', bey.blades);
+    ctx.restore();
   }, [inSelect, custom]);
   useEffect(() => {
     const canvas = canvasRef.current;
