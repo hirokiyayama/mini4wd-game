@@ -37,9 +37,7 @@ function makeBey(type: BeyType, x: number, y: number, dir: number, power: number
   return { type, x, y, vx: dir * (260 + 260 * power), vy: 0, spin: spinMax, spinMax, burst: 0, angle: 0 };
 }
 
-interface Props { onBack: () => void }
-
-export function Beyblade({ onBack }: Props) {
+export function Beyblade() {
   const [phase, setPhase] = useState<'select' | 'launch' | 'battle' | 'result' | 'over'>('select');
   const [myType, setMyType] = useState<BeyType>('balance');
   const [cpuType, setCpuType] = useState<BeyType>('attack');
@@ -334,7 +332,7 @@ export function Beyblade({ onBack }: Props) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 16, color: '#fff', background: '#04071a' }}>
       <div style={{ display: 'flex', width: '100%', maxWidth: 680, justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={onBack} style={{ ...btn, fontSize: 14, padding: '6px 14px', background: '#2a3566', color: '#fff' }}>← ミニ四駆へ</button>
+        <div style={{ width: 90 }} />
         <h2 style={{ margin: 0, letterSpacing: 2 }}>BEYBLADE X BATTLE</h2>
         <div style={{ fontSize: 22, fontWeight: 800 }}>
           <span style={{ color: '#5aabff' }}>{score.me}</span> - <span style={{ color: '#ef4444' }}>{score.cpu}</span>

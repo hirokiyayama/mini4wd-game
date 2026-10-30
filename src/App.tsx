@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Garage } from './Garage';
 import { Race } from './Race';
-import { Beyblade } from './Beyblade';
 import type { CPULevel, MachineSetting, Player } from './types';
 import { computeTotalStats, randomSetting } from './data';
 import type { CourseId } from './courses';
@@ -30,7 +29,7 @@ const DEFAULT_PLAYERS: Player[] = [
 ];
 
 function App() {
-  const [currentScreen, setCurrentScreen] = useState<'garage' | 'race' | 'bey'>('garage');
+  const [currentScreen, setCurrentScreen] = useState<'garage' | 'race'>('garage');
   const [players, setPlayers] = useState<Player[]>(DEFAULT_PLAYERS);
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   const [courseId, setCourseId] = useState<CourseId>('oval');
@@ -87,15 +86,6 @@ function App() {
           onStartRace={() => setCurrentScreen('race')}
         />
       )}
-      {currentScreen === 'garage' && (
-        <button
-          onClick={() => setCurrentScreen('bey')}
-          style={{ position: 'fixed', top: 12, right: 12, zIndex: 50, padding: '8px 16px', borderRadius: 8, border: 'none', background: '#ffd740', color: '#04071a', fontWeight: 800, cursor: 'pointer' }}
-        >
-          ベイブレードXへ
-        </button>
-      )}
-      {currentScreen === 'bey' && <Beyblade onBack={() => setCurrentScreen('garage')} />}
       {currentScreen === 'race' && (
         <Race
           players={racePlayers}
