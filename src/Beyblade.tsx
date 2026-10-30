@@ -5,9 +5,9 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 // 出口は下側の3か所のみ：中央=エクストリーム(3pt)、左右ポケット=オーバー(2pt)。それ以外の壁は弾き返す。
 const WIN_POINTS = 4;
 const R = 265; // すり鉢の半径
-const BEY_R = 22;
+const BEY_R = 32;
 const W = 900, H = 700, CX = W / 2, CY = 335;
-const EXIT_HALF = 0.27; // 出口の幅（rad）
+const EXIT_HALF = 0.2; // 出口の幅（rad）
 const OVER_PHI = 0.6; // 下方向から左右ポケットまでの角度（rad）
 
 type BeyType = 'attack' | 'defense' | 'stamina' | 'balance';
@@ -138,6 +138,7 @@ export function Beyblade() {
   const gaugeRef = useRef(0);
   const phaseRef = useRef(phase);
   const flashRef = useRef(0);
+  const slowRef = useRef(0);
   const endedRef = useRef(false);
   const scoreRef = useRef({ me: 0, cpu: 0 });
   const timerRef = useRef<number | undefined>(undefined);
@@ -173,6 +174,7 @@ export function Beyblade() {
   const endRound = useCallback((winner: 'me' | 'cpu', finish: Finish) => {
     if (endedRef.current) return;
     endedRef.current = true;
+    slowRef.current = 1.0;
     const beys = beysRef.current;
     if (beys) {
       const loser = beys[winner === 'me' ? 1 : 0];
@@ -291,7 +293,8 @@ export function Beyblade() {
         // 外周の壁：出口以外は弾き返す
         const d2 = Math.hypot(b.x, b.y);
         const lim = R - BEY_R * 0.3;
-        if (d2 > lim && !exitKind(b.x, b.y)) {
+        const outSpeed = (b.vx * b.x + b.vy * b.y) / (d2 || 1);
+        if (d2 > lim && (!exitKind(b.x, b.y) || outSpeed < 240)) {
           const nx = b.x / d2, ny = b.y / d2;
           const outv = b.vx * nx + b.vy * ny;
           if (outv > 0) { b.vx -= 1.55 * outv * nx; b.vy -= 1.55 * outv * ny; }
@@ -310,16 +313,17 @@ export function Beyblade() {
         const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
         const ta = TYPES[a.type], tb = TYPES[b.type];
         if (rel > 0) {
-          const j = (2.4 * rel) / (1 / ta.mass + 1 / tb.mass);
+          const j = (1.7 * rel) / (1 / ta.mass + 1 / tb.mass);
           a.vx -= (j / ta.mass) * nx; a.vy -= (j / ta.mass) * ny;
           b.vx += (j / tb.mass) * nx; b.vy += (j / tb.mass) * ny;
           const impact = rel * ((a.dashT > 0 || b.dashT > 0) ? 1.5 : 1);
-          a.burst += (impact * tb.atk * 0.035) / ta.burstRes;
-          b.burst += (impact * ta.atk * 0.035) / tb.burstRes;
-          a.spin = Math.max(0, a.spin - (impact * tb.atk * 0.5) / ta.def);
-          b.spin = Math.max(0, b.spin - (impact * ta.atk * 0.5) / tb.def);
+          a.burst += (impact * tb.atk * 0.02) / ta.burstRes;
+          b.burst += (impact * ta.atk * 0.02) / tb.burstRes;
+          a.spin = Math.max(0, a.spin - (impact * tb.atk * 0.35) / ta.def);
+          b.spin = Math.max(0, b.spin - (impact * ta.atk * 0.35) / tb.def);
           spark((a.x + b.x) / 2, (a.y + b.y) / 2, 8 + Math.floor(impact / 40));
           flashRef.current = Math.min(1, impact / 600);
+          if (impact > 420) slowRef.current = 0.45;
         }
         const overlap = BEY_R * 2 - d;
         a.x -= nx * overlap / 2; a.y -= ny * overlap / 2;
@@ -368,19 +372,19 @@ export function Beyblade() {
           for (let k = 0; k < 3; k++) {
             ctx.rotate((Math.PI * 2) / 3);
             ctx.beginPath();
-            ctx.moveTo(0, 0); ctx.lineTo(BEY_R, -6); ctx.lineTo(BEY_R + 2, 8); ctx.closePath();
+            ctx.moveTo(0, 0); ctx.lineTo(BEY_R, -9); ctx.lineTo(BEY_R + 3, 11); ctx.closePath();
             ctx.fill();
           }
           ctx.fillStyle = '#10183a';
           ctx.beginPath(); ctx.arc(0, 0, BEY_R * 0.62, 0, Math.PI * 2); ctx.fill();
           ctx.strokeStyle = t.color; ctx.lineWidth = 3; ctx.stroke();
           ctx.fillStyle = i === 0 ? '#fff' : '#ffb4b4';
-          ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
           ctx.restore();
           if (b.dashFx > 0) {
             ctx.fillStyle = `rgba(230,110,0,${Math.min(1, b.dashFx * 1.5)})`;
             ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText('XTREME DASH!', b.x, b.y - 36);
+            ctx.fillText('XTREME DASH!', b.x, b.y - 46);
             ctx.textAlign = 'start';
           }
         });
@@ -429,7 +433,9 @@ export function Beyblade() {
     };
 
     const loop = (now: number) => {
-      acc += Math.min(0.05, (now - last) / 1000) * timeScale;
+      const real = Math.min(0.05, (now - last) / 1000);
+      acc += real * timeScale * (slowRef.current > 0 ? 0.3 : 1);
+      slowRef.current = Math.max(0, slowRef.current - real);
       last = now;
       if (phaseRef.current === 'launch') {
         gaugeRef.current = (Math.sin(now / 280) + 1) / 2;
