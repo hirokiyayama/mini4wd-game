@@ -52,7 +52,7 @@ const RATCHETS: PartDef[] = [
   { id: 'r360', name: '3-60', desc: 'ベイを低めにセットするパーツ。弾き性能の高い3枚刃を採用。', s: { atk: 15, def: 9, sta: 6 }, height: 60, weight: 6.3 },
   { id: 'r560', name: '5-60', desc: 'ベイを低くにセットするパーツ。分厚く遠心力に優れた5枚刃を採用。', s: { atk: 10, def: 9, sta: 11 }, height: 50, weight: 6.6 },
   { id: 'r760', name: '7-60', desc: 'ベイを低めにセットするパーツ。分厚く防御性能に優れた連打7枚刃を採用。', s: { atk: 8, def: 14, sta: 8 }, height: 60, weight: 7.2 },
-  { id: 'r960', name: '9-60', desc: 'ベイを低めにセットするパーツ。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 7 }, height: 60, weight: 6.1 },
+  { id: 'r960', name: '9-60', desc: 'ベイを低めにセットするパーツ。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 12 }, height: 60, weight: 6.1 },
 ];
 const BITS: PartDef[] = [
   { id: 'E', name: 'E', desc: '大型のガイドが付いた設計で姿勢をキープしやすく、Xダッシュ時に軸先が浮き上がりスマッシュ攻撃が可能。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, weight: 3.1, smash: 1.35, absorbBit: 1, dashLimit: [2, 3] },
@@ -385,6 +385,22 @@ export function Beyblade() {
     cpuPlanRef.current = planCpu();
     setHasDrop(false);
     setPhase('launch');
+  };
+
+  // 対戦画面からカスタマイズ画面に戻る
+  const backToSelect = () => {
+    window.clearTimeout(timerRef.current);
+    countTimers.current.forEach(window.clearTimeout);
+    endedRef.current = true;
+    beysRef.current = null;
+    partsRef.current = [];
+    dropRef.current = null;
+    aimRef.current = null;
+    cpuPlanRef.current = null;
+    setCount(null);
+    setMessage(null);
+    setHasDrop(false);
+    setPhase('select');
   };
 
   const nextRound = () => {
@@ -959,6 +975,12 @@ export function Beyblade() {
 
   return (
     <div style={{ height: '100vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 16, color: '#fff', background: '#04071a', boxSizing: 'border-box' }}>
+      {phase !== 'select' && (
+        <button
+          onClick={backToSelect}
+          style={{ position: 'fixed', bottom: 10, left: 10, zIndex: 20, padding: '6px 12px', borderRadius: 8, border: '2px solid #2a3566', background: '#0a1030', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+        >← カスタマイズに戻る</button>
+      )}
       {phase === 'select' ? (
         <h2 style={{ margin: 0, letterSpacing: 2 }}>BEYBLADE X BATTLE</h2>
       ) : (
