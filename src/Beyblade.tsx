@@ -144,6 +144,7 @@ interface Bey {
   holdT: number; // 斜めシュート：その場にとどまる残り時間
   riding: boolean; rideT: number; // Xライン（リング）に乗って走行中
   ax: number; ay: number; push: number; // 走らせる向きと、斜めシュートで動き出すときの勢い
+  knockT: number; // 相手に当てられて飛ばされた直後の時間（この間に壁へ当たると持久が削られる。自分でぶつかったときは削れない）
   hit: boolean; // 動き出す前に当てられたか（当てられたら矢印の向きではなく、弾かれた向きに進む）
   rideChance: number; onRing: boolean; // 斜めシュートはリングに乗りにくい
   dashesLeft: number; // 残りXダッシュ回数（Eビットは2〜3回まで）
@@ -180,7 +181,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     // 斜め：その場にとどまる（R系は短く、よく動く） / Hは水平でも少しとどまる
     holdT: diag ? (mob > 1 ? 0.8 : 1.4) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
-    hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
+    knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -554,6 +555,7 @@ export function Beyblade() {
         b.dashT = Math.max(0, b.dashT - DT);
         b.dashCd = Math.max(0, b.dashCd - DT);
         b.dashFx = Math.max(0, b.dashFx - DT);
+        b.knockT = Math.max(0, b.knockT - DT);
 
         // 回転が止まったら、その場で止まる
         if (b.spin <= 0) {
@@ -660,14 +662,14 @@ export function Beyblade() {
         const outSpeed = (b.vx * b.x + b.vy * b.y) / (d2 || 1);
         const ek = exitKind(b.x, b.y);
         // 出口の手前には段があり、それを越える勢いがないと入れない（エクストリームは特に高い）
-        const needOut = ek === 'extreme' ? 360 : ek === 'over' ? 240 : 0;
+        const needOut = ek === 'extreme' ? 420 : ek === 'over' ? 300 : 0;
         if (d2 > lim && (!ek || outSpeed < needOut)) {
           const nx = b.x / d2, ny = b.y / d2;
           const outv = b.vx * nx + b.vy * ny;
           if (outv > 0) {
             b.vx -= 1.55 * outv * nx; b.vy -= 1.55 * outv * ny;
-            // 強く飛ばされて壁に当たって戻ってくると、飛ばされたほうの持久がかなり削られる
-            if (outv > 150) { b.spin = Math.max(0, b.spin - 0.6 * outv); spark(b.x, b.y, 4); }
+            // 相手に強く飛ばされて壁に当たって戻ってくると、持久が少し削られる（自分でぶつかったときは削れない）
+            if (outv > 150 && b.knockT > 0) { b.spin = Math.max(0, b.spin - 0.4 * outv); spark(b.x, b.y, 4); }
           }
           b.x = nx * lim; b.y = ny * lim;
         }
@@ -690,8 +692,12 @@ export function Beyblade() {
           // 回転しているベイは、ダッシュしていなくても当たれば相手を弾き飛ばせる
           const spinKick = 150 * ((a.spin / a.spinMax) * ta.atk + (b.spin / b.spinMax) * tb.atk) / 2;
           const j = (4.6 * (rel + spinKick)) / (1 / ma + 1 / mb);
+          const sa0 = Math.hypot(a.vx, a.vy), sb0 = Math.hypot(b.vx, b.vy);
           a.vx -= (j / ma) * nx; a.vy -= (j / ma) * ny;
           b.vx += (j / mb) * nx; b.vy += (j / mb) * ny;
+          // 当てられて速度が増したほう＝飛ばされたほう
+          if (Math.hypot(a.vx, a.vy) > Math.max(250, sa0 * 1.15)) a.knockT = 1.2;
+          if (Math.hypot(b.vx, b.vy) > Math.max(250, sb0 * 1.15)) b.knockT = 1.2;
           // Xダッシュ中の打撃は強い（Eビットはスマッシュ攻撃でさらに強い）
           const impact = rel * Math.max(a.dashT > 0 ? 1.5 * ta.smash : 1, b.dashT > 0 ? 1.5 * tb.smash : 1);
           // 反対回転どうしが当たると、接触面の動きが揃ってスピンの削れが少し減る
