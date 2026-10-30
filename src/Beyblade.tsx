@@ -17,32 +17,38 @@ const OVER_PHI = 0.6; // 下方向から左右ポケットまでの角度（rad�
 type BeyType = 'me' | 'cpu';
 type Finish = 'spin' | 'over' | 'burst' | 'extreme';
 
-// ステータスは100が標準
+// ステータスは各パーツの数値の合計（パーツ表の値そのまま）
 interface Stats { atk: number; def: number; sta: number; dash: number; burst: number }
-const STAT_LABELS: [keyof Stats, string, string][] = [
-  ['atk', '攻撃', '攻'], ['def', '防御', '防'], ['sta', '持久', '持'], ['dash', 'ダッシュ', 'ダ'], ['burst', 'バースト耐性', '耐'],
+const STAT_LABELS: [keyof Stats, string][] = [
+  ['atk', '攻撃'], ['def', '防御'], ['sta', '持久'], ['dash', 'ダッシュ'], ['burst', 'バースト耐性'],
 ];
+// バーの目盛り（この値で満タン）
+const STAT_MAX: Record<keyof Stats, number> = { atk: 140, def: 80, sta: 140, dash: 40, burst: 90 };
 
-// パーツ：ブレード（見た目・性格）/ ラチェット / ビット。ステータスは「100 + パーツごとの増減」の合計
-interface PartDef { id: string; name: string; desc: string; d: Partial<Stats>; color?: string; blades?: number; img?: string }
+interface PartDef {
+  id: string; name: string; desc: string;
+  s: Partial<Stats>; weight: number; height?: number; // 重量(g) / 高さ（ラチェットのみ）
+  color?: string; blades?: number; img?: string;
+  dashSpeed?: number; // Xダッシュの速さの倍率（Rビット系はギヤの歯数でダッシュの速度が抑えられる）
+}
 const BLADES: PartDef[] = [
-  { id: 'wizard', name: 'ウィザードロッド', desc: '持久寄り。長く回り続ける', d: { atk: -15, sta: 30, dash: -10, burst: -5 }, color: '#fbbf24', blades: 4, img: wizardImg },
-  { id: 'shark', name: 'シャークスケイル', desc: '攻防のバランス寄り。当たり負けしにくい', d: { atk: 10, def: 15, sta: -10, dash: 5 }, color: '#8b5cf6', blades: 3, img: sharkImg },
-  { id: 'aero', name: 'エアロペガサス', desc: 'スピード寄り。ダッシュが得意', d: { atk: 5, def: -10, sta: 5, dash: 25, burst: -5 }, color: '#38bdf8', blades: 5, img: aeroImg },
+  { id: 'wizard', name: 'ウィザードロッド', desc: '外重心かつ径の大きい5枚刃形状で、遠心力を生み出すことに特化した設計。', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5, img: wizardImg },
+  { id: 'aero', name: 'エアロペガサス', desc: '大型の3枚刃が高い打撃力を生む設計。メタルが二重に塗装され性能がアップしている。', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3, img: aeroImg },
+  { id: 'shark', name: 'シャークスケイル', desc: '打撃部位を複数備えた大型2枚刃で、低い位置からの強烈なアッパー攻撃に特化した設計。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2, img: sharkImg },
 ];
 const RATCHETS: PartDef[] = [
-  { id: 'r160', name: '1-60', desc: '最も軽い。ダッシュ向きだがバーストしやすい', d: { atk: 5, def: -10, sta: 5, dash: 10, burst: -15 } },
-  { id: 'r360', name: '3-60', desc: '軽く攻撃寄り。バーストしやすい', d: { atk: 10, def: -5, dash: 5, burst: -10 } },
-  { id: 'r560', name: '5-60', desc: '防御寄り。バースト耐性が高い', d: { atk: -5, def: 10, dash: -5, burst: 10 } },
-  { id: 'r760', name: '7-60', desc: '重め。バースト耐性が高く、動きはやや鈍い', d: { def: 12, sta: -5, dash: -8, burst: 15 } },
-  { id: 'r960', name: '9-60', desc: '最も重い。頑丈だが動きは鈍い', d: { def: 15, sta: -10, dash: -10, burst: 20 } },
+  { id: 'r160', name: '1-60', desc: 'ベイを低めにセットするパーツ。攻撃性能に特化した1枚刃を採用。', s: { atk: 17, def: 9, sta: 4 }, height: 60, weight: 6.0 },
+  { id: 'r360', name: '3-60', desc: 'ベイを低めにセットするパーツ。弾き性能の高い3枚刃を採用。', s: { atk: 15, def: 9, sta: 6 }, height: 60, weight: 6.3 },
+  { id: 'r560', name: '5-60', desc: 'ベイを低くにセットするパーツ。分厚く遠心力に優れた5枚刃を採用。', s: { atk: 10, def: 9, sta: 11 }, height: 50, weight: 6.6 },
+  { id: 'r760', name: '7-60', desc: 'ベイを低めにセットするパーツ。分厚く防御性能に優れた連打7枚刃を採用。', s: { atk: 8, def: 14, sta: 8 }, height: 60, weight: 7.2 },
+  { id: 'r960', name: '9-60', desc: 'ベイを低めにセットするパーツ。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 7 }, height: 60, weight: 6.1 },
 ];
 const BITS: PartDef[] = [
-  { id: 'B', name: 'B', desc: '安定。持久と防御がやや上がる', d: { atk: -5, def: 5, sta: 10, dash: -5 } },
-  { id: 'FB', name: 'FB', desc: '持久特化。ダッシュと攻撃は弱め', d: { atk: -10, sta: 20, dash: -10 } },
-  { id: 'R', name: 'R', desc: 'ダッシュ特化。回転は落ちやすい', d: { atk: 5, def: -5, sta: -15, dash: 30, burst: -5 } },
-  { id: 'LR', name: 'LR', desc: 'ダッシュと攻撃に強い。持久はやや落ちる', d: { atk: 5, sta: -5, dash: 20 } },
-  { id: 'H', name: 'H', desc: '防御寄り。バーストしにくいが動きは鈍い', d: { atk: -5, def: 15, dash: -15, burst: 10 } },
+  { id: 'B', name: 'B', desc: '球状の軸先による、程よい動きで攻撃をかわし高い持久力を実現。', s: { atk: 15, def: 25, sta: 50, dash: 10, burst: 30 }, weight: 2.1 },
+  { id: 'FB', name: 'FB', desc: 'ラチェットに対してフリー回転するビット。細めで球状の軸先により回転のロスを減らす設計。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
+  { id: 'R', name: 'R', desc: '10枚歯ギヤでXダッシュの速度を抑える分、ダッシュ回数を増やす設計。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, dashSpeed: 0.8 },
+  { id: 'LR', name: 'LR', desc: 'Rビットより1mm低く設計され、アッパー攻撃を得意とする。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, dashSpeed: 0.85 },
+  { id: 'H', name: 'H', desc: '軸先側の6つの平面形状がベイの傾きを抑制し、常に安定した体勢を保持し続ける設計。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, weight: 2.6 },
 ];
 
 // ブレードの写真（背景を抜いた画像）。戦闘中・プレビューでこの画像を回して描く
@@ -63,27 +69,34 @@ const randomCustom = (): Custom => ({
   bit: BITS[Math.floor(Math.random() * BITS.length)].id,
 });
 
-function calcStats(c: Custom): Stats {
-  const st: Stats = { atk: 100, def: 100, sta: 100, dash: 100, burst: 100 };
-  for (const part of [pick(BLADES, c.blade), pick(RATCHETS, c.ratchet), pick(BITS, c.bit)]) {
-    for (const [k, v] of Object.entries(part.d)) st[k as keyof Stats] += v as number;
+// パーツの数値を合計する（重量・高さも）
+function calcStats(c: Custom) {
+  const st: Stats = { atk: 0, def: 0, sta: 0, dash: 0, burst: 0 };
+  const parts = [pick(BLADES, c.blade), pick(RATCHETS, c.ratchet), pick(BITS, c.bit)];
+  let weight = 0;
+  for (const part of parts) {
+    for (const [k, v] of Object.entries(part.s)) st[k as keyof Stats] += v as number;
+    weight += part.weight;
   }
-  for (const k of Object.keys(st) as (keyof Stats)[]) st[k] = Math.max(40, Math.min(200, st[k]));
-  return st;
+  return { st, weight: Math.round(weight * 10) / 10, height: pick(RATCHETS, c.ratchet).height ?? 60, bit: pick(BITS, c.bit) };
 }
 
+// 合計値 → バトル中の動きの係数（基準値の付近で1になる）
+const norm = (v: number, ref: number, k: number) => Math.max(0.3, 1 + k * (v / ref - 1));
+
 function buildBey(c: Custom) {
-  const bl = pick(BLADES, c.blade), st = calcStats(c);
+  const bl = pick(BLADES, c.blade), { st, weight, height, bit } = calcStats(c);
   return {
     name: `${bl.name} ${pick(RATCHETS, c.ratchet).name} ${c.bit}`,
-    color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, sprite: SPRITES[bl.id] ?? null, stats: st,
-    atk: st.atk / 100, // 与ダメージ
-    def: st.def / 100, // 被スピンダメージ軽減
-    decay: 0.85 * (100 / st.sta), // 持久が高いほど回転が減りにくい
-    mass: 0.5 + 0.5 * (st.def / 100),
-    burstRes: st.burst / 100,
-    dash: st.dash / 100, // ダッシュの速さ
-    dashCd: (100 / st.dash) ** 2, // ダッシュが高いほど何度も仕掛けられる
+    color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, sprite: SPRITES[bl.id] ?? null,
+    stats: st, weight, height,
+    atk: norm(st.atk, 75, 0.7), // 与ダメージ・弾き飛ばす力
+    def: norm(st.def, 45, 0.7), // 被スピンダメージの軽減
+    decay: 0.85 / norm(st.sta, 75, 0.7), // 持久が高いほど回転が減りにくい
+    mass: (weight / 45) ** 2 * (60 / height), // 重いほど、ラチェットが低いほど、飛ばされにくい
+    burstRes: norm(st.burst, 55, 0.6), // バースト耐性（ビットの値）
+    dash: bit.dashSpeed ?? 1, // Xダッシュの速さ
+    dashCd: Math.min(4, Math.max(0.5, 20 / st.dash)), // ダッシュ値が高いほど、ダッシュ回数が増える
   };
 }
 
@@ -639,8 +652,8 @@ export function Beyblade() {
           a.vx -= (j / ma) * nx; a.vy -= (j / ma) * ny;
           b.vx += (j / mb) * nx; b.vy += (j / mb) * ny;
           const impact = rel * ((a.dashT > 0 || b.dashT > 0) ? 1.5 : 1);
-          a.burst += (impact * tb.atk * 0.052) / ta.burstRes;
-          b.burst += (impact * ta.atk * 0.052) / tb.burstRes;
+          a.burst += (impact * tb.atk * 0.03) / ta.burstRes;
+          b.burst += (impact * ta.atk * 0.03) / tb.burstRes;
           a.spin = Math.max(0, a.spin - (impact * tb.atk * 0.35) / ta.def);
           b.spin = Math.max(0, b.spin - (impact * ta.atk * 0.35) / tb.def);
           spark((a.x + b.x) / 2, (a.y + b.y) / 2, 8 + Math.floor(impact / 40));
@@ -820,13 +833,12 @@ export function Beyblade() {
               <div style={{ fontSize: 11, opacity: 0.8 }}>{pt.desc}</div>
             </div>
           </div>
-          <div style={{ fontSize: 11, marginTop: 2 }}>
-            {STAT_LABELS.filter(([k]) => pt.d[k]).map(([k, , short]) => (
-              <span key={k} style={{ marginRight: 8, color: (pt.d[k] as number) > 0 ? '#7ee787' : '#ff8b8b' }}>
-                {short}{(pt.d[k] as number) > 0 ? '+' : ''}{pt.d[k]}
-              </span>
+          <div style={{ fontSize: 11, marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: '0 10px', opacity: 0.95 }}>
+            {STAT_LABELS.filter(([k]) => pt.s[k] !== undefined).map(([k, label]) => (
+              <span key={k}>{label} <b>{pt.s[k]}</b></span>
             ))}
-            {Object.keys(pt.d).length === 0 && <span style={{ opacity: 0.6 }}>増減なし</span>}
+            {pt.height !== undefined && <span>高さ <b>{pt.height}</b></span>}
+            <span style={{ opacity: 0.8 }}>{pt.weight}g</span>
           </div>
         </button>
       ))}
@@ -842,11 +854,12 @@ export function Beyblade() {
             <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, marginTop: 4 }}>
               <span style={{ width: 74 }}>{label}</span>
               <div style={{ flex: 1, height: 6, background: '#1b2551', borderRadius: 3 }}>
-                <div style={{ width: `${Math.min(100, (myBey.stats[key] / 160) * 100)}%`, height: '100%', borderRadius: 3, background: myBey.stats[key] >= 100 ? myBey.color : '#6b7bb0' }} />
+                <div style={{ width: `${Math.min(100, (myBey.stats[key] / STAT_MAX[key]) * 100)}%`, height: '100%', borderRadius: 3, background: myBey.color }} />
               </div>
               <span style={{ width: 28, textAlign: 'right' }}>{myBey.stats[key]}</span>
             </div>
           ))}
+          <div style={{ fontSize: 11, marginTop: 8, opacity: 0.85, textAlign: 'center' }}>総重量 {myBey.weight}g ／ ラチェットの高さ {myBey.height}</div>
         </div>
       </div>
       {partPicker('ブレード', BLADES, custom.blade, id => setCustom(c => ({ ...c, blade: id })))}
@@ -892,7 +905,7 @@ export function Beyblade() {
           {customizer}
           <div style={{ fontSize: 13, opacity: 0.8, textAlign: 'center', lineHeight: 1.7 }}>
             スピン 1pt / オーバー 2pt / バースト 2pt / エクストリーム 3pt<br />
-            下の中央（金色）から場外に出すとエクストリーム、左右の赤いポケットはオーバー！<br />ステータスは100が標準。パーツの組み合わせで強みと弱みが変わります。
+            下の中央（金色）から場外に出すとエクストリーム、左右の赤いポケットはオーバー！<br />ベイのステータスは、パーツの数値の合計です。重さやラチェットの高さも、飛ばされにくさに影響します。
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <span style={{ fontSize: 15 }}>あなたの立ち位置：</span>
