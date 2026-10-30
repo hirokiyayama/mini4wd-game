@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import wizardImg from './assets/beys/wizard.png';
+import sharkImg from './assets/beys/shark.png';
+import aeroImg from './assets/beys/aero.png';
 
 // ベイブレードX風バトル（4ポイント先取）
 // スタジアムは参考動画（真上視点）に合わせる：八角形の枠 + 円形のすり鉢 + オレンジのXライン(円形リング)
@@ -21,11 +24,11 @@ const STAT_LABELS: [keyof Stats, string, string][] = [
 ];
 
 // パーツ：ブレード（見た目・性格）/ ラチェット / ビット。ステータスは「100 + パーツごとの増減」の合計
-interface PartDef { id: string; name: string; desc: string; d: Partial<Stats>; color?: string; blades?: number }
+interface PartDef { id: string; name: string; desc: string; d: Partial<Stats>; color?: string; blades?: number; img?: string }
 const BLADES: PartDef[] = [
-  { id: 'wizard', name: 'ウィザードロッド', desc: '持久寄り。長く回り続ける', d: { atk: -15, sta: 30, dash: -10, burst: -5 }, color: '#22c55e', blades: 4 },
-  { id: 'shark', name: 'シャークスケイル', desc: '攻防のバランス寄り。当たり負けしにくい', d: { atk: 10, def: 15, sta: -10, dash: 5 }, color: '#6366f1', blades: 3 },
-  { id: 'aero', name: 'エアロペガサス', desc: 'スピード寄り。ダッシュが得意', d: { atk: 5, def: -10, sta: 5, dash: 25, burst: -5 }, color: '#38bdf8', blades: 5 },
+  { id: 'wizard', name: 'ウィザードロッド', desc: '持久寄り。長く回り続ける', d: { atk: -15, sta: 30, dash: -10, burst: -5 }, color: '#fbbf24', blades: 4, img: wizardImg },
+  { id: 'shark', name: 'シャークスケイル', desc: '攻防のバランス寄り。当たり負けしにくい', d: { atk: 10, def: 15, sta: -10, dash: 5 }, color: '#8b5cf6', blades: 3, img: sharkImg },
+  { id: 'aero', name: 'エアロペガサス', desc: 'スピード寄り。ダッシュが得意', d: { atk: 5, def: -10, sta: 5, dash: 25, burst: -5 }, color: '#38bdf8', blades: 5, img: aeroImg },
 ];
 const RATCHETS: PartDef[] = [
   { id: 'r160', name: '1-60', desc: '最も軽い。ダッシュ向きだがバーストしやすい', d: { atk: 5, def: -10, sta: 5, dash: 10, burst: -15 } },
@@ -41,6 +44,15 @@ const BITS: PartDef[] = [
   { id: 'LR', name: 'LR', desc: 'ダッシュと攻撃に強い。持久はやや落ちる', d: { atk: 5, sta: -5, dash: 20 } },
   { id: 'H', name: 'H', desc: '防御寄り。バーストしにくいが動きは鈍い', d: { atk: -5, def: 15, dash: -15, burst: 10 } },
 ];
+
+// ブレードの写真（背景を抜いた画像）。戦闘中・プレビューでこの画像を回して描く
+const SPRITES: Record<string, HTMLImageElement> = {};
+for (const bl of BLADES) {
+  if (!bl.img) continue;
+  const im = new Image();
+  im.src = bl.img;
+  SPRITES[bl.id] = im;
+}
 
 interface Custom { blade: string; ratchet: string; bit: string }
 const DEFAULT_CUSTOM: Custom = { blade: 'shark', ratchet: 'r560', bit: 'B' };
@@ -64,7 +76,7 @@ function buildBey(c: Custom) {
   const bl = pick(BLADES, c.blade), st = calcStats(c);
   return {
     name: `${bl.name} ${pick(RATCHETS, c.ratchet).name} ${c.bit}`,
-    color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, stats: st,
+    color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, sprite: SPRITES[bl.id] ?? null, stats: st,
     atk: st.atk / 100, // 与ダメージ
     def: st.def / 100, // 被スピンダメージ軽減
     decay: 0.85 * (100 / st.sta), // 持久が高いほど回転が減りにくい
@@ -133,7 +145,8 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
 }
 
 // 高速回転のベイは止まって見えるほど速く回っているので、残像（ブラー）で描く。回転が落ちると羽根がはっきり見えてくる
-function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, angle: number, ratio: number, cap: string, nBlades = 3) {
+function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, angle: number, ratio: number, cap: string, nBlades = 3, sprite: HTMLImageElement | null = null) {
+  const useSprite = !!sprite && sprite.complete && sprite.naturalWidth > 0;
   // 回転が落ちてくるとふらつく
   if (ratio > 0.001 && ratio < 0.3) {
     const t = performance.now(), A = (0.3 - ratio) * 14;
@@ -142,6 +155,7 @@ function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, ang
   ctx.strokeStyle = ring; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.arc(0, 0, BEY_R + 4, 0, Math.PI * 2); ctx.stroke();
   const blades = () => {
+    if (useSprite) { const sz = BEY_R * 2.15; ctx.drawImage(sprite!, -sz / 2, -sz / 2, sz, sz); return; }
     const hw = 30 / nBlades; // 羽根が多いほど細い
     for (let k = 0; k < nBlades; k++) {
       ctx.rotate((Math.PI * 2) / nBlades);
@@ -153,7 +167,7 @@ function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, ang
   ctx.save();
   ctx.fillStyle = color;
   ctx.globalAlpha *= 0.4;
-  ctx.beginPath(); ctx.arc(0, 0, BEY_R * 0.95, 0, Math.PI * 2); ctx.fill(); // ぼやけた円盤
+  if (!useSprite) { ctx.beginPath(); ctx.arc(0, 0, BEY_R * 0.95, 0, Math.PI * 2); ctx.fill(); } // ぼやけた円盤
   ctx.restore();
   const sweep = 2.4 * Math.pow(ratio, 1.5); // 回転が速いほど残像が長い。落ちてくると羽根がはっきり見える
   ctx.save();
@@ -166,6 +180,7 @@ function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, ang
   ctx.globalAlpha = baseAlpha * (0.5 + 0.45 * (1 - Math.min(1, ratio / 0.5)));
   blades();
   ctx.restore();
+  if (useSprite) return; // 写真には中心のエンブレムも入っている
   ctx.fillStyle = '#10183a';
   ctx.beginPath(); ctx.arc(0, 0, BEY_R * 0.62, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.stroke();
@@ -444,10 +459,15 @@ export function Beyblade() {
     if (!c) return;
     const ctx = c.getContext('2d')!;
     const bey = buildBey(custom);
-    ctx.clearRect(0, 0, 170, 170);
-    ctx.save(); ctx.translate(85, 85); ctx.scale(1.9, 1.9);
-    drawBey(ctx, bey.color, '#5aabff', -Math.PI / 2, 0, '#fff', bey.blades);
-    ctx.restore();
+    const draw = () => {
+      ctx.clearRect(0, 0, 170, 170);
+      ctx.save(); ctx.translate(85, 85); ctx.scale(2.2, 2.2);
+      drawBey(ctx, bey.color, '#5aabff', 0, 0, '#fff', bey.blades, bey.sprite);
+      ctx.restore();
+    };
+    draw();
+    bey.sprite?.addEventListener('load', draw); // 画像の読み込みが終わったら描き直す
+    return () => bey.sprite?.removeEventListener('load', draw);
   }, [inSelect, custom]);
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -686,7 +706,7 @@ export function Beyblade() {
           ctx.translate(b.x, b.y);
           ctx.fillStyle = 'rgba(0,0,0,0.22)';
           ctx.beginPath(); ctx.ellipse(3, 5, BEY_R, BEY_R * 0.85, 0, 0, Math.PI * 2); ctx.fill();
-          drawBey(ctx, t.color, i === 0 ? '#5aabff' : '#ef4444', b.angle, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades);
+          drawBey(ctx, t.color, i === 0 ? '#5aabff' : '#ef4444', b.angle, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, t.sprite);
           ctx.restore();
           if (b.dashFx > 0) {
             ctx.fillStyle = `rgba(230,110,0,${Math.min(1, b.dashFx * 1.5)})`;
@@ -697,10 +717,10 @@ export function Beyblade() {
         });
       }
       // 落とす場所・向き・シュート方法のプレビュー（スタート時は相手のものも見える）
-      const drawGhost = (g: { x: number; y: number }, aim: { x: number; y: number }, diag: boolean, color: string, ring: string, arrow: string, label: string, nb: number) => {
+      const drawGhost = (g: { x: number; y: number }, aim: { x: number; y: number }, diag: boolean, color: string, ring: string, arrow: string, label: string, nb: number, sp: HTMLImageElement | null) => {
         ctx.save(); ctx.translate(g.x, g.y);
         ctx.globalAlpha = 0.85;
-        drawBey(ctx, color, ring, performance.now() / 18, 1, '#fff', nb);
+        drawBey(ctx, color, ring, performance.now() / 18, 1, '#fff', nb, sp);
         ctx.globalAlpha = 1;
         ctx.strokeStyle = arrow; ctx.fillStyle = arrow; ctx.lineWidth = 4;
         const len = diag ? 46 : 84;
@@ -723,11 +743,11 @@ export function Beyblade() {
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current) {
         const g = dropRef.current;
         const diag = modeRef.current === 'diag';
-        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y), diag, TYPES.me.color, '#5aabff', '#e8590c', `あなた：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades);
+        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y), diag, TYPES.me.color, '#5aabff', '#e8590c', `あなた：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, TYPES.me.sprite);
       }
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current) {
         const c = cpuPlanRef.current;
-        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ef4444', '#d62828', `CPU：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades);
+        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ef4444', '#d62828', `CPU：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite);
       }
       // バースト：パーツが飛び散る
       const parts = partsRef.current;
@@ -793,8 +813,13 @@ export function Beyblade() {
             background: value === pt.id ? '#14204f' : '#0a1030',
           }}
         >
-          <div style={{ fontWeight: 700, color: pt.color ?? '#fff' }}>{pt.name}</div>
-          <div style={{ fontSize: 11, opacity: 0.8 }}>{pt.desc}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {pt.img && <img src={pt.img} alt={pt.name} width={44} height={44} style={{ flex: '0 0 auto' }} />}
+            <div>
+              <div style={{ fontWeight: 700, color: pt.color ?? '#fff' }}>{pt.name}</div>
+              <div style={{ fontSize: 11, opacity: 0.8 }}>{pt.desc}</div>
+            </div>
+          </div>
           <div style={{ fontSize: 11, marginTop: 2 }}>
             {STAT_LABELS.filter(([k]) => pt.d[k]).map(([k, , short]) => (
               <span key={k} style={{ marginRight: 8, color: (pt.d[k] as number) > 0 ? '#7ee787' : '#ff8b8b' }}>
