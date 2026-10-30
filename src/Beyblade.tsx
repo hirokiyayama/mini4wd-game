@@ -7,7 +7,7 @@ const WIN_POINTS = 4;
 const R = 265; // すり鉢の半径
 const BEY_R = 22;
 const W = 900, H = 700, CX = W / 2, CY = 335;
-const EXIT_HALF = 0.21; // 出口の幅（rad）
+const EXIT_HALF = 0.27; // 出口の幅（rad）
 const OVER_PHI = 0.6; // 下方向から左右ポケットまでの角度（rad）
 
 type BeyType = 'attack' | 'defense' | 'stamina' | 'balance';
@@ -310,7 +310,7 @@ export function Beyblade() {
         const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
         const ta = TYPES[a.type], tb = TYPES[b.type];
         if (rel > 0) {
-          const j = (1.85 * rel) / (1 / ta.mass + 1 / tb.mass);
+          const j = (2.4 * rel) / (1 / ta.mass + 1 / tb.mass);
           a.vx -= (j / ta.mass) * nx; a.vy -= (j / ta.mass) * ny;
           b.vx += (j / tb.mass) * nx; b.vy += (j / tb.mass) * ny;
           const impact = rel * ((a.dashT > 0 || b.dashT > 0) ? 1.5 : 1);
