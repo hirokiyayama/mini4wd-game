@@ -664,7 +664,11 @@ export function Beyblade() {
         if (d2 > lim && (!ek || outSpeed < needOut)) {
           const nx = b.x / d2, ny = b.y / d2;
           const outv = b.vx * nx + b.vy * ny;
-          if (outv > 0) { b.vx -= 1.55 * outv * nx; b.vy -= 1.55 * outv * ny; }
+          if (outv > 0) {
+            b.vx -= 1.55 * outv * nx; b.vy -= 1.55 * outv * ny;
+            // 強く飛ばされて壁に当たって戻ってくると、飛ばされたほうの持久がかなり削られる
+            if (outv > 150) { b.spin = Math.max(0, b.spin - 0.6 * outv); spark(b.x, b.y, 4); }
+          }
           b.x = nx * lim; b.y = ny * lim;
         }
       }
@@ -685,7 +689,7 @@ export function Beyblade() {
           for (const x of [a, b]) if (x.riding) { x.riding = false; x.dashCd = Math.max(x.dashCd, 0.6); }
           // 回転しているベイは、ダッシュしていなくても当たれば相手を弾き飛ばせる
           const spinKick = 150 * ((a.spin / a.spinMax) * ta.atk + (b.spin / b.spinMax) * tb.atk) / 2;
-          const j = (3.6 * (rel + spinKick)) / (1 / ma + 1 / mb);
+          const j = (4.6 * (rel + spinKick)) / (1 / ma + 1 / mb);
           a.vx -= (j / ma) * nx; a.vy -= (j / ma) * ny;
           b.vx += (j / mb) * nx; b.vy += (j / mb) * ny;
           // Xダッシュ中の打撃は強い（Eビットはスマッシュ攻撃でさらに強い）
