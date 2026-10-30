@@ -30,6 +30,7 @@ const STAT_MAX: Record<keyof Stats, number> = { atk: 140, def: 80, sta: 140, das
 interface PartDef {
   id: string; name: string; desc: string;
   s: Partial<Stats>; weight: number; height?: number; // 重量(g) / 高さ（ラチェットのみ）
+  hid?: Partial<Stats>; // 隠れ性能：画面の数字は変えずに、バトルの計算だけ、この値に置き換える
   color?: string; blades?: number; img?: string;
   dashSpeed?: number; // Xダッシュの速さの倍率（現在はどのビットも等倍。R/LRはダッシュの回数だけが増える）
   mobility?: number; // 動き回りやすさ（R系は斜めシュートでも動く / Hは水平シュートでもあまり動かない）
@@ -52,7 +53,7 @@ const RATCHETS: PartDef[] = [
   { id: 'r360', name: '3-60', desc: 'ベイを低めにセットするパーツ。弾き性能の高い3枚刃を採用。', s: { atk: 15, def: 9, sta: 6 }, height: 60, weight: 6.3 },
   { id: 'r560', name: '5-60', desc: 'ベイを低くにセットするパーツ。分厚く遠心力に優れた5枚刃を採用。', s: { atk: 10, def: 9, sta: 11 }, height: 50, weight: 6.6 },
   { id: 'r760', name: '7-60', desc: 'ベイを低めにセットするパーツ。分厚く防御性能に優れた連打7枚刃を採用。', s: { atk: 8, def: 14, sta: 8 }, height: 60, weight: 7.2 },
-  { id: 'r960', name: '9-60', desc: 'ベイを低めにセットするパーツ。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 12 }, height: 60, weight: 6.1 },
+  { id: 'r960', name: '9-60', desc: 'ベイを低めにセットするパーツ。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 7 }, hid: { sta: 12, atk: 8 }, height: 60, weight: 6.1 },
 ];
 const BITS: PartDef[] = [
   { id: 'E', name: 'E', desc: '大型のガイドが付いた設計で姿勢をキープしやすく、Xダッシュ時に軸先が浮き上がりスマッシュ攻撃が可能。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, weight: 3.1, smash: 1.35, absorbBit: 1, dashLimit: [2, 3] },
@@ -88,12 +89,14 @@ const randomCustom = (): Custom => ({
 });
 
 // パーツの数値を合計する（重量・高さも）
-function calcStats(c: Custom) {
+function calcStats(c: Custom, hidden = false) {
   const st: Stats = { atk: 0, def: 0, sta: 0, dash: 0, burst: 0 };
   const parts = [pick(BLADES, c.blade), pick(RATCHETS, c.ratchet), pick(BITS, c.bit)];
   let weight = 0;
   for (const part of parts) {
-    for (const [k, v] of Object.entries(part.s)) st[k as keyof Stats] += v as number;
+    // hidden=true のときは、隠れ性能のあるパーツだけ、その値で計算する（バトル用）
+    const src = hidden ? { ...part.s, ...part.hid } : part.s;
+    for (const [k, v] of Object.entries(src)) st[k as keyof Stats] += v as number;
     weight += part.weight;
   }
   return { st, weight: Math.round(weight * 10) / 10, height: pick(RATCHETS, c.ratchet).height ?? 60, bit: pick(BITS, c.bit) };
@@ -104,22 +107,23 @@ const norm = (v: number, ref: number, k: number) => Math.max(0.3, 1 + k * (v / r
 
 function buildBey(c: Custom) {
   const bl = pick(BLADES, c.blade), { st, weight, height, bit } = calcStats(c);
+  const ef = calcStats(c, true).st; // バトルの計算用（隠れ性能を含む）。画面には st を出す
   return {
     name: `${bl.name} ${pick(RATCHETS, c.ratchet).name} ${c.bit}`,
     color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, sprite: SPRITES[bl.id] ?? null,
     stats: st, weight, height,
-    atk: norm(st.atk, 75, 0.7), // 与ダメージ・弾き飛ばす力
-    def: norm(st.def, 45, 0.45), // 被スピンダメージの軽減
-    decay: 0.85 / norm(st.sta, 75, 0.3), // 持久が高いほど回転が減りにくい
+    atk: norm(ef.atk, 75, 0.7), // 与ダメージ・弾き飛ばす力
+    def: norm(ef.def, 45, 0.45), // 被スピンダメージの軽減
+    decay: 0.85 / norm(ef.sta, 75, 0.3), // 持久が高いほど回転が減りにくい
     mass: (weight / 45) ** 2 * (60 / height), // 重いほど、ラチェットが低いほど、飛ばされにくい
-    burstRes: norm(st.burst, 55, 0.35) * (1 + ((bl.burstMod ?? 1) - 1) * (bit.id === 'E' ? 1 : 0.3)), // ブレードの形状による差は、Eビットのときに大きく出る // バースト耐性（ビットの値）
+    burstRes: norm(ef.burst, 55, 0.35) * (1 + ((bl.burstMod ?? 1) - 1) * (bit.id === 'E' ? 1 : 0.3)), // ブレードの形状による差は、Eビットのときに大きく出る // バースト耐性（ビットの値）
     dash: bit.dashSpeed ?? 1, // Xダッシュの速さ
     smash: bit.smash ?? 1, // Eビット：Xダッシュ中の打撃力
     dashLimit: bit.dashLimit ?? null,
     spinDir: bl.spinDir ?? 1, // 左回転ブレードは -1
     absorb: (bl.absorb ?? 0) * (bit.absorbBit ?? 0.25), // 左回転の回転吸収力（Eビットで大きく発揮される）
     mobility: bit.mobility ?? 1,
-    dashCd: Math.min(4, Math.max(0.5, 20 / st.dash)), // ダッシュ値が高いほど、ダッシュ回数が増える
+    dashCd: Math.min(4, Math.max(0.5, 20 / ef.dash)), // ダッシュ値が高いほど、ダッシュ回数が増える
   };
 }
 
