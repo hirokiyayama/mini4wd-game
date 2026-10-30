@@ -90,6 +90,41 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
   };
 }
 
+// 高速回転のベイは止まって見えるほど速く回っているので、残像（ブラー）で描く。回転が落ちると羽根がはっきり見えてくる
+function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, angle: number, ratio: number, cap: string) {
+  ctx.strokeStyle = ring; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, 0, BEY_R + 4, 0, Math.PI * 2); ctx.stroke();
+  const blades = () => {
+    for (let k = 0; k < 3; k++) {
+      ctx.rotate((Math.PI * 2) / 3);
+      ctx.beginPath();
+      ctx.moveTo(0, 0); ctx.lineTo(BEY_R, -9); ctx.lineTo(BEY_R + 3, 11); ctx.closePath();
+      ctx.fill();
+    }
+  };
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.globalAlpha *= 0.4;
+  ctx.beginPath(); ctx.arc(0, 0, BEY_R * 0.95, 0, Math.PI * 2); ctx.fill(); // ぼやけた円盤
+  ctx.restore();
+  const sweep = 0.4 + 2.2 * ratio; // 回転が速いほど残像が長い
+  ctx.save();
+  ctx.rotate(angle);
+  ctx.fillStyle = color;
+  const baseAlpha = ctx.globalAlpha;
+  for (let k = 0; k < 8; k++) {
+    ctx.save(); ctx.rotate(-(k / 8) * sweep); ctx.globalAlpha = baseAlpha * (0.38 - k * 0.04); blades(); ctx.restore();
+  }
+  ctx.globalAlpha = baseAlpha * (ratio > 0.35 ? 0.55 : 0.95);
+  blades();
+  ctx.restore();
+  ctx.fillStyle = '#10183a';
+  ctx.beginPath(); ctx.arc(0, 0, BEY_R * 0.62, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.stroke();
+  ctx.fillStyle = cap;
+  ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
+}
+
 function drawStadium(ctx: CanvasRenderingContext2D) {
   // 八角形の透明な枠
   const half = 330, cut = 100;
@@ -447,7 +482,7 @@ export function Beyblade() {
           }
           continue;
         }
-        const damp = 1 - (0.08 + (1 - ratio) * 0.7) * DT;
+        const damp = 1 - (0.08 + (1 - ratio) * 0.7 + (b.dashT > 0 ? 2.2 : 0)) * DT; // ダッシュ中は急速に失速し、中央付近で収まる
         b.vx *= damp; b.vy *= damp;
         speed = Math.hypot(b.vx, b.vy);
         b.x += b.vx * DT; b.y += b.vy * DT;
@@ -459,7 +494,10 @@ export function Beyblade() {
         const d2 = Math.hypot(b.x, b.y);
         const lim = R - BEY_R * 0.3;
         const outSpeed = (b.vx * b.x + b.vy * b.y) / (d2 || 1);
-        if (d2 > lim && (!exitKind(b.x, b.y) || outSpeed < 170)) {
+        const ek = exitKind(b.x, b.y);
+        // 出口にも縁があり、弱い勢いでは場外に出ない（エクストリームは特に出にくい）
+        const needOut = ek === 'extreme' ? 260 : ek === 'over' ? 110 : 0;
+        if (d2 > lim && (!ek || outSpeed < needOut)) {
           const nx = b.x / d2, ny = b.y / d2;
           const outv = b.vx * nx + b.vy * ny;
           if (outv > 0) { b.vx -= 1.55 * outv * nx; b.vy -= 1.55 * outv * ny; }
@@ -481,12 +519,12 @@ export function Beyblade() {
         const ma = ta.mass * (a.holdT > 0 ? 3 : 1), mb = tb.mass * (b.holdT > 0 ? 3 : 1);
         if (rel > 0) {
           for (const x of [a, b]) if (x.riding) { x.riding = false; x.dashCd = Math.max(x.dashCd, 0.6); }
-          const j = (2.0 * rel) / (1 / ma + 1 / mb);
+          const j = (2.4 * rel) / (1 / ma + 1 / mb);
           a.vx -= (j / ma) * nx; a.vy -= (j / ma) * ny;
           b.vx += (j / mb) * nx; b.vy += (j / mb) * ny;
           const impact = rel * ((a.dashT > 0 || b.dashT > 0) ? 1.5 : 1);
-          a.burst += (impact * tb.atk * 0.04) / ta.burstRes;
-          b.burst += (impact * ta.atk * 0.04) / tb.burstRes;
+          a.burst += (impact * tb.atk * 0.06) / ta.burstRes;
+          b.burst += (impact * ta.atk * 0.06) / tb.burstRes;
           a.spin = Math.max(0, a.spin - (impact * tb.atk * 0.35) / ta.def);
           b.spin = Math.max(0, b.spin - (impact * ta.atk * 0.35) / tb.def);
           spark((a.x + b.x) / 2, (a.y + b.y) / 2, 8 + Math.floor(impact / 40));
@@ -547,21 +585,7 @@ export function Beyblade() {
           ctx.translate(b.x, b.y);
           ctx.fillStyle = 'rgba(0,0,0,0.22)';
           ctx.beginPath(); ctx.ellipse(3, 5, BEY_R, BEY_R * 0.85, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = i === 0 ? '#5aabff' : '#ef4444'; ctx.lineWidth = 3;
-          ctx.beginPath(); ctx.arc(0, 0, BEY_R + 4, 0, Math.PI * 2); ctx.stroke();
-          ctx.rotate(b.angle);
-          ctx.fillStyle = t.color;
-          for (let k = 0; k < 3; k++) {
-            ctx.rotate((Math.PI * 2) / 3);
-            ctx.beginPath();
-            ctx.moveTo(0, 0); ctx.lineTo(BEY_R, -9); ctx.lineTo(BEY_R + 3, 11); ctx.closePath();
-            ctx.fill();
-          }
-          ctx.fillStyle = '#10183a';
-          ctx.beginPath(); ctx.arc(0, 0, BEY_R * 0.62, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = t.color; ctx.lineWidth = 3; ctx.stroke();
-          ctx.fillStyle = i === 0 ? '#fff' : '#ffb4b4';
-          ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
+          drawBey(ctx, t.color, i === 0 ? '#5aabff' : '#ef4444', b.angle, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4');
           ctx.restore();
           if (b.dashFx > 0) {
             ctx.fillStyle = `rgba(230,110,0,${Math.min(1, b.dashFx * 1.5)})`;
@@ -576,11 +600,8 @@ export function Beyblade() {
         const g = dropRef.current;
         const diag = modeRef.current === 'diag';
         ctx.save(); ctx.translate(g.x, g.y);
-        ctx.globalAlpha = 0.8;
-        ctx.fillStyle = TYPES[typeRef.current].color;
-        ctx.beginPath(); ctx.arc(0, 0, BEY_R, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#10183a';
-        ctx.beginPath(); ctx.arc(0, 0, BEY_R * 0.6, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.85;
+        drawBey(ctx, TYPES[typeRef.current].color, '#5aabff', performance.now() / 18, 1, '#fff');
         ctx.globalAlpha = 1;
         ctx.strokeStyle = '#e8590c'; ctx.fillStyle = '#e8590c'; ctx.lineWidth = 4;
         const aim = aimRef.current ?? defaultAim(g.x, g.y);
