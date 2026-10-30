@@ -320,6 +320,7 @@ export function Beyblade() {
   const [count, setCount] = useState<number | null>(null);
   const [custom, setCustom] = useState<Custom>(urlCustom('me') ?? DEFAULT_CUSTOM);
   const [, setCpuCustom] = useState<Custom>(DEFAULT_CUSTOM); // 再描画用（中身は TYPES.cpu に入る）
+  const [cpuSel, setCpuSel] = useState<Custom>({ blade: '', ratchet: '', bit: '' }); // CPUのパーツ選択（空 = ランダム）
   const [score, setScore] = useState({ me: 0, cpu: 0 });
   const [message, setMessage] = useState<{ winner: 'me' | 'cpu'; finish: Finish } | null>(null);
 
@@ -378,7 +379,9 @@ export function Beyblade() {
     setScore({ me: 0, cpu: 0 });
     setMessage(null);
     // カスタマイズした自分のベイと、ランダムなCPUのベイをここで作る
-    const cc = urlCustom('cpu') ?? randomCustom();
+    // CPUのベイ：選んだパーツはそのまま、選ばなかった（ランダムの）部分だけ毎回ランダムに決める
+    const rc = randomCustom();
+    const cc = urlCustom('cpu') ?? { blade: cpuSel.blade || rc.blade, ratchet: cpuSel.ratchet || rc.ratchet, bit: cpuSel.bit || rc.bit };
     TYPES.me = buildBey(custom);
     TYPES.cpu = buildBey(cc);
     setCpuCustom(cc);
@@ -1013,6 +1016,23 @@ export function Beyblade() {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, marginTop: 40 }}>
           <div style={{ fontSize: 18 }}>ベイをカスタマイズしよう（{WIN_POINTS}ポイント先取）</div>
           {customizer}
+          {/* CPUのベイを選ぶ（選ばなければランダム） */}
+          <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', padding: '10px 14px', borderRadius: 12, background: '#0a1030', border: '2px solid #5a2a2a' }}>
+            <span style={{ fontWeight: 800, color: '#ef4444' }}>CPUのベイ</span>
+            {([['ブレード', BLADES, 'blade'], ['ラチェット', RATCHETS, 'ratchet'], ['ビット', BITS, 'bit']] as const).map(([label, list, key]) => (
+              <label key={key} style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {label}
+                <select
+                  value={cpuSel[key]}
+                  onChange={e => setCpuSel(c => ({ ...c, [key]: e.target.value }))}
+                  style={{ padding: '5px 8px', borderRadius: 6, background: '#14204f', color: '#fff', border: '1px solid #2a3566', fontSize: 13 }}
+                >
+                  <option value="">ランダム</option>
+                  {list.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
+                </select>
+              </label>
+            ))}
+          </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <span style={{ fontSize: 15 }}>あなたの立ち位置：</span>
             {([['left', '左側（左半分に落とす）'], ['right', '右側（右半分に落とす）']] as const).map(([k, label]) => (
