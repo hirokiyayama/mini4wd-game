@@ -55,6 +55,7 @@ interface Bey {
   out: boolean; dead: boolean;
   holdT: number; // 斜めシュート：その場にとどまる残り時間
   riding: boolean; rideT: number; // Xライン（リング）に乗って走行中
+  ax: number; ay: number; push: number; // 走らせる向きと、斜めシュートで動き出すときの勢い
 }
 interface Spark { x: number; y: number; vx: number; vy: number; life: number }
 interface Part { x: number; y: number; vx: number; vy: number; rot: number; vr: number; color: string; size: number; life: number }
@@ -66,21 +67,26 @@ function exitKind(x: number, y: number): 'extreme' | 'over' | null {
   return null;
 }
 
-// 水平シュート：すぐにリングへ向かいエクストリームダッシュ / 斜めシュート：その場にとどまってから動き出す（その間は飛ばされにくい）
-function makeBey(type: BeyType, x: number, y: number, diag: boolean): Bey {
-  const spinMax = 3000;
+// 向きを指定しなかった場合：リングへ向かって反時計回りに走る向き
+function defaultAim(x: number, y: number) {
   const d = Math.hypot(x, y) || 1;
-  let vx = 0, vy = 0;
-  if (!diag) {
-    const sp = 640;
-    vx = ((y / d) * 0.9 + (x / d) * 0.45) * sp;
-    vy = ((-x / d) * 0.9 + (y / d) * 0.45) * sp;
-  }
+  const ux = (y / d) * 0.9 + (x / d) * 0.45, uy = (-x / d) * 0.9 + (y / d) * 0.45;
+  const l = Math.hypot(ux, uy) || 1;
+  return { x: ux / l, y: uy / l };
+}
+
+// 水平シュート：すぐにリングへ向かいエクストリームダッシュ / 斜めシュート：その場でほんの少し動きながらとどまり、それから動き出す（その間は飛ばされにくい）
+// power(0〜1)：発射時のゲージで決まる。回転数と飛び出しの勢いに効く
+function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: number; y: number } | null, power: number): Bey {
+  const spinMax = 3000 * (0.6 + 0.4 * power);
+  const a = aim ?? defaultAim(x, y);
+  const sp = 380 + 330 * power;
   return {
-    type, x, y, vx, vy,
+    type, x, y, vx: diag ? 0 : a.x * sp, vy: diag ? 0 : a.y * sp,
     spin: spinMax, spinMax, burst: 0, angle: 0,
     curl: 1.1, dashT: 0, dashCd: 0, dashFx: 0, trail: [], out: false, dead: false,
     holdT: diag ? 1.4 : 0, riding: false, rideT: 0,
+    ax: a.x, ay: a.y, push: 130 + 140 * power,
   };
 }
 
@@ -152,7 +158,7 @@ function drawStadium(ctx: CanvasRenderingContext2D) {
 }
 
 export function Beyblade() {
-  const [phase, setPhase] = useState<'select' | 'launch' | 'count' | 'battle' | 'result' | 'over'>('select');
+  const [phase, setPhase] = useState<'select' | 'launch' | 'count' | 'fire' | 'battle' | 'result' | 'over'>('select');
   const [shotMode, setShotMode] = useState<'flat' | 'diag'>('flat');
   const [hasDrop, setHasDrop] = useState(false);
   const [count, setCount] = useState<number | null>(null);
@@ -166,6 +172,9 @@ export function Beyblade() {
   const sparksRef = useRef<Spark[]>([]);
   const partsRef = useRef<Part[]>([]);
   const dropRef = useRef<{ x: number; y: number } | null>(null);
+  const aimRef = useRef<{ x: number; y: number } | null>(null);
+  const gaugeRef = useRef(0);
+  const fireStartRef = useRef(0);
   const modeRef = useRef<'flat' | 'diag'>('flat');
   const typeRef = useRef<BeyType>('balance');
   const countTimers = useRef<number[]>([]);
@@ -187,6 +196,7 @@ export function Beyblade() {
     beysRef.current = null;
     partsRef.current = [];
     dropRef.current = null;
+    aimRef.current = null;
     setHasDrop(false);
     setPhase('launch');
   };
@@ -196,14 +206,18 @@ export function Beyblade() {
     partsRef.current = [];
     setMessage(null);
     dropRef.current = null;
+    aimRef.current = null;
     setHasDrop(false);
     setPhase('launch');
   };
 
-  const shoot = useCallback(() => {
+  // 発射の瞬間：ゲージで決まったパワーでベイを落とす
+  const fireNow = useCallback(() => {
     const my = dropRef.current;
-    if (phaseRef.current !== 'launch' || !my) return;
-    // CPUは毎回ランダムな場所・角度から落とす
+    if (phaseRef.current !== 'fire' || !my) return;
+    countTimers.current.forEach(window.clearTimeout);
+    const power = gaugeRef.current;
+    // CPUは毎回ランダムな場所・角度・パワーから落とす
     const cpuDiag = Math.random() < 0.5;
     let cx = 0, cy = 0;
     for (let i = 0; i < 20; i++) {
@@ -213,31 +227,58 @@ export function Beyblade() {
       if (Math.hypot(cx - my.x, cy - my.y) > BEY_R * 4) break;
     }
     beysRef.current = [
-      makeBey(myType, my.x, my.y, modeRef.current === 'diag'),
-      makeBey(cpuType, cx, cy, cpuDiag),
+      makeBey(myType, my.x, my.y, modeRef.current === 'diag', aimRef.current, power),
+      makeBey(cpuType, cx, cy, cpuDiag, null, 0.55 + Math.random() * 0.45),
     ];
     endedRef.current = false;
-    // 3・2・1・GO!
+    setPhase('battle');
+    countTimers.current = [window.setTimeout(() => setCount(null), 800)];
+  }, [myType, cpuType]);
+
+  // スタート：3・2・1・GO!シュート! → ゲージが動くので、タップ / Space で止めて発射
+  const shoot = useCallback(() => {
+    if (phaseRef.current !== 'launch' || !dropRef.current) return;
+    beysRef.current = null;
+    partsRef.current = [];
     setPhase('count');
     setCount(3);
     countTimers.current.forEach(window.clearTimeout);
     countTimers.current = [
       window.setTimeout(() => setCount(2), 800),
       window.setTimeout(() => setCount(1), 1600),
-      window.setTimeout(() => { setCount(0); setPhase('battle'); }, 2400),
-      window.setTimeout(() => setCount(null), 3300),
+      window.setTimeout(() => {
+        fireStartRef.current = performance.now();
+        setCount(0);
+        setPhase('fire');
+      }, 2400),
+      window.setTimeout(() => fireNow(), 4600), // 押さなくても自動で発射
     ];
-  }, [myType, cpuType]);
+  }, [fireNow]);
 
-  const setDrop = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (phaseRef.current !== 'launch') return;
+  const toStadium = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    let x = (e.clientX - rect.left) * (W / rect.width) - CX;
-    let y = (e.clientY - rect.top) * (H / rect.height) - CY;
+    return {
+      x: (e.clientX - rect.left) * (W / rect.width) - CX,
+      y: (e.clientY - rect.top) * (H / rect.height) - CY,
+    };
+  };
+  // タップで落とす場所を決め、ドラッグで走らせる向きを決める
+  const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (phaseRef.current === 'fire') { fireNow(); return; }
+    if (phaseRef.current !== 'launch') return;
+    let { x, y } = toStadium(e);
     const d = Math.hypot(x, y), lim = R - BEY_R - 8;
     if (d > lim) { x *= lim / d; y *= lim / d; }
     dropRef.current = { x, y };
+    aimRef.current = null;
     setHasDrop(true);
+  };
+  const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!e.buttons || phaseRef.current !== 'launch' || !dropRef.current) return;
+    const p = toStadium(e);
+    const dx = p.x - dropRef.current.x, dy = p.y - dropRef.current.y;
+    const l = Math.hypot(dx, dy);
+    aimRef.current = l > 24 ? { x: dx / l, y: dy / l } : null;
   };
 
   const endRound = useCallback((winner: 'me' | 'cpu', finish: Finish) => {
@@ -272,11 +313,11 @@ export function Beyblade() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code === 'Space') { e.preventDefault(); shoot(); }
+      if (e.code === 'Space') { e.preventDefault(); if (phaseRef.current === 'fire') fireNow(); else shoot(); }
     };
     window.addEventListener('keydown', onKey);
     return () => { window.removeEventListener('keydown', onKey); window.clearTimeout(timerRef.current); countTimers.current.forEach(window.clearTimeout); };
-  }, [shoot]);
+  }, [shoot, fireNow]);
 
   // メインループ（固定タイムステップ物理 + 描画）
   const inSelect = phase === 'select';
@@ -323,12 +364,16 @@ export function Beyblade() {
         // 斜めシュート：落とした場所でしばらく回り続け、それから動き出す
         if (b.holdT > 0) {
           b.holdT -= DT;
-          b.vx *= 1 - 10 * DT; b.vy *= 1 - 10 * DT;
+          // とどまっていても、狙った向きへほんの少しずつ動く
+          const drift = 24 + 0.06 * b.push;
+          b.vx += (b.ax * drift + (Math.random() - 0.5) * 20 - b.vx) * 6 * DT;
+          b.vy += (b.ay * drift + (Math.random() - 0.5) * 20 - b.vy) * 6 * DT;
           b.x += b.vx * DT; b.y += b.vy * DT;
+          b.trail.push({ x: b.x, y: b.y });
+          if (b.trail.length > 14) b.trail.shift();
           b.spin = Math.max(0, b.spin - 9 * t.decay * DT * 6);
           if (b.holdT <= 0) {
-            const a = Math.random() * Math.PI * 2;
-            b.vx = Math.cos(a) * 170; b.vy = Math.sin(a) * 170;
+            b.vx = b.ax * b.push; b.vy = b.ay * b.push;
             b.dashCd = 0.8;
           }
           continue;
@@ -498,7 +543,7 @@ export function Beyblade() {
         });
       }
       // 落とす場所のプレビュー
-      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current) {
+      if ((phaseRef.current === 'launch' || phaseRef.current === 'count' || phaseRef.current === 'fire') && dropRef.current) {
         const g = dropRef.current;
         const diag = modeRef.current === 'diag';
         ctx.save(); ctx.translate(g.x, g.y);
@@ -509,21 +554,34 @@ export function Beyblade() {
         ctx.beginPath(); ctx.arc(0, 0, BEY_R * 0.6, 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = 1;
         ctx.strokeStyle = '#e8590c'; ctx.fillStyle = '#e8590c'; ctx.lineWidth = 4;
+        const aim = aimRef.current ?? defaultAim(g.x, g.y);
+        const len = diag ? 46 : 84;
         if (diag) {
           ctx.setLineDash([6, 6]);
           ctx.beginPath(); ctx.arc(0, 0, BEY_R + 12, 0, Math.PI * 2); ctx.stroke();
           ctx.setLineDash([]);
-        } else {
-          const d = Math.hypot(g.x, g.y) || 1;
-          const ux = (g.y / d) * 0.9 + (g.x / d) * 0.45, uy = (-g.x / d) * 0.9 + (g.y / d) * 0.45;
-          const ul = Math.hypot(ux, uy);
-          const ex = (ux / ul) * 80, ey = (uy / ul) * 80;
-          ctx.beginPath(); ctx.moveTo(ux / ul * BEY_R, uy / ul * BEY_R); ctx.lineTo(ex, ey); ctx.stroke();
-          ctx.save(); ctx.translate(ex, ey); ctx.rotate(Math.atan2(uy, ux));
-          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-14, -9); ctx.lineTo(-14, 9); ctx.closePath(); ctx.fill();
-          ctx.restore();
         }
+        const ex = aim.x * (BEY_R + len), ey = aim.y * (BEY_R + len);
+        ctx.beginPath(); ctx.moveTo(aim.x * BEY_R, aim.y * BEY_R); ctx.lineTo(ex, ey); ctx.stroke();
+        ctx.save(); ctx.translate(ex, ey); ctx.rotate(Math.atan2(aim.y, aim.x));
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-14, -9); ctx.lineTo(-14, 9); ctx.closePath(); ctx.fill();
         ctx.restore();
+        ctx.restore();
+      }
+      // パワーゲージ（発射の瞬間にタップ / Space で止める）
+      if (phaseRef.current === 'fire') {
+        const gx = -170, gy = 188, gw = 340, gh = 28, g = gaugeRef.current;
+        ctx.fillStyle = 'rgba(4,7,26,0.85)'; ctx.fillRect(gx - 8, gy - 30, gw + 16, gh + 62);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('POWER  ― タップ / Space で発射！', 0, gy - 10);
+        ctx.fillStyle = '#1b2551'; ctx.fillRect(gx, gy, gw, gh);
+        ctx.fillStyle = '#ffd740'; ctx.fillRect(gx + gw * 0.85, gy, gw * 0.15, gh);
+        const gg = ctx.createLinearGradient(gx, 0, gx + gw, 0);
+        gg.addColorStop(0, '#5aabff'); gg.addColorStop(1, '#ef4444');
+        ctx.fillStyle = gg; ctx.fillRect(gx, gy, gw * g, gh);
+        ctx.fillStyle = '#fff'; ctx.fillRect(gx + gw * g - 3, gy - 5, 6, gh + 10);
+        ctx.font = '12px sans-serif'; ctx.fillText(`${Math.round(g * 100)}%`, 0, gy + gh + 18);
+        ctx.textAlign = 'start';
       }
       // バースト：パーツが飛び散る
       const parts = partsRef.current;
@@ -571,6 +629,10 @@ export function Beyblade() {
     const loop = (now: number) => {
       acc += Math.min(0.05, (now - last) / 1000) * timeScale;
       last = now;
+      if (phaseRef.current === 'fire') {
+        const ph = ((now - fireStartRef.current) / 1100) % 2; // 0→1→0 と往復するパワーゲージ
+        gaugeRef.current = ph < 1 ? ph : 2 - ph;
+      }
       while (acc >= DT) { step(); acc -= DT; }
       draw();
       raf = requestAnimationFrame(loop);
@@ -637,8 +699,8 @@ export function Beyblade() {
         <div style={{ position: 'relative', width: `min(96vw, 900px, calc((100vh - 250px) * ${W / H}))`, aspectRatio: `${W} / ${H}` }}>
           <canvas
             ref={canvasRef} width={W} height={H}
-            onPointerDown={setDrop} onPointerMove={e => { if (e.buttons) setDrop(e); }}
-            style={{ width: '100%', height: '100%', cursor: phase === 'launch' ? 'crosshair' : 'default', touchAction: 'none' }}
+            onPointerDown={onPointerDown} onPointerMove={onPointerMove}
+            style={{ width: '100%', height: '100%', cursor: phase === 'launch' ? 'crosshair' : phase === 'fire' ? 'pointer' : 'default', touchAction: 'none' }}
           />
           {count !== null && (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', fontSize: count === 0 ? 110 : 150, fontWeight: 900, color: count === 0 ? '#ffd740' : '#fff', textShadow: '0 6px 24px #000, 0 0 40px rgba(90,171,255,0.8)' }}>
@@ -677,7 +739,7 @@ export function Beyblade() {
       {phase === 'launch' && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
           <div style={{ fontWeight: 800, fontSize: 18 }}>
-            {hasDrop ? '準備OK！ スタートを押すと 3・2・1・GO!シュート!' : '① スタジアムをタップして、落とす場所を決めよう'}
+            {hasDrop ? '② ドラッグで走らせる向きを決めて、スタート！' : '① スタジアムをタップして、落とす場所を決めよう'}
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             {([['flat', '水平シュート', 'すぐリングに乗ってダッシュ'], ['diag', '斜めシュート', 'その場にとどまり、最初は飛ばされにくい']] as const).map(([k, label, sub]) => (
@@ -696,6 +758,7 @@ export function Beyblade() {
             ))}
           </div>
           <button style={{ ...btn, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={shoot}>スタート！ (Space)</button>
+          <div style={{ fontSize: 12, opacity: 0.75 }}>3・2・1・GO!シュート! の合図でパワーゲージが動く → タップ / Space で止めて発射</div>
         </div>
       )}
     </div>
