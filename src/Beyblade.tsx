@@ -7,17 +7,36 @@ const WIN_POINTS = 4;
 const R = 265; // すり鉢の半径
 const BEY_R = 32;
 const W = 900, H = 700, CX = W / 2, CY = 335;
-const EXIT_HALF = 0.2; // 出口の幅（rad）
+const EXIT_HALF = 0.24; // 出口の幅（rad）
 const OVER_PHI = 0.6; // 下方向から左右ポケットまでの角度（rad）
 
 type BeyType = 'attack' | 'defense' | 'stamina' | 'balance';
 type Finish = 'spin' | 'over' | 'burst' | 'extreme';
 
-const TYPES: Record<BeyType, { name: string; color: string; atk: number; def: number; decay: number; mass: number; burstRes: number; dash: number; desc: string }> = {
-  attack: { name: 'アタック', color: '#ef4444', atk: 1.4, def: 0.8, decay: 1.2, mass: 1.0, burstRes: 0.8, dash: 1.3, desc: '高火力。バースト狙い' },
-  defense: { name: 'ディフェンス', color: '#3b82f6', atk: 0.8, def: 1.4, decay: 1.0, mass: 1.3, burstRes: 1.4, dash: 0.85, desc: '重くて頑丈' },
-  stamina: { name: 'スタミナ', color: '#22c55e', atk: 0.8, def: 1.0, decay: 0.6, mass: 0.9, burstRes: 1.0, dash: 0.9, desc: '長く回る。スピン勝ち狙い' },
-  balance: { name: 'バランス', color: '#f59e0b', atk: 1.0, def: 1.0, decay: 0.85, mass: 1.0, burstRes: 1.0, dash: 1.0, desc: 'クセがない万能型' },
+// ステータスは100が標準
+interface Stats { atk: number; def: number; sta: number; dash: number; burst: number }
+const STAT_LABELS: [keyof Stats, string][] = [
+  ['atk', '攻撃'], ['def', '防御'], ['sta', '持久'], ['dash', 'ダッシュ'], ['burst', 'バースト耐性'],
+];
+
+function mkType(name: string, color: string, desc: string, st: Stats) {
+  return {
+    name, color, desc, stats: st,
+    atk: st.atk / 100, // 与ダメージ
+    def: st.def / 100, // 被スピンダメージ軽減
+    decay: 0.85 * (100 / st.sta), // 持久が高いほど回転が減りにくい
+    mass: 0.5 + 0.5 * (st.def / 100),
+    burstRes: st.burst / 100,
+    dash: st.dash / 100, // ダッシュの速さ
+    dashCd: (100 / st.dash) ** 2, // ダッシュが高いほど何度も仕掛けられる
+  };
+}
+
+const TYPES: Record<BeyType, ReturnType<typeof mkType>> = {
+  attack: mkType('アタック', '#ef4444', '高火力でダッシュ連発。でも失速しやすい', { atk: 130, def: 80, sta: 70, dash: 130, burst: 80 }),
+  defense: mkType('ディフェンス', '#3b82f6', '重くて頑丈。バーストしにくい', { atk: 80, def: 130, sta: 100, dash: 80, burst: 130 }),
+  stamina: mkType('スタミナ', '#22c55e', '長く回る。スピン勝ち狙い', { atk: 80, def: 100, sta: 140, dash: 80, burst: 100 }),
+  balance: mkType('バランス', '#f59e0b', 'クセがない万能型', { atk: 100, def: 100, sta: 100, dash: 100, burst: 100 }),
 };
 
 const FINISH_INFO: Record<Finish, { label: string; points: number }> = {
@@ -138,7 +157,6 @@ export function Beyblade() {
   const gaugeRef = useRef(0);
   const phaseRef = useRef(phase);
   const flashRef = useRef(0);
-  const slowRef = useRef(0);
   const endedRef = useRef(false);
   const scoreRef = useRef({ me: 0, cpu: 0 });
   const timerRef = useRef<number | undefined>(undefined);
@@ -174,7 +192,6 @@ export function Beyblade() {
   const endRound = useCallback((winner: 'me' | 'cpu', finish: Finish) => {
     if (endedRef.current) return;
     endedRef.current = true;
-    slowRef.current = 1.0;
     const beys = beysRef.current;
     if (beys) {
       const loser = beys[winner === 'me' ? 1 : 0];
@@ -279,7 +296,7 @@ export function Beyblade() {
           const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
           const dashSpeed = (560 + 200 * ratio) * t.dash;
           b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
-          b.dashT = 0.4; b.dashCd = 2 + Math.random() * 1.5; b.dashFx = 0.7;
+          b.dashT = 0.4; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
           spark(b.x, b.y, 12);
         }
         const damp = 1 - (0.08 + (1 - ratio) * 0.7) * DT;
@@ -294,7 +311,7 @@ export function Beyblade() {
         const d2 = Math.hypot(b.x, b.y);
         const lim = R - BEY_R * 0.3;
         const outSpeed = (b.vx * b.x + b.vy * b.y) / (d2 || 1);
-        if (d2 > lim && (!exitKind(b.x, b.y) || outSpeed < 240)) {
+        if (d2 > lim && (!exitKind(b.x, b.y) || outSpeed < 170)) {
           const nx = b.x / d2, ny = b.y / d2;
           const outv = b.vx * nx + b.vy * ny;
           if (outv > 0) { b.vx -= 1.55 * outv * nx; b.vy -= 1.55 * outv * ny; }
@@ -313,17 +330,16 @@ export function Beyblade() {
         const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
         const ta = TYPES[a.type], tb = TYPES[b.type];
         if (rel > 0) {
-          const j = (1.7 * rel) / (1 / ta.mass + 1 / tb.mass);
+          const j = (2.0 * rel) / (1 / ta.mass + 1 / tb.mass);
           a.vx -= (j / ta.mass) * nx; a.vy -= (j / ta.mass) * ny;
           b.vx += (j / tb.mass) * nx; b.vy += (j / tb.mass) * ny;
           const impact = rel * ((a.dashT > 0 || b.dashT > 0) ? 1.5 : 1);
-          a.burst += (impact * tb.atk * 0.02) / ta.burstRes;
-          b.burst += (impact * ta.atk * 0.02) / tb.burstRes;
+          a.burst += (impact * tb.atk * 0.03) / ta.burstRes;
+          b.burst += (impact * ta.atk * 0.03) / tb.burstRes;
           a.spin = Math.max(0, a.spin - (impact * tb.atk * 0.35) / ta.def);
           b.spin = Math.max(0, b.spin - (impact * ta.atk * 0.35) / tb.def);
           spark((a.x + b.x) / 2, (a.y + b.y) / 2, 8 + Math.floor(impact / 40));
           flashRef.current = Math.min(1, impact / 600);
-          if (impact > 420) slowRef.current = 0.45;
         }
         const overlap = BEY_R * 2 - d;
         a.x -= nx * overlap / 2; a.y -= ny * overlap / 2;
@@ -433,9 +449,7 @@ export function Beyblade() {
     };
 
     const loop = (now: number) => {
-      const real = Math.min(0.05, (now - last) / 1000);
-      acc += real * timeScale * (slowRef.current > 0 ? 0.3 : 1);
-      slowRef.current = Math.max(0, slowRef.current - real);
+      acc += Math.min(0.05, (now - last) / 1000) * timeScale;
       last = now;
       if (phaseRef.current === 'launch') {
         gaugeRef.current = (Math.sin(now / 280) + 1) / 2;
@@ -463,13 +477,22 @@ export function Beyblade() {
           key={k}
           onClick={() => onPick(k)}
           style={{
-            padding: '12px 16px', minWidth: 140, borderRadius: 10, cursor: 'pointer',
+            padding: '12px 16px', minWidth: 200, borderRadius: 10, cursor: 'pointer',
             border: `3px solid ${selected === k ? TYPES[k].color : '#2a3566'}`,
             background: selected === k ? '#14204f' : '#0a1030', color: '#fff',
           }}
         >
           <div style={{ fontWeight: 700, color: TYPES[k].color }}>{TYPES[k].name}</div>
-          <div style={{ fontSize: 12, opacity: 0.8 }}>{TYPES[k].desc}</div>
+          <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 8, maxWidth: 170 }}>{TYPES[k].desc}</div>
+          {STAT_LABELS.map(([key, label]) => (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, marginTop: 3 }}>
+              <span style={{ width: 70, textAlign: 'left' }}>{label}</span>
+              <div style={{ flex: 1, height: 6, background: '#1b2551', borderRadius: 3 }}>
+                <div style={{ width: `${Math.min(100, (TYPES[k].stats[key] / 150) * 100)}%`, height: '100%', borderRadius: 3, background: TYPES[k].stats[key] >= 100 ? TYPES[k].color : '#6b7bb0' }} />
+              </div>
+              <span style={{ width: 26, textAlign: 'right' }}>{TYPES[k].stats[key]}</span>
+            </div>
+          ))}
         </button>
       ))}
     </div>
@@ -497,7 +520,7 @@ export function Beyblade() {
           {typeButtons(myType, setMyType)}
           <div style={{ fontSize: 13, opacity: 0.8, textAlign: 'center', lineHeight: 1.7 }}>
             スピン 1pt / オーバー 2pt / バースト 2pt / エクストリーム 3pt<br />
-            外周の金色ゾーンから場外に出すとエクストリームフィニッシュ！
+            下の中央（金色）から場外に出すとエクストリーム、左右の赤いポケットはオーバー！<br />ステータスは100が標準です。
           </div>
           <button style={btn} onClick={startMatch}>バトル開始</button>
         </div>
