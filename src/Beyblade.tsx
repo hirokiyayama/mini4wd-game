@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import wizardImg from './assets/beys/wizard.png';
 import sharkImg from './assets/beys/shark.png';
 import aeroImg from './assets/beys/aero.png';
+import meteorImg from './assets/beys/meteor.png';
+import cobaltImg from './assets/beys/cobalt.png';
 
 // ベイブレードX風バトル（4ポイント先取）
 // スタジアムは参考動画（真上視点）に合わせる：八角形の枠 + 円形のすり鉢 + オレンジのXライン(円形リング)
@@ -31,8 +33,15 @@ interface PartDef {
   color?: string; blades?: number; img?: string;
   dashSpeed?: number; // Xダッシュの速さの倍率（現在はどのビットも等倍。R/LRはダッシュの回数だけが増える）
   mobility?: number; // 動き回りやすさ（R系は斜めシュートでも動く / Hは水平シュートでもあまり動かない）
+  spinDir?: 1 | -1; // ブレードの回転方向（1=右回転、-1=左回転）。左回転は右回転のベイと当たると回転を吸収できる
+  absorb?: number; // 左回転ブレードの回転吸収力（ビットとの組み合わせで決まる）
+  burstMod?: number; // ブレードの形状によるバーストしやすさ（大きいほどバーストしにくい）
+  smash?: number; // Xダッシュ中の打撃力の倍率（Eビットのスマッシュ攻撃）
+  absorbBit?: number; // ビット側の回転吸収の得意さ
 }
 const BLADES: PartDef[] = [
+  { id: 'meteor', name: 'メテオドラグーン', desc: '大型ラバー軸が搭載された3枚刃で、強烈な一撃を繰り出す。メタルが塗装され性能がアップしている。', s: { atk: 75, def: 15, sta: 35 }, weight: 39.0, color: '#c4b5fd', blades: 3, img: meteorImg, spinDir: -1, absorb: 0.45, burstMod: 1.8 },
+  { id: 'cobalt', name: 'コバルトドラグーン', desc: '先端が分厚い4枚のアッパー刃による高い弾き性能を持った左回転ブレード。', s: { atk: 60, def: 15, sta: 25 }, weight: 37.9, color: '#3b82f6', blades: 4, img: cobaltImg, spinDir: -1, absorb: 1.0, burstMod: 1.0 },
   { id: 'wizard', name: 'ウィザードロッド', desc: '外重心かつ径の大きい5枚刃形状で、遠心力を生み出すことに特化した設計。', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5, img: wizardImg },
   { id: 'aero', name: 'エアロペガサス', desc: '大型の3枚刃が高い打撃力を生む設計。メタルが二重に塗装され性能がアップしている。', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3, img: aeroImg },
   { id: 'shark', name: 'シャークスケイル', desc: '打撃部位を複数備えた大型2枚刃で、低い位置からの強烈なアッパー攻撃に特化した設計。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2, img: sharkImg },
@@ -45,6 +54,7 @@ const RATCHETS: PartDef[] = [
   { id: 'r960', name: '9-60', desc: 'ベイを低めにセットするパーツ。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 7 }, height: 60, weight: 6.1 },
 ];
 const BITS: PartDef[] = [
+  { id: 'E', name: 'E', desc: '大型のガイドが付いた設計で姿勢をキープしやすく、Xダッシュ時に軸先が浮き上がりスマッシュ攻撃が可能。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, weight: 3.1, smash: 1.35, absorbBit: 1 },
   { id: 'B', name: 'B', desc: '球状の軸先による、程よい動きで攻撃をかわし高い持久力を実現。', s: { atk: 15, def: 25, sta: 50, dash: 10, burst: 30 }, weight: 2.1 },
   { id: 'FB', name: 'FB', desc: 'ラチェットに対してフリー回転するビット。細めで球状の軸先により回転のロスを減らす設計。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
   { id: 'R', name: 'R', desc: '10枚歯ギヤでXダッシュの速度を抑える分、ダッシュ回数を増やす設計。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
@@ -101,8 +111,11 @@ function buildBey(c: Custom) {
     def: norm(st.def, 45, 0.45), // 被スピンダメージの軽減
     decay: 0.85 / norm(st.sta, 75, 0.3), // 持久が高いほど回転が減りにくい
     mass: (weight / 45) ** 2 * (60 / height), // 重いほど、ラチェットが低いほど、飛ばされにくい
-    burstRes: norm(st.burst, 55, 0.35), // バースト耐性（ビットの値）
+    burstRes: norm(st.burst, 55, 0.35) * (1 + ((bl.burstMod ?? 1) - 1) * (bit.id === 'E' ? 1 : 0.3)), // ブレードの形状による差は、Eビットのときに大きく出る // バースト耐性（ビットの値）
     dash: bit.dashSpeed ?? 1, // Xダッシュの速さ
+    smash: bit.smash ?? 1, // Eビット：Xダッシュ中の打撃力
+    spinDir: bl.spinDir ?? 1, // 左回転ブレードは -1
+    absorb: (bl.absorb ?? 0) * (bit.absorbBit ?? 0.25), // 左回転の回転吸収力（Eビットで大きく発揮される）
     mobility: bit.mobility ?? 1,
     dashCd: Math.min(4, Math.max(0.5, 20 / st.dash)), // ダッシュ値が高いほど、ダッシュ回数が増える
   };
@@ -122,6 +135,7 @@ interface Bey {
   type: BeyType;
   x: number; y: number; vx: number; vy: number;
   spin: number; spinMax: number; burst: number; angle: number;
+  dir: 1 | -1; // 回転方向（1=右回転、-1=左回転）
   curl: number; dashT: number; dashCd: number; dashFx: number;
   trail: { x: number; y: number }[];
   out: boolean; dead: boolean;
@@ -142,9 +156,9 @@ function exitKind(x: number, y: number): 'extreme' | 'over' | null {
 }
 
 // 向きを指定しなかった場合：リングへ向かって反時計回りに走る向き
-function defaultAim(x: number, y: number) {
+function defaultAim(x: number, y: number, dir: 1 | -1 = 1) {
   const d = Math.hypot(x, y) || 1;
-  const ux = (y / d) * 0.9 + (x / d) * 0.45, uy = (-x / d) * 0.9 + (y / d) * 0.45;
+  const ux = (y / d) * 0.9 * dir + (x / d) * 0.45, uy = (-x / d) * 0.9 * dir + (y / d) * 0.45;
   const l = Math.hypot(ux, uy) || 1;
   return { x: ux / l, y: uy / l };
 }
@@ -153,13 +167,13 @@ function defaultAim(x: number, y: number) {
 // power(0〜1)：発射時のゲージで決まる。回転数と飛び出しの勢いに効く
 function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: number; y: number } | null, power: number): Bey {
   const spinMax = 3000 * (0.6 + 0.4 * power);
-  const a = aim ?? defaultAim(x, y);
+  const a = aim ?? defaultAim(x, y, TYPES[type].spinDir);
   const mob = TYPES[type].mobility;
-  const sp = (380 + 330 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない
+  const sp = (520 + 420 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない
   return {
     type, x, y, vx: diag ? 0 : a.x * sp, vy: diag ? 0 : a.y * sp,
     spin: spinMax, spinMax, burst: 0, angle: 0,
-    curl: 1.1, dashT: 0, dashCd: 0, dashFx: 0, trail: [], out: false, dead: false,
+    dir: TYPES[type].spinDir, curl: 1.1 * TYPES[type].spinDir, dashT: 0, dashCd: 0, dashFx: 0, trail: [], out: false, dead: false,
     // 斜め：その場にとどまる（R系は短く、よく動く） / Hは水平でも少しとどまる
     holdT: diag ? (mob > 1 ? 0.8 : 1.4) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
@@ -168,15 +182,15 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
 }
 
 // 高速回転のベイは止まって見えるほど速く回っているので、残像（ブラー）で描く。回転が落ちると羽根がはっきり見えてくる
-function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, angle: number, ratio: number, cap: string, nBlades = 3, sprite: HTMLImageElement | null = null) {
+function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, angle: number, ratio: number, cap: string, nBlades = 3, sprite: HTMLImageElement | null = null, dir: 1 | -1 = 1, showRing = true) {
   const useSprite = !!sprite && sprite.complete && sprite.naturalWidth > 0;
   // 回転が落ちてくるとふらつく
   if (ratio > 0.001 && ratio < 0.3) {
     const t = performance.now(), A = (0.3 - ratio) * 14;
     ctx.translate(Math.cos(t * 0.03) * A, Math.sin(t * 0.04) * A);
   }
-  if (!useSprite) { // 写真のベイには輪を付けない
-    ctx.strokeStyle = ring; ctx.lineWidth = 3;
+  if (showRing) { // 対戦中は、どちらのベイか分かるように青（自分）/赤（CPU）の線を付ける
+    ctx.strokeStyle = ring; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.arc(0, 0, BEY_R + 4, 0, Math.PI * 2); ctx.stroke();
   }
   const blades = () => {
@@ -200,7 +214,7 @@ function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, ang
   ctx.fillStyle = color;
   const baseAlpha = ctx.globalAlpha;
   for (let k = 0; k < 8 && sweep > 0.05; k++) {
-    ctx.save(); ctx.rotate(-(k / 8) * sweep); ctx.globalAlpha = baseAlpha * (0.38 - k * 0.04); blades(); ctx.restore();
+    ctx.save(); ctx.rotate(-dir * (k / 8) * sweep); ctx.globalAlpha = baseAlpha * (0.38 - k * 0.04); blades(); ctx.restore();
   }
   ctx.globalAlpha = baseAlpha * (0.5 + 0.45 * (1 - Math.min(1, ratio / 0.5)));
   blades();
@@ -337,7 +351,7 @@ export function Beyblade() {
     const roll = Math.random();
     let aim: { x: number; y: number };
     if (roll < 0.35) {
-      const a0 = defaultAim(x, y), rot = (Math.random() - 0.5) * 1.2;
+      const a0 = defaultAim(x, y, TYPES.cpu.spinDir), rot = (Math.random() - 0.5) * 1.2;
       aim = { x: a0.x * Math.cos(rot) - a0.y * Math.sin(rot), y: a0.x * Math.sin(rot) + a0.y * Math.cos(rot) };
     } else if (roll < 0.65) {
       const tx = -cpuSx * R * 0.45, dx = tx - x, dy = -y, l = Math.hypot(dx, dy) || 1; // 相手側の半分の中央へ
@@ -488,7 +502,7 @@ export function Beyblade() {
     const draw = () => {
       ctx.clearRect(0, 0, 170, 170);
       ctx.save(); ctx.translate(85, 85); ctx.scale(2.2, 2.2);
-      drawBey(ctx, bey.color, '#5aabff', 0, 0, '#fff', bey.blades, bey.sprite);
+      drawBey(ctx, bey.color, '#5aabff', 0, 0, '#fff', bey.blades, bey.sprite, bey.spinDir, false);
       ctx.restore();
     };
     draw();
@@ -521,7 +535,7 @@ export function Beyblade() {
       for (const b of beys) {
         if (b.dead) continue;
         // 回転の速さは回転数に応じて落ちていく。0になったら止まる
-        { const rt = Math.max(0, b.spin / b.spinMax); b.angle += b.spin > 0 ? (1.5 + 38 * rt * rt) * DT : 0; }
+        { const rt = Math.max(0, b.spin / b.spinMax); b.angle += b.spin > 0 ? b.dir * (1.5 + 38 * rt * rt) * DT : 0; }
         if (b.out) {
           // 出口から場外ポケットへ滑り込む
           b.vx *= 1 - 5 * DT; b.vy *= 1 - 5 * DT;
@@ -598,8 +612,9 @@ export function Beyblade() {
         if (b.riding) {
           b.rideT += DT;
           const d = Math.hypot(b.x, b.y) || 1;
-          const tx = b.y / d, ty = -b.x / d; // 反時計回りの接線
-          const rs = 560 * t.dash;
+          // 右回転は反時計回りにリングを走る（右側を駆け上がる）。左回転はその鏡写し（左側を駆け上がる）
+          const tx = (b.dir * b.y) / d, ty = (-b.dir * b.x) / d;
+          const rs = 700 * t.dash;
           const fix = (R * 0.9 - d) * 8; // リングの上に保つ
           b.vx = tx * rs + (b.x / d) * fix; b.vy = ty * rs + (b.y / d) * fix;
           b.x += b.vx * DT; b.y += b.vy * DT;
@@ -612,7 +627,7 @@ export function Beyblade() {
             const nx = -b.x / d, ny = -b.y / d;
             let dx = nx * 0.85 + tx * 0.35, dy = ny * 0.85 + ty * 0.35;
             const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
-            const dashSpeed = (560 + 200 * ratio) * t.dash;
+            const dashSpeed = (820 + 280 * ratio) * t.dash;
             b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
             b.riding = false;
             b.dashT = 0.4; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
@@ -637,7 +652,7 @@ export function Beyblade() {
         const outSpeed = (b.vx * b.x + b.vy * b.y) / (d2 || 1);
         const ek = exitKind(b.x, b.y);
         // 出口の手前には段があり、それを越える勢いがないと入れない（エクストリームは特に高い）
-        const needOut = ek === 'extreme' ? 340 : ek === 'over' ? 200 : 0;
+        const needOut = ek === 'extreme' ? 360 : ek === 'over' ? 240 : 0;
         if (d2 > lim && (!ek || outSpeed < needOut)) {
           const nx = b.x / d2, ny = b.y / d2;
           const outv = b.vx * nx + b.vy * ny;
@@ -662,14 +677,40 @@ export function Beyblade() {
           for (const x of [a, b]) if (x.riding) { x.riding = false; x.dashCd = Math.max(x.dashCd, 0.6); }
           // 回転しているベイは、ダッシュしていなくても当たれば相手を弾き飛ばせる
           const spinKick = 150 * ((a.spin / a.spinMax) * ta.atk + (b.spin / b.spinMax) * tb.atk) / 2;
-          const j = (2.4 * (rel + spinKick)) / (1 / ma + 1 / mb);
+          const j = (2.8 * (rel + spinKick)) / (1 / ma + 1 / mb);
           a.vx -= (j / ma) * nx; a.vy -= (j / ma) * ny;
           b.vx += (j / mb) * nx; b.vy += (j / mb) * ny;
-          const impact = rel * ((a.dashT > 0 || b.dashT > 0) ? 1.5 : 1);
-          if (a.spin / a.spinMax > 0.2) a.burst += (impact * tb.atk * 0.042) / ta.burstRes;
-          if (b.spin / b.spinMax > 0.2) b.burst += (impact * ta.atk * 0.042) / tb.burstRes;
-          a.spin = Math.max(0, a.spin - (impact * tb.atk * 0.28) / ta.def);
-          b.spin = Math.max(0, b.spin - (impact * ta.atk * 0.28) / tb.def);
+          // Xダッシュ中の打撃は強い（Eビットはスマッシュ攻撃でさらに強い）
+          const impact = rel * Math.max(a.dashT > 0 ? 1.5 * ta.smash : 1, b.dashT > 0 ? 1.5 * tb.smash : 1);
+          // 反対回転どうしが当たると、接触面の動きが揃ってスピンの削れが少し減る
+          const oppo = a.dir !== b.dir ? 0.6 : 1;
+          // バースト：ラチェットにうまく強打が当たると一発で起こる。強く当たるほど・当てる側の回転が強いほど確率が高く、
+          // 当てられる側の回転が弱いほど確率が下がる（回転が5分の1以下ならバーストしない）。ちょこちょこ当たるだけではバーストしない
+          const tryBurst = (v: Bey, tv: typeof ta, att: Bey, tAtt: typeof ta) => {
+            const sf = Math.max(0, (v.spin / v.spinMax - 0.2) / 0.8);
+            const hardness = Math.min(1.5, Math.max(0, (impact - 300) / 450));
+            const attSpin = Math.max(0.3, att.spin / att.spinMax);
+            if (Math.random() < (0.13 * hardness * tAtt.atk * attSpin * sf) / tv.burstRes) v.burst = 100;
+          };
+          tryBurst(a, ta, b, tb);
+          tryBurst(b, tb, a, ta);
+          a.spin = Math.max(0, a.spin - (impact * tb.atk * 0.28 * oppo) / ta.def);
+          b.spin = Math.max(0, b.spin - (impact * ta.atk * 0.28 * oppo) / tb.def);
+          if (a.dir !== b.dir) {
+            // 回転吸収：左回転ベイは、右回転ベイの回転を奪える（Eビットのコバルトドラグーンが最も得意）。
+            // 吸収力が足りない組み合わせでは、逆に左回転ベイのほうが回転を奪われる
+            const Lb = a.dir < 0 ? a : b, Rb = Lb === a ? b : a;
+            const net = TYPES[Lb.type].absorb - 0.45, imp = Math.min(1, impact / 500);
+            if (net > 0) {
+              const T = net * 0.38 * Rb.spin * imp;
+              Rb.spin = Math.max(0, Rb.spin - T);
+              Lb.spin = Math.min(Lb.spinMax * 1.05, Lb.spin + T * 0.85);
+            } else {
+              const T = -net * 0.3 * Lb.spin * imp;
+              Lb.spin = Math.max(0, Lb.spin - T);
+              Rb.spin = Math.min(Rb.spinMax * 1.05, Rb.spin + T * 0.7);
+            }
+          }
           spark((a.x + b.x) / 2, (a.y + b.y) / 2, 8 + Math.floor(impact / 40));
           flashRef.current = Math.min(1, impact / 600);
           // 動き出す前に当てられたら、弾かれて進行方向が変わる（矢印の向きには戻らない）
@@ -735,7 +776,7 @@ export function Beyblade() {
           ctx.translate(b.x, b.y);
           ctx.fillStyle = 'rgba(0,0,0,0.22)';
           ctx.beginPath(); ctx.ellipse(3, 5, BEY_R, BEY_R * 0.85, 0, 0, Math.PI * 2); ctx.fill();
-          drawBey(ctx, t.color, i === 0 ? '#5aabff' : '#ef4444', b.angle, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, t.sprite);
+          drawBey(ctx, t.color, i === 0 ? '#5aabff' : '#ef4444', b.angle, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, t.sprite, t.spinDir);
           ctx.restore();
           if (b.dashFx > 0) {
             ctx.fillStyle = `rgba(230,110,0,${Math.min(1, b.dashFx * 1.5)})`;
@@ -746,10 +787,10 @@ export function Beyblade() {
         });
       }
       // 落とす場所・向き・シュート方法のプレビュー（スタート時は相手のものも見える）
-      const drawGhost = (g: { x: number; y: number }, aim: { x: number; y: number }, diag: boolean, color: string, ring: string, arrow: string, label: string, nb: number, sp: HTMLImageElement | null) => {
+      const drawGhost = (g: { x: number; y: number }, aim: { x: number; y: number }, diag: boolean, color: string, ring: string, arrow: string, label: string, nb: number, sp: HTMLImageElement | null, sd: 1 | -1) => {
         ctx.save(); ctx.translate(g.x, g.y);
         ctx.globalAlpha = 0.85;
-        drawBey(ctx, color, ring, performance.now() / 18, 1, '#fff', nb, sp);
+        drawBey(ctx, color, ring, (performance.now() / 18) * sd, 1, '#fff', nb, sp, sd);
         ctx.globalAlpha = 1;
         ctx.strokeStyle = arrow; ctx.fillStyle = arrow; ctx.lineWidth = 4;
         const len = diag ? 46 : 84;
@@ -772,11 +813,11 @@ export function Beyblade() {
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current) {
         const g = dropRef.current;
         const diag = modeRef.current === 'diag';
-        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y), diag, TYPES.me.color, '#5aabff', '#e8590c', `あなた：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, TYPES.me.sprite);
+        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y, TYPES.me.spinDir), diag, TYPES.me.color, '#5aabff', '#e8590c', `あなた：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, TYPES.me.sprite, TYPES.me.spinDir);
       }
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current) {
         const c = cpuPlanRef.current;
-        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ef4444', '#d62828', `CPU：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite);
+        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ef4444', '#d62828', `CPU：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite, TYPES.cpu.spinDir);
       }
       // バースト：パーツが飛び散る
       const parts = partsRef.current;
@@ -855,6 +896,7 @@ export function Beyblade() {
             ))}
             {pt.height !== undefined && <span>高さ <b>{pt.height}</b></span>}
             <span style={{ opacity: 0.8 }}>{pt.weight}g</span>
+            {pt.img && <span style={{ color: pt.spinDir === -1 ? '#ffd740' : '#9fb2ff', fontWeight: 700 }}>{pt.spinDir === -1 ? '左回転' : '右回転'}</span>}
           </div>
         </button>
       ))}
@@ -876,6 +918,7 @@ export function Beyblade() {
             </div>
           ))}
           <div style={{ fontSize: 11, marginTop: 8, opacity: 0.85, textAlign: 'center' }}>総重量 {myBey.weight}g ／ ラチェットの高さ {myBey.height}</div>
+          <div style={{ fontSize: 12, marginTop: 4, textAlign: 'center', fontWeight: 700, color: myBey.spinDir === -1 ? '#ffd740' : '#9fb2ff' }}>{myBey.spinDir === -1 ? '左回転（右回転のベイの回転を吸収できる）' : '右回転'}</div>
         </div>
       </div>
       {partPicker('ブレード', BLADES, custom.blade, id => setCustom(c => ({ ...c, blade: id })))}
@@ -902,7 +945,7 @@ export function Beyblade() {
           ).map(([name, color, k, align]) => (
             <div key={name as string} style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1.1, color: color as string, textAlign: align as 'left' | 'right' }}>{name}</div>
-              {([['SPIN', '#5aabff', k as number], ['BURST', '#ef4444', (k as number) + 1]] as const).map(([label, c, idx]) => (
+              {([['SPIN', '#5aabff', k as number]] as const).map(([label, c, idx]) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexDirection: align === 'left' ? 'row' : 'row-reverse' }}>
                   <span style={{ width: 40, fontSize: 10, fontWeight: 700, opacity: 0.85, textAlign: align as 'left' | 'right' }}>{label}</span>
                   <div style={{ flex: 1, height: 7, background: '#1b2551', borderRadius: 4, overflow: 'hidden', transform: align === 'right' ? 'scaleX(-1)' : undefined }}>
