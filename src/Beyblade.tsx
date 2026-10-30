@@ -637,7 +637,7 @@ export function Beyblade() {
             const nx = -b.x / d, ny = -b.y / d;
             let dx = nx * 0.85 + tx * 0.35, dy = ny * 0.85 + ty * 0.35;
             const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
-            const dashSpeed = (1100 + 350 * ratio) * t.dash;
+            const dashSpeed = (1100 + 350 * ratio) * t.dash * (0.5 + 0.5 * ratio); // 回転が落ちるとダッシュも弱くなる
             b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
             b.riding = false;
             b.dashT = 0.4; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
@@ -695,7 +695,10 @@ export function Beyblade() {
           for (const x of [a, b]) if (x.riding) { x.riding = false; x.dashCd = Math.max(x.dashCd, 0.6); }
           // 回転しているベイは、ダッシュしていなくても当たれば相手を弾き飛ばせる
           const spinKick = 150 * ((a.spin / a.spinMax) * ta.atk + (b.spin / b.spinMax) * tb.atk) / 2;
-          const j = (4.6 * (rel + spinKick)) / (1 / ma + 1 / mb);
+          // 弾く力は、ぶつかった2つのベイの回転の強さで決まる。回転が落ちるほど、反発が小さくなる
+          // （満タンの回転では係数4.6、回転が3割なら約1.8、1割なら約1.3）
+          const spinPow = Math.pow((a.spin / a.spinMax + b.spin / b.spinMax) / 2, 1.3);
+          const j = ((1.1 + 3.5 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
           const sa0 = Math.hypot(a.vx, a.vy), sb0 = Math.hypot(b.vx, b.vy);
           a.vx -= (j / ma) * nx; a.vy -= (j / ma) * ny;
           b.vx += (j / mb) * nx; b.vy += (j / mb) * ny;
@@ -703,7 +706,7 @@ export function Beyblade() {
           if (Math.hypot(a.vx, a.vy) > Math.max(250, sa0 * 1.15)) a.knockT = 1.2;
           if (Math.hypot(b.vx, b.vy) > Math.max(250, sb0 * 1.15)) b.knockT = 1.2;
           // Xダッシュ中の打撃は強い（Eビットはスマッシュ攻撃でさらに強い）
-          const impact = rel * Math.max(a.dashT > 0 ? 1.5 * ta.smash : 1, b.dashT > 0 ? 1.5 * tb.smash : 1);
+          const impact = rel * Math.max(a.dashT > 0 ? 1.5 * ta.smash : 1, b.dashT > 0 ? 1.5 * tb.smash : 1) * (0.45 + 0.55 * spinPow);
           // 反対回転どうしが当たると、接触面の動きが揃ってスピンの削れが少し減る
           const oppo = a.dir !== b.dir ? 0.6 : 1;
           // バースト：ラチェットにうまく強打が当たると一発で起こる。強く当たるほど・当てる側の回転が強いほど確率が高く、
