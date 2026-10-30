@@ -95,6 +95,11 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
 
 // 高速回転のベイは止まって見えるほど速く回っているので、残像（ブラー）で描く。回転が落ちると羽根がはっきり見えてくる
 function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, angle: number, ratio: number, cap: string) {
+  // 回転が落ちてくるとふらつく
+  if (ratio > 0.001 && ratio < 0.3) {
+    const t = performance.now(), A = (0.3 - ratio) * 14;
+    ctx.translate(Math.cos(t * 0.03) * A, Math.sin(t * 0.04) * A);
+  }
   ctx.strokeStyle = ring; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.arc(0, 0, BEY_R + 4, 0, Math.PI * 2); ctx.stroke();
   const blades = () => {
@@ -110,15 +115,15 @@ function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, ang
   ctx.globalAlpha *= 0.4;
   ctx.beginPath(); ctx.arc(0, 0, BEY_R * 0.95, 0, Math.PI * 2); ctx.fill(); // ぼやけた円盤
   ctx.restore();
-  const sweep = 0.4 + 2.2 * ratio; // 回転が速いほど残像が長い
+  const sweep = 2.4 * Math.pow(ratio, 1.5); // 回転が速いほど残像が長い。落ちてくると羽根がはっきり見える
   ctx.save();
   ctx.rotate(angle);
   ctx.fillStyle = color;
   const baseAlpha = ctx.globalAlpha;
-  for (let k = 0; k < 8; k++) {
+  for (let k = 0; k < 8 && sweep > 0.05; k++) {
     ctx.save(); ctx.rotate(-(k / 8) * sweep); ctx.globalAlpha = baseAlpha * (0.38 - k * 0.04); blades(); ctx.restore();
   }
-  ctx.globalAlpha = baseAlpha * (ratio > 0.35 ? 0.55 : 0.95);
+  ctx.globalAlpha = baseAlpha * (0.5 + 0.45 * (1 - Math.min(1, ratio / 0.5)));
   blades();
   ctx.restore();
   ctx.fillStyle = '#10183a';
@@ -225,6 +230,7 @@ export function Beyblade() {
   const modeRef = useRef<'flat' | 'diag'>('flat');
   const sideRef = useRef<'left' | 'right'>('left');
   const cpuLastMode = useRef<'flat' | 'diag'>('flat');
+  const cpuPlanRef = useRef<{ x: number; y: number; diag: boolean; aim: { x: number; y: number }; type: BeyType } | null>(null);
   const typeRef = useRef<BeyType>('balance');
   const countTimers = useRef<number[]>([]);
   const phaseRef = useRef(phase);
@@ -247,6 +253,7 @@ export function Beyblade() {
     partsRef.current = [];
     dropRef.current = null;
     aimRef.current = null;
+    cpuPlanRef.current = null;
     setHasDrop(false);
     setPhase('launch');
   };
@@ -257,62 +264,67 @@ export function Beyblade() {
     setMessage(null);
     dropRef.current = null;
     aimRef.current = null;
+    cpuPlanRef.current = null;
     setHasDrop(false);
     setPhase('launch');
   };
 
-  // 「GO!シュート!」の合図でベイを落とす
+  // 「GO!シュート!」の表示が消えたら、ベイを落とす
   const fireNow = useCallback(() => {
-    const my = dropRef.current;
-    if (phaseRef.current !== 'count' || !my) return;
+    const my = dropRef.current, cpu = cpuPlanRef.current;
+    if (phaseRef.current !== 'count' || !my || !cpu) return;
     countTimers.current.forEach(window.clearTimeout);
-    const power = 0.85;
-    // CPUは自分の半分の中で、毎回ちがう場所・シュートの仕方・向きで落とす
-    const cpuSx = sideRef.current === 'left' ? 1 : -1; // 自分と反対側
-    const cpuDiag = Math.random() < (cpuLastMode.current === 'diag' ? 0.3 : 0.7); // 前回と違うほうを選びやすい
-    cpuLastMode.current = cpuDiag ? 'diag' : 'flat';
-    const lim = R - BEY_R - 8, m = BEY_R + 8;
-    const rr = (cpuDiag ? 0.12 + 0.6 * Math.random() : 0.55 + 0.35 * Math.random()) * lim;
-    const phi = (Math.random() - 0.5) * Math.PI * 0.92; // 自陣の半分の中の角度
-    let cx = cpuSx * Math.max(m, Math.cos(phi) * rr);
-    const cy = Math.sin(phi) * rr;
-    cx = cpuSx * Math.min(Math.abs(cx), Math.sqrt(Math.max(m * m, lim * lim - cy * cy)));
-    // 向き：リングをたどる向き / 相手側へ / ランダム、のどれか
-    const pick = Math.random();
-    let cpuAim: { x: number; y: number } | null = null;
-    if (pick < 0.35) {
-      const a0 = defaultAim(cx, cy), rot = (Math.random() - 0.5) * 1.2;
-      cpuAim = { x: a0.x * Math.cos(rot) - a0.y * Math.sin(rot), y: a0.x * Math.sin(rot) + a0.y * Math.cos(rot) };
-    } else if (pick < 0.65) {
-      const dx = my.x - cx, dy = my.y - cy, l = Math.hypot(dx, dy) || 1;
-      cpuAim = { x: dx / l, y: dy / l };
-    } else {
-      const a = Math.random() * Math.PI * 2;
-      cpuAim = { x: Math.cos(a), y: Math.sin(a) };
-    }
     beysRef.current = [
-      makeBey(myType, my.x, my.y, modeRef.current === 'diag', aimRef.current, power),
-      makeBey(cpuType, cx, cy, cpuDiag, cpuAim, 0.7 + Math.random() * 0.3),
+      makeBey(myType, my.x, my.y, modeRef.current === 'diag', aimRef.current, 0.85),
+      makeBey(cpu.type, cpu.x, cpu.y, cpu.diag, cpu.aim, 0.7 + Math.random() * 0.3),
     ];
     endedRef.current = false;
     setPhase('battle');
-    countTimers.current = [window.setTimeout(() => setCount(null), 800)];
-  }, [myType, cpuType]);
+  }, [myType]);
 
-  // スタート：3・2・1・GO!シュート! でベイが落ちる
+  // CPUは自分の半分の中で、毎回ちがう場所・シュートの仕方・向きで落とす（スタート時に決めて、相手にも見える）
+  const planCpu = (my: { x: number; y: number }) => {
+    const cpuSx = sideRef.current === 'left' ? 1 : -1; // 自分と反対側
+    const diag = Math.random() < (cpuLastMode.current === 'diag' ? 0.3 : 0.7); // 前回と違うほうを選びやすい
+    cpuLastMode.current = diag ? 'diag' : 'flat';
+    const lim = R - BEY_R - 8, m = BEY_R + 8;
+    const rr = (diag ? 0.12 + 0.6 * Math.random() : 0.55 + 0.35 * Math.random()) * lim;
+    const phi = (Math.random() - 0.5) * Math.PI * 0.92; // 自陣の半分の中の角度
+    let x = cpuSx * Math.max(m, Math.cos(phi) * rr);
+    const y = Math.sin(phi) * rr;
+    x = cpuSx * Math.min(Math.abs(x), Math.sqrt(Math.max(m * m, lim * lim - y * y)));
+    // 向き：リングをたどる向き / 相手側へ / ランダム、のどれか
+    const pick = Math.random();
+    let aim: { x: number; y: number };
+    if (pick < 0.35) {
+      const a0 = defaultAim(x, y), rot = (Math.random() - 0.5) * 1.2;
+      aim = { x: a0.x * Math.cos(rot) - a0.y * Math.sin(rot), y: a0.x * Math.sin(rot) + a0.y * Math.cos(rot) };
+    } else if (pick < 0.65) {
+      const dx = my.x - x, dy = my.y - y, l = Math.hypot(dx, dy) || 1;
+      aim = { x: dx / l, y: dy / l };
+    } else {
+      const a = Math.random() * Math.PI * 2;
+      aim = { x: Math.cos(a), y: Math.sin(a) };
+    }
+    return { x, y, diag, aim, type: cpuType };
+  };
+
+  // スタート：3・2・1・GO!シュート! → 表示が消えたらベイが落ちる
   const shoot = useCallback(() => {
     if (phaseRef.current !== 'launch' || !dropRef.current) return;
     beysRef.current = null;
     partsRef.current = [];
+    cpuPlanRef.current = planCpu(dropRef.current);
     setPhase('count');
     setCount(3);
     countTimers.current.forEach(window.clearTimeout);
     countTimers.current = [
       window.setTimeout(() => setCount(2), 800),
       window.setTimeout(() => setCount(1), 1600),
-      window.setTimeout(() => { setCount(0); fireNow(); }, 2400),
+      window.setTimeout(() => setCount(0), 2400),
+      window.setTimeout(() => { setCount(null); fireNow(); }, 3200),
     ];
-  }, [fireNow]);
+  }, [fireNow, cpuType]);
 
   const toStadium = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -408,7 +420,8 @@ export function Beyblade() {
       if (phaseRef.current !== 'battle') return;
       for (const b of beys) {
         if (b.dead) continue;
-        b.angle += (b.spin / b.spinMax) * 0.6 + 0.05;
+        // 回転の速さは回転数に応じて落ちていく。0になったら止まる
+        { const rt = Math.max(0, b.spin / b.spinMax); b.angle += b.spin > 0 ? (1.5 + 38 * rt * rt) * DT : 0; }
         if (b.out) {
           // 出口から場外ポケットへ滑り込む
           b.vx *= 1 - 5 * DT; b.vy *= 1 - 5 * DT;
@@ -422,6 +435,14 @@ export function Beyblade() {
         b.dashT = Math.max(0, b.dashT - DT);
         b.dashCd = Math.max(0, b.dashCd - DT);
         b.dashFx = Math.max(0, b.dashFx - DT);
+
+        // 回転が止まったら、その場で止まる
+        if (b.spin <= 0) {
+          b.riding = false; b.holdT = 0;
+          b.vx *= 1 - 7 * DT; b.vy *= 1 - 7 * DT;
+          b.x += b.vx * DT; b.y += b.vy * DT;
+          continue;
+        }
 
         // 斜めシュート：落とした場所でしばらく回り続け、それから動き出す
         if (b.holdT > 0) {
@@ -621,16 +642,13 @@ export function Beyblade() {
           }
         });
       }
-      // 落とす場所のプレビュー
-      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current) {
-        const g = dropRef.current;
-        const diag = modeRef.current === 'diag';
+      // 落とす場所・向き・シュート方法のプレビュー（スタート時は相手のものも見える）
+      const drawGhost = (g: { x: number; y: number }, aim: { x: number; y: number }, diag: boolean, color: string, ring: string, arrow: string, label: string) => {
         ctx.save(); ctx.translate(g.x, g.y);
         ctx.globalAlpha = 0.85;
-        drawBey(ctx, TYPES[typeRef.current].color, '#5aabff', performance.now() / 18, 1, '#fff');
+        drawBey(ctx, color, ring, performance.now() / 18, 1, '#fff');
         ctx.globalAlpha = 1;
-        ctx.strokeStyle = '#e8590c'; ctx.fillStyle = '#e8590c'; ctx.lineWidth = 4;
-        const aim = aimRef.current ?? defaultAim(g.x, g.y);
+        ctx.strokeStyle = arrow; ctx.fillStyle = arrow; ctx.lineWidth = 4;
         const len = diag ? 46 : 84;
         if (diag) {
           ctx.setLineDash([6, 6]);
@@ -642,7 +660,20 @@ export function Beyblade() {
         ctx.save(); ctx.translate(ex, ey); ctx.rotate(Math.atan2(aim.y, aim.x));
         ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-14, -9); ctx.lineTo(-14, 9); ctx.closePath(); ctx.fill();
         ctx.restore();
+        ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+        ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.strokeText(label, 0, -BEY_R - 18);
+        ctx.fillStyle = arrow; ctx.fillText(label, 0, -BEY_R - 18);
+        ctx.textAlign = 'start';
         ctx.restore();
+      };
+      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current) {
+        const g = dropRef.current;
+        const diag = modeRef.current === 'diag';
+        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y), diag, TYPES[typeRef.current].color, '#5aabff', '#e8590c', `あなた：${diag ? '斜めシュート' : '水平シュート'}`);
+      }
+      if (phaseRef.current === 'count' && cpuPlanRef.current) {
+        const c = cpuPlanRef.current;
+        drawGhost(c, c.aim, c.diag, TYPES[c.type].color, '#ef4444', '#d62828', `CPU：${c.diag ? '斜めシュート' : '水平シュート'}`);
       }
       // バースト：パーツが飛び散る
       const parts = partsRef.current;
