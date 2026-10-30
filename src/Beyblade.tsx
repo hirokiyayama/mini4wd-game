@@ -1,19 +1,23 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 // ベイブレードX風バトル（4ポイント先取）
+// スタジアムは参考動画（真上視点）に合わせる：八角形の枠 + 円形のすり鉢 + オレンジのXライン(円形リング)
+// 出口は下側の3か所のみ：中央=エクストリーム(3pt)、左右ポケット=オーバー(2pt)。それ以外の壁は弾き返す。
 const WIN_POINTS = 4;
-const R = 300; // スタジアム半径
-const BEY_R = 26;
-const SIZE = R * 2 + 60;
+const R = 265; // すり鉢の半径
+const BEY_R = 22;
+const W = 900, H = 700, CX = W / 2, CY = 335;
+const EXIT_HALF = 0.21; // 出口の幅（rad）
+const OVER_PHI = 0.6; // 下方向から左右ポケットまでの角度（rad）
 
 type BeyType = 'attack' | 'defense' | 'stamina' | 'balance';
 type Finish = 'spin' | 'over' | 'burst' | 'extreme';
 
-const TYPES: Record<BeyType, { name: string; color: string; atk: number; def: number; decay: number; mass: number; burstRes: number; desc: string }> = {
-  attack: { name: 'アタック', color: '#ef4444', atk: 1.4, def: 0.8, decay: 1.2, mass: 1.0, burstRes: 0.8, desc: '高火力。バースト狙い' },
-  defense: { name: 'ディフェンス', color: '#3b82f6', atk: 0.8, def: 1.4, decay: 1.0, mass: 1.3, burstRes: 1.4, desc: '重くて頑丈' },
-  stamina: { name: 'スタミナ', color: '#22c55e', atk: 0.8, def: 1.0, decay: 0.5, mass: 0.9, burstRes: 1.0, desc: '長く回る。スピン勝ち狙い' },
-  balance: { name: 'バランス', color: '#ffd740', atk: 1.0, def: 1.0, decay: 0.85, mass: 1.0, burstRes: 1.0, desc: 'クセがない万能型' },
+const TYPES: Record<BeyType, { name: string; color: string; atk: number; def: number; decay: number; mass: number; burstRes: number; dash: number; desc: string }> = {
+  attack: { name: 'アタック', color: '#ef4444', atk: 1.4, def: 0.8, decay: 1.2, mass: 1.0, burstRes: 0.8, dash: 1.3, desc: '高火力。バースト狙い' },
+  defense: { name: 'ディフェンス', color: '#3b82f6', atk: 0.8, def: 1.4, decay: 1.0, mass: 1.3, burstRes: 1.4, dash: 0.85, desc: '重くて頑丈' },
+  stamina: { name: 'スタミナ', color: '#22c55e', atk: 0.8, def: 1.0, decay: 0.6, mass: 0.9, burstRes: 1.0, dash: 0.9, desc: '長く回る。スピン勝ち狙い' },
+  balance: { name: 'バランス', color: '#f59e0b', atk: 1.0, def: 1.0, decay: 0.85, mass: 1.0, burstRes: 1.0, dash: 1.0, desc: 'クセがない万能型' },
 };
 
 const FINISH_INFO: Record<Finish, { label: string; points: number }> = {
@@ -27,14 +31,97 @@ interface Bey {
   type: BeyType;
   x: number; y: number; vx: number; vy: number;
   spin: number; spinMax: number; burst: number; angle: number;
+  curl: number; dashT: number; dashCd: number; dashFx: number;
+  trail: { x: number; y: number }[];
+  out: boolean; dead: boolean;
 }
 interface Spark { x: number; y: number; vx: number; vy: number; life: number }
+interface Part { x: number; y: number; vx: number; vy: number; rot: number; vr: number; color: string; size: number; life: number }
 
-const EXTREME_HALF_ARC = 0.24; // 左右の縁にあるエクストリームゾーン
+function exitKind(x: number, y: number): 'extreme' | 'over' | null {
+  const a = Math.abs(Math.atan2(x, y)); // 下方向が0
+  if (a < EXIT_HALF) return 'extreme';
+  if (Math.abs(a - OVER_PHI) < EXIT_HALF) return 'over';
+  return null;
+}
 
-function makeBey(type: BeyType, x: number, y: number, dir: number, power: number): Bey {
+function makeBey(type: BeyType, side: 1 | -1, power: number): Bey {
   const spinMax = 3000 * (0.6 + 0.4 * power);
-  return { type, x, y, vx: dir * (260 + 260 * power), vy: 0, spin: spinMax, spinMax, burst: 0, angle: 0 };
+  const speed = 380 + 260 * power;
+  const dir = Math.atan2(0.3 * side, side); // お互いに向かって撃ち出す
+  return {
+    type, x: -190 * side, y: 40 * side,
+    vx: Math.cos(dir) * speed * side, vy: Math.sin(dir) * speed * side,
+    spin: spinMax, spinMax, burst: 0, angle: 0,
+    curl: side * 1.1, dashT: 0, dashCd: 0.5, dashFx: 0, trail: [], out: false, dead: false,
+  };
+}
+
+function drawStadium(ctx: CanvasRenderingContext2D) {
+  // 八角形の透明な枠
+  const half = 330, cut = 100;
+  ctx.beginPath();
+  ctx.moveTo(-half + cut, -half); ctx.lineTo(half - cut, -half); ctx.lineTo(half, -half + cut);
+  ctx.lineTo(half, half - cut); ctx.lineTo(half - cut, half); ctx.lineTo(-half + cut, half);
+  ctx.lineTo(-half, half - cut); ctx.lineTo(-half, -half + cut); ctx.closePath();
+  const fg = ctx.createLinearGradient(0, -half, 0, half);
+  fg.addColorStop(0, '#f3f6fb'); fg.addColorStop(1, '#dfe6f0');
+  ctx.fillStyle = fg; ctx.fill();
+  ctx.lineWidth = 6; ctx.strokeStyle = '#aab6c9'; ctx.stroke();
+  // 下側の凹みパネル
+  ctx.fillStyle = '#c9d2e0';
+  for (const sx of [-1, 1]) {
+    ctx.beginPath(); ctx.roundRect(sx * 215 - 55, 195, 110, 80, 16); ctx.fill();
+  }
+  // 角の赤い留め具
+  ctx.fillStyle = '#c0392b';
+  for (const [x, y] of [[-290, -290], [290, -290], [-175, 292], [175, 292]]) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(y, x) + Math.PI / 2);
+    ctx.fillRect(-7, -14, 14, 28); ctx.restore();
+  }
+
+  // 出口（下側3か所）
+  const drawExit = (phi: number, color: string) => {
+    ctx.save();
+    ctx.rotate(-phi); // 下方向を基準に回す
+    ctx.beginPath();
+    ctx.moveTo(-Math.sin(EXIT_HALF) * R, Math.cos(EXIT_HALF) * R);
+    ctx.lineTo(-Math.sin(EXIT_HALF) * (R + 38), Math.cos(EXIT_HALF) * (R + 38));
+    ctx.lineTo(Math.sin(EXIT_HALF) * (R + 38), Math.cos(EXIT_HALF) * (R + 38));
+    ctx.lineTo(Math.sin(EXIT_HALF) * R, Math.cos(EXIT_HALF) * R);
+    ctx.closePath();
+    ctx.fillStyle = color; ctx.fill();
+    ctx.restore();
+  };
+  drawExit(0, '#f5b800');
+  drawExit(OVER_PHI, '#d63a2f');
+  drawExit(-OVER_PHI, '#d63a2f');
+  ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#7a5a00';
+  ctx.fillText('EXTREME 3pt', 0, R + 60);
+  ctx.fillStyle = '#9b2a20';
+  for (const sx of [-1, 1]) ctx.fillText('OVER 2pt', Math.sin(OVER_PHI) * (R + 40) * sx, Math.cos(OVER_PHI) * (R + 40) + 26);
+  ctx.textAlign = 'start';
+
+  // すり鉢
+  ctx.beginPath(); ctx.arc(0, 0, R + 12, 0, Math.PI * 2);
+  ctx.fillStyle = '#b8c3d4'; ctx.fill();
+  const bowl = ctx.createRadialGradient(-30, -40, 20, 0, 0, R);
+  bowl.addColorStop(0, '#ffffff'); bowl.addColorStop(1, '#d8e0ec');
+  ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fillStyle = bowl; ctx.fill();
+  // 出口部分は壁を開ける
+  ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(120,135,160,0.55)';
+  for (const f of [0.8, 0.54]) { ctx.beginPath(); ctx.arc(0, 0, R * f, 0, Math.PI * 2); ctx.stroke(); }
+  // Xライン（オレンジの円形リング）
+  ctx.lineWidth = 20; ctx.strokeStyle = '#e9955a';
+  ctx.beginPath(); ctx.arc(0, 0, R * 0.9, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(120,60,20,0.45)';
+  ctx.beginPath(); ctx.arc(0, 0, R * 0.9 + 10, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, R * 0.9 - 10, 0, Math.PI * 2); ctx.stroke();
+  // 上部のオレンジの切り欠き
+  ctx.fillStyle = '#f0a43a';
+  ctx.beginPath();
+  ctx.moveTo(-30, -R * 0.78); ctx.lineTo(30, -R * 0.78); ctx.lineTo(24, -R * 0.78 + 26); ctx.lineTo(-24, -R * 0.78 + 26);
+  ctx.closePath(); ctx.fill();
 }
 
 export function Beyblade() {
@@ -47,50 +134,70 @@ export function Beyblade() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const beysRef = useRef<[Bey, Bey] | null>(null);
   const sparksRef = useRef<Spark[]>([]);
+  const partsRef = useRef<Part[]>([]);
   const gaugeRef = useRef(0);
   const phaseRef = useRef(phase);
   const flashRef = useRef(0);
-  const goRef = useRef(0);
   const endedRef = useRef(false);
+  const scoreRef = useRef({ me: 0, cpu: 0 });
+  const timerRef = useRef<number | undefined>(undefined);
   phaseRef.current = phase;
 
   const startMatch = () => {
+    window.clearTimeout(timerRef.current);
+    scoreRef.current = { me: 0, cpu: 0 };
     setScore({ me: 0, cpu: 0 });
+    setMessage(null);
     setCpuType((['attack', 'defense', 'stamina', 'balance'] as BeyType[])[Math.floor(Math.random() * 4)]);
     beysRef.current = null;
+    partsRef.current = [];
     setPhase('launch');
   };
 
   const nextRound = () => {
     beysRef.current = null;
+    partsRef.current = [];
     setMessage(null);
     setPhase('launch');
   };
 
   const shoot = useCallback(() => {
     if (phaseRef.current !== 'launch') return;
-    const g = gaugeRef.current;
-    const power = 1 - Math.abs(g - 0.5) * 2; // 中央で止めるほどハイパワー
+    const power = 1 - Math.abs(gaugeRef.current - 0.5) * 2; // 中央で止めるほどハイパワー
     const cpuPower = 0.55 + Math.random() * 0.4;
-    beysRef.current = [
-      makeBey(myType, 0, 200, 1, power),
-      makeBey(cpuType, 0, -200, -1, cpuPower),
-    ];
+    beysRef.current = [makeBey(myType, 1, power), makeBey(cpuType, -1, cpuPower)];
     endedRef.current = false;
-    goRef.current = 1;
     setPhase('battle');
   }, [myType, cpuType]);
 
   const endRound = useCallback((winner: 'me' | 'cpu', finish: Finish) => {
     if (endedRef.current) return;
     endedRef.current = true;
-    const pts = FINISH_INFO[finish].points;
+    const beys = beysRef.current;
+    if (beys) {
+      const loser = beys[winner === 'me' ? 1 : 0];
+      if (finish === 'over' || finish === 'extreme') loser.out = true;
+      if (finish === 'burst') {
+        loser.dead = true;
+        const t = TYPES[loser.type];
+        for (let i = 0; i < 6; i++) {
+          const a = Math.random() * Math.PI * 2, sp = 150 + Math.random() * 300;
+          partsRef.current.push({
+            x: loser.x, y: loser.y, vx: loser.vx * 0.4 + Math.cos(a) * sp, vy: loser.vy * 0.4 + Math.sin(a) * sp,
+            rot: Math.random() * 6, vr: (Math.random() - 0.5) * 24, color: i % 2 ? t.color : '#444', size: 8 + Math.random() * 10, life: 3,
+          });
+        }
+        flashRef.current = 1;
+      }
+    }
     setMessage({ winner, finish });
-    setScore(prev => {
-      const next = { ...prev, [winner]: prev[winner] + pts };
+    // 決着の動きを見せてから結果表示
+    timerRef.current = window.setTimeout(() => {
+      const next = { ...scoreRef.current, [winner]: scoreRef.current[winner] + FINISH_INFO[finish].points };
+      scoreRef.current = next;
+      setScore(next);
       setPhase(next[winner] >= WIN_POINTS ? 'over' : 'result');
-      return next;
-    });
+    }, 1300);
   }, []);
 
   useEffect(() => {
@@ -98,7 +205,7 @@ export function Beyblade() {
       if (e.code === 'Space') { e.preventDefault(); shoot(); }
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => { window.removeEventListener('keydown', onKey); window.clearTimeout(timerRef.current); };
   }, [shoot]);
 
   // メインループ（固定タイムステップ物理 + 描画）
@@ -107,6 +214,7 @@ export function Beyblade() {
     const canvas = canvasRef.current;
     if (inSelect || !canvas) return;
     const ctx = canvas.getContext('2d')!;
+    const timeScale = Number(new URLSearchParams(window.location.search).get('speed')) || 1;
     let raf = 0;
     let last = performance.now();
     let acc = 0;
@@ -122,37 +230,78 @@ export function Beyblade() {
 
     const step = () => {
       const beys = beysRef.current;
-      if (!beys) return;
-      const live = phaseRef.current === 'battle' && !endedRef.current;
+      if (!beys || phaseRef.current !== 'battle') return;
       for (const b of beys) {
-        b.angle += (b.spin / b.spinMax) * 0.5 + 0.05;
-        if (!live) continue;
+        if (b.dead) continue;
+        b.angle += (b.spin / b.spinMax) * 0.6 + 0.05;
+        if (b.out) {
+          // 出口から場外ポケットへ滑り込む
+          b.vx *= 1 - 5 * DT; b.vy *= 1 - 5 * DT;
+          b.x += b.vx * DT; b.y += b.vy * DT;
+          const d = Math.hypot(b.x, b.y);
+          if (d > R + 40) { b.x *= (R + 40) / d; b.y *= (R + 40) / d; }
+          continue;
+        }
         const t = TYPES[b.type];
-        const ratio = b.spin / b.spinMax;
-        const dist = Math.hypot(b.x, b.y);
-        // すり鉢の傾斜（中央へ引く）
-        b.vx += -b.x * 0.8 * DT;
-        b.vy += -b.y * 0.8 * DT;
-        // Xラインのダッシュ：外周リング付近で加速
-        const speed = Math.hypot(b.vx, b.vy);
-        if (dist > R * 0.68 && dist < R * 0.92 && speed < 640 && speed > 1) {
-          const boost = 380 * ratio * DT;
-          b.vx += (b.vx / speed) * boost;
-          b.vy += (b.vy / speed) * boost;
-        }
-        // 回転が弱るとふらつく
-        if (ratio < 0.3) {
-          b.vx += (Math.random() - 0.5) * 900 * (0.3 - ratio) * DT * 10;
-          b.vy += (Math.random() - 0.5) * 900 * (0.3 - ratio) * DT * 10;
-        }
-        const damp = 1 - (0.12 + (1 - ratio) * 0.5) * DT;
-        b.vx *= damp; b.vy *= damp;
-        b.x += b.vx * DT; b.y += b.vy * DT;
-        b.spin -= (14 + speed * 0.05) * t.decay * DT * 10;
-      }
-      if (!live) return;
+        const ratio = Math.max(0, b.spin / b.spinMax);
+        b.dashT = Math.max(0, b.dashT - DT);
+        b.dashCd = Math.max(0, b.dashCd - DT);
+        b.dashFx = Math.max(0, b.dashFx - DT);
 
-      // マシン同士の衝突
+        // すり鉢の傾斜（中央へ引く）
+        b.vx += -b.x * 1.5 * DT;
+        b.vy += -b.y * 1.5 * DT;
+        // ジャイロ効果で軌道が緩やかにカーブする
+        const c = b.curl * (0.3 + ratio) * DT;
+        const cs = Math.cos(c), sn = Math.sin(c);
+        const nvx = b.vx * cs - b.vy * sn, nvy = b.vx * sn + b.vy * cs;
+        b.vx = nvx; b.vy = nvy;
+        let speed = Math.hypot(b.vx, b.vy);
+        // 回転が残っている間は動き回る
+        const minSp = 240 * Math.max(0, ratio - 0.25);
+        if (speed < minSp) {
+          const a = speed > 1 ? Math.atan2(b.vy, b.vx) : Math.random() * Math.PI * 2;
+          b.vx += Math.cos(a) * 500 * DT; b.vy += Math.sin(a) * 500 * DT;
+        }
+        // 回転が弱るとふらつき、失速する
+        if (ratio < 0.25) {
+          b.vx += (Math.random() - 0.5) * 2400 * (0.25 - ratio) * DT;
+          b.vy += (Math.random() - 0.5) * 2400 * (0.25 - ratio) * DT;
+        }
+        const dist = Math.hypot(b.x, b.y);
+        // エクストリームダッシュ：リングに乗ると加速して中へ飛び出す
+        if (b.dashCd <= 0 && ratio > 0.15 && speed > 180 && dist > R * 0.84) {
+          const ux = b.vx / speed, uy = b.vy / speed;
+          const nx = -b.x / dist, ny = -b.y / dist;
+          let dx = ux * 0.6 + nx * 0.8, dy = uy * 0.6 + ny * 0.8;
+          const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
+          const dashSpeed = (560 + 200 * ratio) * t.dash;
+          b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
+          b.dashT = 0.4; b.dashCd = 2 + Math.random() * 1.5; b.dashFx = 0.7;
+          spark(b.x, b.y, 12);
+        }
+        const damp = 1 - (0.08 + (1 - ratio) * 0.7) * DT;
+        b.vx *= damp; b.vy *= damp;
+        speed = Math.hypot(b.vx, b.vy);
+        b.x += b.vx * DT; b.y += b.vy * DT;
+        b.trail.push({ x: b.x, y: b.y });
+        if (b.trail.length > 14) b.trail.shift();
+        b.spin = Math.max(0, b.spin - (6 + speed * 0.02) * t.decay * DT * 6);
+
+        // 外周の壁：出口以外は弾き返す
+        const d2 = Math.hypot(b.x, b.y);
+        const lim = R - BEY_R * 0.3;
+        if (d2 > lim && !exitKind(b.x, b.y)) {
+          const nx = b.x / d2, ny = b.y / d2;
+          const outv = b.vx * nx + b.vy * ny;
+          if (outv > 0) { b.vx -= 1.55 * outv * nx; b.vy -= 1.55 * outv * ny; }
+          b.x = nx * lim; b.y = ny * lim;
+        }
+      }
+
+      if (endedRef.current) return;
+
+      // ベイ同士の衝突
       const [a, b] = beys;
       const dx = b.x - a.x, dy = b.y - a.y;
       const d = Math.hypot(dx, dy) || 0.001;
@@ -161,16 +310,16 @@ export function Beyblade() {
         const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
         const ta = TYPES[a.type], tb = TYPES[b.type];
         if (rel > 0) {
-          const j = (1.9 * rel) / (1 / ta.mass + 1 / tb.mass);
+          const j = (1.85 * rel) / (1 / ta.mass + 1 / tb.mass);
           a.vx -= (j / ta.mass) * nx; a.vy -= (j / ta.mass) * ny;
           b.vx += (j / tb.mass) * nx; b.vy += (j / tb.mass) * ny;
-          const impact = rel;
-          a.burst += (impact * tb.atk * 0.07) / ta.burstRes;
-          b.burst += (impact * ta.atk * 0.07) / tb.burstRes;
-          a.spin -= (impact * tb.atk * 1.2) / ta.def;
-          b.spin -= (impact * ta.atk * 1.2) / tb.def;
+          const impact = rel * ((a.dashT > 0 || b.dashT > 0) ? 1.5 : 1);
+          a.burst += (impact * tb.atk * 0.035) / ta.burstRes;
+          b.burst += (impact * ta.atk * 0.035) / tb.burstRes;
+          a.spin = Math.max(0, a.spin - (impact * tb.atk * 0.5) / ta.def);
+          b.spin = Math.max(0, b.spin - (impact * ta.atk * 0.5) / tb.def);
           spark((a.x + b.x) / 2, (a.y + b.y) / 2, 8 + Math.floor(impact / 40));
-          flashRef.current = Math.min(1, impact / 500);
+          flashRef.current = Math.min(1, impact / 600);
         }
         const overlap = BEY_R * 2 - d;
         a.x -= nx * overlap / 2; a.y -= ny * overlap / 2;
@@ -184,57 +333,36 @@ export function Beyblade() {
         const other = names[1 - i];
         if (bey.burst >= 100) { endRound(other, 'burst'); return; }
         if (Math.hypot(bey.x, bey.y) > R) {
-          const ang = Math.atan2(bey.y, bey.x);
-          const nearSide = Math.min(Math.abs(ang), Math.PI - Math.abs(ang));
-          endRound(other, nearSide < EXTREME_HALF_ARC ? 'extreme' : 'over');
-          return;
+          const k = exitKind(bey.x, bey.y);
+          if (k) { endRound(other, k); return; }
         }
         if (bey.spin <= 0) { endRound(other, 'spin'); return; }
       }
     };
 
     const draw = () => {
-      ctx.clearRect(0, 0, SIZE, SIZE);
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#04071a'; ctx.fillRect(0, 0, W, H);
       ctx.save();
-      ctx.translate(SIZE / 2, SIZE / 2);
-      // 背景
-      const bg = ctx.createRadialGradient(0, 0, 20, 0, 0, R + 30);
-      bg.addColorStop(0, '#16224d'); bg.addColorStop(1, '#070b22');
-      ctx.fillStyle = bg;
-      ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
-      // 外周リング
-      ctx.lineWidth = 14; ctx.strokeStyle = '#9aa7c7';
-      ctx.beginPath(); ctx.arc(0, 0, R + 7, 0, Math.PI * 2); ctx.stroke();
-      // エクストリームゾーン（左右）
-      ctx.lineWidth = 14; ctx.strokeStyle = '#ffd740';
-      for (const base of [0, Math.PI]) {
-        ctx.beginPath(); ctx.arc(0, 0, R + 7, base - EXTREME_HALF_ARC, base + EXTREME_HALF_ARC); ctx.stroke();
-      }
-      // Xライン
-      ctx.save();
-      ctx.lineCap = 'round';
-      for (const rot of [Math.PI / 4, -Math.PI / 4, (3 * Math.PI) / 4, (-3 * Math.PI) / 4]) {
-        ctx.save(); ctx.rotate(rot);
-        const g = ctx.createLinearGradient(40, 0, R, 0);
-        g.addColorStop(0, 'rgba(90,171,255,0)'); g.addColorStop(1, 'rgba(90,171,255,0.85)');
-        ctx.strokeStyle = g; ctx.lineWidth = 12;
-        ctx.beginPath(); ctx.moveTo(40, 0); ctx.lineTo(R - 14, 0); ctx.stroke();
-        ctx.restore();
-      }
-      ctx.restore();
-      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(90,171,255,0.3)';
-      ctx.beginPath(); ctx.arc(0, 0, R * 0.68, 0, Math.PI * 2); ctx.stroke();
-      ctx.beginPath(); ctx.arc(0, 0, R * 0.2, 0, Math.PI * 2); ctx.stroke();
+      ctx.translate(CX, CY);
+      drawStadium(ctx);
 
-      // ベイ
       const beys = beysRef.current;
       if (beys) {
         beys.forEach((b, i) => {
+          if (b.dead) return;
           const t = TYPES[b.type];
+          if (b.trail.length > 1) {
+            ctx.strokeStyle = b.dashT > 0 ? 'rgba(255,140,0,0.75)' : 'rgba(80,100,140,0.25)';
+            ctx.lineWidth = b.dashT > 0 ? 9 : 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.beginPath(); ctx.moveTo(b.trail[0].x, b.trail[0].y);
+            for (const q of b.trail) ctx.lineTo(q.x, q.y);
+            ctx.stroke();
+          }
           ctx.save();
           ctx.translate(b.x, b.y);
-          ctx.fillStyle = 'rgba(0,0,0,0.35)';
-          ctx.beginPath(); ctx.ellipse(3, 6, BEY_R, BEY_R * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = 'rgba(0,0,0,0.22)';
+          ctx.beginPath(); ctx.ellipse(3, 5, BEY_R, BEY_R * 0.85, 0, 0, Math.PI * 2); ctx.fill();
           ctx.rotate(b.angle);
           ctx.fillStyle = t.color;
           for (let k = 0; k < 3; k++) {
@@ -243,13 +371,29 @@ export function Beyblade() {
             ctx.moveTo(0, 0); ctx.lineTo(BEY_R, -6); ctx.lineTo(BEY_R + 2, 8); ctx.closePath();
             ctx.fill();
           }
-          ctx.fillStyle = '#0b1230';
+          ctx.fillStyle = '#10183a';
           ctx.beginPath(); ctx.arc(0, 0, BEY_R * 0.62, 0, Math.PI * 2); ctx.fill();
           ctx.strokeStyle = t.color; ctx.lineWidth = 3; ctx.stroke();
           ctx.fillStyle = i === 0 ? '#fff' : '#ffb4b4';
-          ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
           ctx.restore();
+          if (b.dashFx > 0) {
+            ctx.fillStyle = `rgba(230,110,0,${Math.min(1, b.dashFx * 1.5)})`;
+            ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('XTREME DASH!', b.x, b.y - 36);
+            ctx.textAlign = 'start';
+          }
         });
+      }
+      // バースト：パーツが飛び散る
+      const parts = partsRef.current;
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const p = parts[i];
+        p.life -= 1 / 60; p.x += p.vx / 60; p.y += p.vy / 60; p.vx *= 0.985; p.vy *= 0.985; p.rot += p.vr / 60;
+        if (p.life <= 0) { parts.splice(i, 1); continue; }
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.fillStyle = p.color; ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+        ctx.restore();
       }
       // 火花
       const sp = sparksRef.current;
@@ -257,34 +401,35 @@ export function Beyblade() {
         const s = sp[i];
         s.life -= 1 / 60; s.x += s.vx / 60; s.y += s.vy / 60;
         if (s.life <= 0) { sp.splice(i, 1); continue; }
-        ctx.fillStyle = `rgba(255,220,100,${Math.min(1, s.life * 2)})`;
+        ctx.fillStyle = `rgba(255,170,40,${Math.min(1, s.life * 2)})`;
         ctx.fillRect(s.x - 1.5, s.y - 1.5, 3, 3);
       }
       ctx.restore();
 
-      // 衝突フラッシュ
       if (flashRef.current > 0.01) {
-        ctx.fillStyle = `rgba(255,255,255,${flashRef.current * 0.25})`;
-        ctx.fillRect(0, 0, SIZE, SIZE);
+        ctx.fillStyle = `rgba(255,255,255,${flashRef.current * 0.3})`;
+        ctx.fillRect(0, 0, W, H);
         flashRef.current *= 0.85;
       }
 
-      // HUD：回転数・バーストゲージ
+      // HUD：回転数・バーストゲージ（左=あなた、右=CPU）
       if (beys) {
         beys.forEach((b, i) => {
-          const x = i === 0 ? 14 : SIZE - 214;
-          const y = i === 0 ? SIZE - 54 : 14;
-          ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(x, y, 200, 40);
-          ctx.fillStyle = '#5aabff'; ctx.fillRect(x + 6, y + 6, 188 * Math.max(0, b.spin / b.spinMax), 12);
-          ctx.fillStyle = '#ef4444'; ctx.fillRect(x + 6, y + 24, 188 * Math.min(1, b.burst / 100), 10);
+          const x = i === 0 ? 14 : W - 214;
+          const y = 14;
+          ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(x, y, 200, 62);
+          ctx.fillStyle = '#fff'; ctx.font = 'bold 13px sans-serif';
+          ctx.fillText(i === 0 ? 'YOU' : 'CPU', x + 8, y + 16);
+          ctx.fillStyle = '#5aabff'; ctx.fillRect(x + 8, y + 24, 184 * Math.max(0, b.spin / b.spinMax), 12);
+          ctx.fillStyle = '#ef4444'; ctx.fillRect(x + 8, y + 42, 184 * Math.min(1, b.burst / 100), 10);
           ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif';
-          ctx.fillText('SPIN', x + 8, y + 16); ctx.fillText('BURST', x + 8, y + 33);
+          ctx.fillText('SPIN', x + 12, y + 34); ctx.fillText('BURST', x + 12, y + 51);
         });
       }
     };
 
     const loop = (now: number) => {
-      acc += Math.min(0.05, (now - last) / 1000);
+      acc += Math.min(0.05, (now - last) / 1000) * timeScale;
       last = now;
       if (phaseRef.current === 'launch') {
         gaugeRef.current = (Math.sin(now / 280) + 1) / 2;
@@ -331,7 +476,7 @@ export function Beyblade() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 16, color: '#fff', background: '#04071a' }}>
-      <div style={{ display: 'flex', width: '100%', maxWidth: 680, justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', width: '100%', maxWidth: 900, justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ width: 90 }} />
         <h2 style={{ margin: 0, letterSpacing: 2 }}>BEYBLADE X BATTLE</h2>
         <div style={{ fontSize: 22, fontWeight: 800 }}>
@@ -351,8 +496,8 @@ export function Beyblade() {
           <button style={btn} onClick={startMatch}>バトル開始</button>
         </div>
       ) : (
-        <div style={{ position: 'relative', width: 'min(92vw, 640px)', aspectRatio: '1' }}>
-          <canvas ref={canvasRef} width={SIZE} height={SIZE} style={{ width: '100%', height: '100%' }} />
+        <div style={{ position: 'relative', width: 'min(96vw, 900px)', aspectRatio: `${W} / ${H}` }}>
+          <canvas ref={canvasRef} width={W} height={H} style={{ width: '100%', height: '100%' }} />
           {phase === 'launch' && (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
               <div style={{ fontWeight: 800, fontSize: 20, textShadow: '0 2px 8px #000' }}>中央でタイミングよくシュート！</div>
@@ -361,6 +506,11 @@ export function Beyblade() {
                 <div style={{ position: 'absolute', top: -4, bottom: -4, width: 6, left: `calc(${gaugeView * 100}% - 3px)`, background: '#fff', borderRadius: 3 }} />
               </div>
               <button style={btn} onClick={shoot}>3・2・1 シュート！ (Space)</button>
+            </div>
+          )}
+          {phase === 'battle' && message && (
+            <div style={{ position: 'absolute', left: 0, right: 0, top: '42%', textAlign: 'center', fontSize: 34, fontWeight: 900, color: '#ffd740', textShadow: '0 3px 12px #000' }}>
+              {FINISH_INFO[message.finish].label}!
             </div>
           )}
           {(phase === 'result' || phase === 'over') && message && (
