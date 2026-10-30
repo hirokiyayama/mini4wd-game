@@ -606,7 +606,10 @@ export function Beyblade() {
         const dist = Math.hypot(b.x, b.y);
         // エクストリームライン：右回転のベイはリングに乗ると反時計回りに走り、
         // スタジアムの右側を駆け上がって、上側から中央に向かって発射される（下から上へのダッシュはない）
-        if (!b.riding && b.dashesLeft > 0 && b.dashCd <= 0 && ratio > 0.15 && speed > 120 && dist > R * 0.8) {
+        // 逆走しているとき（リングをたどる向きと逆に動いているとき）は、無理にリングに乗ってダッシュしない
+        const ringTx = (b.dir * b.y) / (dist || 1), ringTy = (-b.dir * b.x) / (dist || 1);
+        const alongRing = b.vx * ringTx + b.vy * ringTy; // リングをたどる向きの速さ（負なら逆走）
+        if (!b.riding && b.dashesLeft > 0 && b.dashCd <= 0 && ratio > 0.15 && speed > 120 && dist > R * 0.8 && alongRing > 0.2 * speed) {
           if (b.rideChance >= 1) { b.riding = true; b.rideT = 0; }
           else if (!b.onRing) {
             // 斜めシュートはリングに乗りにくい（乗れないぶん、自爆しにくい）
@@ -640,6 +643,7 @@ export function Beyblade() {
             b.dashT = 0.4; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
             b.rideChance = 1; // 1回ダッシュしたら、斜めシュートでも水平と同じ（R/LRはここから何度もダッシュ）
             b.dashesLeft--;
+            b.spin = Math.max(0, b.spin - b.spinMax * 0.05); // Xダッシュでも持久が削られる（回数が多いR/LRほど消耗する）
             { const w = window as unknown as { __dashes?: number[] }; (w.__dashes ??= [0, 0])[beys.indexOf(b)]++; } // 動作確認用のダッシュ回数カウンタ
             spark(b.x, b.y, 14);
           } else if (b.rideT > 3.2) {
