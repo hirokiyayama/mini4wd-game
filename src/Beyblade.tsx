@@ -33,12 +33,19 @@ interface PartDef {
   hid?: Partial<Stats>; // 隠れ性能：画面の数字は変えずに、バトルの計算だけ、この値に置き換える
   color?: string; blades?: number; img?: string;
   dashSpeed?: number; // Xダッシュの速さの倍率（現在はどのビットも等倍。R/LRはダッシュの回数だけが増える）
+  steady?: number; // 当てられたときの飛ばされにくさ（小さいほど飛ばされにくい。姿勢保持・攻撃をかわす系のビット）
+  exitResist?: number; // 場外（オーバー/エクストリーム）への出にくさの倍率
   mobility?: number; // 動き回りやすさ（R系は斜めシュートでも動く / Hは水平シュートでもあまり動かない）
   spinDir?: 1 | -1; // ブレードの回転方向（1=右回転、-1=左回転）。左回転は右回転のベイと当たると回転を吸収できる
   absorb?: number; // 左回転ブレードの回転吸収力（ビットとの組み合わせで決まる）
   burstMod?: number; // ブレードの形状によるバーストしやすさ（大きいほどバーストしにくい）
   smash?: number; // Xダッシュ中の打撃力の倍率（Eビットのスマッシュ攻撃）
   absorbBit?: number; // ビット側の回転吸収の得意さ
+  integrated?: boolean; // ラチェット一体型のブレード（ラチェットは選べない。高さと重量はブレードのもの）
+  syn?: { blades: string[]; good?: Partial<Stats>; bad?: Partial<Stats> }; // 相性のよいブレードに付けたときの隠れ補正 / それ以外に付けたときの隠れ補正（バトルの計算だけ）
+  dashCost?: number; // Xダッシュで失う持久の倍率（Nrビット：スタミナロスを軽減）
+  kick?: number; // 当たったとき、相手を弾く力の倍率（グローリーワルキューレ：スプリング内蔵の可動刃）
+  burstFloor?: number; // ラチェットがビットのバースト耐性を一定以上にそろえる（バトルの計算だけ）
   dashLimit?: [number, number]; // 1ラウンドでXダッシュできる回数の上限（最小〜最大からランダム）。Eビットは2〜3回
 }
 const BLADES: PartDef[] = [
@@ -47,13 +54,17 @@ const BLADES: PartDef[] = [
   { id: 'wizard', name: 'ウィザードロッド', desc: '外重心かつ径の大きい5枚刃形状で、遠心力を生み出すことに特化した設計。', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5, img: wizardImg },
   { id: 'aero', name: 'エアロペガサス', desc: '大型の3枚刃が高い打撃力を生む設計。メタルが二重に塗装され性能がアップしている。', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3, img: aeroImg },
   { id: 'shark', name: 'シャークスケイル', desc: '打撃部位を複数備えた大型2枚刃で、低い位置からの強烈なアッパー攻撃に特化した設計。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2, img: sharkImg },
+  { id: 'glory', name: 'グローリーワルキューレ', desc: 'ラチェット一体型のブレード。スプリング内蔵の可動刃が攻撃時にバウンドし、反発力による強烈な弾き性能に特化。メタルが塗装され性能がアップしている。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, integrated: true, kick: 1.25 },
+  { id: 'knight2', name: 'ナイトシールドV2', desc: '6枚の防御刃で衝撃を吸収しやすいダンパー構造を採用。', s: { atk: 22, def: 60, sta: 28 }, hid: { sta: 55 }, weight: 36.5, color: '#4ade80', blades: 6 },
 ];
 const RATCHETS: PartDef[] = [
   { id: 'r160', name: '1-60', desc: 'ベイを低めにセットするパーツ。攻撃性能に特化した1枚刃を採用。', s: { atk: 17, def: 9, sta: 4 }, height: 60, weight: 6.0 },
+  { id: 'r170', name: '1-70', desc: 'ベイの高さを中位にセットするパーツ。攻撃性能に特化した1枚刃を採用。', s: { atk: 17, def: 6, sta: 7 }, height: 70, weight: 6.1 },
   { id: 'r360', name: '3-60', desc: 'ベイを低めにセットするパーツ。弾き性能の高い3枚刃を採用。', s: { atk: 15, def: 9, sta: 6 }, height: 60, weight: 6.3 },
   { id: 'r560', name: '5-60', desc: 'ベイを低くにセットするパーツ。分厚く遠心力に優れた5枚刃を採用。', s: { atk: 10, def: 9, sta: 11 }, height: 60, weight: 6.6 },
   { id: 'r760', name: '7-60', desc: 'ベイを低めにセットするパーツ。分厚く防御性能に優れた連打7枚刃を採用。', s: { atk: 8, def: 14, sta: 8 }, height: 60, weight: 7.2 },
   { id: 'r960', name: '9-60', desc: 'ベイを低めにセットするパーツ。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 7 }, hid: { sta: 12, atk: 8 }, height: 60, weight: 6.1 },
+  { id: 'r965', name: '9-65', desc: 'ベイを低めにセットするパーツ。ビットのバースト耐性を一定にする構造によりブレが少ない、シンプルタイプのラチェット。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 7 }, height: 65, weight: 4.3, burstFloor: 50 },
 ];
 const BITS: PartDef[] = [
   { id: 'E', name: 'E', desc: '大型のガイドが付いた設計で姿勢をキープしやすく、Xダッシュ時に軸先が浮き上がりスマッシュ攻撃が可能。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, weight: 3.1, smash: 1.35, absorbBit: 1, dashLimit: [2, 3] },
@@ -61,7 +72,10 @@ const BITS: PartDef[] = [
   { id: 'FB', name: 'FB', desc: 'ラチェットに対してフリー回転するビット。細めで球状の軸先により回転のロスを減らす設計。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
   { id: 'R', name: 'R', desc: '10枚歯ギヤでXダッシュの速度を抑える分、ダッシュ回数を増やす設計。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
   { id: 'LR', name: 'LR', desc: 'Rビットより1mm低く設計され、アッパー攻撃を得意とする。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, mobility: 1.8 },
-  { id: 'H', name: 'H', desc: '軸先側の6つの平面形状がベイの傾きを抑制し、常に安定した体勢を保持し続ける設計。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, weight: 2.6, mobility: 0.45 },
+  { id: 'H', name: 'H', desc: '軸先側の6つの平面形状がベイの傾きを抑制し、常に安定した体勢を保持し続ける設計。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, weight: 2.6, mobility: 0.45, steady: 0.65, exitResist: 1.8 },
+  { id: 'L', name: 'L', desc: '3段階の高さを持つ軸先により、低速・中速・高速の3パターンの攻撃速度を実現。', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
+  { id: 'Nr', name: 'Nr', desc: '細い球状の軸先で長く回り、10枚刃ギヤでXダッシュ時の速度を抑えスタミナロスを軽減する設計。', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
+  { id: 'K', name: 'K', desc: '角ばった軸先側面でスタジアム内を蹴り、連続攻撃やカウンター防御に繋がる動きを実現。', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, weight: 2.1 },
 ];
 
 // ブレードの写真（背景を抜いた画像）。戦闘中・プレビューでこの画像を回して描く
@@ -83,6 +97,8 @@ const urlCustom = (key: string): Custom | null => {
 const DEFAULT_CUSTOM: Custom = { blade: 'shark', ratchet: 'r560', bit: 'B' };
 const pick = (list: PartDef[], id: string) => list.find(p => p.id === id) ?? list[0];
 
+const isInt = (c: Custom) => !!pick(BLADES, c.blade).integrated; // ラチェット一体型のブレードか
+
 // 3on3の公式ルール：3体で同じパーツ（ブレード・ラチェット・ビット）を重ねて使えない
 const KEYS = ['blade', 'ratchet', 'bit'] as const;
 const LISTS: Record<(typeof KEYS)[number], PartDef[]> = { blade: BLADES, ratchet: RATCHETS, bit: BITS };
@@ -93,8 +109,9 @@ function dedupeDeck(deck: Custom[]): Custom[] {
   for (const key of KEYS) {
     const used = new Set<string>();
     for (const c of out) {
+      if (key === 'ratchet' && isInt(c)) continue; // 一体型はラチェットを使わない
       if (used.has(c[key])) {
-        const free = LISTS[key].find(pt => !used.has(pt.id) && !out.some(o => o !== c && o[key] === pt.id));
+        const free = LISTS[key].find(pt => !used.has(pt.id) && !out.some(o => o !== c && o[key] === pt.id && !(key === 'ratchet' && isInt(o))));
         if (free) c[key] = free.id;
       }
       used.add(c[key]);
@@ -106,7 +123,7 @@ function dedupeDeck(deck: Custom[]): Custom[] {
 function randomDeck(sels: Custom[]): Custom[] {
   const out = sels.map(c => ({ ...c }));
   for (const key of KEYS) {
-    const taken = new Set(out.map(o => o[key]).filter(Boolean));
+    const taken = new Set(out.filter(o => !(key === 'ratchet' && isInt(o))).map(o => o[key]).filter(Boolean));
     const pool = shuffled(LISTS[key].map(pt => pt.id).filter(id => !taken.has(id)));
     for (const o of out) if (!o[key]) o[key] = pool.pop() ?? LISTS[key][0].id;
   }
@@ -116,15 +133,25 @@ function randomDeck(sels: Custom[]): Custom[] {
 // パーツの数値を合計する（重量・高さも）
 function calcStats(c: Custom, hidden = false) {
   const st: Stats = { atk: 0, def: 0, sta: 0, dash: 0, burst: 0 };
-  const parts = [pick(BLADES, c.blade), pick(RATCHETS, c.ratchet), pick(BITS, c.bit)];
+  const bl = pick(BLADES, c.blade), ra = pick(RATCHETS, c.ratchet), bit = pick(BITS, c.bit);
+  const parts = bl.integrated ? [bl, bit] : [bl, ra, bit]; // ラチェット一体型のブレードは、ラチェットを使わない
   let weight = 0;
   for (const part of parts) {
     // hidden=true のときは、隠れ性能のあるパーツだけ、その値で計算する（バトル用）
     const src = hidden ? { ...part.s, ...part.hid } : part.s;
-    for (const [k, v] of Object.entries(src)) st[k as keyof Stats] += v as number;
+    const mul = hidden && RATCHETS.includes(part) ? 3 : 1; // ラチェットの数値はバトルの計算で3倍に効かせる
+    for (const [k, v] of Object.entries(src)) st[k as keyof Stats] += (v as number) * mul;
     weight += part.weight;
   }
-  return { st, weight: Math.round(weight * 10) / 10, height: pick(RATCHETS, c.ratchet).height ?? 60, bit: pick(BITS, c.bit) };
+  if (hidden) {
+    // ビットとブレードの相性（バトルの計算だけ）：Lはメテオドラグーン・グローリーワルキューレ向き、Nrは持久系のブレード向き
+    if (bit.syn) {
+      const adj = bit.syn.blades.includes(bl.id) ? bit.syn.good : bit.syn.bad;
+      for (const [k, v] of Object.entries(adj ?? {})) st[k as keyof Stats] += v as number;
+    }
+    if (!bl.integrated && ra.burstFloor !== undefined) st.burst = Math.max(st.burst, ra.burstFloor);
+  }
+  return { st, weight: Math.round(weight * 10) / 10, height: bl.integrated ? bl.height ?? 50 : ra.height ?? 60, bit };
 }
 
 // 合計値 → バトル中の動きの係数（基準値の付近で1になる）
@@ -134,20 +161,24 @@ function buildBey(c: Custom) {
   const bl = pick(BLADES, c.blade), { st, weight, height, bit } = calcStats(c);
   const ef = calcStats(c, true).st; // バトルの計算用（隠れ性能を含む）。画面には st を出す
   return {
-    name: `${bl.name} ${pick(RATCHETS, c.ratchet).name} ${c.bit}`,
+    name: bl.integrated ? `${bl.name} ${c.bit}` : `${bl.name} ${pick(RATCHETS, c.ratchet).name} ${c.bit}`,
     color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, sprite: SPRITES[bl.id] ?? null,
     stats: st, weight, height,
-    atk: norm(ef.atk, 75, 0.7), // 与ダメージ・弾き飛ばす力
-    def: norm(ef.def, 45, 0.45), // 被スピンダメージの軽減
-    decay: 0.85 / norm(ef.sta, 75, 0.3), // 持久が高いほど回転が減りにくい
+    atk: norm(ef.atk, 90, 1.0), // 与ダメージ・弾き飛ばす力
+    def: norm(ef.def, 55, 0.45), // 被スピンダメージの軽減
+    decay: 0.85 / norm(ef.sta, 90, 0.6), // 持久が高いほど回転が減りにくい
     mass: (weight / 45) ** 2 * (60 / height), // 重いほど、ラチェットが低いほど、飛ばされにくい
     burstRes: norm(ef.burst, 55, 0.35) * (1 + ((bl.burstMod ?? 1) - 1) * (bit.id === 'E' ? 1 : 0.3)), // ブレードの形状による差は、Eビットのときに大きく出る // バースト耐性（ビットの値）
     dash: bit.dashSpeed ?? 1, // Xダッシュの速さ
+    dashCost: bit.dashCost ?? 1, // Xダッシュで失う持久の倍率
+    kick: bl.kick ?? 1, // 相手を弾く力の倍率
     smash: bit.smash ?? 1, // Eビット：Xダッシュ中の打撃力
     dashLimit: bit.dashLimit ?? null,
     spinDir: bl.spinDir ?? 1, // 左回転ブレードは -1
     absorb: (bl.absorb ?? 0) * (bit.absorbBit ?? 0.25), // 左回転の回転吸収力（Eビットで大きく発揮される）
     mobility: bit.mobility ?? 1,
+    steady: bit.steady ?? 1,
+    exitResist: bit.exitResist ?? 1,
     dashCd: Math.min(4, Math.max(0.5, 20 / ef.dash)), // ダッシュ値が高いほど、ダッシュ回数が増える
   };
 }
@@ -798,7 +829,7 @@ export function Beyblade() {
             b.dashT = 0.4; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
             b.rideChance = 1; // 1回ダッシュしたら、斜めシュートでも水平と同じ（R/LRはここから何度もダッシュ）
             b.dashesLeft--;
-            b.spin = Math.max(0, b.spin - b.spinMax * 0.05); // Xダッシュでも持久が削られる（回数が多いR/LRほど消耗する）
+            b.spin = Math.max(0, b.spin - b.spinMax * 0.05 * t.dashCost); // Xダッシュでも持久が削られる（回数が多いR/LRほど消耗する）
             { const w = window as unknown as { __dashes?: number[] }; (w.__dashes ??= [0, 0])[beys.indexOf(b)]++; } // 動作確認用のダッシュ回数カウンタ
             spark(b.x, b.y, 14);
           } else if (b.rideT > 3.2) {
@@ -821,7 +852,7 @@ export function Beyblade() {
         const outSpeed = (b.vx * b.x + b.vy * b.y) / (d2 || 1);
         const ek = exitKind(b.x, b.y);
         // 出口の手前には段があり、それを越える勢いがないと入れない（エクストリームは特に高い）
-        const needOut = ek === 'extreme' ? 420 : ek === 'over' ? 300 : 0;
+        const needOut = (ek === 'extreme' ? 420 : ek === 'over' ? 300 : 0) * TYPES[b.type].exitResist;
         if (d2 > lim && (!ek || outSpeed < needOut)) {
           const nx = b.x / d2, ny = b.y / d2;
           const outv = b.vx * nx + b.vy * ny;
@@ -855,8 +886,8 @@ export function Beyblade() {
           const spinPow = Math.pow((a.spin / a.spinMax + b.spin / b.spinMax) / 2, 1.3);
           const j = ((1.1 + 3.5 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
           const sa0 = Math.hypot(a.vx, a.vy), sb0 = Math.hypot(b.vx, b.vy);
-          a.vx -= (j / ma) * nx; a.vy -= (j / ma) * ny;
-          b.vx += (j / mb) * nx; b.vy += (j / mb) * ny;
+          a.vx -= (j / ma) * nx * ta.steady * tb.kick; a.vy -= (j / ma) * ny * ta.steady * tb.kick;
+          b.vx += (j / mb) * nx * tb.steady * ta.kick; b.vy += (j / mb) * ny * tb.steady * ta.kick;
           // 当てられて速度が増したほう＝飛ばされたほう
           if (Math.hypot(a.vx, a.vy) > Math.max(250, sa0 * 1.15)) a.knockT = 1.2;
           if (Math.hypot(b.vx, b.vy) > Math.max(250, sb0 * 1.15)) b.knockT = 1.2;
@@ -1055,7 +1086,10 @@ export function Beyblade() {
   }, [endRound, canvasOn]);
 
   // 3on3：他のベイで使っているパーツは選べない（公式ルール）
-  const usedByOthers = (key: (typeof KEYS)[number]) => (mode === '3v3' ? curDeck.filter((_, i) => i !== slot).map(c => c[key]) : []);
+  const usedByOthers = (key: (typeof KEYS)[number]) => {
+    if (key === 'ratchet' && isInt(custom)) return RATCHETS.map(r => r.id); // ラチェット一体型は選べない
+    return mode === '3v3' ? curDeck.filter((c, i) => i !== slot && !(key === 'ratchet' && isInt(c))).map(c => c[key]) : [];
+  };
 
   // 2人対戦：シュートの種類（水平 / 斜め）を選ぶボタン
   const modeButtons2p = (cur: 'flat' | 'diag', onPick: (k: 'flat' | 'diag') => void, color: string, label: string) => (
@@ -1130,7 +1164,7 @@ export function Beyblade() {
         </div>
       </div>
       {partPicker('ブレード', BLADES, custom.blade, id => setCustom(c => ({ ...c, blade: id })), usedByOthers('blade'))}
-      {partPicker('ラチェット', RATCHETS, custom.ratchet, id => setCustom(c => ({ ...c, ratchet: id })), usedByOthers('ratchet'))}
+      {partPicker(isInt(custom) ? 'ラチェット（このブレードは一体型：選べません）' : 'ラチェット', RATCHETS, custom.ratchet, id => setCustom(c => ({ ...c, ratchet: id })), usedByOthers('ratchet'))}
       {partPicker('ビット', BITS, custom.bit, id => setCustom(c => ({ ...c, bit: id })), usedByOthers('bit'))}
     </div>
   );
@@ -1156,17 +1190,9 @@ export function Beyblade() {
           {(mySide === 'left'
             ? [[nameMe, '#5aabff', 0, 'left'], [nameCpu, '#ef4444', 2, 'right']]
             : [[nameCpu, '#ef4444', 2, 'left'], [nameMe, '#5aabff', 0, 'right']]
-          ).map(([name, color, k, align]) => (
+          ).map(([name, color, , align]) => (
             <div key={name as string} style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1.1, color: color as string, textAlign: align as 'left' | 'right' }}>{name}</div>
-              {([['SPIN', '#5aabff', k as number]] as const).map(([label, c, idx]) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexDirection: align === 'left' ? 'row' : 'row-reverse' }}>
-                  <span style={{ width: 40, fontSize: 10, fontWeight: 700, opacity: 0.85, textAlign: align as 'left' | 'right' }}>{label}</span>
-                  <div style={{ flex: 1, height: 7, background: '#1b2551', borderRadius: 4, overflow: 'hidden', transform: align === 'right' ? 'scaleX(-1)' : undefined }}>
-                    <div ref={el => { gaugeEls.current[idx] = el; }} style={{ width: idx % 2 ? '0%' : '100%', height: '100%', background: c }} />
-                  </div>
-                </div>
-              ))}
             </div>
           ))}
         </div>
