@@ -972,11 +972,12 @@ export function Beyblade() {
         });
       }
       // 落とす場所・向き・シュート方法のプレビュー（スタート時は相手のものも見える）
-      const drawGhost = (g: { x: number; y: number }, aim: { x: number; y: number }, diag: boolean, color: string, ring: string, arrow: string, label: string, nb: number, sp: HTMLImageElement | null, sd: 1 | -1) => {
+      const drawGhost = (g: { x: number; y: number }, aim: { x: number; y: number }, diag: boolean, color: string, ring: string, arrow: string, label: string, nb: number, sp: HTMLImageElement | null, sd: 1 | -1, showInfo = true) => {
         ctx.save(); ctx.translate(g.x, g.y);
         ctx.globalAlpha = 0.85;
         drawBey(ctx, color, ring, (performance.now() / 18) * sd, 1, '#fff', nb, sp, sd);
         ctx.globalAlpha = 1;
+        if (!showInfo) { ctx.restore(); return; } // CPU対戦では、相手の打ち方（水平/斜め）と進行方向は見せない（位置だけ見える）
         ctx.strokeStyle = arrow; ctx.fillStyle = arrow; ctx.lineWidth = 4;
         const len = diag ? 46 : 84;
         if (diag) {
@@ -1002,7 +1003,7 @@ export function Beyblade() {
       }
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current) {
         const c = cpuPlanRef.current;
-        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ef4444', '#d62828', `${vsRef.current === '2p' ? 'プレイヤー2' : 'CPU'}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite, TYPES.cpu.spinDir);
+        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ef4444', '#d62828', `${vsRef.current === '2p' ? 'プレイヤー2' : 'CPU'}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite, TYPES.cpu.spinDir, vsRef.current === '2p');
       }
       // バースト：パーツが飛び散る
       const parts = partsRef.current;
