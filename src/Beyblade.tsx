@@ -51,7 +51,7 @@ const BLADES: PartDef[] = [
 const RATCHETS: PartDef[] = [
   { id: 'r160', name: '1-60', desc: 'ベイを低めにセットするパーツ。攻撃性能に特化した1枚刃を採用。', s: { atk: 17, def: 9, sta: 4 }, height: 60, weight: 6.0 },
   { id: 'r360', name: '3-60', desc: 'ベイを低めにセットするパーツ。弾き性能の高い3枚刃を採用。', s: { atk: 15, def: 9, sta: 6 }, height: 60, weight: 6.3 },
-  { id: 'r560', name: '5-60', desc: 'ベイを低くにセットするパーツ。分厚く遠心力に優れた5枚刃を採用。', s: { atk: 10, def: 9, sta: 11 }, height: 50, weight: 6.6 },
+  { id: 'r560', name: '5-60', desc: 'ベイを低くにセットするパーツ。分厚く遠心力に優れた5枚刃を採用。', s: { atk: 10, def: 9, sta: 11 }, height: 60, weight: 6.6 },
   { id: 'r760', name: '7-60', desc: 'ベイを低めにセットするパーツ。分厚く防御性能に優れた連打7枚刃を採用。', s: { atk: 8, def: 14, sta: 8 }, height: 60, weight: 7.2 },
   { id: 'r960', name: '9-60', desc: 'ベイを低めにセットするパーツ。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 7 }, hid: { sta: 12, atk: 8 }, height: 60, weight: 6.1 },
 ];
