@@ -229,7 +229,7 @@ const ROSTER_DEF: [string, Style, string][] = [
 const ROSTER = ROSTER_DEF.map(([name, style, catchphrase]) => ({ name, style, catchphrase, deck: buildRosterDeck(style) }));
 
 interface Entrant { id: number; name: string; catchphrase?: string; human: boolean; style?: Style; deck: Custom[] }
-const fullName = (e: Entrant) => (e.catchphrase ? `「${e.catchphrase}」${e.name}` : e.name); // キャッチコピー付きの名前
+const fullName = (e: Entrant) => (e.catchphrase ? `${e.name}（${e.catchphrase}）` : e.name); // 名前（キャッチコピー）
 interface TMatch { a: number | null; b: number | null; winner: number | null; score: string }
 interface Tour { entrants: Entrant[]; rounds: TMatch[][]; fmt: '1v1' | '3v3'; cur: { r: number; i: number } | null; champion: number | null }
 
