@@ -229,7 +229,15 @@ const ROSTER_DEF: [string, Style, string][] = [
 const ROSTER = ROSTER_DEF.map(([name, style, catchphrase]) => ({ name, style, catchphrase, deck: buildRosterDeck(style) }));
 
 interface Entrant { id: number; name: string; catchphrase?: string; human: boolean; style?: Style; deck: Custom[] }
-const fullName = (e: Entrant) => (e.catchphrase ? `${e.name}（${e.catchphrase}）` : e.name); // 名前（キャッチコピー）
+// 名前の表示：1行目にキャッチコピー、2行目に名前（中央そろえ）
+function NameBlock({ e, nameSize, catchSize, color }: { e: Entrant; nameSize: number; catchSize: number; color?: string }) {
+  return (
+    <div style={{ textAlign: 'center', lineHeight: 1.25 }}>
+      {e.catchphrase && <div style={{ fontSize: catchSize, fontWeight: 700, opacity: 0.85, color }}>{e.catchphrase}</div>}
+      <div style={{ fontSize: nameSize, fontWeight: 900, color }}>{e.name}</div>
+    </div>
+  );
+}
 interface TMatch { a: number | null; b: number | null; winner: number | null; score: string }
 interface Tour { entrants: Entrant[]; rounds: TMatch[][]; fmt: '1v1' | '3v3'; cur: { r: number; i: number } | null; champion: number | null }
 
@@ -1812,7 +1820,6 @@ export function Beyblade() {
         (() => {
           const t = tourRef.current;
           if (!t) return <div>トーナメントがありません</div>;
-          const nm = (id: number | null) => (id === null ? '—' : fullName(t.entrants[id]));
           const cur = t.cur ? t.rounds[t.cur.r][t.cur.i] : null;
           const curLabel = t.cur ? roundLabel(t.rounds[t.cur.r].length, t.cur.r) : '';
           return (
@@ -1821,7 +1828,7 @@ export function Beyblade() {
               {phase === 'tchamp' && t.champion !== null ? (
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: 16, opacity: 0.8 }}>優勝</div>
-                  <div style={{ fontSize: 36, fontWeight: 900, color: '#ffd740', textShadow: '0 3px 14px #000' }}>{nm(t.champion)}</div>
+                  <div style={{ color: '#ffd740', textShadow: '0 3px 14px #000' }}><NameBlock e={t.entrants[t.champion]} nameSize={40} catchSize={18} /></div>
                   <div style={{ fontSize: 13, opacity: 0.75, marginTop: 4 }}>
                     {t.entrants.some(e => e.human) && (t.entrants[t.champion].human ? 'おめでとう！' : 'プレイヤーは敗退しました')}
                   </div>
@@ -1829,10 +1836,10 @@ export function Beyblade() {
               ) : cur ? (
                 <div style={{ textAlign: 'center', padding: '12px 22px', borderRadius: 12, border: '3px solid #ffd740', background: '#14204f' }}>
                   <div style={{ fontSize: 13, opacity: 0.85 }}>次の試合：{curLabel}</div>
-                  <div style={{ fontSize: 24, fontWeight: 900, margin: '4px 0' }}>
-                    <span style={{ color: t.entrants[cur.a!].human ? '#5aabff' : '#fff' }}>{nm(cur.a)}</span>
-                    <span style={{ opacity: 0.6 }}> vs </span>
-                    <span style={{ color: t.entrants[cur.b!].human ? '#5aabff' : '#fff' }}>{nm(cur.b)}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22, margin: '8px 0' }}>
+                    <NameBlock e={t.entrants[cur.a!]} nameSize={26} catchSize={14} color={t.entrants[cur.a!].human ? '#5aabff' : '#fff'} />
+                    <span style={{ opacity: 0.6, fontSize: 20, fontWeight: 900 }}>vs</span>
+                    <NameBlock e={t.entrants[cur.b!]} nameSize={26} catchSize={14} color={t.entrants[cur.b!].human ? '#5aabff' : '#fff'} />
                   </div>
                   <button style={btn} onClick={startTourMatch}>試合開始</button>
                 </div>
