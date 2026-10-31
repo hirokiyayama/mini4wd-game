@@ -193,10 +193,6 @@ const TYPES: Record<BeyType, ReturnType<typeof buildBey>> = { me: buildBey(DEFAU
 
 // ---------------- トーナメント ----------------
 type Style = 'power' | 'technique' | 'attacker' | 'stamina' | 'defense' | 'absorb' | 'dasher' | 'balance' | 'wild';
-const STYLE_LABEL: Record<Style, string> = {
-  power: 'シュートパワー型', technique: '技巧派', attacker: 'アタック一筋', stamina: '持久一筋', defense: 'ディフェンス型',
-  absorb: '回転吸収使い', dasher: 'Xダッシュ連打型', balance: 'バランス型', wild: '気まぐれ型',
-};
 // タイプごとに使うパーツの傾向（3体で同じパーツは重ならない）
 const STYLE_POOLS: Record<Style, { blade: string[]; ratchet: string[]; bit: string[] } | null> = {
   attacker: { blade: ['aero', 'shark', 'glory', 'meteor'], ratchet: ['r160', 'r170', 'r360'], bit: ['LR', 'R', 'K', 'L', 'E'] },
@@ -219,20 +215,21 @@ function buildRosterDeck(style: Style): Custom[] {
   return dedupeDeck(sels);
 }
 // 32人のCPUキャラクター（名前・タイプ・デッキ）
-const ROSTER_DEF: [string, Style][] = [
-  ['ハヤテ', 'power'], ['ソウマ', 'power'], ['レオ', 'power'], ['ゴウ', 'power'],
-  ['ミナト', 'technique'], ['シズク', 'technique'], ['リョウ', 'technique'], ['アヤメ', 'technique'],
-  ['カイト', 'attacker'], ['ライガ', 'attacker'], ['ジン', 'attacker'], ['ツバサ', 'attacker'],
-  ['ヤマト', 'stamina'], ['コハク', 'stamina'], ['ナギ', 'stamina'], ['サクヤ', 'stamina'],
-  ['タクミ', 'defense'], ['ダイチ', 'defense'], ['ミオ', 'defense'],
-  ['アスカ', 'absorb'], ['イオリ', 'absorb'], ['カナタ', 'absorb'],
-  ['ホノカ', 'dasher'], ['トウマ', 'dasher'], ['レイジ', 'dasher'],
-  ['ユイ', 'balance'], ['ソラ', 'balance'], ['ハルカ', 'balance'], ['ケンシン', 'balance'],
-  ['ガク', 'wild'], ['ミヤビ', 'wild'], ['リク', 'wild'],
+const ROSTER_DEF: [string, Style, string][] = [
+  ['ハヤテ', 'power', '豪腕シュートの暴風雨'], ['ソウマ', 'power', '一撃必殺の剛腕'], ['レオ', 'power', '獅子の咆哮シューター'], ['ゴウ', 'power', 'パワー全開、ブレーキなし'],
+  ['ミナト', 'technique', '逆転の貴公子'], ['シズク', 'technique', '一滴で流れを変える男'], ['リョウ', 'technique', '寸分たがわぬ職人芸'], ['アヤメ', 'technique', '舞うように決める華麗な技'],
+  ['カイト', 'attacker', 'アタック一筋15年'], ['ライガ', 'attacker', '雷鳴のフルアタック'], ['ジン', 'attacker', '攻めて攻めて攻めまくる'], ['ツバサ', 'attacker', '空を裂くアタッカー'],
+  ['ヤマト', 'stamina', '回り続ける不動の山'], ['コハク', 'stamina', '琥珀のスタミナ王'], ['ナギ', 'stamina', '凪のごとく静かに粘る'], ['サクヤ', 'stamina', '最後まで立っている男'],
+  ['タクミ', 'defense', '鉄壁の守護神'], ['ダイチ', 'defense', '大地のごとき安定感'], ['ミオ', 'defense', '傷つかない盾'],
+  ['アスカ', 'absorb', '回転を食らう逆回転使い'], ['イオリ', 'absorb', '左回転の魔術師'], ['カナタ', 'absorb', '彼方へ奪い去る吸収の達人'],
+  ['ホノカ', 'dasher', '炎のXダッシュ連打'], ['トウマ', 'dasher', '加速する閃光'], ['レイジ', 'dasher', '何度でも駆け抜ける男'],
+  ['ユイ', 'balance', '万能のオールラウンダー'], ['ソラ', 'balance', 'どんな相手にも対応する天才'], ['ハルカ', 'balance', '安定感ナンバーワン'], ['ケンシン', 'balance', '研ぎ澄まされた中庸'],
+  ['ガク', 'wild', '気まぐれ天才肌'], ['ミヤビ', 'wild', '読めない男'], ['リク', 'wild', '予測不能のトリックスター'],
 ];
-const ROSTER = ROSTER_DEF.map(([name, style]) => ({ name, style, deck: buildRosterDeck(style) }));
+const ROSTER = ROSTER_DEF.map(([name, style, catchphrase]) => ({ name, style, catchphrase, deck: buildRosterDeck(style) }));
 
-interface Entrant { id: number; name: string; human: boolean; style?: Style; deck: Custom[] }
+interface Entrant { id: number; name: string; catchphrase?: string; human: boolean; style?: Style; deck: Custom[] }
+const fullName = (e: Entrant) => (e.catchphrase ? `「${e.catchphrase}」${e.name}` : e.name); // キャッチコピー付きの名前
 interface TMatch { a: number | null; b: number | null; winner: number | null; score: string }
 interface Tour { entrants: Entrant[]; rounds: TMatch[][]; fmt: '1v1' | '3v3'; cur: { r: number; i: number } | null; champion: number | null }
 
@@ -307,7 +304,7 @@ function BracketView({ t }: { t: Tour }) {
     const v = c === 0 ? topPad + k * (rh + vg) : (yOf(c - 1, 2 * k) + yOf(c - 1, 2 * k + 1)) / 2;
     return (memo[key] = v);
   };
-  const short = (id: number) => t.entrants[id].name.split('（')[0];
+  const short = (id: number) => t.entrants[id].name;
   // 列 c の j 番目の席にいる参加者（null=不戦勝/まだ決まっていない）
   const seat = (c: number, j: number): { id: number | null; bye: boolean } => {
     if (c === 0) {
@@ -603,6 +600,7 @@ export function Beyblade() {
     i === 0 ? [urlCustom('me') ?? DEFAULT_CUSTOM, { blade: 'aero', ratchet: 'r360', bit: 'R' }, { blade: 'wizard', ratchet: 'r960', bit: 'FB' }]
     : i === 1 ? [{ blade: 'cobalt', ratchet: 'r160', bit: 'E' }, { blade: 'meteor', ratchet: 'r760', bit: 'LR' }, { blade: 'shark', ratchet: 'r360', bit: 'H' }]
     : makeDefaultDeck()));
+  const [playerNames, setPlayerNames] = useState<string[]>(() => Array(32).fill('')); // プレイヤーの名前（空欄なら初期の名前）
   const customs = decks[0];
   const customs2 = decks[1];
   const [who, setWho] = useState(0); // カスタマイズ中のプレイヤー
@@ -611,8 +609,10 @@ export function Beyblade() {
   const custom = curDeck[slot];
   const setCustom = (f: (c: Custom) => Custom) => setDecks(ds => ds.map((d, i) => (i === who ? d.map((c, j) => (j === slot ? f(c) : c)) : d)));
   const [names, setNames] = useState<{ me: string; cpu: string } | null>(null); // トーナメントの試合中の名前
-  const nameMe = names?.me ?? (vs === '2p' ? 'プレイヤー1' : 'あなた');
-  const nameCpu = names?.cpu ?? (vs === '2p' ? 'プレイヤー2' : 'CPU');
+  const defaultName = (k: number) => (gameMode === 'versus' ? (vs === 'cpu' ? 'あなた' : `プレイヤー${k + 1}`) : `プレイヤー${k + 1}`);
+  const playerName = (k: number) => playerNames[k].trim() || defaultName(k);
+  const nameMe = names?.me ?? playerName(0);
+  const nameCpu = names?.cpu ?? (vs === '2p' ? playerName(1) : 'CPU');
   const namesRef = useRef({ me: 'あなた', cpu: 'CPU' });
   namesRef.current = { me: nameMe, cpu: nameCpu };
   const tourRef = useRef<Tour | null>(null);
@@ -810,10 +810,10 @@ export function Beyblade() {
   const startTournament = () => {
     const fmt = mode;
     const humans: Entrant[] = Array.from({ length: tHumans }, (_, k) => ({
-      id: k, name: `プレイヤー${k + 1}`, human: true, deck: (fmt === '3v3' ? decks[k] : [decks[k][0]]).map(c => ({ ...c })),
+      id: k, name: playerNames[k].trim() || `プレイヤー${k + 1}`, human: true, deck: (fmt === '3v3' ? decks[k] : [decks[k][0]]).map(c => ({ ...c })),
     }));
     const cpus: Entrant[] = shuffled(ROSTER).slice(0, tCpu).map((r, j) => ({
-      id: tHumans + j, name: `${r.name}（${STYLE_LABEL[r.style]}）`, human: false, style: r.style, deck: (fmt === '3v3' ? r.deck : [r.deck[0]]).map(c => ({ ...c })),
+      id: tHumans + j, name: r.name, catchphrase: r.catchphrase, human: false, style: r.style, deck: (fmt === '3v3' ? r.deck : [r.deck[0]]).map(c => ({ ...c })),
     }));
     const t = createTour([...humans, ...cpus], fmt);
     settleTour(t);
@@ -1680,6 +1680,19 @@ export function Beyblade() {
           </div>
           <div style={{ fontSize: 18 }}>ベイをカスタマイズしよう（{WIN_POINTS}ポイント先取）</div>
           {humanCount === 0 && <div style={{ fontSize: 15, opacity: 0.9 }}>プレイヤーがいないので、CPU同士のトーナメントを観戦します。</div>}
+          {humanCount > 0 && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700 }}>
+              名前
+              <input
+                value={playerNames[who]}
+                placeholder={defaultName(who)}
+                maxLength={12}
+                onChange={e => setPlayerNames(ns => ns.map((n, i) => (i === who ? e.target.value : n)))}
+                style={{ padding: '6px 10px', borderRadius: 8, border: '2px solid #2a3566', background: '#0a1030', color: '#fff', fontSize: 15, width: 180 }}
+              />
+              <span style={{ fontSize: 11, opacity: 0.7 }}>（最大12文字）</span>
+            </label>
+          )}
           {humanCount > 1 && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 'min(96vw, 900px)' }}>
               {Array.from({ length: humanCount }, (_, k) => {
@@ -1692,7 +1705,7 @@ export function Beyblade() {
                       padding: '6px 14px', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 800,
                       border: `3px solid ${who === k ? c : '#2a3566'}`, background: who === k ? '#14204f' : '#0a1030',
                     }}
-                  >{gameMode === 'versus' ? (k === 0 ? 'プレイヤー1のベイ（左側）' : 'プレイヤー2のベイ（右側）') : `プレイヤー${k + 1}`}</button>
+                  >{gameMode === 'versus' ? `${playerName(k)}のベイ（${k === 0 ? '左側' : '右側'}）` : playerName(k)}</button>
                 );
               })}
             </div>
@@ -1799,7 +1812,7 @@ export function Beyblade() {
         (() => {
           const t = tourRef.current;
           if (!t) return <div>トーナメントがありません</div>;
-          const nm = (id: number | null) => (id === null ? '—' : t.entrants[id].name);
+          const nm = (id: number | null) => (id === null ? '—' : fullName(t.entrants[id]));
           const cur = t.cur ? t.rounds[t.cur.r][t.cur.i] : null;
           const curLabel = t.cur ? roundLabel(t.rounds[t.cur.r].length, t.cur.r) : '';
           return (
