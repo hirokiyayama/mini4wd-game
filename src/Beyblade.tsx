@@ -313,14 +313,29 @@ function drawStadium(ctx: CanvasRenderingContext2D) {
 }
 
 export function Beyblade() {
-  const [phase, setPhase] = useState<'select' | 'launch' | 'count' | 'battle' | 'result' | 'over'>('select');
+  const [phase, setPhase] = useState<'select' | 'order' | 'launch' | 'count' | 'battle' | 'result' | 'over'>('select');
   const [shotMode, setShotMode] = useState<'flat' | 'diag'>('flat');
   const [hasDrop, setHasDrop] = useState(false);
   const [mySide, setMySide] = useState<'left' | 'right'>('left'); // 自分が立つ側（左の人は左半分、右の人は右半分にしか落とせない）
   const [count, setCount] = useState<number | null>(null);
-  const [custom, setCustom] = useState<Custom>(urlCustom('me') ?? DEFAULT_CUSTOM);
+  // 対戦モード：1on1 / 3on3（3体のデッキ。順番を決めて、どちらかが4ポイント取るまで）
+  const [mode, setMode] = useState<'1v1' | '3v3'>('1v1');
+  const [customs, setCustoms] = useState<Custom[]>([
+    urlCustom('me') ?? DEFAULT_CUSTOM,
+    { blade: 'aero', ratchet: 'r360', bit: 'R' },
+    { blade: 'wizard', ratchet: 'r960', bit: 'FB' },
+  ]);
+  const [slot, setSlot] = useState(0); // カスタマイズ中のベイ（3on3は 0〜2）
+  const custom = customs[slot];
+  const setCustom = (f: (c: Custom) => Custom) => setCustoms(cs => cs.map((c, i) => (i === slot ? f(c) : c)));
   const [, setCpuCustom] = useState<Custom>(DEFAULT_CUSTOM); // 再描画用（中身は TYPES.cpu に入る）
-  const [cpuSel, setCpuSel] = useState<Custom>({ blade: '', ratchet: '', bit: '' }); // CPUのパーツ選択（空 = ランダム）
+  const [cpuSels, setCpuSels] = useState<Custom[]>([0, 1, 2].map(() => ({ blade: '', ratchet: '', bit: '' }))); // CPUのパーツ選択（空 = ランダム）
+  const [deck, setDeck] = useState<{ me: Custom[]; cpu: Custom[] }>({ me: [], cpu: [] }); // この対戦で使う3体（1on1は1体）
+  const [orderPick, setOrderPick] = useState<number[]>([]); // 順番決めの途中
+  const [order, setOrder] = useState<number[]>([]); // 自分の出す順番（deck.me の番号）
+  const cpuOrderRef = useRef<number[]>([0, 1, 2]);
+  const [roundIdx, setRoundIdx] = useState(0); // 3体のうち何戦目か
+  const [cycle, setCycle] = useState(0); // 3体使い切って順番を決め直した回数
   const [score, setScore] = useState({ me: 0, cpu: 0 });
   const [message, setMessage] = useState<{ winner: 'me' | 'cpu'; finish: Finish } | null>(null);
 
@@ -373,18 +388,11 @@ export function Beyblade() {
     return { x, y, diag, aim };
   };
 
-  const startMatch = () => {
-    window.clearTimeout(timerRef.current);
-    scoreRef.current = { me: 0, cpu: 0 };
-    setScore({ me: 0, cpu: 0 });
-    setMessage(null);
-    // カスタマイズした自分のベイと、ランダムなCPUのベイをここで作る
-    // CPUのベイ：選んだパーツはそのまま、選ばなかった（ランダムの）部分だけ毎回ランダムに決める
-    const rc = randomCustom();
-    const cc = urlCustom('cpu') ?? { blade: cpuSel.blade || rc.blade, ratchet: cpuSel.ratchet || rc.ratchet, bit: cpuSel.bit || rc.bit };
-    TYPES.me = buildBey(custom);
-    TYPES.cpu = buildBey(cc);
-    setCpuCustom(cc);
+  // 1戦ぶんの準備：ベイのデータを作って、場所決めの画面へ
+  const setupRound = (m: Custom, c: Custom) => {
+    TYPES.me = buildBey(m);
+    TYPES.cpu = buildBey(c);
+    setCpuCustom(c);
     beysRef.current = null;
     partsRef.current = [];
     dropRef.current = null;
@@ -392,6 +400,41 @@ export function Beyblade() {
     cpuPlanRef.current = planCpu();
     setHasDrop(false);
     setPhase('launch');
+  };
+
+  const startMatch = () => {
+    window.clearTimeout(timerRef.current);
+    scoreRef.current = { me: 0, cpu: 0 };
+    setScore({ me: 0, cpu: 0 });
+    setMessage(null);
+    const n = mode === '3v3' ? 3 : 1;
+    // CPUのベイ：選んだパーツはそのまま、選ばなかった（ランダムの）部分だけ毎回ランダムに決める
+    const meDeck = customs.slice(0, n);
+    const cpuDeck = Array.from({ length: n }, (_, i) => {
+      const rc = randomCustom(), sel = cpuSels[i];
+      return (i === 0 ? urlCustom('cpu') : null) ?? { blade: sel.blade || rc.blade, ratchet: sel.ratchet || rc.ratchet, bit: sel.bit || rc.bit };
+    });
+    setDeck({ me: meDeck, cpu: cpuDeck });
+    setRoundIdx(0);
+    setCycle(0);
+    if (n === 3) { // 3on3：まず順番を決める
+      beysRef.current = null;
+      setOrderPick([]);
+      setOrder([]);
+      setPhase('order');
+      return;
+    }
+    setupRound(meDeck[0], cpuDeck[0]);
+  };
+
+  // 3on3：順番を決定（CPUの順番はランダムで非公開）
+  const confirmOrder = () => {
+    if (orderPick.length !== 3) return;
+    const perm = [0, 1, 2].sort(() => Math.random() - 0.5);
+    cpuOrderRef.current = perm;
+    setOrder(orderPick);
+    setRoundIdx(0);
+    setupRound(deck.me[orderPick[0]], deck.cpu[perm[0]]);
   };
 
   // 対戦画面からカスタマイズ画面に戻る
@@ -411,14 +454,22 @@ export function Beyblade() {
   };
 
   const nextRound = () => {
-    beysRef.current = null;
-    partsRef.current = [];
     setMessage(null);
-    dropRef.current = null;
-    aimRef.current = null;
-    cpuPlanRef.current = planCpu();
-    setHasDrop(false);
-    setPhase('launch');
+    if (mode === '3v3') {
+      const ni = roundIdx + 1;
+      if (ni >= 3) { // 3体使い切っても決着がつかなければ、もう一度順番を決める（点数は引き継ぐ）
+        beysRef.current = null;
+        setCycle(c => c + 1);
+        setOrderPick([]);
+        setOrder([]);
+        setPhase('order');
+        return;
+      }
+      setRoundIdx(ni);
+      setupRound(deck.me[order[ni]], deck.cpu[cpuOrderRef.current[ni]]);
+      return;
+    }
+    setupRound(deck.me[0], deck.cpu[0]);
   };
 
   // 「GO!シュート!」の表示が消えたら、ベイを落とす
@@ -521,6 +572,7 @@ export function Beyblade() {
 
   // メインループ（固定タイムステップ物理 + 描画）
   const inSelect = phase === 'select';
+  const canvasOn = phase !== 'select' && phase !== 'order'; // 対戦用のキャンバスが表示されている
   // カスタマイズ画面のベイのプレビュー（回さずに静止して表示）
   useEffect(() => {
     if (!inSelect) return;
@@ -540,7 +592,7 @@ export function Beyblade() {
   }, [inSelect, custom]);
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (inSelect || !canvas) return;
+    if (!canvasOn || !canvas) return;
     const ctx = canvas.getContext('2d')!;
     const timeScale = Number(new URLSearchParams(window.location.search).get('speed')) || 1;
     let raf = 0;
@@ -914,7 +966,7 @@ export function Beyblade() {
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [endRound, inSelect]);
+  }, [endRound, canvasOn]);
 
   // ベイのカスタマイズ画面：ブレード / ラチェット / ビットを組み合わせる
   const myBey = buildBey(custom);
@@ -988,7 +1040,7 @@ export function Beyblade() {
           style={{ position: 'fixed', bottom: 10, left: 10, zIndex: 20, padding: '6px 12px', borderRadius: 8, border: '2px solid #2a3566', background: '#0a1030', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
         >← カスタマイズに戻る</button>
       )}
-      {phase === 'select' ? (
+      {phase === 'select' || phase === 'order' ? (
         <h2 style={{ margin: 0, letterSpacing: 2 }}>BEYBLADE X BATTLE</h2>
       ) : (
         // 上部：名前 + スピン / バーストゲージ（自分が選んだ側に自分を表示）
@@ -1014,25 +1066,59 @@ export function Beyblade() {
 
       {phase === 'select' ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, marginTop: 40 }}>
-          <div style={{ fontSize: 18 }}>ベイをカスタマイズしよう（{WIN_POINTS}ポイント先取）</div>
-          {customizer}
-          {/* CPUのベイを選ぶ（選ばなければランダム） */}
-          <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', padding: '10px 14px', borderRadius: 12, background: '#0a1030', border: '2px solid #5a2a2a' }}>
-            <span style={{ fontWeight: 800, color: '#ef4444' }}>CPUのベイ</span>
-            {([['ブレード', BLADES, 'blade'], ['ラチェット', RATCHETS, 'ratchet'], ['ビット', BITS, 'bit']] as const).map(([label, list, key]) => (
-              <label key={key} style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                {label}
-                <select
-                  value={cpuSel[key]}
-                  onChange={e => setCpuSel(c => ({ ...c, [key]: e.target.value }))}
-                  style={{ padding: '5px 8px', borderRadius: 6, background: '#14204f', color: '#fff', border: '1px solid #2a3566', fontSize: 13 }}
-                >
-                  <option value="">ランダム</option>
-                  {list.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
-                </select>
-              </label>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <span style={{ fontSize: 15 }}>対戦：</span>
+            {([['1v1', '1on1', '1体で対戦'], ['3v3', '3on3', '3体の順番を決めて対戦']] as const).map(([k, label, sub]) => (
+              <button
+                key={k}
+                onClick={() => { setMode(k); setSlot(0); }}
+                style={{
+                  padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', textAlign: 'center',
+                  border: `3px solid ${mode === k ? '#ffd740' : '#2a3566'}`,
+                  background: mode === k ? '#14204f' : '#0a1030',
+                }}
+              ><div style={{ fontWeight: 800, fontSize: 16 }}>{label}</div><div style={{ fontSize: 11, opacity: 0.8 }}>{sub}</div></button>
             ))}
           </div>
+          <div style={{ fontSize: 18 }}>ベイをカスタマイズしよう（{WIN_POINTS}ポイント先取）</div>
+          {mode === '3v3' && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {[0, 1, 2].map(i => (
+                <button
+                  key={i}
+                  onClick={() => setSlot(i)}
+                  style={{
+                    padding: '6px 12px', borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 12, textAlign: 'left',
+                    border: `3px solid ${slot === i ? buildBey(customs[i]).color : '#2a3566'}`,
+                    background: slot === i ? '#14204f' : '#0a1030',
+                  }}
+                >
+                  <div style={{ fontWeight: 800, fontSize: 13 }}>ベイ{i + 1}</div>
+                  <div style={{ color: buildBey(customs[i]).color }}>{buildBey(customs[i]).name}</div>
+                </button>
+              ))}
+            </div>
+          )}
+          {customizer}
+          {/* CPUのベイを選ぶ（選ばなければランダム）。3on3は3体ぶん */}
+          {Array.from({ length: mode === '3v3' ? 3 : 1 }, (_, n) => (
+            <div key={n} style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', padding: '10px 14px', borderRadius: 12, background: '#0a1030', border: '2px solid #5a2a2a' }}>
+              <span style={{ fontWeight: 800, color: '#ef4444' }}>{mode === '3v3' ? `CPUのベイ${n + 1}` : 'CPUのベイ'}</span>
+              {([['ブレード', BLADES, 'blade'], ['ラチェット', RATCHETS, 'ratchet'], ['ビット', BITS, 'bit']] as const).map(([label, list, key]) => (
+                <label key={key} style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {label}
+                  <select
+                    value={cpuSels[n][key]}
+                    onChange={e => setCpuSels(cs => cs.map((c, i) => (i === n ? { ...c, [key]: e.target.value } : c)))}
+                    style={{ padding: '5px 8px', borderRadius: 6, background: '#14204f', color: '#fff', border: '1px solid #2a3566', fontSize: 13 }}
+                  >
+                    <option value="">ランダム</option>
+                    {list.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
+                  </select>
+                </label>
+              ))}
+            </div>
+          ))}
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <span style={{ fontSize: 15 }}>あなたの立ち位置：</span>
             {([['left', '左側（左半分に落とす）'], ['right', '右側（右半分に落とす）']] as const).map(([k, label]) => (
@@ -1048,6 +1134,47 @@ export function Beyblade() {
             ))}
           </div>
           <button style={btn} onClick={startMatch}>バトル開始</button>
+        </div>
+      ) : phase === 'order' ? (
+        // 3on3：出す順番を決める（1番手 → 3番手）。点数は引き継ぐ
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, marginTop: 20, width: 'min(96vw, 1000px)' }}>
+          <div style={{ fontSize: 22, fontWeight: 900 }}>{cycle > 0 ? `3体使い切りました。もう一度、順番を決めよう（${cycle + 1}周目）` : '出す順番を決めよう'}</div>
+          <div style={{ fontSize: 14, opacity: 0.85, textAlign: 'center' }}>
+            出したい順に、ベイをタップ（1番手 → 3番手）。どちらかが{WIN_POINTS}ポイント取るまで続きます。
+          </div>
+          <div style={{ fontSize: 40, fontWeight: 900 }}>
+            <span style={{ color: '#5aabff' }}>{score.me}</span><span style={{ opacity: 0.6 }}> - </span><span style={{ color: '#ef4444' }}>{score.cpu}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {deck.me.map((c, i) => {
+              const bey = buildBey(c), pos = orderPick.indexOf(i);
+              return (
+                <button
+                  key={i}
+                  onClick={() => { if (pos < 0) setOrderPick(o => [...o, i]); }}
+                  style={{
+                    position: 'relative', width: 200, padding: '12px 10px', borderRadius: 12, cursor: pos < 0 ? 'pointer' : 'default', color: '#fff',
+                    border: `3px solid ${pos >= 0 ? bey.color : '#2a3566'}`, background: pos >= 0 ? '#14204f' : '#0a1030',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                  }}
+                >
+                  {bey.sprite && <img src={bey.sprite.src} alt="" width={90} height={90} />}
+                  <div style={{ fontWeight: 800, color: bey.color, textAlign: 'center' }}>{bey.name}</div>
+                  <div style={{ fontSize: 11, opacity: 0.85 }}>攻{bey.stats.atk} 防{bey.stats.def} 持{bey.stats.sta} ダ{bey.stats.dash} 耐{bey.stats.burst}</div>
+                  {pos >= 0 && (
+                    <div style={{ position: 'absolute', top: -12, left: -12, width: 36, height: 36, borderRadius: 18, background: '#ffd740', color: '#04071a', fontWeight: 900, fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pos + 1}</div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button style={{ ...btn, background: '#2a3566', color: '#fff', fontSize: 15, padding: '10px 20px' }} onClick={() => setOrderPick([])}>やり直し</button>
+            <button style={{ ...btn, opacity: orderPick.length === 3 ? 1 : 0.4 }} disabled={orderPick.length !== 3} onClick={confirmOrder}>この順番で決定</button>
+          </div>
+          <div style={{ fontSize: 13, opacity: 0.85, textAlign: 'center' }}>
+            CPUの3体：{deck.cpu.map(c => buildBey(c).name).join(' ／ ')}（出す順番は非公開）
+          </div>
         </div>
       ) : (
         <div style={{ position: 'relative', width: `min(96vw, 900px, calc((100vh - 330px) * ${W / H}))`, aspectRatio: `${W} / ${H}` }}>
@@ -1090,7 +1217,7 @@ export function Beyblade() {
           )}
         </div>
       )}
-      {phase !== 'select' && (
+      {phase !== 'select' && phase !== 'order' && (
         // 下中央：ポイントと、それぞれが使っているベイの名前（自分が選んだ側に合わせて左右を入れ替え）
         (() => {
           const me = { label: 'あなたのベイ', bey: TYPES.me, pt: score.me, color: '#5aabff' };
@@ -1106,7 +1233,7 @@ export function Beyblade() {
                 <span style={{ color: L.color }}>{L.pt}</span>
                 <span style={{ opacity: 0.6 }}> - </span>
                 <span style={{ color: Rr.color }}>{Rr.pt}</span>
-                <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 600 }}>{WIN_POINTS}ポイント先取</div>
+                <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 600 }}>{WIN_POINTS}ポイント先取{mode === '3v3' ? ` ／ 第${roundIdx + 1}戦（3体中）${cycle > 0 ? `・${cycle + 1}周目` : ''}` : ''}</div>
               </div>
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <div style={{ fontSize: 11, opacity: 0.7 }}>{Rr.label}</div>
