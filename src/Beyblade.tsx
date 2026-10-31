@@ -47,7 +47,7 @@ interface PartDef {
   syn?: { blades: string[]; good?: Partial<Stats>; bad?: Partial<Stats> }; // 相性のよいブレードに付けたときの隠れ補正 / それ以外に付けたときの隠れ補正（バトルの計算だけ）
   dashCost?: number; // Xダッシュで失う持久の倍率（Nrビット：スタミナロスを軽減）
   kick?: number; // 当たったとき、相手を弾く力の倍率（グローリーワルキューレ：スプリング内蔵の可動刃）
-  burstFloor?: number; // ラチェットがビットのバースト耐性を一定以上にそろえる（バトルの計算だけ）
+  burstFloor?: number; // ラチェット/ブレードがビットのバースト耐性を一定以上にそろえる（バトルの計算だけ）
   dashLimit?: [number, number]; // 1ラウンドでXダッシュできる回数の上限（最小〜最大からランダム）。Eビットは2〜3回
 }
 const BLADES: PartDef[] = [
@@ -56,7 +56,7 @@ const BLADES: PartDef[] = [
   { id: 'wizard', name: 'ウィザードロッド', desc: '外重心かつ径の大きい5枚刃形状で、遠心力を生み出すことに特化した設計。', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5, img: wizardImg },
   { id: 'aero', name: 'エアロペガサス', desc: '大型の3枚刃が高い打撃力を生む設計。メタルが二重に塗装され性能がアップしている。', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3, img: aeroImg },
   { id: 'shark', name: 'シャークスケイル', desc: '打撃部位を複数備えた大型2枚刃で、低い位置からの強烈なアッパー攻撃に特化した設計。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2, img: sharkImg },
-  { id: 'glory', name: 'グローリーワルキューレ', desc: 'ラチェット一体型のブレード。スプリング内蔵の可動刃が攻撃時にバウンドし、反発力による強烈な弾き性能に特化。メタルが塗装され性能がアップしている。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, img: gloryImg, integrated: true, kick: 1.25 },
+  { id: 'glory', name: 'グローリーワルキューレ', desc: 'ラチェット一体型のブレード。スプリング内蔵の可動刃が攻撃時にバウンドし、反発力による強烈な弾き性能に特化。メタルが塗装され性能がアップしている。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, img: gloryImg, integrated: true, kick: 1.25, burstFloor: 80 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
   { id: 'knight2', name: 'ナイトシールドV2', desc: '6枚の防御刃で衝撃を吸収しやすいダンパー構造を採用。', s: { atk: 22, def: 60, sta: 28 }, hid: { sta: 55 }, weight: 36.5, color: '#4ade80', blades: 6, img: knight2Img },
 ];
 const RATCHETS: PartDef[] = [
@@ -154,6 +154,7 @@ function calcStats(c: Custom, hidden = false) {
       for (const [k, v] of Object.entries(adj ?? {})) st[k as keyof Stats] += v as number;
     }
     if (!bl.integrated && ra.burstFloor !== undefined) st.burst = Math.max(st.burst, ra.burstFloor);
+    if (bl.burstFloor !== undefined) st.burst = Math.max(st.burst, bl.burstFloor);
   }
   return { st, weight: Math.round(weight * 10) / 10, height: bl.integrated ? bl.height ?? 50 : ra.height ?? 60, bit };
 }
@@ -287,6 +288,120 @@ function settleTour(t: Tour) {
   }
 }
 const roundLabel = (len: number, r: number) => (len === 1 ? '決勝' : len === 2 ? '準決勝' : `${r + 1}回戦`);
+
+// トーナメント表：左右から勝ち上がって、中央が優勝（人数は2〜32人。足りない席は不戦勝）
+function BracketView({ t }: { t: Tour }) {
+  const size = t.rounds[0].length * 2;
+  const R = Math.round(Math.log2(size)); // ラウンド数
+  const cw = 124, gap = 28, rh = 28, vg = 8, padX = 32, topPad = 150, centerW = 210;
+  const halfW = R * (cw + gap) - gap;
+  const totalW = 2 * padX + 2 * halfW + centerW;
+  const rows = size / 2;
+  const totalH = Math.max(topPad + rows * (rh + vg) + 24, topPad + (rh + vg) * (rows / 2) + 230); // 順位の欄が収まる高さ
+  const xL = (c: number) => padX + c * (cw + gap);
+  const xR = (c: number) => totalW - padX - cw - c * (cw + gap);
+  const memo: Record<string, number> = {};
+  const yOf = (c: number, k: number): number => {
+    const key = `${c}-${k}`;
+    if (memo[key] !== undefined) return memo[key];
+    const v = c === 0 ? topPad + k * (rh + vg) : (yOf(c - 1, 2 * k) + yOf(c - 1, 2 * k + 1)) / 2;
+    return (memo[key] = v);
+  };
+  const short = (id: number) => t.entrants[id].name.split('（')[0];
+  // 列 c の j 番目の席にいる参加者（null=不戦勝/まだ決まっていない）
+  const seat = (c: number, j: number): { id: number | null; bye: boolean } => {
+    if (c === 0) {
+      const m = t.rounds[0][Math.floor(j / 2)];
+      const id = j % 2 === 0 ? m.a : m.b;
+      return { id, bye: id === null };
+    }
+    const prev = t.rounds[c - 1]?.[j];
+    return { id: prev ? prev.winner : null, bye: false };
+  };
+  const yF = yOf(R - 1, 0) + rh / 2; // 決勝の線の高さ
+  const lines: string[] = [];
+  for (let c = 1; c < R; c++) {
+    const cnt = size / 2 ** (c + 1);
+    for (let k = 0; k < cnt; k++) {
+      const yp = yOf(c, k) + rh / 2, y1 = yOf(c - 1, 2 * k) + rh / 2, y2 = yOf(c - 1, 2 * k + 1) + rh / 2;
+      // 左側
+      let x1 = xL(c - 1) + cw, xm = x1 + gap / 2, xp = xL(c);
+      lines.push(`M${x1} ${y1}H${xm}V${y2}H${x1}M${xm} ${yp}H${xp}`);
+      // 右側（鏡写し）
+      x1 = xR(c - 1); xm = x1 - gap / 2; xp = xR(c) + cw;
+      lines.push(`M${x1} ${y1}H${xm}V${y2}H${x1}M${xm} ${yp}H${xp}`);
+    }
+  }
+  lines.push(`M${padX + halfW} ${yF}H${totalW - padX - halfW}`);
+  const cur = t.cur;
+  const cell = (c: number, k: number, right: boolean) => {
+    const cnt = size / 2 ** (c + 1);
+    const j = right ? cnt + k : k;
+    const { id, bye } = seat(c, j);
+    const m = t.rounds[c]?.[Math.floor(j / 2)];
+    const isCur = !!cur && cur.r === c && Math.floor(j / 2) === cur.i;
+    const won = id !== null && !!m && m.winner === id;
+    const lost = id !== null && !!m && m.winner !== null && m.winner !== id;
+    return (
+      <div key={`${right ? 'R' : 'L'}${c}-${k}`} style={{
+        position: 'absolute', left: right ? xR(c) : xL(c), top: yOf(c, k), width: cw, height: rh, boxSizing: 'border-box',
+        border: `2px solid ${isCur ? '#e6a800' : '#2b2b2b'}`, background: isCur ? '#fff7d6' : '#fff', borderRadius: 3,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', whiteSpace: 'nowrap',
+        fontWeight: won ? 900 : 700, fontSize: 13, color: id === null ? '#9a9a9a' : t.entrants[id].human ? '#1d4ed8' : '#111',
+        textDecoration: lost ? 'line-through' : 'none', opacity: lost ? 0.55 : 1,
+      }}>
+        <span style={{ maxWidth: cw - 8, overflow: 'hidden', textOverflow: 'ellipsis' }}>{id !== null ? short(id) : bye ? <i style={{ fontSize: 11 }}>BYE</i> : ''}</span>
+        {c === 0 && (
+          <span style={{ position: 'absolute', [right ? 'right' : 'left']: -27, top: -2, width: 20, height: rh, background: '#a9d11a', color: '#222', fontSize: 11, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' } as React.CSSProperties}>{j + 1}</span>
+        )}
+      </div>
+    );
+  };
+  const cells: React.ReactNode[] = [];
+  for (let c = 0; c < R; c++) {
+    const cnt = size / 2 ** (c + 1);
+    for (let k = 0; k < cnt; k++) { cells.push(cell(c, k, false)); cells.push(cell(c, k, true)); }
+  }
+  // 順位（1位=優勝、2位=決勝の負け、3位/4位=準決勝の負け）
+  const loser = (m?: TMatch) => (m && m.winner !== null ? (m.a === m.winner ? m.b : m.a) : null);
+  const finalM = t.rounds[R - 1]?.[0];
+  const second = loser(finalM);
+  const semi = R >= 2 ? (t.rounds[R - 2] ?? []).map(loser).filter((x): x is number => x !== null) : [];
+  const cx = totalW / 2;
+  const avail = Math.min(typeof window === 'undefined' ? 1200 : window.innerWidth - 24, 1500);
+  const k = Math.min(1, avail / totalW);
+  return (
+    <div style={{ width: totalW * k, height: totalH * k, margin: '0 auto' }}>
+      <div style={{ position: 'relative', width: totalW, height: totalH, transform: `scale(${k})`, transformOrigin: 'top left', background: '#f1f1ee', borderRadius: 10, color: '#111' }}>
+        <div style={{ position: 'absolute', top: 10, left: 0, width: totalW, textAlign: 'center', fontWeight: 900, fontSize: 22, letterSpacing: 3, color: '#1a1a1a' }}>TOURNAMENT</div>
+        <svg width={totalW} height={totalH} style={{ position: 'absolute', left: 0, top: 0 }}>
+          {lines.map((d, i) => <path key={i} d={d} stroke="#555" strokeWidth={2} fill="none" />)}
+          {/* トロフィー */}
+          <g transform={`translate(${cx - 34} ${Math.max(44, yF - 118)})`} fill="#e6b422" stroke="#7a5a00" strokeWidth={2}>
+            <path d="M8 4h52v18c0 16-10 28-26 28S8 38 8 22z" />
+            <path d="M8 10H0c0 14 6 22 16 24M60 10h8c0 14-6 22-16 24" fill="none" />
+            <rect x="28" y="50" width="12" height="16" />
+            <rect x="16" y="66" width="36" height="9" rx="2" />
+          </g>
+        </svg>
+        <div style={{ position: 'absolute', left: cx - 80, top: yF + 14, width: 160, textAlign: 'center' }}>
+          <div style={{ fontWeight: 900, fontSize: 12, letterSpacing: 2, color: '#7a5a00' }}>WINNER</div>
+          <div style={{
+            marginTop: 2, height: 32, border: '3px solid #d4a300', background: '#fffbe0', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontWeight: 900, fontSize: 15, color: t.champion !== null && t.entrants[t.champion].human ? '#1d4ed8' : '#111',
+          }}>{t.champion !== null ? short(t.champion) : ''}</div>
+          <div style={{ marginTop: 12, textAlign: 'left', fontSize: 12, fontWeight: 700, lineHeight: 1.7 }}>
+            <div>1st　{t.champion !== null ? short(t.champion) : ''}</div>
+            <div>2nd　{second !== null ? short(second) : ''}</div>
+            <div>3rd　{semi[0] !== undefined ? short(semi[0]) : ''}</div>
+            <div>4th　{semi[1] !== undefined ? short(semi[1]) : ''}</div>
+          </div>
+        </div>
+        {cells}
+      </div>
+    </div>
+  );
+}
 
 const FINISH_INFO: Record<Finish, { label: string; points: number }> = {
   spin: { label: 'スピンフィニッシュ', points: 1 },
@@ -1688,7 +1803,7 @@ export function Beyblade() {
           const cur = t.cur ? t.rounds[t.cur.r][t.cur.i] : null;
           const curLabel = t.cur ? roundLabel(t.rounds[t.cur.r].length, t.cur.r) : '';
           return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, width: 'min(98vw, 1100px)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, width: 'min(98vw, 1520px)' }}>
               <div style={{ fontSize: 14, opacity: 0.85 }}>トーナメント（{t.entrants.length}人・{t.fmt === '3v3' ? '3on3' : '1on1'}）</div>
               {phase === 'tchamp' && t.champion !== null ? (
                 <div style={{ textAlign: 'center' }}>
@@ -1709,28 +1824,7 @@ export function Beyblade() {
                   <button style={btn} onClick={startTourMatch}>試合開始</button>
                 </div>
               ) : null}
-              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', width: '100%', padding: '6px 4px', alignItems: 'flex-start' }}>
-                {t.rounds.map((round, r) => (
-                  <div key={r} style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 180 }}>
-                    <div style={{ fontWeight: 800, textAlign: 'center', fontSize: 13 }}>{roundLabel(round.length, r)}</div>
-                    {round.map((m, i) => {
-                      const isCur = !!t.cur && t.cur.r === r && t.cur.i === i;
-                      return (
-                        <div key={i} style={{ padding: '4px 8px', borderRadius: 8, border: `2px solid ${isCur ? '#ffd740' : '#2a3566'}`, background: '#0a1030', fontSize: 12 }}>
-                          {[m.a, m.b].map((id, k) => (
-                            <div key={k} style={{
-                              fontWeight: id !== null && m.winner === id ? 800 : 400,
-                              color: id === null ? '#667' : t.entrants[id].human ? '#5aabff' : m.winner !== null && m.winner !== id ? '#778' : '#fff',
-                              textDecoration: id !== null && m.winner !== null && m.winner !== id ? 'line-through' : 'none',
-                            }}>{nm(id)}{id !== null && m.winner === id ? ' ◀' : ''}</div>
-                          ))}
-                          {m.score && <div style={{ opacity: 0.6, fontSize: 10 }}>{m.score}</div>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
+              <BracketView t={t} />
               <button style={{ ...btn, background: '#2a3566', color: '#fff', fontSize: 15, padding: '10px 20px' }} onClick={() => { tourRef.current = null; setPhase('top'); }}>
                 {phase === 'tchamp' ? 'トップへ' : 'トーナメントを中断してトップへ'}
               </button>
