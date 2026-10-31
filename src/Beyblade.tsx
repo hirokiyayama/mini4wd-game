@@ -132,6 +132,8 @@ function randomDeck(sels: Custom[]): Custom[] {
   return out;
 }
 
+const makeDefaultDeck = (): Custom[] => randomDeck([0, 1, 2].map(() => ({ blade: '', ratchet: '', bit: '' }))); // 重ならない3体
+
 // パーツの数値を合計する（重量・高さも）
 function calcStats(c: Custom, hidden = false) {
   const st: Stats = { atk: 0, def: 0, sta: 0, dash: 0, burst: 0 };
@@ -187,6 +189,104 @@ function buildBey(c: Custom) {
 
 // バトルで使うベイ（スタート時に、カスタマイズ内容から作り直す）
 const TYPES: Record<BeyType, ReturnType<typeof buildBey>> = { me: buildBey(DEFAULT_CUSTOM), cpu: buildBey(DEFAULT_CUSTOM) };
+
+// ---------------- トーナメント ----------------
+type Style = 'power' | 'technique' | 'attacker' | 'stamina' | 'defense' | 'absorb' | 'dasher' | 'balance' | 'wild';
+const STYLE_LABEL: Record<Style, string> = {
+  power: 'シュートパワー型', technique: '技巧派', attacker: 'アタック一筋', stamina: '持久一筋', defense: 'ディフェンス型',
+  absorb: '回転吸収使い', dasher: 'Xダッシュ連打型', balance: 'バランス型', wild: '気まぐれ型',
+};
+// タイプごとに使うパーツの傾向（3体で同じパーツは重ならない）
+const STYLE_POOLS: Record<Style, { blade: string[]; ratchet: string[]; bit: string[] } | null> = {
+  attacker: { blade: ['aero', 'shark', 'glory', 'meteor'], ratchet: ['r160', 'r170', 'r360'], bit: ['LR', 'R', 'K', 'L', 'E'] },
+  stamina: { blade: ['wizard', 'knight2', 'shark'], ratchet: ['r960', 'r965', 'r760'], bit: ['B', 'FB', 'Nr'] },
+  defense: { blade: ['knight2', 'wizard', 'aero'], ratchet: ['r760', 'r560', 'r960'], bit: ['H', 'B', 'FB'] },
+  absorb: { blade: ['cobalt', 'meteor', 'glory'], ratchet: ['r960', 'r760', 'r560'], bit: ['E', 'L', 'LR'] },
+  dasher: { blade: ['aero', 'shark', 'glory'], ratchet: ['r760', 'r360', 'r960'], bit: ['R', 'LR', 'K'] },
+  power: { blade: ['glory', 'meteor', 'aero'], ratchet: ['r160', 'r360', 'r170'], bit: ['L', 'E', 'LR'] },
+  technique: { blade: ['shark', 'aero', 'wizard'], ratchet: ['r760', 'r360', 'r560'], bit: ['R', 'LR', 'B'] },
+  balance: null, wild: null,
+};
+function buildRosterDeck(style: Style): Custom[] {
+  const pool = STYLE_POOLS[style];
+  const sels: Custom[] = [0, 1, 2].map(() => ({ blade: '', ratchet: '', bit: '' }));
+  if (!pool) return randomDeck(sels);
+  for (const key of KEYS) {
+    const ids = shuffled(pool[key]);
+    sels.forEach((c, i) => { c[key] = ids[i % ids.length]; });
+  }
+  return dedupeDeck(sels);
+}
+// 32人のCPUキャラクター（名前・タイプ・デッキ）
+const ROSTER_DEF: [string, Style][] = [
+  ['ハヤテ', 'power'], ['ソウマ', 'power'], ['レオ', 'power'], ['ゴウ', 'power'],
+  ['ミナト', 'technique'], ['シズク', 'technique'], ['リョウ', 'technique'], ['アヤメ', 'technique'],
+  ['カイト', 'attacker'], ['ライガ', 'attacker'], ['ジン', 'attacker'], ['ツバサ', 'attacker'],
+  ['ヤマト', 'stamina'], ['コハク', 'stamina'], ['ナギ', 'stamina'], ['サクヤ', 'stamina'],
+  ['タクミ', 'defense'], ['ダイチ', 'defense'], ['ミオ', 'defense'],
+  ['アスカ', 'absorb'], ['イオリ', 'absorb'], ['カナタ', 'absorb'],
+  ['ホノカ', 'dasher'], ['トウマ', 'dasher'], ['レイジ', 'dasher'],
+  ['ユイ', 'balance'], ['ソラ', 'balance'], ['ハルカ', 'balance'], ['ケンシン', 'balance'],
+  ['ガク', 'wild'], ['ミヤビ', 'wild'], ['リク', 'wild'],
+];
+const ROSTER = ROSTER_DEF.map(([name, style]) => ({ name, style, deck: buildRosterDeck(style) }));
+
+interface Entrant { id: number; name: string; human: boolean; style?: Style; deck: Custom[] }
+interface TMatch { a: number | null; b: number | null; winner: number | null; score: string }
+interface Tour { entrants: Entrant[]; rounds: TMatch[][]; fmt: '1v1' | '3v3'; cur: { r: number; i: number } | null; champion: number | null }
+
+function createTour(entrants: Entrant[], fmt: '1v1' | '3v3'): Tour {
+  const n = entrants.length;
+  let size = 2;
+  while (size < n) size *= 2;
+  const ids = shuffled(entrants.map(e => e.id));
+  const slots: (number | null)[] = Array(size).fill(null);
+  const half = size / 2;
+  for (let m = 0; m < half; m++) slots[2 * m] = ids[m]; // 各試合に1人ずつ置いてから、残りを対戦相手にする（不戦勝を均等にばらす）
+  for (let k = 0; k < n - half; k++) slots[2 * k + 1] = ids[half + k];
+  const first: TMatch[] = Array.from({ length: half }, (_, m) => ({ a: slots[2 * m], b: slots[2 * m + 1], winner: null, score: '' }));
+  return { entrants, rounds: [first], fmt, cur: null, champion: null };
+}
+
+// CPU同士の試合は、ベイの数値から自動で決着をつける
+function simulateCpuMatch(A: Entrant, B: Entrant): { aWins: boolean; score: string } {
+  const rate = (c: Custom, style?: Style) => {
+    const b = buildBey(c);
+    return 0.9 * b.atk + 0.6 * b.def + 0.9 / b.decay + 0.35 * b.burstRes + 0.4 * b.mass + (style === 'technique' ? 0.2 : style === 'power' ? 0.15 : 0);
+  };
+  const ra = A.deck.map(c => rate(c, A.style)), rb = B.deck.map(c => rate(c, B.style));
+  let pa = 0, pb = 0, idx = 0;
+  while (pa < 4 && pb < 4) {
+    const p = 1 / (1 + Math.exp(-(ra[idx % ra.length] - rb[idx % rb.length]) * 1.6));
+    const roll = Math.random(), pts = roll < 0.25 ? 1 : roll < 0.8 ? 2 : 3; // スピン1 / オーバー・バースト2 / エクストリーム3
+    if (Math.random() < p) pa += pts; else pb += pts;
+    idx++;
+  }
+  return { aWins: pa >= 4, score: `${pa}-${pb}` };
+}
+
+// CPU同士・不戦勝を自動で進め、プレイヤーが出る試合（または優勝）まで進める
+function settleTour(t: Tour) {
+  t.cur = null;
+  for (;;) {
+    const r = t.rounds.length - 1, round = t.rounds[r];
+    for (let i = 0; i < round.length; i++) {
+      const m = round[i];
+      if (m.winner !== null) continue;
+      if (m.a === null || m.b === null) { m.winner = m.a ?? m.b; continue; }
+      const A = t.entrants[m.a], B = t.entrants[m.b];
+      if (A.human || B.human) { t.cur = { r, i }; return; }
+      const res = simulateCpuMatch(A, B);
+      m.winner = res.aWins ? m.a : m.b;
+      m.score = res.score;
+    }
+    if (round.length === 1) { t.champion = round[0].winner; return; }
+    const next: TMatch[] = [];
+    for (let i = 0; i < round.length; i += 2) next.push({ a: round[i].winner, b: round[i + 1].winner, winner: null, score: '' });
+    t.rounds.push(next);
+  }
+}
+const roundLabel = (len: number, r: number) => (len === 1 ? '決勝' : len === 2 ? '準決勝' : `${r + 1}回戦`);
 
 const FINISH_INFO: Record<Finish, { label: string; points: number }> = {
   spin: { label: 'スピンフィニッシュ', points: 1 },
@@ -371,31 +471,46 @@ function drawStadium(ctx: CanvasRenderingContext2D) {
 }
 
 export function Beyblade() {
-  const [phase, setPhase] = useState<'select' | 'order' | 'launch' | 'count' | 'battle' | 'result' | 'over'>('select');
+  const [phase, setPhase] = useState<'top' | 'select' | 'order' | 'tbracket' | 'tchamp' | 'launch' | 'count' | 'battle' | 'result' | 'over'>('top');
   const [shotMode, setShotMode] = useState<'flat' | 'diag'>('flat');
   const [hasDrop, setHasDrop] = useState(false);
   const [mySide, setMySide] = useState<'left' | 'right'>('left'); // 自分が立つ側（左の人は左半分、右の人は右半分にしか落とせない）
   const [count, setCount] = useState<number | null>(null);
   // 対戦モード：1on1 / 3on3（3体のデッキ。順番を決めて、どちらかが4ポイント取るまで）
   const [mode, setMode] = useState<'1v1' | '3v3'>('1v1');
-  const [customs, setCustoms] = useState<Custom[]>([
-    urlCustom('me') ?? DEFAULT_CUSTOM,
-    { blade: 'aero', ratchet: 'r360', bit: 'R' },
-    { blade: 'wizard', ratchet: 'r960', bit: 'FB' },
-  ]);
+  const [gameMode, setGameMode] = useState<'versus' | 'tournament'>('versus'); // トップページ：通常の対戦 / トーナメント
+  const [oppView, setOppView] = useState<'show' | 'hide'>('show'); // CPU対戦：相手の落とす位置を見せるか
+  const [tCpu, setTCpu] = useState(7); // トーナメント：CPUの数（0〜32）
+  const [tHumans, setTHumans] = useState(1); // トーナメント：プレイヤーの数（0〜32）
   const [vs, setVs] = useState<'cpu' | '2p'>('cpu'); // 対戦相手：CPU / 2人対戦
-  const [customs2, setCustoms2] = useState<Custom[]>([ // 2人対戦のプレイヤー2のベイ
-    { blade: 'cobalt', ratchet: 'r160', bit: 'E' },
-    { blade: 'meteor', ratchet: 'r760', bit: 'LR' },
-    { blade: 'shark', ratchet: 'r360', bit: 'H' },
-  ]);
-  const [who, setWho] = useState<0 | 1>(0); // カスタマイズ中のプレイヤー（2人対戦）
+  // プレイヤーごとのデッキ（3体）。0=プレイヤー1、1=プレイヤー2、…（トーナメントは最大32人）
+  const [decks, setDecks] = useState<Custom[][]>(() => Array.from({ length: 32 }, (_, i) =>
+    i === 0 ? [urlCustom('me') ?? DEFAULT_CUSTOM, { blade: 'aero', ratchet: 'r360', bit: 'R' }, { blade: 'wizard', ratchet: 'r960', bit: 'FB' }]
+    : i === 1 ? [{ blade: 'cobalt', ratchet: 'r160', bit: 'E' }, { blade: 'meteor', ratchet: 'r760', bit: 'LR' }, { blade: 'shark', ratchet: 'r360', bit: 'H' }]
+    : makeDefaultDeck()));
+  const customs = decks[0];
+  const customs2 = decks[1];
+  const [who, setWho] = useState(0); // カスタマイズ中のプレイヤー
   const [slot, setSlot] = useState(0); // カスタマイズ中のベイ（3on3は 0〜2）
-  const curDeck = who === 0 ? customs : customs2;
+  const curDeck = decks[who];
   const custom = curDeck[slot];
-  const setCustom = (f: (c: Custom) => Custom) => (who === 0 ? setCustoms : setCustoms2)(cs => cs.map((c, i) => (i === slot ? f(c) : c)));
-  const nameMe = vs === '2p' ? 'プレイヤー1' : 'あなた';
-  const nameCpu = vs === '2p' ? 'プレイヤー2' : 'CPU';
+  const setCustom = (f: (c: Custom) => Custom) => setDecks(ds => ds.map((d, i) => (i === who ? d.map((c, j) => (j === slot ? f(c) : c)) : d)));
+  const [names, setNames] = useState<{ me: string; cpu: string } | null>(null); // トーナメントの試合中の名前
+  const nameMe = names?.me ?? (vs === '2p' ? 'プレイヤー1' : 'あなた');
+  const nameCpu = names?.cpu ?? (vs === '2p' ? 'プレイヤー2' : 'CPU');
+  const namesRef = useRef({ me: 'あなた', cpu: 'CPU' });
+  namesRef.current = { me: nameMe, cpu: nameCpu };
+  const tourRef = useRef<Tour | null>(null);
+  const [, setTick] = useState(0);
+  const bump = () => setTick(t => t + 1);
+  const tourMatchRef = useRef<{ r: number; i: number; meId: number; cpuId: number } | null>(null);
+  const cpuStyleRef = useRef<Style | undefined>(undefined); // トーナメント：CPUのタイプ（打ち方に反映）
+  const [placeStep, setPlaceStep] = useState(0); // トーナメントの2人対戦：順番に場所を決める（0=左, 1=右, 2=完了）。相手には見えない
+  const placeStepRef = useRef(0);
+  placeStepRef.current = placeStep;
+  const seq = gameMode === 'tournament' && vs === '2p';
+  const seqRef = useRef(false);
+  seqRef.current = seq;
   const [orderWho, setOrderWho] = useState<0 | 1>(0); // 2人対戦の3on3：順番を決めているプレイヤー
   const [hasDrop2, setHasDrop2] = useState(false); // 2人対戦：プレイヤー2が場所を決めたか
   const [shotMode2, setShotMode2] = useState<'flat' | 'diag'>('flat');
@@ -406,6 +521,7 @@ export function Beyblade() {
   const [order, setOrder] = useState<number[]>([]); // 自分の出す順番（deck.me の番号）
   const cpuOrderRef = useRef<number[]>([0, 1, 2]);
   const vsRef = useRef<'cpu' | '2p'>('cpu');
+  const hideOppRef = useRef(false); // 相手の落とす位置を隠す（CPU対戦の設定 / トーナメント）
   const mode2Ref = useRef<'flat' | 'diag'>('flat');
   const aim2Ref = useRef<{ x: number; y: number } | null>(null);
   const activeRef = useRef<0 | 1>(0); // ドラッグで向きを決めているプレイヤー
@@ -425,7 +541,7 @@ export function Beyblade() {
   const modeRef = useRef<'flat' | 'diag'>('flat');
   const sideRef = useRef<'left' | 'right'>('left');
   const cpuLastMode = useRef<'flat' | 'diag'>('flat');
-  const cpuPlanRef = useRef<{ x: number; y: number; diag: boolean; aim: { x: number; y: number } } | null>(null);
+  const cpuPlanRef = useRef<{ x: number; y: number; diag: boolean; aim: { x: number; y: number }; power?: number } | null>(null);
   const countTimers = useRef<number[]>([]);
   const phaseRef = useRef(phase);
   const flashRef = useRef(0);
@@ -435,29 +551,75 @@ export function Beyblade() {
   phaseRef.current = phase;
   modeRef.current = shotMode;
   vsRef.current = vs;
+  hideOppRef.current = (vs === 'cpu' && oppView === 'hide') || gameMode === 'tournament';
   mode2Ref.current = shotMode2;
   sideRef.current = mySide;
 
   // CPUは自分の半分の中で、毎回ちがう場所・シュートの仕方・向きで落とす（ラウンド開始時に決まり、向きを決めるときから見える）
-  const planCpu = () => {
+  const planCpu = (style?: Style) => {
     const cpuSx = sideRef.current === 'left' ? 1 : -1; // 自分と反対側
+    const lim = R - BEY_R - 8, m = BEY_R + 8;
+    const dir = TYPES.cpu.spinDir;
+    const clampPos = (x: number, y: number) => { // 自陣の半分の中に収める
+      const ax = Math.min(Math.max(x * cpuSx, m), lim);
+      const maxY = Math.sqrt(Math.max(0, lim * lim - ax * ax));
+      return { x: ax * cpuSx, y: Math.max(-maxY, Math.min(maxY, y)) };
+    };
+    // リングに乗って、できるだけ早く上側からXダッシュできる出発点（技巧派）
+    const ringStart = () => {
+      let best = 0, bestD = 1e9;
+      for (let deg = 0; deg < 360; deg += 5) {
+        if (Math.cos((deg * Math.PI) / 180) * R * 0.86 * cpuSx < m) continue;
+        const d = dir === 1 ? (((deg + 90) % 360) + 360) % 360 : (((-90 - deg) % 360) + 360) % 360;
+        if (d < bestD) { bestD = d; best = deg; }
+      }
+      const th = ((best + (Math.random() - 0.5) * 10) * Math.PI) / 180;
+      return clampPos(Math.cos(th) * R * 0.86, Math.sin(th) * R * 0.86);
+    };
+    const randPos = (r0: number, r1: number) => {
+      const rr = (r0 + (r1 - r0) * Math.random()) * lim;
+      const phi = (Math.random() - 0.5) * Math.PI * 0.92; // 自陣の半分の中の角度
+      return clampPos(cpuSx * Math.cos(phi) * rr, Math.sin(phi) * rr);
+    };
+    const toOpp = (x: number, y: number) => { // 相手側の半分の中央へ
+      const dx = -cpuSx * R * 0.45 - x, dy = -y, l = Math.hypot(dx, dy) || 1;
+      return { x: dx / l, y: dy / l };
+    };
+    if (style && style !== 'balance' && style !== 'wild') {
+      // タイプごとの打ち方
+      if (style === 'technique' || style === 'dasher') {
+        const pos = style === 'technique' ? ringStart() : randPos(0.7, 0.9);
+        return { ...pos, diag: false, aim: defaultAim(pos.x, pos.y, dir), power: style === 'technique' ? 0.9 : 0.85 };
+      }
+      if (style === 'attacker' || style === 'power') {
+        const pos = randPos(0.55, 0.9);
+        const aim = Math.random() < 0.5 ? toOpp(pos.x, pos.y) : defaultAim(pos.x, pos.y, dir);
+        return { ...pos, diag: false, aim, power: style === 'power' ? 1.0 : 0.9 }; // シュートパワー型は最大の勢い
+      }
+      if (style === 'stamina') { // 持久型：その場にとどまって回転を温存する
+        const pos = randPos(0.05, 0.4);
+        return { ...pos, diag: true, aim: defaultAim(pos.x, pos.y, dir), power: 0.8 };
+      }
+      if (style === 'defense') {
+        const pos = randPos(0.2, 0.6);
+        return { ...pos, diag: Math.random() < 0.7, aim: defaultAim(pos.x, pos.y, dir), power: 0.8 };
+      }
+      if (style === 'absorb') { // 回転吸収使い：右回転の相手に当たりにいく
+        const pos = randPos(0.3, 0.7);
+        return { ...pos, diag: Math.random() < 0.3, aim: toOpp(pos.x, pos.y), power: 0.85 };
+      }
+    }
     const diag = Math.random() < (cpuLastMode.current === 'diag' ? 0.3 : 0.7); // 前回と違うほうを選びやすい
     cpuLastMode.current = diag ? 'diag' : 'flat';
-    const lim = R - BEY_R - 8, m = BEY_R + 8;
-    const rr = (diag ? 0.12 + 0.6 * Math.random() : 0.55 + 0.35 * Math.random()) * lim;
-    const phi = (Math.random() - 0.5) * Math.PI * 0.92; // 自陣の半分の中の角度
-    let x = cpuSx * Math.max(m, Math.cos(phi) * rr);
-    const y = Math.sin(phi) * rr;
-    x = cpuSx * Math.min(Math.abs(x), Math.sqrt(Math.max(m * m, lim * lim - y * y)));
+    const { x, y } = randPos(diag ? 0.12 : 0.55, diag ? 0.72 : 0.9);
     // 向き：リングをたどる向き / 相手側へ / ランダム、のどれか
     const roll = Math.random();
     let aim: { x: number; y: number };
     if (roll < 0.35) {
-      const a0 = defaultAim(x, y, TYPES.cpu.spinDir), rot = (Math.random() - 0.5) * 1.2;
+      const a0 = defaultAim(x, y, dir), rot = (Math.random() - 0.5) * 1.2;
       aim = { x: a0.x * Math.cos(rot) - a0.y * Math.sin(rot), y: a0.x * Math.sin(rot) + a0.y * Math.cos(rot) };
     } else if (roll < 0.65) {
-      const tx = -cpuSx * R * 0.45, dx = tx - x, dy = -y, l = Math.hypot(dx, dy) || 1; // 相手側の半分の中央へ
-      aim = { x: dx / l, y: dy / l };
+      aim = toOpp(x, y);
     } else {
       const a = Math.random() * Math.PI * 2;
       aim = { x: Math.cos(a), y: Math.sin(a) };
@@ -474,7 +636,8 @@ export function Beyblade() {
     partsRef.current = [];
     dropRef.current = null;
     aimRef.current = null;
-    cpuPlanRef.current = vsRef.current === '2p' ? null : planCpu(); // 2人対戦は、プレイヤー2が自分で決める
+    cpuPlanRef.current = vsRef.current === '2p' ? null : planCpu(cpuStyleRef.current); // 2人対戦は、プレイヤー2が自分で決める
+    setPlaceStep(0);
     aim2Ref.current = null;
     setHasDrop2(false);
     setHasDrop(false);
@@ -528,6 +691,73 @@ export function Beyblade() {
     setupRound(deck.me[orderPick[0]], deck.cpu[perm[0]]);
   };
 
+  // ---- トーナメント：参加者を決めて、組み合わせを作る（CPUは32人のロスターから）
+  const startTournament = () => {
+    const fmt = mode;
+    const humans: Entrant[] = Array.from({ length: tHumans }, (_, k) => ({
+      id: k, name: `プレイヤー${k + 1}`, human: true, deck: (fmt === '3v3' ? decks[k] : [decks[k][0]]).map(c => ({ ...c })),
+    }));
+    const cpus: Entrant[] = shuffled(ROSTER).slice(0, tCpu).map((r, j) => ({
+      id: tHumans + j, name: `${r.name}（${STYLE_LABEL[r.style]}）`, human: false, style: r.style, deck: (fmt === '3v3' ? r.deck : [r.deck[0]]).map(c => ({ ...c })),
+    }));
+    const t = createTour([...humans, ...cpus], fmt);
+    settleTour(t);
+    tourRef.current = t;
+    tourMatchRef.current = null;
+    setNames(null);
+    setPhase(t.champion !== null ? 'tchamp' : 'tbracket');
+    bump();
+  };
+
+  // ---- トーナメント：次の試合を始める（立ち位置は試合ごとにランダム）
+  const startTourMatch = () => {
+    const t = tourRef.current;
+    if (!t || !t.cur) return;
+    const m = t.rounds[t.cur.r][t.cur.i];
+    const A = t.entrants[m.a!], B = t.entrants[m.b!];
+    let me = A, cpu = B;
+    if (A.human && B.human) { // プレイヤー同士：左右をランダムに
+      if (Math.random() < 0.5) { me = B; cpu = A; }
+      vsRef.current = '2p'; setVs('2p');
+      sideRef.current = 'left'; setMySide('left');
+    } else { // プレイヤー対CPU：プレイヤーの立つ側をランダムに
+      me = A.human ? A : B; cpu = A.human ? B : A;
+      const side = Math.random() < 0.5 ? 'left' : 'right';
+      vsRef.current = 'cpu'; setVs('cpu');
+      sideRef.current = side; setMySide(side);
+    }
+    tourMatchRef.current = { r: t.cur.r, i: t.cur.i, meId: me.id, cpuId: cpu.id };
+    cpuStyleRef.current = cpu.style;
+    setNames({ me: me.name, cpu: cpu.name });
+    setDeck({ me: me.deck, cpu: cpu.deck });
+    scoreRef.current = { me: 0, cpu: 0 };
+    setScore({ me: 0, cpu: 0 });
+    setMessage(null);
+    setRoundIdx(0);
+    setCycle(0);
+    if (t.fmt === '3v3') { // 3on3：順番決めから
+      beysRef.current = null;
+      setOrderPick([]); setOrder([]); setOrderWho(0);
+      setPhase('order');
+      return;
+    }
+    setupRound(me.deck[0], cpu.deck[0]);
+  };
+
+  // ---- トーナメント：試合の結果を記録して、次へ進める（CPU同士の試合は自動で決着）
+  const finishTourMatch = (winner: 'me' | 'cpu') => {
+    const t = tourRef.current, tm = tourMatchRef.current;
+    if (!t || !tm) return;
+    const m = t.rounds[tm.r][tm.i];
+    m.winner = winner === 'me' ? tm.meId : tm.cpuId;
+    m.score = `${score.me}-${score.cpu}`;
+    settleTour(t);
+    tourMatchRef.current = null;
+    setNames(null);
+    setPhase(t.champion !== null ? 'tchamp' : 'tbracket');
+    bump();
+  };
+
   // 対戦画面からカスタマイズ画面に戻る
   const backToSelect = () => {
     window.clearTimeout(timerRef.current);
@@ -542,6 +772,11 @@ export function Beyblade() {
     setMessage(null);
     setHasDrop(false);
     setHasDrop2(false);
+    if (gameMode === 'tournament') { // トーナメント中は、トーナメント表に戻る（その試合は後でやり直し）
+      setNames(null);
+      setPhase('tbracket');
+      return;
+    }
     setPhase('select');
   };
 
@@ -572,7 +807,7 @@ export function Beyblade() {
     countTimers.current.forEach(window.clearTimeout);
     beysRef.current = [
       makeBey('me', my.x, my.y, modeRef.current === 'diag', aimRef.current, 0.85),
-      makeBey('cpu', cpu.x, cpu.y, cpu.diag, cpu.aim, vsRef.current === '2p' ? 0.85 : 0.7 + Math.random() * 0.3),
+      makeBey('cpu', cpu.x, cpu.y, cpu.diag, cpu.aim, vsRef.current === '2p' ? 0.85 : cpu.power ?? 0.7 + Math.random() * 0.3),
     ];
     endedRef.current = false;
     (window as unknown as { __dashes?: number[] }).__dashes = [0, 0];
@@ -612,6 +847,7 @@ export function Beyblade() {
     const two = vsRef.current === '2p';
     // 2人対戦：左半分をタップ＝プレイヤー1、右半分をタップ＝プレイヤー2
     const player: 0 | 1 = two ? (p.x < 0 ? 0 : 1) : 0;
+    if (two && seqRef.current && player !== placeStepRef.current) return; // トーナメントの2人対戦：順番に決める
     const sx = two ? (player === 0 ? -1 : 1) : sideRef.current === 'left' ? -1 : 1;
     // 左側の人は左半分、右側の人は右半分にしか落とせない
     const ax = Math.min(Math.max(p.x * sx, m), lim);
@@ -685,7 +921,7 @@ export function Beyblade() {
 
   // メインループ（固定タイムステップ物理 + 描画）
   const inSelect = phase === 'select';
-  const canvasOn = phase !== 'select' && phase !== 'order'; // 対戦用のキャンバスが表示されている
+  const canvasOn = phase === 'launch' || phase === 'count' || phase === 'battle' || phase === 'result' || phase === 'over'; // 対戦用のキャンバスが表示されている
   // カスタマイズ画面のベイのプレビュー（回さずに静止して表示）
   useEffect(() => {
     if (!inSelect) return;
@@ -1029,14 +1265,14 @@ export function Beyblade() {
         ctx.textAlign = 'start';
         ctx.restore();
       };
-      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current) {
+      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current && (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 0))) {
         const g = dropRef.current;
         const diag = modeRef.current === 'diag';
-        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y, TYPES.me.spinDir), diag, TYPES.me.color, '#5aabff', '#e8590c', `${vsRef.current === '2p' ? 'プレイヤー1' : 'あなた'}：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, TYPES.me.sprite, TYPES.me.spinDir);
+        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y, TYPES.me.spinDir), diag, TYPES.me.color, '#5aabff', '#e8590c', `${namesRef.current.me}：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, TYPES.me.sprite, TYPES.me.spinDir);
       }
-      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current) {
+      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && (vsRef.current === '2p' ? (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 1)) : !hideOppRef.current)) {
         const c = cpuPlanRef.current;
-        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ef4444', '#d62828', `${vsRef.current === '2p' ? 'プレイヤー2' : 'CPU'}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite, TYPES.cpu.spinDir, vsRef.current === '2p');
+        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ef4444', '#d62828', `${namesRef.current.cpu}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite, TYPES.cpu.spinDir, vsRef.current === '2p');
       }
       // バースト：パーツが飛び散る
       const parts = partsRef.current;
@@ -1087,6 +1323,8 @@ export function Beyblade() {
     return () => cancelAnimationFrame(raf);
   }, [endRound, canvasOn]);
 
+  const humanCount = gameMode === 'tournament' ? tHumans : vs === '2p' ? 2 : 1; // カスタマイズするプレイヤーの数
+
   // 3on3：他のベイで使っているパーツは選べない（公式ルール）
   const usedByOthers = (key: (typeof KEYS)[number]) => {
     if (key === 'ratchet' && isInt(custom)) return RATCHETS.map(r => r.id); // ラチェット一体型は選べない
@@ -1114,38 +1352,54 @@ export function Beyblade() {
 
   // ベイのカスタマイズ画面：ブレード / ラチェット / ビットを組み合わせる
   const myBey = buildBey(custom);
-  const partPicker = (title: string, list: PartDef[], value: string, onPick: (id: string) => void, blocked: string[] = []) => (
-    <div style={{ flex: '1 1 200px', minWidth: 190 }}>
-      <div style={{ fontWeight: 800, marginBottom: 6, fontSize: 15 }}>{title}</div>
-      {list.map(pt => (
-        <button
-          key={pt.id}
-          onClick={() => { if (!blocked.includes(pt.id)) onPick(pt.id); }}
-          style={{
-            display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', marginBottom: 6, borderRadius: 8, cursor: blocked.includes(pt.id) ? 'not-allowed' : 'pointer', color: '#fff', opacity: blocked.includes(pt.id) ? 0.35 : 1,
-            border: `3px solid ${value === pt.id ? (pt.color ?? '#ffd740') : '#2a3566'}`,
-            background: value === pt.id ? '#14204f' : '#0a1030',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {pt.img && <img src={pt.img} alt={pt.name} width={44} height={44} style={{ flex: '0 0 auto' }} />}
-            <div>
-              <div style={{ fontWeight: 700, color: pt.color ?? '#fff' }}>{pt.name}</div>
-              <div style={{ fontSize: 11, opacity: 0.8 }}>{pt.desc}</div>
-            </div>
-          </div>
-          <div style={{ fontSize: 11, marginTop: 3, display: 'flex', flexWrap: 'wrap', gap: '0 10px', opacity: 0.95 }}>
-            {STAT_LABELS.filter(([k]) => pt.s[k] !== undefined).map(([k, label]) => (
-              <span key={k}>{label} <b>{pt.s[k]}</b></span>
-            ))}
-            {pt.height !== undefined && <span>高さ <b>{pt.height}</b></span>}
-            <span style={{ opacity: 0.8 }}>{pt.weight}g</span>
-            {pt.img && <span style={{ color: pt.spinDir === -1 ? '#ffd740' : '#9fb2ff', fontWeight: 700 }}>{pt.spinDir === -1 ? '左回転' : '右回転'}</span>}
-          </div>
-        </button>
-      ))}
-    </div>
-  );
+  const partPicker = (title: string, list: PartDef[], value: string, onPick: (id: string) => void, blocked: string[] = []) => {
+    const sel = list.find(pt => pt.id === value) ?? list[0];
+    const allBlocked = list.every(pt => blocked.includes(pt.id));
+    return (
+      <div style={{ flex: list.length > 6 ? '2 1 330px' : '1 1 200px', minWidth: 200 }}>
+        <div style={{ fontWeight: 800, marginBottom: 6, fontSize: 15 }}>{title}</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {list.map(pt => {
+            const bl = blocked.includes(pt.id);
+            return (
+              <button
+                key={pt.id}
+                onClick={() => { if (!bl) onPick(pt.id); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 18, fontWeight: 700, fontSize: 13,
+                  cursor: bl ? 'not-allowed' : 'pointer', color: '#fff', opacity: bl ? 0.35 : 1,
+                  border: `2px solid ${value === pt.id && !allBlocked ? (pt.color ?? '#ffd740') : '#2a3566'}`,
+                  background: value === pt.id && !allBlocked ? '#14204f' : '#0a1030',
+                }}
+              >
+                {pt.img && <img src={pt.img} alt="" width={26} height={26} />}
+                <span style={{ color: pt.color ?? '#fff' }}>{pt.name}</span>
+              </button>
+            );
+          })}
+        </div>
+        {/* 押した（選んだ）パーツの詳細 */}
+        <div style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, background: '#0a1030', border: '1px solid #2a3566', fontSize: 11.5, minHeight: 64 }}>
+          {allBlocked ? (
+            <div style={{ opacity: 0.8 }}>ラチェット一体型のブレードなので、ラチェットは選べません。</div>
+          ) : (
+            <>
+              <div style={{ fontWeight: 800, color: sel.color ?? '#fff', fontSize: 13 }}>{sel.name}</div>
+              <div style={{ opacity: 0.85, margin: '3px 0' }}>{sel.desc}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 10px' }}>
+                {STAT_LABELS.filter(([k]) => sel.s[k] !== undefined).map(([k, label]) => (
+                  <span key={k}>{label} <b>{sel.s[k]}</b></span>
+                ))}
+                {sel.height !== undefined && <span>高さ <b>{sel.height}</b></span>}
+                <span style={{ opacity: 0.8 }}>{sel.weight}g</span>
+                {sel.img && <span style={{ color: sel.spinDir === -1 ? '#ffd740' : '#9fb2ff', fontWeight: 700 }}>{sel.spinDir === -1 ? '左回転' : '右回転'}</span>}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
   const customizer = (
     <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', justifyContent: 'center', width: 'min(96vw, 1000px)' }}>
       <div style={{ flex: '0 0 220px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: 12, borderRadius: 12, background: '#0a1030', border: '2px solid #2a3566' }}>
@@ -1166,7 +1420,7 @@ export function Beyblade() {
         </div>
       </div>
       {partPicker('ブレード', BLADES, custom.blade, id => setCustom(c => ({ ...c, blade: id })), usedByOthers('blade'))}
-      {partPicker(isInt(custom) ? 'ラチェット（このブレードは一体型：選べません）' : 'ラチェット', RATCHETS, custom.ratchet, id => setCustom(c => ({ ...c, ratchet: id })), usedByOthers('ratchet'))}
+      {partPicker('ラチェット', RATCHETS, custom.ratchet, id => setCustom(c => ({ ...c, ratchet: id })), usedByOthers('ratchet'))}
       {partPicker('ビット', BITS, custom.bit, id => setCustom(c => ({ ...c, bit: id })), usedByOthers('bit'))}
     </div>
   );
@@ -1178,13 +1432,13 @@ export function Beyblade() {
 
   return (
     <div style={{ height: '100vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 16, color: '#fff', background: '#04071a', boxSizing: 'border-box' }}>
-      {phase !== 'select' && (
+      {(phase === 'order' || canvasOn) && (
         <button
           onClick={backToSelect}
           style={{ position: 'fixed', bottom: 10, left: 10, zIndex: 20, padding: '6px 12px', borderRadius: 8, border: '2px solid #2a3566', background: '#0a1030', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
         >← カスタマイズに戻る</button>
       )}
-      {phase === 'select' || phase === 'order' ? (
+      {!canvasOn ? (
         <h2 style={{ margin: 0, letterSpacing: 2 }}>BEYBLADE X BATTLE</h2>
       ) : (
         // 上部：名前 + スピン / バーストゲージ（自分が選んだ側に自分を表示）
@@ -1200,52 +1454,135 @@ export function Beyblade() {
         </div>
       )}
 
-      {phase === 'select' ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, marginTop: 40 }}>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <span style={{ fontSize: 15 }}>相手：</span>
-            {([['cpu', 'CPU', '1人で対戦'], ['2p', '2人対戦', '2人で1つの画面で対戦']] as const).map(([k, label, sub]) => (
+      {phase === 'top' ? (
+        // トップページ：相手 / 対戦 / トーナメント
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, marginTop: 30, width: 'min(96vw, 760px)' }}>
+          <div style={{ fontSize: 20, fontWeight: 800 }}>モードを選ぼう</div>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {([['versus', '対戦', '相手と戦う（CPU / 2人）'], ['tournament', 'トーナメント', '最大32人で勝ち抜き戦']] as const).map(([k, label, sub]) => (
               <button
                 key={k}
-                onClick={() => { setVs(k); setWho(0); if (k === '2p') setMySide('left'); }}
+                onClick={() => setGameMode(k)}
                 style={{
-                  padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', textAlign: 'center',
-                  border: `3px solid ${vs === k ? '#ffd740' : '#2a3566'}`,
-                  background: vs === k ? '#14204f' : '#0a1030',
+                  padding: '14px 28px', borderRadius: 12, cursor: 'pointer', color: '#fff', textAlign: 'center',
+                  border: `3px solid ${gameMode === k ? '#ffd740' : '#2a3566'}`, background: gameMode === k ? '#14204f' : '#0a1030',
                 }}
-              ><div style={{ fontWeight: 800, fontSize: 16 }}>{label}</div><div style={{ fontSize: 11, opacity: 0.8 }}>{sub}</div></button>
+              ><div style={{ fontWeight: 900, fontSize: 22 }}>{label}</div><div style={{ fontSize: 12, opacity: 0.85 }}>{sub}</div></button>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <span style={{ fontSize: 15 }}>対戦：</span>
-            {([['1v1', '1on1', '1体で対戦'], ['3v3', '3on3', '3体の順番を決めて対戦']] as const).map(([k, label, sub]) => (
-              <button
-                key={k}
-                onClick={() => { setMode(k); setSlot(0); if (k === '3v3') { setCustoms(d => dedupeDeck(d)); setCustoms2(d => dedupeDeck(d)); } }}
-                style={{
-                  padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', textAlign: 'center',
-                  border: `3px solid ${mode === k ? '#ffd740' : '#2a3566'}`,
-                  background: mode === k ? '#14204f' : '#0a1030',
-                }}
-              ><div style={{ fontWeight: 800, fontSize: 16 }}>{label}</div><div style={{ fontSize: 11, opacity: 0.8 }}>{sub}</div></button>
-            ))}
+
+          {gameMode === 'versus' && (
+            <>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <span style={{ fontSize: 15, fontWeight: 700 }}>相手：</span>
+                {([['cpu', 'CPU', '1人で対戦'], ['2p', '2人対戦', '2人で1つの画面で対戦']] as const).map(([k, label, sub]) => (
+                  <button
+                    key={k}
+                    onClick={() => { setVs(k); if (k === '2p') setMySide('left'); }}
+                    style={{
+                      padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', textAlign: 'center',
+                      border: `3px solid ${vs === k ? '#ffd740' : '#2a3566'}`, background: vs === k ? '#14204f' : '#0a1030',
+                    }}
+                  ><div style={{ fontWeight: 800, fontSize: 16 }}>{label}</div><div style={{ fontSize: 11, opacity: 0.8 }}>{sub}</div></button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <span style={{ fontSize: 15, fontWeight: 700 }}>対戦：</span>
+                {([['1v1', '1on1', '1体で対戦'], ['3v3', '3on3', '3体の順番を決めて対戦']] as const).map(([k, label, sub]) => (
+                  <button
+                    key={k}
+                    onClick={() => { setMode(k); if (k === '3v3') setDecks(ds => ds.map(d => dedupeDeck(d))); }}
+                    style={{
+                      padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', textAlign: 'center',
+                      border: `3px solid ${mode === k ? '#ffd740' : '#2a3566'}`, background: mode === k ? '#14204f' : '#0a1030',
+                    }}
+                  ><div style={{ fontWeight: 800, fontSize: 16 }}>{label}</div><div style={{ fontSize: 11, opacity: 0.8 }}>{sub}</div></button>
+                ))}
+              </div>
+              {vs === 'cpu' && (
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>相手の落とす位置：</span>
+                  {([['show', '見える'], ['hide', '見えない']] as const).map(([k, label]) => (
+                    <button
+                      key={k}
+                      onClick={() => setOppView(k)}
+                      style={{
+                        padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 700,
+                        border: `3px solid ${oppView === k ? '#ffd740' : '#2a3566'}`, background: oppView === k ? '#14204f' : '#0a1030',
+                      }}
+                    >{label}</button>
+                  ))}
+                  <span style={{ fontSize: 11, opacity: 0.75 }}>（相手の打ち方と向きは、どちらでも見えません）</span>
+                </div>
+              )}
+            </>
+          )}
+
+          {gameMode === 'tournament' && (
+            <>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <span style={{ fontSize: 15, fontWeight: 700 }}>対戦：</span>
+                {([['1v1', '1on1', '1体で対戦'], ['3v3', '3on3', '3体の順番を決めて対戦']] as const).map(([k, label, sub]) => (
+                  <button
+                    key={k}
+                    onClick={() => { setMode(k); if (k === '3v3') setDecks(ds => ds.map(d => dedupeDeck(d))); }}
+                    style={{
+                      padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', textAlign: 'center',
+                      border: `3px solid ${mode === k ? '#ffd740' : '#2a3566'}`, background: mode === k ? '#14204f' : '#0a1030',
+                    }}
+                  ><div style={{ fontWeight: 800, fontSize: 16 }}>{label}</div><div style={{ fontSize: 11, opacity: 0.8 }}>{sub}</div></button>
+                ))}
+              </div>
+              {([['CPUの数', tCpu, (v: number) => setTCpu(Math.max(0, Math.min(32 - tHumans, v))), '#ef4444'], ['プレイヤーの数', tHumans, (v: number) => setTHumans(Math.max(0, Math.min(32 - tCpu, v))), '#5aabff']] as const).map(([label, val, set, color]) => (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color, width: 110, textAlign: 'right' }}>{label}</span>
+                  <button style={{ ...btn, padding: '2px 12px', fontSize: 18 }} onClick={() => set(val - 1)}>−</button>
+                  <input type="range" min={0} max={32} value={val} onChange={e => set(Number(e.target.value))} style={{ width: 200 }} />
+                  <button style={{ ...btn, padding: '2px 12px', fontSize: 18 }} onClick={() => set(val + 1)}>＋</button>
+                  <span style={{ fontSize: 22, fontWeight: 900, width: 36 }}>{val}</span>
+                </div>
+              ))}
+              <div style={{ fontSize: 14, textAlign: 'center', opacity: 0.9 }}>
+                参加：合計 <b>{tCpu + tHumans}</b> 人（最大32人）。立ち位置（左右）は試合ごとにランダム、試合前に相手の落とす位置は見えません。
+                {tCpu + tHumans < 2 && <div style={{ color: '#ff8b8b' }}>2人以上にしてください</div>}
+              </div>
+            </>
+          )}
+
+          <button
+            style={{ ...btn, opacity: gameMode === 'tournament' && tCpu + tHumans < 2 ? 0.4 : 1 }}
+            disabled={gameMode === 'tournament' && tCpu + tHumans < 2}
+            onClick={() => { setWho(0); setSlot(0); setPhase('select'); }}
+          >次へ（カスタマイズ）</button>
+        </div>
+      ) : phase === 'select' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, marginTop: 20 }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button onClick={() => setPhase('top')} style={{ padding: '6px 14px', borderRadius: 8, border: '2px solid #2a3566', background: '#0a1030', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>← トップへ</button>
+            <span style={{ fontSize: 14, opacity: 0.9 }}>
+              {gameMode === 'tournament' ? `トーナメント（CPU ${tCpu}人・プレイヤー ${tHumans}人）・${mode === '3v3' ? '3on3' : '1on1'}` : `${vs === 'cpu' ? 'CPU対戦' : '2人対戦'}・${mode === '3v3' ? '3on3' : '1on1'}`}
+            </span>
           </div>
           <div style={{ fontSize: 18 }}>ベイをカスタマイズしよう（{WIN_POINTS}ポイント先取）</div>
-          {vs === '2p' && (
-            <div style={{ display: 'flex', gap: 10 }}>
-              {([[0, 'プレイヤー1のベイ（左側）', '#5aabff'], [1, 'プレイヤー2のベイ（右側）', '#ef4444']] as const).map(([k, label, c]) => (
-                <button
-                  key={k}
-                  onClick={() => { setWho(k); setSlot(0); }}
-                  style={{
-                    padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 800,
-                    border: `3px solid ${who === k ? c : '#2a3566'}`, background: who === k ? '#14204f' : '#0a1030',
-                  }}
-                >{label}</button>
-              ))}
+          {humanCount === 0 && <div style={{ fontSize: 15, opacity: 0.9 }}>プレイヤーがいないので、CPU同士のトーナメントを観戦します。</div>}
+          {humanCount > 1 && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 'min(96vw, 900px)' }}>
+              {Array.from({ length: humanCount }, (_, k) => {
+                const c = k === 0 ? '#5aabff' : k === 1 ? '#ef4444' : '#ffd740';
+                return (
+                  <button
+                    key={k}
+                    onClick={() => { setWho(k); setSlot(0); }}
+                    style={{
+                      padding: '6px 14px', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 800,
+                      border: `3px solid ${who === k ? c : '#2a3566'}`, background: who === k ? '#14204f' : '#0a1030',
+                    }}
+                  >{gameMode === 'versus' ? (k === 0 ? 'プレイヤー1のベイ（左側）' : 'プレイヤー2のベイ（右側）') : `プレイヤー${k + 1}`}</button>
+                );
+              })}
             </div>
           )}
-          {mode === '3v3' && (
+          {humanCount > 0 && mode === '3v3' && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
               {[0, 1, 2].map(i => (
                 <button
@@ -1263,9 +1600,9 @@ export function Beyblade() {
               ))}
             </div>
           )}
-          {customizer}
+          {humanCount > 0 && customizer}
           {/* CPUのベイを選ぶ（選ばなければランダム）。3on3は3体ぶん */}
-          {vs === 'cpu' && Array.from({ length: mode === '3v3' ? 3 : 1 }, (_, n) => (
+          {gameMode === 'versus' && vs === 'cpu' && Array.from({ length: mode === '3v3' ? 3 : 1 }, (_, n) => (
             <div key={n} style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', padding: '10px 14px', borderRadius: 12, background: '#0a1030', border: '2px solid #5a2a2a' }}>
               <span style={{ fontWeight: 800, color: '#ef4444' }}>{mode === '3v3' ? `CPUのベイ${n + 1}` : 'CPUのベイ'}</span>
               {([['ブレード', BLADES, 'blade'], ['ラチェット', RATCHETS, 'ratchet'], ['ビット', BITS, 'bit']] as const).map(([label, list, key]) => (
@@ -1283,7 +1620,7 @@ export function Beyblade() {
               ))}
             </div>
           ))}
-          {vs === 'cpu' && (
+          {gameMode === 'versus' && vs === 'cpu' && (
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <span style={{ fontSize: 15 }}>あなたの立ち位置：</span>
             {([['left', '左側（左半分に落とす）'], ['right', '右側（右半分に落とす）']] as const).map(([k, label]) => (
@@ -1299,7 +1636,7 @@ export function Beyblade() {
             ))}
           </div>
           )}
-          <button style={btn} onClick={startMatch}>バトル開始</button>
+          <button style={btn} onClick={gameMode === 'versus' ? startMatch : startTournament}>{gameMode === 'versus' ? 'バトル開始' : 'トーナメント開始'}</button>
         </div>
       ) : phase === 'order' ? (
         // 3on3：出す順番を決める（1番手 → 3番手）。点数は引き継ぐ
@@ -1342,6 +1679,64 @@ export function Beyblade() {
             CPUの3体：{deck.cpu.map(c => buildBey(c).name).join(' ／ ')}（出す順番は非公開）
           </div>}
         </div>
+      ) : phase === 'tbracket' || phase === 'tchamp' ? (
+        // トーナメント表 / 優勝
+        (() => {
+          const t = tourRef.current;
+          if (!t) return <div>トーナメントがありません</div>;
+          const nm = (id: number | null) => (id === null ? '—' : t.entrants[id].name);
+          const cur = t.cur ? t.rounds[t.cur.r][t.cur.i] : null;
+          const curLabel = t.cur ? roundLabel(t.rounds[t.cur.r].length, t.cur.r) : '';
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, width: 'min(98vw, 1100px)' }}>
+              <div style={{ fontSize: 14, opacity: 0.85 }}>トーナメント（{t.entrants.length}人・{t.fmt === '3v3' ? '3on3' : '1on1'}）</div>
+              {phase === 'tchamp' && t.champion !== null ? (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: 16, opacity: 0.8 }}>優勝</div>
+                  <div style={{ fontSize: 36, fontWeight: 900, color: '#ffd740', textShadow: '0 3px 14px #000' }}>{nm(t.champion)}</div>
+                  <div style={{ fontSize: 13, opacity: 0.75, marginTop: 4 }}>
+                    {t.entrants.some(e => e.human) && (t.entrants[t.champion].human ? 'おめでとう！' : 'プレイヤーは敗退しました')}
+                  </div>
+                </div>
+              ) : cur ? (
+                <div style={{ textAlign: 'center', padding: '12px 22px', borderRadius: 12, border: '3px solid #ffd740', background: '#14204f' }}>
+                  <div style={{ fontSize: 13, opacity: 0.85 }}>次の試合：{curLabel}</div>
+                  <div style={{ fontSize: 24, fontWeight: 900, margin: '4px 0' }}>
+                    <span style={{ color: t.entrants[cur.a!].human ? '#5aabff' : '#fff' }}>{nm(cur.a)}</span>
+                    <span style={{ opacity: 0.6 }}> vs </span>
+                    <span style={{ color: t.entrants[cur.b!].human ? '#5aabff' : '#fff' }}>{nm(cur.b)}</span>
+                  </div>
+                  <button style={btn} onClick={startTourMatch}>試合開始</button>
+                </div>
+              ) : null}
+              <div style={{ display: 'flex', gap: 12, overflowX: 'auto', width: '100%', padding: '6px 4px', alignItems: 'flex-start' }}>
+                {t.rounds.map((round, r) => (
+                  <div key={r} style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 180 }}>
+                    <div style={{ fontWeight: 800, textAlign: 'center', fontSize: 13 }}>{roundLabel(round.length, r)}</div>
+                    {round.map((m, i) => {
+                      const isCur = !!t.cur && t.cur.r === r && t.cur.i === i;
+                      return (
+                        <div key={i} style={{ padding: '4px 8px', borderRadius: 8, border: `2px solid ${isCur ? '#ffd740' : '#2a3566'}`, background: '#0a1030', fontSize: 12 }}>
+                          {[m.a, m.b].map((id, k) => (
+                            <div key={k} style={{
+                              fontWeight: id !== null && m.winner === id ? 800 : 400,
+                              color: id === null ? '#667' : t.entrants[id].human ? '#5aabff' : m.winner !== null && m.winner !== id ? '#778' : '#fff',
+                              textDecoration: id !== null && m.winner !== null && m.winner !== id ? 'line-through' : 'none',
+                            }}>{nm(id)}{id !== null && m.winner === id ? ' ◀' : ''}</div>
+                          ))}
+                          {m.score && <div style={{ opacity: 0.6, fontSize: 10 }}>{m.score}</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+              <button style={{ ...btn, background: '#2a3566', color: '#fff', fontSize: 15, padding: '10px 20px' }} onClick={() => { tourRef.current = null; setPhase('top'); }}>
+                {phase === 'tchamp' ? 'トップへ' : 'トーナメントを中断してトップへ'}
+              </button>
+            </div>
+          );
+        })()
       ) : (
         <div style={{ position: 'relative', width: `min(96vw, 900px, calc((100vh - 330px) * ${W / H}))`, aspectRatio: `${W} / ${H}` }}>
           <canvas
@@ -1374,7 +1769,9 @@ export function Beyblade() {
                   <div style={{ fontSize: 28, fontWeight: 900, color: message.winner === 'me' ? '#5aabff' : '#ef4444' }}>
                     {vs === '2p' ? `${message.winner === 'me' ? nameMe : nameCpu} の勝ち！` : message.winner === 'me' ? 'YOU WIN!' : 'YOU LOSE...'}
                   </div>
-                  <button style={btn} onClick={() => setPhase('select')}>もう一度</button>
+                  {gameMode === 'tournament'
+                    ? <button style={btn} onClick={() => finishTourMatch(message.winner)}>次へ（トーナメント表）</button>
+                    : <button style={btn} onClick={() => setPhase('select')}>もう一度</button>}
                 </>
               ) : (
                 <button style={btn} onClick={nextRound}>次のラウンド</button>
@@ -1383,7 +1780,7 @@ export function Beyblade() {
           )}
         </div>
       )}
-      {phase !== 'select' && phase !== 'order' && (
+      {canvasOn && (
         // 下中央：ポイントと、それぞれが使っているベイの名前（自分が選んだ側に合わせて左右を入れ替え）
         (() => {
           const me = { label: `${nameMe}のベイ`, bey: TYPES.me, pt: score.me, color: '#5aabff' };
@@ -1409,7 +1806,22 @@ export function Beyblade() {
           );
         })()
       )}
-      {phase === 'launch' && vs === '2p' && (
+      {phase === 'launch' && seq && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontWeight: 800, fontSize: 15, textAlign: 'center' }}>
+            {placeStep === 0 ? `${nameMe}：左半分をタップ → ドラッグで向き → 「決定」（相手は画面を見ないでね）` : `${nameCpu}：右半分をタップ → ドラッグで向き → 「スタート」`}
+          </div>
+          <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {placeStep === 0
+              ? modeButtons2p(shotMode, setShotMode, '#5aabff', nameMe)
+              : modeButtons2p(shotMode2, k => { setShotMode2(k); if (cpuPlanRef.current) cpuPlanRef.current = { ...cpuPlanRef.current, diag: k === 'diag' }; }, '#ef4444', nameCpu)}
+            {placeStep === 0
+              ? <button style={{ ...btn, padding: '10px 26px', opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={() => setPlaceStep(1)}>決定</button>
+              : <button style={{ ...btn, padding: '10px 26px', opacity: hasDrop2 ? 1 : 0.4 }} disabled={!hasDrop2} onClick={shoot}>スタート！</button>}
+          </div>
+        </div>
+      )}
+      {phase === 'launch' && vs === '2p' && !seq && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <div style={{ fontWeight: 800, fontSize: 15, textAlign: 'center' }}>
             {!hasDrop && !hasDrop2 ? 'プレイヤー1は左半分、プレイヤー2は右半分をタップして、落とす場所を決めよう（ドラッグで向き）'
