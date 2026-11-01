@@ -310,7 +310,7 @@ function settleTour(t: Tour) {
 const roundLabel = (len: number, r: number) => (len === 1 ? '決勝' : len === 2 ? '準決勝' : `${r + 1}回戦`);
 
 // トーナメント表：左右から勝ち上がって、中央が優勝（人数は2〜32人。足りない席は不戦勝）
-function BracketView({ t }: { t: Tour }) {
+function BracketView({ t, availW, availH }: { t: Tour; availW: number; availH: number }) {
   const size = t.rounds[0].length * 2;
   const R = Math.round(Math.log2(size)); // ラウンド数
   const cw = 124, gap = 28, rh = 28, vg = 8, padX = 32, topPad = 150, centerW = 210;
@@ -388,10 +388,9 @@ function BracketView({ t }: { t: Tour }) {
   const second = loser(finalM);
   const semi = R >= 2 ? (t.rounds[R - 2] ?? []).map(loser).filter((x): x is number => x !== null) : [];
   const cx = totalW / 2;
-  const avail = Math.min(typeof window === 'undefined' ? 1200 : window.innerWidth - 24, 1500);
-  const k = Math.min(1, avail / totalW);
+  const k = Math.max(0.5, Math.min(1, availW / totalW, availH / totalH)); // 小さくなりすぎないように（足りないぶんは、スクロール）
   return (
-    <div style={{ width: totalW * k, height: totalH * k, margin: '0 auto' }}>
+    <div style={{ width: totalW * k, height: totalH * k, flex: '0 0 auto', margin: '0 auto' }}>
       <div style={{ position: 'relative', width: totalW, height: totalH, transform: `scale(${k})`, transformOrigin: 'top left', background: '#f1f1ee', borderRadius: 10, color: '#111' }}>
         <div style={{ position: 'absolute', top: 10, left: 0, width: totalW, textAlign: 'center', fontWeight: 900, fontSize: 22, letterSpacing: 3, color: '#1a1a1a' }}>TOURNAMENT</div>
         <svg width={totalW} height={totalH} style={{ position: 'absolute', left: 0, top: 0 }}>
@@ -605,7 +604,26 @@ function drawStadium(ctx: CanvasRenderingContext2D) {
   }
 }
 
+// スマホの横画面に合わせた枠：実機の横画面ではそのまま、PCなど大きな画面では 844x390 の枠を拡大して表示する
+function calcFrame() {
+  const iw = typeof window === 'undefined' ? 844 : window.innerWidth, ih = typeof window === 'undefined' ? 390 : window.innerHeight;
+  if (iw > ih && ih <= 520) return { w: iw, h: ih, scale: 1, emulate: false, portrait: false };
+  const FWd = 844, FHd = 390;
+  return { w: FWd, h: FHd, scale: Math.max(0.3, Math.min((iw - 24) / FWd, (ih - 24) / FHd, 2.2)), emulate: true, portrait: ih > iw };
+}
+function useFrame() {
+  const [f, setF] = useState(calcFrame);
+  useEffect(() => {
+    const on = () => setF(calcFrame());
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return f;
+}
+
 export function Beyblade() {
+  const frame = useFrame();
+  const [cpuOpen, setCpuOpen] = useState(false); // カスタマイズ画面：CPUのベイ設定を開く
   const [phase, setPhase] = useState<'top' | 'select' | 'order' | 'tbracket' | 'tchamp' | 'launch' | 'count' | 'battle' | 'result' | 'over'>('top');
   const [shotMode, setShotMode] = useState<'flat' | 'diag'>('flat');
   const [hasDrop, setHasDrop] = useState(false);
@@ -1488,65 +1506,61 @@ export function Beyblade() {
     return mode === '3v3' ? curDeck.filter((c, i) => i !== slot && !(key === 'ratchet' && isInt(c))).map(c => c[key]) : [];
   };
 
-  // 2人対戦：シュートの種類（水平 / 斜め）を選ぶボタン
-  const modeButtons2p = (cur: 'flat' | 'diag', onPick: (k: 'flat' | 'diag') => void, color: string, label: string) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
-      <div style={{ fontWeight: 800, color, fontSize: 13 }}>{label}</div>
-      <div style={{ display: 'flex', gap: 6 }}>
-        {([['flat', '水平シュート'], ['diag', '斜めシュート']] as const).map(([k, t]) => (
-          <button
-            key={k}
-            onClick={() => onPick(k)}
-            style={{
-              padding: '6px 12px', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 700, fontSize: 13,
-              border: `3px solid ${cur === k ? color : '#2a3566'}`, background: cur === k ? '#14204f' : '#0a1030',
-            }}
-          >{t}</button>
-        ))}
-      </div>
+  // ---------------- スマホ横画面用の見た目（枠のサイズ FW×FH に合わせる） ----------------
+  const FW = frame.w, FH = frame.h;
+  const sb = (active: boolean, color = '#ffd740'): React.CSSProperties => ({
+    padding: '3px 9px', borderRadius: 7, cursor: 'pointer', color: '#fff', fontWeight: 700, fontSize: 11.5, whiteSpace: 'nowrap',
+    border: `2px solid ${active ? color : '#2a3566'}`, background: active ? '#14204f' : '#0a1030',
+  });
+  const yb: React.CSSProperties = { padding: '5px 16px', fontSize: 13, fontWeight: 800, borderRadius: 8, border: 'none', background: '#ffd740', color: '#04071a', cursor: 'pointer', whiteSpace: 'nowrap' };
+  const row = (label: string, children: React.ReactNode) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 11.5, fontWeight: 700, minWidth: 66, textAlign: 'right' }}>{label}</span>{children}
     </div>
   );
+  const modeBtns = (cur: 'flat' | 'diag', onPick: (k: 'flat' | 'diag') => void, color: string) => (
+    <div style={{ display: 'flex', gap: 3 }}>
+      {([['flat', '水平'], ['diag', '斜め']] as const).map(([k, t]) => (
+        <button key={k} onClick={() => onPick(k)} title={k === 'flat' ? 'すぐリングに乗ってダッシュ' : 'その場にとどまり、最初は飛ばされにくい'} style={{ ...sb(cur === k, color), flex: 1, padding: '3px 4px' }}>{t}</button>
+      ))}
+    </div>
+  );
+  const setMode2 = (k: 'flat' | 'diag') => { setShotMode2(k); if (cpuPlanRef.current) cpuPlanRef.current = { ...cpuPlanRef.current, diag: k === 'diag' }; };
 
-  // ベイのカスタマイズ画面：ブレード / ラチェット / ビットを組み合わせる
+  // ---- カスタマイズ（コンパクト）
   const myBey = buildBey(custom);
   const partPicker = (title: string, list: PartDef[], value: string, onPick: (id: string) => void, blocked: string[] = []) => {
     const sel = list.find(pt => pt.id === value) ?? list[0];
     const allBlocked = list.every(pt => blocked.includes(pt.id));
     return (
-      <div style={{ flex: list.length > 6 ? '2 1 330px' : '1 1 200px', minWidth: 200 }}>
-        <div style={{ fontWeight: 800, marginBottom: 6, fontSize: 15 }}>{title}</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      <div style={{ flex: list.length > 6 && title === 'ブレード' ? 1.25 : 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3, minHeight: 0 }}>
+        <div style={{ fontWeight: 800, fontSize: 11.5 }}>{title}</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
           {list.map(pt => {
             const bl = blocked.includes(pt.id);
+            const on = value === pt.id && !allBlocked;
             return (
-              <button
-                key={pt.id}
-                onClick={() => { if (!bl) onPick(pt.id); }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 18, fontWeight: 700, fontSize: 13,
-                  cursor: bl ? 'not-allowed' : 'pointer', color: '#fff', opacity: bl ? 0.35 : 1,
-                  border: `2px solid ${value === pt.id && !allBlocked ? (pt.color ?? '#ffd740') : '#2a3566'}`,
-                  background: value === pt.id && !allBlocked ? '#14204f' : '#0a1030',
-                }}
-              >
-                {pt.img && <img src={pt.img} alt="" width={26} height={26} />}
+              <button key={pt.id} onClick={() => { if (!bl) onPick(pt.id); }} style={{
+                display: 'flex', alignItems: 'center', gap: 3, padding: '1px 7px', borderRadius: 12, fontWeight: 700, fontSize: 10.5,
+                cursor: bl ? 'not-allowed' : 'pointer', color: '#fff', opacity: bl ? 0.35 : 1, whiteSpace: 'nowrap',
+                border: `2px solid ${on ? (pt.color ?? '#ffd740') : '#2a3566'}`, background: on ? '#14204f' : '#0a1030',
+              }}>
+                {pt.img && <img src={pt.img} alt="" width={16} height={16} />}
                 <span style={{ color: pt.color ?? '#fff' }}>{pt.name}</span>
               </button>
             );
           })}
         </div>
         {/* 押した（選んだ）パーツの詳細 */}
-        <div style={{ marginTop: 8, padding: '8px 10px', borderRadius: 8, background: '#0a1030', border: '1px solid #2a3566', fontSize: 11.5, minHeight: 64 }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 6px', borderRadius: 6, background: '#0a1030', border: '1px solid #2a3566', fontSize: 9.5, lineHeight: 1.35 }}>
           {allBlocked ? (
             <div style={{ opacity: 0.8 }}>ラチェット一体型のブレードなので、ラチェットは選べません。</div>
           ) : (
             <>
-              <div style={{ fontWeight: 800, color: sel.color ?? '#fff', fontSize: 13 }}>{sel.name}</div>
-              <div style={{ opacity: 0.85, margin: '3px 0' }}>{sel.desc}</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 10px' }}>
-                {STAT_LABELS.filter(([k]) => sel.s[k] !== undefined).map(([k, label]) => (
-                  <span key={k}>{label} <b>{sel.s[k]}</b></span>
-                ))}
+              <div style={{ fontWeight: 800, color: sel.color ?? '#fff', fontSize: 11 }}>{sel.name}</div>
+              <div style={{ opacity: 0.85, margin: '2px 0' }}>{sel.desc}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 7px' }}>
+                {STAT_LABELS.filter(([k]) => sel.s[k] !== undefined).map(([k, label]) => <span key={k}>{label} <b>{sel.s[k]}</b></span>)}
                 {sel.height !== undefined && <span>高さ <b>{sel.height}</b></span>}
                 <span style={{ opacity: 0.8 }}>{sel.weight}g</span>
                 {sel.img && <span style={{ color: sel.spinDir === -1 ? '#ffd740' : '#9fb2ff', fontWeight: 700 }}>{sel.spinDir === -1 ? '左回転' : '右回転'}</span>}
@@ -1557,488 +1571,345 @@ export function Beyblade() {
       </div>
     );
   };
-  const customizer = (
-    <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', justifyContent: 'center', width: 'min(96vw, 1000px)' }}>
-      <div style={{ flex: '0 0 220px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: 12, borderRadius: 12, background: '#0a1030', border: '2px solid #2a3566' }}>
-        <canvas ref={previewRef} width={170} height={170} />
-        <div style={{ fontWeight: 900, fontSize: 17, color: myBey.color, textAlign: 'center' }}>{myBey.name}</div>
-        <div style={{ width: '100%' }}>
-          {STAT_LABELS.map(([key, label]) => (
-            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, marginTop: 4 }}>
-              <span style={{ width: 74 }}>{label}</span>
-              <div style={{ flex: 1, height: 6, background: '#1b2551', borderRadius: 3 }}>
-                <div style={{ width: `${Math.min(100, (myBey.stats[key] / STAT_MAX[key]) * 100)}%`, height: '100%', borderRadius: 3, background: myBey.color }} />
-              </div>
-              <span style={{ width: 28, textAlign: 'right' }}>{myBey.stats[key]}</span>
+
+  // ---- 対戦画面のレイアウト（左右の列 + 中央のスタジアム）
+  const pad = 6;
+  const sideMin = 128;
+  const cW = Math.min(((FH - pad * 2) * W) / H, FW - pad * 2 - sideMin * 2 - 12);
+  const cH = (cW * H) / W;
+  const sideW = Math.floor((FW - pad * 2 - cW - 12) / 2);
+  const cs = cH / 700; // スタジアムの文字の大きさの倍率
+  const ents = {
+    me: { name: nameMe, color: '#5aabff', pt: score.me, bey: TYPES.me },
+    cpu: { name: nameCpu, color: '#ef4444', pt: score.cpu, bey: TYPES.cpu },
+  };
+  const sideCol = (key: 'me' | 'cpu', side: 'left' | 'right') => {
+    const ent = ents[key];
+    const isLeftCol = side === 'left';
+    let controls: React.ReactNode = null;
+    if (phase === 'launch') {
+      if (vs === 'cpu' && key === 'me') {
+        controls = (
+          <>
+            <div style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.3 }}>{hasDrop ? 'ドラッグで向きを決めて、スタート' : `${side === 'left' ? '左' : '右'}半分をタップして、落とす場所を決める`}</div>
+            {modeBtns(shotMode, setShotMode, '#ffd740')}
+            <div style={{ fontSize: 8.5, opacity: 0.7, lineHeight: 1.3 }}>水平：すぐダッシュ／斜め：その場にとどまる</div>
+            <button style={{ ...yb, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={shoot}>スタート</button>
+          </>
+        );
+      } else if (vs === '2p' && !seq) {
+        controls = (
+          <>
+            <div style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.3 }}>{(key === 'me' ? hasDrop : hasDrop2) ? 'ドラッグで向き' : `${key === 'me' ? '左' : '右'}半分をタップ`}</div>
+            {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ef4444')}
+          </>
+        );
+      } else if (seq && ((placeStep === 0 && key === 'me') || (placeStep === 1 && key === 'cpu'))) {
+        controls = (
+          <>
+            <div style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.3 }}>
+              {key === 'me' ? (hasDrop ? 'ドラッグで向き → 「決定」' : '左半分をタップ（相手は見ないでね）') : (hasDrop2 ? 'ドラッグで向き → 「スタート」' : '右半分をタップ')}
             </div>
-          ))}
-          <div style={{ fontSize: 11, marginTop: 8, opacity: 0.85, textAlign: 'center' }}>総重量 {myBey.weight}g ／ ラチェットの高さ {myBey.height}</div>
-          <div style={{ fontSize: 12, marginTop: 4, textAlign: 'center', fontWeight: 700, color: myBey.spinDir === -1 ? '#ffd740' : '#9fb2ff' }}>{myBey.spinDir === -1 ? '左回転（右回転のベイの回転を吸収できる）' : '右回転'}</div>
+            {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ef4444')}
+            {key === 'me'
+              ? <button style={{ ...yb, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={() => setPlaceStep(1)}>決定</button>
+              : <button style={{ ...yb, opacity: hasDrop2 ? 1 : 0.4 }} disabled={!hasDrop2} onClick={shoot}>スタート</button>}
+          </>
+        );
+      } else if (seq) {
+        controls = <div style={{ fontSize: 10, opacity: 0.7 }}>{placeStep === 1 ? '（相手が場所を決めています）' : '待っててね'}</div>;
+      }
+    }
+    return (
+      <div style={{ width: sideW, height: cH, flex: '0 0 auto', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 4, textAlign: isLeftCol ? 'left' : 'right' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ fontSize: 14, fontWeight: 900, lineHeight: 1.1, color: ent.color, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ent.name}</div>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: ent.bey.color, lineHeight: 1.2 }}>{ent.bey.name}</div>
+          <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1, color: ent.color }}>{ent.pt}</div>
+          {isLeftCol && <div style={{ fontSize: 9, opacity: 0.7 }}>{WIN_POINTS}pt先取{mode === '3v3' ? `・第${roundIdx + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : ''}</div>}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {controls}
+          {isLeftCol && <button onClick={backToSelect} style={{ ...sb(false), fontSize: 10, padding: '2px 6px', alignSelf: 'flex-start' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>}
         </div>
       </div>
-      {partPicker('ブレード', BLADES, custom.blade, id => setCustom(c => ({ ...c, blade: id })), usedByOthers('blade'))}
-      {partPicker('ラチェット', RATCHETS, custom.ratchet, id => setCustom(c => ({ ...c, ratchet: id })), usedByOthers('ratchet'))}
-      {partPicker('ビット', BITS, custom.bit, id => setCustom(c => ({ ...c, bit: id })), usedByOthers('bit'))}
-    </div>
-  );
-
-  const btn: React.CSSProperties = {
-    padding: '12px 32px', fontSize: 18, fontWeight: 800, borderRadius: 10, cursor: 'pointer',
-    border: 'none', background: '#ffd740', color: '#04071a',
+    );
   };
 
   return (
-    <div style={{ height: '100vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 16, color: '#fff', background: '#04071a', boxSizing: 'border-box' }}>
-      {(phase === 'order' || canvasOn) && (
-        <button
-          onClick={backToSelect}
-          style={{ position: 'fixed', bottom: 10, left: 10, zIndex: 20, padding: '6px 12px', borderRadius: 8, border: '2px solid #2a3566', background: '#0a1030', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
-        >← カスタマイズに戻る</button>
-      )}
-      {!canvasOn ? (
-        <h2 style={{ margin: 0, letterSpacing: 2 }}>BEYBLADE X BATTLE</h2>
-      ) : (
-        // 上部：名前 + スピン / バーストゲージ（自分が選んだ側に自分を表示）
-        <div style={{ display: 'flex', width: `min(96vw, 900px)`, gap: 24 }}>
-          {(mySide === 'left'
-            ? [[nameMe, '#5aabff', 0, 'left'], [nameCpu, '#ef4444', 2, 'right']]
-            : [[nameCpu, '#ef4444', 2, 'left'], [nameMe, '#5aabff', 0, 'right']]
-          ).map(([name, color, , align]) => (
-            <div key={name as string} style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1.1, color: color as string, textAlign: align as 'left' | 'right' }}>{name}</div>
+    <div style={{ position: 'fixed', inset: 0, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      {frame.portrait && <div style={{ position: 'fixed', top: 6, left: 0, right: 0, textAlign: 'center', fontSize: 12, color: '#ffd740', zIndex: 5 }}>スマホを横向きにすると、大きく遊べます</div>}
+      <div style={{
+        width: FW, height: FH, flex: '0 0 auto', transform: `scale(${frame.scale})`, position: 'relative', overflow: 'hidden', background: '#04071a', color: '#fff',
+        borderRadius: frame.emulate ? 16 : 0, boxShadow: frame.emulate ? '0 0 0 6px #1b1f3a, 0 12px 48px rgba(0,0,0,0.8)' : 'none', fontFamily: 'sans-serif',
+      }}>
+        {phase === 'top' && (
+          // ---- トップページ：対戦 / トーナメント
+          <div style={{ position: 'absolute', inset: 0, padding: '6px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+            <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: 2 }}>BEYBLADE X BATTLE</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {([['versus', '対戦', '相手と戦う（CPU / 2人）'], ['tournament', 'トーナメント', '最大32人で勝ち抜き戦']] as const).map(([k, label, sub]) => (
+                <button key={k} onClick={() => setGameMode(k)} style={{ ...sb(gameMode === k), padding: '5px 22px', textAlign: 'center' }}>
+                  <div style={{ fontWeight: 900, fontSize: 15 }}>{label}</div><div style={{ fontSize: 9.5, opacity: 0.85 }}>{sub}</div>
+                </button>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
-
-      {phase === 'top' ? (
-        // トップページ：相手 / 対戦 / トーナメント
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, marginTop: 30, width: 'min(96vw, 760px)' }}>
-          <div style={{ fontSize: 20, fontWeight: 800 }}>モードを選ぼう</div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {([['versus', '対戦', '相手と戦う（CPU / 2人）'], ['tournament', 'トーナメント', '最大32人で勝ち抜き戦']] as const).map(([k, label, sub]) => (
-              <button
-                key={k}
-                onClick={() => setGameMode(k)}
-                style={{
-                  padding: '14px 28px', borderRadius: 12, cursor: 'pointer', color: '#fff', textAlign: 'center',
-                  border: `3px solid ${gameMode === k ? '#ffd740' : '#2a3566'}`, background: gameMode === k ? '#14204f' : '#0a1030',
-                }}
-              ><div style={{ fontWeight: 900, fontSize: 22 }}>{label}</div><div style={{ fontSize: 12, opacity: 0.85 }}>{sub}</div></button>
-            ))}
-          </div>
-
-          {gameMode === 'versus' && (
-            <>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-                <span style={{ fontSize: 15, fontWeight: 700 }}>相手：</span>
-                {([['cpu', 'CPU', '1人で対戦'], ['2p', '2人対戦', '2人で1つの画面で対戦']] as const).map(([k, label, sub]) => (
-                  <button
-                    key={k}
-                    onClick={() => { setVs(k); if (k === '2p') setMySide('left'); }}
-                    style={{
-                      padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', textAlign: 'center',
-                      border: `3px solid ${vs === k ? '#ffd740' : '#2a3566'}`, background: vs === k ? '#14204f' : '#0a1030',
-                    }}
-                  ><div style={{ fontWeight: 800, fontSize: 16 }}>{label}</div><div style={{ fontSize: 11, opacity: 0.8 }}>{sub}</div></button>
-                ))}
-              </div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-                <span style={{ fontSize: 15, fontWeight: 700 }}>対戦：</span>
-                {([['1v1', '1on1', '1体で対戦'], ['3v3', '3on3', '3体の順番を決めて対戦']] as const).map(([k, label, sub]) => (
-                  <button
-                    key={k}
-                    onClick={() => { setMode(k); if (k === '3v3') setDecks(ds => ds.map(d => dedupeDeck(d))); }}
-                    style={{
-                      padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', textAlign: 'center',
-                      border: `3px solid ${mode === k ? '#ffd740' : '#2a3566'}`, background: mode === k ? '#14204f' : '#0a1030',
-                    }}
-                  ><div style={{ fontWeight: 800, fontSize: 16 }}>{label}</div><div style={{ fontSize: 11, opacity: 0.8 }}>{sub}</div></button>
-                ))}
-              </div>
-              {vs === 'cpu' && (
-                <>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-                <span style={{ fontSize: 15, fontWeight: 700 }}>CPUの強さ：</span>
-                {(['easy', 'normal', 'hard'] as const).map(k => (
-                  <button
-                    key={k}
-                    onClick={() => setDiff(k)}
-                    style={{
-                      padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 700,
-                      border: `3px solid ${diff === k ? '#ffd740' : '#2a3566'}`, background: diff === k ? '#14204f' : '#0a1030',
-                    }}
-                  >{DIFF_INFO[k].label}</button>
-                ))}
-                <span style={{ fontSize: 11, opacity: 0.75 }}>{DIFF_INFO[diff].desc}</span>
-              </div>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 15, fontWeight: 700 }}>相手の落とす位置：</span>
-                  {([['show', '見える'], ['hide', '見えない']] as const).map(([k, label]) => (
-                    <button
-                      key={k}
-                      onClick={() => setOppView(k)}
-                      style={{
-                        padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 700,
-                        border: `3px solid ${oppView === k ? '#ffd740' : '#2a3566'}`, background: oppView === k ? '#14204f' : '#0a1030',
-                      }}
-                    >{label}</button>
-                  ))}
-                  <span style={{ fontSize: 11, opacity: 0.75 }}>（相手の打ち方と向きは、どちらでも見えません）</span>
+            {gameMode === 'versus' ? (
+              <div style={{ display: 'flex', gap: 26, alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  {row('相手', ([['cpu', 'CPU'], ['2p', '2人対戦']] as const).map(([k, l]) => (
+                    <button key={k} onClick={() => { setVs(k); if (k === '2p') setMySide('left'); }} style={sb(vs === k)}>{l}</button>
+                  )))}
+                  {row('対戦', ([['1v1', '1on1'], ['3v3', '3on3']] as const).map(([k, l]) => (
+                    <button key={k} onClick={() => { setMode(k); if (k === '3v3') setDecks(ds => ds.map(d => dedupeDeck(d))); }} style={sb(mode === k)}>{l}</button>
+                  )))}
                 </div>
+                {vs === 'cpu' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                    {row('CPUの強さ', (['easy', 'normal', 'hard'] as const).map(k => <button key={k} onClick={() => setDiff(k)} style={sb(diff === k)}>{DIFF_INFO[k].label}</button>))}
+                    {row('相手の位置', ([['show', '見える'], ['hide', '見えない']] as const).map(([k, l]) => <button key={k} onClick={() => setOppView(k)} style={sb(oppView === k)}>{l}</button>))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 22, alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  {row('対戦', ([['1v1', '1on1'], ['3v3', '3on3']] as const).map(([k, l]) => (
+                    <button key={k} onClick={() => { setMode(k); if (k === '3v3') setDecks(ds => ds.map(d => dedupeDeck(d))); }} style={sb(mode === k)}>{l}</button>
+                  )))}
+                  {([['CPUの数', tCpu, (v: number) => setTCpu(Math.max(0, Math.min(32 - tHumans, v))), '#ef4444'], ['プレイヤーの数', tHumans, (v: number) => setTHumans(Math.max(0, Math.min(32 - tCpu, v))), '#5aabff']] as const).map(([label, val, set, color]) => (
+                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ fontSize: 11.5, fontWeight: 700, minWidth: 66, textAlign: 'right', color }}>{label}</span>
+                      <button style={{ ...sb(false), padding: '0 8px', fontSize: 14 }} onClick={() => set(val - 1)}>−</button>
+                      <input type="range" min={0} max={32} value={val} onChange={e => set(Number(e.target.value))} style={{ width: 100 }} />
+                      <button style={{ ...sb(false), padding: '0 8px', fontSize: 14 }} onClick={() => set(val + 1)}>＋</button>
+                      <span style={{ fontSize: 15, fontWeight: 900, width: 24 }}>{val}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxWidth: 230 }}>
+                  {row('CPUの強さ', (['easy', 'normal', 'hard'] as const).map(k => <button key={k} onClick={() => setDiff(k)} style={sb(diff === k)}>{DIFF_INFO[k].label}</button>))}
+                  <div style={{ fontSize: 10, opacity: 0.85, lineHeight: 1.4 }}>
+                    参加：合計 <b>{tCpu + tHumans}</b> 人（最大32人）。立ち位置は試合ごとにランダム、試合前に相手の落とす位置は見えません。
+                    {tCpu + tHumans < 2 && <div style={{ color: '#ff8b8b' }}>2人以上にしてください</div>}
+                  </div>
+                </div>
+              </div>
+            )}
+            <button style={{ ...yb, opacity: gameMode === 'tournament' && tCpu + tHumans < 2 ? 0.4 : 1 }} disabled={gameMode === 'tournament' && tCpu + tHumans < 2} onClick={() => { setWho(0); setSlot(0); setPhase('select'); }}>次へ（カスタマイズ）</button>
+          </div>
+        )}
+
+        {phase === 'select' && (
+          // ---- カスタマイズ画面
+          <div style={{ position: 'absolute', inset: 0, padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minHeight: 26 }}>
+              <button onClick={() => setPhase('top')} style={sb(false)}>← トップ</button>
+              <span style={{ fontSize: 10.5, opacity: 0.85, whiteSpace: 'nowrap' }}>
+                {gameMode === 'tournament' ? `トーナメント（CPU ${tCpu}・プレイヤー ${tHumans}）` : vs === 'cpu' ? 'CPU対戦' : '2人対戦'}・{mode === '3v3' ? '3on3' : '1on1'}
+              </span>
+              {humanCount > 0 && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700 }}>
+                  名前
+                  <input value={playerNames[who]} placeholder={defaultName(who)} maxLength={12}
+                    onChange={e => setPlayerNames(ns => ns.map((n, i) => (i === who ? e.target.value : n)))}
+                    style={{ padding: '2px 6px', borderRadius: 6, border: '2px solid #2a3566', background: '#0a1030', color: '#fff', fontSize: 11.5, width: 96 }} />
+                </label>
+              )}
+              {humanCount > 1 && (
+                <div style={{ display: 'flex', gap: 3, overflowX: 'auto', flex: 1, minWidth: 0 }}>
+                  {Array.from({ length: humanCount }, (_, k) => {
+                    const c = k === 0 ? '#5aabff' : k === 1 ? '#ef4444' : '#ffd740';
+                    return <button key={k} onClick={() => { setWho(k); setSlot(0); }} style={sb(who === k, c)}>{playerName(k)}{gameMode === 'versus' ? (k === 0 ? '（左）' : '（右）') : ''}</button>;
+                  })}
+                </div>
+              )}
+            </div>
+            {humanCount > 0 && mode === '3v3' && (
+              <div style={{ display: 'flex', gap: 4 }}>
+                {[0, 1, 2].map(i => (
+                  <button key={i} onClick={() => setSlot(i)} style={{ ...sb(slot === i, buildBey(curDeck[i]).color), fontSize: 10, padding: '1px 8px' }}>
+                    ベイ{i + 1}：<span style={{ color: buildBey(curDeck[i]).color }}>{buildBey(curDeck[i]).name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {humanCount === 0 ? (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>プレイヤーがいないので、CPU同士のトーナメントを観戦します。</div>
+            ) : (
+              <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 8 }}>
+                <div style={{ flex: '0 0 150px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: 6, borderRadius: 10, background: '#0a1030', border: '2px solid #2a3566', overflow: 'hidden' }}>
+                  <canvas ref={previewRef} width={170} height={170} style={{ width: 92, height: 92, flex: '0 0 auto' }} />
+                  <div style={{ fontWeight: 900, fontSize: 11.5, color: myBey.color, textAlign: 'center', lineHeight: 1.2 }}>{myBey.name}</div>
+                  <div style={{ width: '100%' }}>
+                    {STAT_LABELS.map(([key, label]) => (
+                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, marginTop: 2 }}>
+                        <span style={{ width: 52, whiteSpace: 'nowrap' }}>{label}</span>
+                        <div style={{ flex: 1, height: 4, background: '#1b2551', borderRadius: 2 }}>
+                          <div style={{ width: `${Math.min(100, (myBey.stats[key] / STAT_MAX[key]) * 100)}%`, height: '100%', borderRadius: 2, background: myBey.color }} />
+                        </div>
+                        <span style={{ width: 22, textAlign: 'right' }}>{myBey.stats[key]}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 9, opacity: 0.85, textAlign: 'center' }}>{myBey.weight}g・高さ{myBey.height}・<span style={{ color: myBey.spinDir === -1 ? '#ffd740' : '#9fb2ff', fontWeight: 700 }}>{myBey.spinDir === -1 ? '左回転' : '右回転'}</span></div>
+                </div>
+                {partPicker('ブレード', BLADES, custom.blade, id => setCustom(c => ({ ...c, blade: id })), usedByOthers('blade'))}
+                {partPicker('ラチェット', RATCHETS, custom.ratchet, id => setCustom(c => ({ ...c, ratchet: id })), usedByOthers('ratchet'))}
+                {partPicker('ビット', BITS, custom.bit, id => setCustom(c => ({ ...c, bit: id })), usedByOthers('bit'))}
+              </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end', minHeight: 30 }}>
+              {gameMode === 'versus' && vs === 'cpu' && (
+                <>
+                  <button onClick={() => setCpuOpen(o => !o)} style={sb(cpuOpen)}>CPUのベイ設定 {cpuOpen ? '▲' : '▼'}</button>
+                  <span style={{ fontSize: 10.5, fontWeight: 700 }}>立ち位置</span>
+                  {([['left', '左'], ['right', '右']] as const).map(([k, l]) => <button key={k} onClick={() => setMySide(k)} style={sb(mySide === k)}>{l}</button>)}
                 </>
               )}
-            </>
-          )}
-
-          {gameMode === 'tournament' && (
-            <>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-                <span style={{ fontSize: 15, fontWeight: 700 }}>対戦：</span>
-                {([['1v1', '1on1', '1体で対戦'], ['3v3', '3on3', '3体の順番を決めて対戦']] as const).map(([k, label, sub]) => (
-                  <button
-                    key={k}
-                    onClick={() => { setMode(k); if (k === '3v3') setDecks(ds => ds.map(d => dedupeDeck(d))); }}
-                    style={{
-                      padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', textAlign: 'center',
-                      border: `3px solid ${mode === k ? '#ffd740' : '#2a3566'}`, background: mode === k ? '#14204f' : '#0a1030',
-                    }}
-                  ><div style={{ fontWeight: 800, fontSize: 16 }}>{label}</div><div style={{ fontSize: 11, opacity: 0.8 }}>{sub}</div></button>
+              <button style={yb} onClick={gameMode === 'versus' ? startMatch : startTournament}>{gameMode === 'versus' ? 'バトル開始' : 'トーナメント開始'}</button>
+            </div>
+            {cpuOpen && gameMode === 'versus' && vs === 'cpu' && (
+              // CPUのパーツ選択（選ばなければランダム）。3on3は3体ぶん
+              <div style={{ position: 'absolute', left: 10, right: 10, bottom: 38, padding: 8, borderRadius: 10, background: '#101840', border: '2px solid #5a2a2a', maxHeight: FH - 90, overflowY: 'auto', zIndex: 6, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {Array.from({ length: mode === '3v3' ? 3 : 1 }, (_, n) => (
+                  <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 800, color: '#ef4444', fontSize: 11.5, minWidth: 74 }}>{mode === '3v3' ? `CPUのベイ${n + 1}` : 'CPUのベイ'}</span>
+                    {([['ブレード', BLADES, 'blade'], ['ラチェット', RATCHETS, 'ratchet'], ['ビット', BITS, 'bit']] as const).map(([label, list, key]) => (
+                      <label key={key} style={{ fontSize: 10.5, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {label}
+                        <select value={cpuSels[n][key]} onChange={e => setCpuSels(cs => cs.map((c, i) => (i === n ? { ...c, [key]: e.target.value } : c)))}
+                          style={{ padding: '2px 4px', borderRadius: 5, background: '#14204f', color: '#fff', border: '1px solid #2a3566', fontSize: 10.5 }}>
+                          <option value="">ランダム</option>
+                          {list.map(pt => <option key={pt.id} value={pt.id} disabled={mode === '3v3' && cpuSels.some((c, i) => i !== n && c[key] === pt.id)}>{pt.name}</option>)}
+                        </select>
+                      </label>
+                    ))}
+                  </div>
                 ))}
               </div>
-              {([['CPUの数', tCpu, (v: number) => setTCpu(Math.max(0, Math.min(32 - tHumans, v))), '#ef4444'], ['プレイヤーの数', tHumans, (v: number) => setTHumans(Math.max(0, Math.min(32 - tCpu, v))), '#5aabff']] as const).map(([label, val, set, color]) => (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color, width: 110, textAlign: 'right' }}>{label}</span>
-                  <button style={{ ...btn, padding: '2px 12px', fontSize: 18 }} onClick={() => set(val - 1)}>−</button>
-                  <input type="range" min={0} max={32} value={val} onChange={e => set(Number(e.target.value))} style={{ width: 200 }} />
-                  <button style={{ ...btn, padding: '2px 12px', fontSize: 18 }} onClick={() => set(val + 1)}>＋</button>
-                  <span style={{ fontSize: 22, fontWeight: 900, width: 36 }}>{val}</span>
-                </div>
-              ))}
-
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-                <span style={{ fontSize: 15, fontWeight: 700 }}>CPUの強さ：</span>
-                {(['easy', 'normal', 'hard'] as const).map(k => (
-                  <button
-                    key={k}
-                    onClick={() => setDiff(k)}
-                    style={{
-                      padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 700,
-                      border: `3px solid ${diff === k ? '#ffd740' : '#2a3566'}`, background: diff === k ? '#14204f' : '#0a1030',
-                    }}
-                  >{DIFF_INFO[k].label}</button>
-                ))}
-                <span style={{ fontSize: 11, opacity: 0.75 }}>{DIFF_INFO[diff].desc}</span>
-              </div>
-              <div style={{ fontSize: 14, textAlign: 'center', opacity: 0.9 }}>
-                参加：合計 <b>{tCpu + tHumans}</b> 人（最大32人）。立ち位置（左右）は試合ごとにランダム、試合前に相手の落とす位置は見えません。
-                {tCpu + tHumans < 2 && <div style={{ color: '#ff8b8b' }}>2人以上にしてください</div>}
-              </div>
-            </>
-          )}
-
-          <button
-            style={{ ...btn, opacity: gameMode === 'tournament' && tCpu + tHumans < 2 ? 0.4 : 1 }}
-            disabled={gameMode === 'tournament' && tCpu + tHumans < 2}
-            onClick={() => { setWho(0); setSlot(0); setPhase('select'); }}
-          >次へ（カスタマイズ）</button>
-        </div>
-      ) : phase === 'select' ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, marginTop: 20 }}>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <button onClick={() => setPhase('top')} style={{ padding: '6px 14px', borderRadius: 8, border: '2px solid #2a3566', background: '#0a1030', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>← トップへ</button>
-            <span style={{ fontSize: 14, opacity: 0.9 }}>
-              {gameMode === 'tournament' ? `トーナメント（CPU ${tCpu}人・プレイヤー ${tHumans}人）・${mode === '3v3' ? '3on3' : '1on1'}` : `${vs === 'cpu' ? 'CPU対戦' : '2人対戦'}・${mode === '3v3' ? '3on3' : '1on1'}`}
-            </span>
+            )}
           </div>
-          <div style={{ fontSize: 18 }}>ベイをカスタマイズしよう（{WIN_POINTS}ポイント先取）</div>
-          {humanCount === 0 && <div style={{ fontSize: 15, opacity: 0.9 }}>プレイヤーがいないので、CPU同士のトーナメントを観戦します。</div>}
-          {humanCount > 0 && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700 }}>
-              名前
-              <input
-                value={playerNames[who]}
-                placeholder={defaultName(who)}
-                maxLength={12}
-                onChange={e => setPlayerNames(ns => ns.map((n, i) => (i === who ? e.target.value : n)))}
-                style={{ padding: '6px 10px', borderRadius: 8, border: '2px solid #2a3566', background: '#0a1030', color: '#fff', fontSize: 15, width: 180 }}
-              />
-              <span style={{ fontSize: 11, opacity: 0.7 }}>（最大12文字）</span>
-            </label>
-          )}
-          {humanCount > 1 && (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 'min(96vw, 900px)' }}>
-              {Array.from({ length: humanCount }, (_, k) => {
-                const c = k === 0 ? '#5aabff' : k === 1 ? '#ef4444' : '#ffd740';
+        )}
+
+        {phase === 'order' && (
+          // ---- 3on3：出す順番を決める
+          <div style={{ position: 'absolute', inset: 0, padding: '6px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <div style={{ fontSize: 14, fontWeight: 900, textAlign: 'center' }}>
+              {vs === '2p' ? `${orderWho === 0 ? nameMe : nameCpu}の番です：` : ''}{cycle > 0 ? `3体使い切りました。もう一度、順番を決めよう（${cycle + 1}周目）` : '出す順番を決めよう'}
+            </div>
+            <div style={{ fontSize: 10, opacity: 0.85, textAlign: 'center' }}>出したい順に、ベイをタップ（1番手 → 3番手）。{WIN_POINTS}ポイント先取。点数は引き継ぎます。{vs === '2p' && '相手に見えないように決めてね。'}</div>
+            <div style={{ fontSize: 26, fontWeight: 900, lineHeight: 1 }}>
+              <span style={{ color: '#5aabff' }}>{score.me}</span><span style={{ opacity: 0.6 }}> - </span><span style={{ color: '#ef4444' }}>{score.cpu}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              {(vs === '2p' && orderWho === 1 ? deck.cpu : deck.me).map((c, i) => {
+                const bey = buildBey(c), pos = orderPick.indexOf(i);
                 return (
-                  <button
-                    key={k}
-                    onClick={() => { setWho(k); setSlot(0); }}
-                    style={{
-                      padding: '6px 14px', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 800,
-                      border: `3px solid ${who === k ? c : '#2a3566'}`, background: who === k ? '#14204f' : '#0a1030',
-                    }}
-                  >{gameMode === 'versus' ? `${playerName(k)}のベイ（${k === 0 ? '左側' : '右側'}）` : playerName(k)}</button>
+                  <button key={i} onClick={() => { if (pos < 0) setOrderPick(o => [...o, i]); }} style={{
+                    position: 'relative', width: Math.min(190, (FW - 60) / 3), padding: '6px 6px', borderRadius: 10, cursor: pos < 0 ? 'pointer' : 'default', color: '#fff',
+                    border: `3px solid ${pos >= 0 ? bey.color : '#2a3566'}`, background: pos >= 0 ? '#14204f' : '#0a1030', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                  }}>
+                    {bey.sprite && <img src={bey.sprite.src} alt="" width={58} height={58} />}
+                    <div style={{ fontWeight: 800, color: bey.color, textAlign: 'center', fontSize: 11.5, lineHeight: 1.2 }}>{bey.name}</div>
+                    <div style={{ fontSize: 9, opacity: 0.85 }}>攻{bey.stats.atk} 防{bey.stats.def} 持{bey.stats.sta} ダ{bey.stats.dash} 耐{bey.stats.burst}</div>
+                    {pos >= 0 && <div style={{ position: 'absolute', top: -9, left: -9, width: 26, height: 26, borderRadius: 13, background: '#ffd740', color: '#04071a', fontWeight: 900, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pos + 1}</div>}
+                  </button>
                 );
               })}
             </div>
-          )}
-          {humanCount > 0 && mode === '3v3' && (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-              {[0, 1, 2].map(i => (
-                <button
-                  key={i}
-                  onClick={() => setSlot(i)}
-                  style={{
-                    padding: '6px 12px', borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 12, textAlign: 'left',
-                    border: `3px solid ${slot === i ? buildBey(curDeck[i]).color : '#2a3566'}`,
-                    background: slot === i ? '#14204f' : '#0a1030',
-                  }}
-                >
-                  <div style={{ fontWeight: 800, fontSize: 13 }}>ベイ{i + 1}</div>
-                  <div style={{ color: buildBey(curDeck[i]).color }}>{buildBey(curDeck[i]).name}</div>
-                </button>
-              ))}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button style={{ ...yb, background: '#2a3566', color: '#fff' }} onClick={() => setOrderPick([])}>やり直し</button>
+              <button style={{ ...yb, opacity: orderPick.length === 3 ? 1 : 0.4 }} disabled={orderPick.length !== 3} onClick={confirmOrder}>この順番で決定</button>
             </div>
-          )}
-          {humanCount > 0 && customizer}
-          {/* CPUのベイを選ぶ（選ばなければランダム）。3on3は3体ぶん */}
-          {gameMode === 'versus' && vs === 'cpu' && Array.from({ length: mode === '3v3' ? 3 : 1 }, (_, n) => (
-            <div key={n} style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', padding: '10px 14px', borderRadius: 12, background: '#0a1030', border: '2px solid #5a2a2a' }}>
-              <span style={{ fontWeight: 800, color: '#ef4444' }}>{mode === '3v3' ? `CPUのベイ${n + 1}` : 'CPUのベイ'}</span>
-              {([['ブレード', BLADES, 'blade'], ['ラチェット', RATCHETS, 'ratchet'], ['ビット', BITS, 'bit']] as const).map(([label, list, key]) => (
-                <label key={key} style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {label}
-                  <select
-                    value={cpuSels[n][key]}
-                    onChange={e => setCpuSels(cs => cs.map((c, i) => (i === n ? { ...c, [key]: e.target.value } : c)))}
-                    style={{ padding: '5px 8px', borderRadius: 6, background: '#14204f', color: '#fff', border: '1px solid #2a3566', fontSize: 13 }}
-                  >
-                    <option value="">ランダム</option>
-                    {list.map(pt => <option key={pt.id} value={pt.id} disabled={mode === '3v3' && cpuSels.some((c, i) => i !== n && c[key] === pt.id)}>{pt.name}</option>)}
-                  </select>
-                </label>
-              ))}
-            </div>
-          ))}
-          {gameMode === 'versus' && vs === 'cpu' && (
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <span style={{ fontSize: 15 }}>あなたの立ち位置：</span>
-            {([['left', '左側（左半分に落とす）'], ['right', '右側（右半分に落とす）']] as const).map(([k, label]) => (
-              <button
-                key={k}
-                onClick={() => setMySide(k)}
-                style={{
-                  padding: '8px 16px', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 700,
-                  border: `3px solid ${mySide === k ? '#ffd740' : '#2a3566'}`,
-                  background: mySide === k ? '#14204f' : '#0a1030',
-                }}
-              >{label}</button>
-            ))}
+            {vs === 'cpu' && <div style={{ fontSize: 9.5, opacity: 0.85, textAlign: 'center' }}>CPUの3体：{deck.cpu.map(c => buildBey(c).name).join(' ／ ')}（出す順番は非公開）</div>}
+            <button onClick={backToSelect} style={{ ...sb(false), position: 'absolute', left: 6, bottom: 6, fontSize: 10, padding: '2px 6px' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>
           </div>
-          )}
-          <button style={btn} onClick={gameMode === 'versus' ? startMatch : startTournament}>{gameMode === 'versus' ? 'バトル開始' : 'トーナメント開始'}</button>
-        </div>
-      ) : phase === 'order' ? (
-        // 3on3：出す順番を決める（1番手 → 3番手）。点数は引き継ぐ
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, marginTop: 20, width: 'min(96vw, 1000px)' }}>
-          <div style={{ fontSize: 22, fontWeight: 900 }}>{vs === '2p' ? `${orderWho === 0 ? nameMe : nameCpu}の番です：` : ''}{cycle > 0 ? `3体使い切りました。もう一度、順番を決めよう（${cycle + 1}周目）` : '出す順番を決めよう'}</div>
-          <div style={{ fontSize: 14, opacity: 0.85, textAlign: 'center' }}>
-            出したい順に、ベイをタップ（1番手 → 3番手）。どちらかが{WIN_POINTS}ポイント取るまで続きます。{vs === '2p' && <><br />相手に順番が見えないように決めてね。</>}
-          </div>
-          <div style={{ fontSize: 40, fontWeight: 900 }}>
-            <span style={{ color: '#5aabff' }}>{score.me}</span><span style={{ opacity: 0.6 }}> - </span><span style={{ color: '#ef4444' }}>{score.cpu}</span>
-          </div>
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {(vs === '2p' && orderWho === 1 ? deck.cpu : deck.me).map((c, i) => {
-              const bey = buildBey(c), pos = orderPick.indexOf(i);
-              return (
-                <button
-                  key={i}
-                  onClick={() => { if (pos < 0) setOrderPick(o => [...o, i]); }}
-                  style={{
-                    position: 'relative', width: 200, padding: '12px 10px', borderRadius: 12, cursor: pos < 0 ? 'pointer' : 'default', color: '#fff',
-                    border: `3px solid ${pos >= 0 ? bey.color : '#2a3566'}`, background: pos >= 0 ? '#14204f' : '#0a1030',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                  }}
-                >
-                  {bey.sprite && <img src={bey.sprite.src} alt="" width={90} height={90} />}
-                  <div style={{ fontWeight: 800, color: bey.color, textAlign: 'center' }}>{bey.name}</div>
-                  <div style={{ fontSize: 11, opacity: 0.85 }}>攻{bey.stats.atk} 防{bey.stats.def} 持{bey.stats.sta} ダ{bey.stats.dash} 耐{bey.stats.burst}</div>
-                  {pos >= 0 && (
-                    <div style={{ position: 'absolute', top: -12, left: -12, width: 36, height: 36, borderRadius: 18, background: '#ffd740', color: '#04071a', fontWeight: 900, fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pos + 1}</div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button style={{ ...btn, background: '#2a3566', color: '#fff', fontSize: 15, padding: '10px 20px' }} onClick={() => setOrderPick([])}>やり直し</button>
-            <button style={{ ...btn, opacity: orderPick.length === 3 ? 1 : 0.4 }} disabled={orderPick.length !== 3} onClick={confirmOrder}>この順番で決定</button>
-          </div>
-          {vs === 'cpu' && <div style={{ fontSize: 13, opacity: 0.85, textAlign: 'center' }}>
-            CPUの3体：{deck.cpu.map(c => buildBey(c).name).join(' ／ ')}（出す順番は非公開）
-          </div>}
-        </div>
-      ) : phase === 'tbracket' || phase === 'tchamp' ? (
-        // トーナメント表 / 優勝
-        (() => {
+        )}
+
+        {(phase === 'tbracket' || phase === 'tchamp') && (() => {
+          // ---- トーナメント表 / 優勝
           const t = tourRef.current;
-          if (!t) return <div>トーナメントがありません</div>;
+          if (!t) return null;
           const cur = t.cur ? t.rounds[t.cur.r][t.cur.i] : null;
           const curLabel = t.cur ? roundLabel(t.rounds[t.cur.r].length, t.cur.r) : '';
+          const headH = 66;
           return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, width: 'min(98vw, 1520px)' }}>
-              <div style={{ fontSize: 14, opacity: 0.85 }}>トーナメント（{t.entrants.length}人・{t.fmt === '3v3' ? '3on3' : '1on1'}）</div>
+            <div style={{ position: 'absolute', inset: 0, padding: '5px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 22 }}>
+                <span style={{ fontSize: 11, opacity: 0.85 }}>トーナメント（{t.entrants.length}人・{t.fmt === '3v3' ? '3on3' : '1on1'}）</span>
+                <button style={sb(false)} onClick={() => { tourRef.current = null; setPhase('top'); }}>{phase === 'tchamp' ? 'トップへ' : '中断してトップへ'}</button>
+              </div>
               {phase === 'tchamp' && t.champion !== null ? (
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 16, opacity: 0.8 }}>優勝</div>
-                  <div style={{ color: '#ffd740', textShadow: '0 3px 14px #000' }}><NameBlock e={t.entrants[t.champion]} nameSize={40} catchSize={18} /></div>
-                  <div style={{ fontSize: 13, opacity: 0.75, marginTop: 4 }}>
-                    {t.entrants.some(e => e.human) && (t.entrants[t.champion].human ? 'おめでとう！' : 'プレイヤーは敗退しました')}
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: headH - 8 }}>
+                  <span style={{ fontSize: 13, opacity: 0.85 }}>優勝</span>
+                  <div style={{ color: '#ffd740', textShadow: '0 2px 10px #000' }}><NameBlock e={t.entrants[t.champion]} nameSize={24} catchSize={11} /></div>
+                  <span style={{ fontSize: 10.5, opacity: 0.75 }}>{t.entrants.some(e => e.human) && (t.entrants[t.champion].human ? 'おめでとう！' : 'プレイヤーは敗退しました')}</span>
                 </div>
               ) : cur ? (
-                <div style={{ textAlign: 'center', padding: '12px 22px', borderRadius: 12, border: '3px solid #ffd740', background: '#14204f' }}>
-                  <div style={{ fontSize: 13, opacity: 0.85 }}>次の試合：{curLabel}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 22, margin: '8px 0' }}>
-                    <NameBlock e={t.entrants[cur.a!]} nameSize={26} catchSize={14} color={t.entrants[cur.a!].human ? '#5aabff' : '#fff'} />
-                    <span style={{ opacity: 0.6, fontSize: 20, fontWeight: 900 }}>vs</span>
-                    <NameBlock e={t.entrants[cur.b!]} nameSize={26} catchSize={14} color={t.entrants[cur.b!].human ? '#5aabff' : '#fff'} />
-                  </div>
-                  <button style={btn} onClick={startTourMatch}>試合開始</button>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, padding: '3px 10px', borderRadius: 10, border: '2px solid #ffd740', background: '#14204f', minHeight: headH - 12 }}>
+                  <span style={{ fontSize: 10.5, opacity: 0.85 }}>次の試合：{curLabel}</span>
+                  <NameBlock e={t.entrants[cur.a!]} nameSize={17} catchSize={9.5} color={t.entrants[cur.a!].human ? '#5aabff' : '#fff'} />
+                  <span style={{ opacity: 0.6, fontWeight: 900 }}>vs</span>
+                  <NameBlock e={t.entrants[cur.b!]} nameSize={17} catchSize={9.5} color={t.entrants[cur.b!].human ? '#5aabff' : '#fff'} />
+                  <button style={yb} onClick={startTourMatch}>試合開始</button>
                 </div>
               ) : null}
-              <BracketView t={t} />
-              <button style={{ ...btn, background: '#2a3566', color: '#fff', fontSize: 15, padding: '10px 20px' }} onClick={() => { tourRef.current = null; setPhase('top'); }}>
-                {phase === 'tchamp' ? 'トップへ' : 'トーナメントを中断してトップへ'}
-              </button>
+              <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex' }}>
+                <BracketView t={t} availW={FW - 16} availH={FH - 16 - 22 - headH} />
+              </div>
             </div>
           );
-        })()
-      ) : (
-        <div style={{ position: 'relative', width: `min(96vw, 900px, calc((100vh - 330px) * ${W / H}))`, aspectRatio: `${W} / ${H}` }}>
-          <canvas
-            ref={canvasRef} width={W} height={H}
-            onPointerDown={onPointerDown} onPointerMove={onPointerMove}
-            style={{ width: '100%', height: '100%', cursor: phase === 'launch' ? 'crosshair' : 'default', touchAction: 'none' }}
-          />
-          {count !== null && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', fontSize: count === 0 ? 110 : 150, fontWeight: 900, color: count === 0 ? '#ffd740' : '#fff', textShadow: '0 6px 24px #000, 0 0 40px rgba(90,171,255,0.8)' }}>
-              {count === 0 ? (
-                <div style={{ textAlign: 'center', lineHeight: 1.1 }}>GO!<div style={{ fontSize: 64 }}>シュート！</div></div>
-              ) : count}
-            </div>
-          )}
-          {phase === 'battle' && message && (
-            <div style={{ position: 'absolute', left: 0, right: 0, top: '42%', textAlign: 'center', fontSize: 26, fontWeight: 900, color: '#ffd740', textShadow: '0 3px 12px #000' }}>
-              {FINISH_INFO[message.finish].label}!
-            </div>
-          )}
-          {(phase === 'result' || phase === 'over') && message && (
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, background: 'rgba(4,7,26,0.6)' }}>
-              <div style={{ fontSize: 34, fontWeight: 900, color: '#ffd740', textShadow: '0 3px 12px #000', textAlign: 'center' }}>
-                {FINISH_INFO[message.finish].label}!
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 700 }}>
-                {message.winner === 'me' ? nameMe : nameCpu} +{FINISH_INFO[message.finish].points}pt
-              </div>
-              {phase === 'over' ? (
-                <>
-                  <div style={{ fontSize: 28, fontWeight: 900, color: message.winner === 'me' ? '#5aabff' : '#ef4444' }}>
-                    {vs === '2p' ? `${message.winner === 'me' ? nameMe : nameCpu} の勝ち！` : message.winner === 'me' ? 'YOU WIN!' : 'YOU LOSE...'}
-                  </div>
-                  {gameMode === 'tournament'
-                    ? <button style={btn} onClick={() => finishTourMatch(message.winner)}>次へ（トーナメント表）</button>
-                    : <button style={btn} onClick={() => setPhase('select')}>もう一度</button>}
-                </>
-              ) : (
-                <button style={btn} onClick={nextRound}>次のラウンド</button>
+        })()}
+
+        {canvasOn && (
+          // ---- 対戦画面：左右の列（名前・点数・ベイ・操作）+ 中央のスタジアム
+          <div style={{ position: 'absolute', inset: 0, padding: pad, display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
+            {mySide === 'left' ? sideCol('me', 'left') : sideCol('cpu', 'left')}
+            <div style={{ position: 'relative', width: cW, height: cH, flex: '0 0 auto' }}>
+              <canvas
+                ref={canvasRef} width={W} height={H}
+                onPointerDown={onPointerDown} onPointerMove={onPointerMove}
+                style={{ width: '100%', height: '100%', cursor: phase === 'launch' ? 'crosshair' : 'default', touchAction: 'none' }}
+              />
+              {phase === 'launch' && vs === '2p' && !seq && (
+                <button style={{ ...yb, position: 'absolute', left: '50%', bottom: 2, transform: 'translateX(-50%)', opacity: hasDrop && hasDrop2 ? 1 : 0.4 }} disabled={!(hasDrop && hasDrop2)} onClick={shoot}>スタート</button>
+              )}
+              {count !== null && (
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', fontSize: (count === 0 ? 110 : 150) * cs, fontWeight: 900, color: count === 0 ? '#ffd740' : '#fff', textShadow: '0 4px 16px #000, 0 0 30px rgba(90,171,255,0.8)' }}>
+                  {count === 0 ? (
+                    <div style={{ textAlign: 'center', lineHeight: 1.1 }}>GO!<div style={{ fontSize: 64 * cs }}>シュート！</div></div>
+                  ) : count}
+                </div>
+              )}
+              {phase === 'battle' && message && (
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '42%', textAlign: 'center', fontSize: 34 * cs, fontWeight: 900, color: '#ffd740', textShadow: '0 3px 12px #000' }}>
+                  {FINISH_INFO[message.finish].label}!
+                </div>
+              )}
+              {(phase === 'result' || phase === 'over') && message && (
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'rgba(4,7,26,0.62)' }}>
+                  <div style={{ fontSize: 44 * cs, fontWeight: 900, color: '#ffd740', textShadow: '0 3px 12px #000', textAlign: 'center' }}>{FINISH_INFO[message.finish].label}!</div>
+                  <div style={{ fontSize: 28 * cs, fontWeight: 700 }}>{message.winner === 'me' ? nameMe : nameCpu} +{FINISH_INFO[message.finish].points}pt</div>
+                  {phase === 'over' ? (
+                    <>
+                      <div style={{ fontSize: 36 * cs, fontWeight: 900, color: message.winner === 'me' ? '#5aabff' : '#ef4444' }}>
+                        {vs === '2p' || gameMode === 'tournament' ? `${message.winner === 'me' ? nameMe : nameCpu} の勝ち！` : message.winner === 'me' ? 'YOU WIN!' : 'YOU LOSE...'}
+                      </div>
+                      {gameMode === 'tournament'
+                        ? <button style={yb} onClick={() => finishTourMatch(message.winner)}>次へ（トーナメント表）</button>
+                        : <button style={yb} onClick={() => setPhase('select')}>もう一度</button>}
+                    </>
+                  ) : (
+                    <button style={yb} onClick={nextRound}>次のラウンド</button>
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
-      )}
-      {canvasOn && (
-        // 下中央：ポイントと、それぞれが使っているベイの名前（自分が選んだ側に合わせて左右を入れ替え）
-        (() => {
-          const me = { label: `${nameMe}のベイ`, bey: TYPES.me, pt: score.me, color: '#5aabff' };
-          const cpu = { label: `${nameCpu}のベイ`, bey: TYPES.cpu, pt: score.cpu, color: '#ef4444' };
-          const [L, Rr] = mySide === 'left' ? [me, cpu] : [cpu, me];
-          return (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, width: 'min(96vw, 900px)' }}>
-              <div style={{ flex: 1, textAlign: 'right' }}>
-                <div style={{ fontSize: 11, opacity: 0.7 }}>{L.label}</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: L.bey.color }}>{L.bey.name}</div>
-              </div>
-              <div style={{ fontSize: 44, fontWeight: 900, lineHeight: 1, textAlign: 'center' }}>
-                <span style={{ color: L.color }}>{L.pt}</span>
-                <span style={{ opacity: 0.6 }}> - </span>
-                <span style={{ color: Rr.color }}>{Rr.pt}</span>
-                <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 600 }}>{WIN_POINTS}ポイント先取{mode === '3v3' ? ` ／ 第${roundIdx + 1}戦（3体中）${cycle > 0 ? `・${cycle + 1}周目` : ''}` : ''}</div>
-              </div>
-              <div style={{ flex: 1, textAlign: 'left' }}>
-                <div style={{ fontSize: 11, opacity: 0.7 }}>{Rr.label}</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: Rr.bey.color }}>{Rr.bey.name}</div>
-              </div>
-            </div>
-          );
-        })()
-      )}
-      {phase === 'launch' && seq && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <div style={{ fontWeight: 800, fontSize: 15, textAlign: 'center' }}>
-            {placeStep === 0 ? `${nameMe}：左半分をタップ → ドラッグで向き → 「決定」（相手は画面を見ないでね）` : `${nameCpu}：右半分をタップ → ドラッグで向き → 「スタート」`}
+            {mySide === 'left' ? sideCol('cpu', 'right') : sideCol('me', 'right')}
           </div>
-          <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-            {placeStep === 0
-              ? modeButtons2p(shotMode, setShotMode, '#5aabff', nameMe)
-              : modeButtons2p(shotMode2, k => { setShotMode2(k); if (cpuPlanRef.current) cpuPlanRef.current = { ...cpuPlanRef.current, diag: k === 'diag' }; }, '#ef4444', nameCpu)}
-            {placeStep === 0
-              ? <button style={{ ...btn, padding: '10px 26px', opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={() => setPlaceStep(1)}>決定</button>
-              : <button style={{ ...btn, padding: '10px 26px', opacity: hasDrop2 ? 1 : 0.4 }} disabled={!hasDrop2} onClick={shoot}>スタート！</button>}
-          </div>
-        </div>
-      )}
-      {phase === 'launch' && vs === '2p' && !seq && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <div style={{ fontWeight: 800, fontSize: 15, textAlign: 'center' }}>
-            {!hasDrop && !hasDrop2 ? 'プレイヤー1は左半分、プレイヤー2は右半分をタップして、落とす場所を決めよう（ドラッグで向き）'
-              : !hasDrop ? 'プレイヤー1：左半分をタップして、落とす場所を決めよう'
-              : !hasDrop2 ? 'プレイヤー2：右半分をタップして、落とす場所を決めよう'
-              : '準備OK！ ドラッグで向きを直して、スタート！'}
-          </div>
-          <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-            {modeButtons2p(shotMode, setShotMode, '#5aabff', nameMe)}
-            <button style={{ ...btn, padding: '10px 26px', opacity: hasDrop && hasDrop2 ? 1 : 0.4 }} disabled={!(hasDrop && hasDrop2)} onClick={shoot}>スタート！ (Space)</button>
-            {modeButtons2p(shotMode2, k => { setShotMode2(k); if (cpuPlanRef.current) cpuPlanRef.current = { ...cpuPlanRef.current, diag: k === 'diag' }; }, '#ef4444', nameCpu)}
-          </div>
-        </div>
-      )}
-      {phase === 'launch' && vs === 'cpu' && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <div style={{ fontWeight: 800, fontSize: 15 }}>
-            {hasDrop ? '② ドラッグで走らせる向きを決めて、スタート！' : `① 青い${mySide === 'left' ? '左' : '右'}半分をタップして、落とす場所を決めよう`}
-          </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'stretch' }}>
-            {([['flat', '水平シュート', 'すぐリングに乗ってダッシュ'], ['diag', '斜めシュート', 'その場にとどまり、最初は飛ばされにくい']] as const).map(([k, label, sub]) => (
-              <button
-                key={k}
-                onClick={() => setShotMode(k)}
-                style={{
-                  padding: '6px 14px', borderRadius: 10, cursor: 'pointer', color: '#fff',
-                  border: `3px solid ${shotMode === k ? '#ffd740' : '#2a3566'}`,
-                  background: shotMode === k ? '#14204f' : '#0a1030',
-                }}
-              >
-                <div style={{ fontWeight: 700 }}>{label}</div>
-                <div style={{ fontSize: 11, opacity: 0.8 }}>{sub}</div>
-              </button>
-            ))}
-            <button style={{ ...btn, padding: '6px 22px', opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={shoot}>スタート！ (Space)</button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
