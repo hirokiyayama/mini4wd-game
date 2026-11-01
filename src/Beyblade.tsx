@@ -191,6 +191,21 @@ function buildBey(c: Custom) {
 // バトルで使うベイ（スタート時に、カスタマイズ内容から作り直す）
 const TYPES: Record<BeyType, ReturnType<typeof buildBey>> = { me: buildBey(DEFAULT_CUSTOM), cpu: buildBey(DEFAULT_CUSTOM) };
 
+// ---------------- CPUの強さ ----------------
+type Diff = 'easy' | 'normal' | 'hard';
+const DIFF_INFO: Record<Diff, { label: string; desc: string }> = {
+  easy: { label: 'やさしい', desc: '打ち方が雑で、勢いも弱め。ベイの回転もかなり短い' },
+  normal: { label: 'ふつう', desc: '標準' },
+  hard: { label: 'つよい', desc: '上手な打ち方で、最大に近い勢い。ベイの回転も長い' },
+};
+const DIFF_SPIN: Record<Diff, number> = { easy: 0.7, normal: 1, hard: 1.15 }; // CPUのベイの回転数の倍率
+// 「つよい」のCPUがパーツを選ばなかったときに使う、強めのカスタム
+const HARD_POOL: Custom[] = [
+  ['wizard', 'r960', 'B'], ['wizard', 'r160', 'H'], ['shark', 'r760', 'R'], ['shark', 'r960', 'FB'], ['shark', 'r160', 'LR'],
+  ['aero', 'r760', 'R'], ['aero', 'r160', 'LR'], ['aero', 'r360', 'R'], ['meteor', 'r960', 'E'], ['meteor', 'r560', 'H'],
+  ['cobalt', 'r960', 'E'], ['cobalt', 'r760', 'E'], ['glory', 'r560', 'E'], ['glory', 'r560', 'L'], ['knight2', 'r960', 'B'], ['knight2', 'r160', 'H'],
+].map(([blade, ratchet, bit]) => ({ blade, ratchet, bit }));
+
 // ---------------- トーナメント ----------------
 type Style = 'power' | 'technique' | 'attacker' | 'stamina' | 'defense' | 'absorb' | 'dasher' | 'balance' | 'wild';
 // タイプごとに使うパーツの傾向（3体で同じパーツは重ならない）
@@ -600,6 +615,8 @@ export function Beyblade() {
   const [mode, setMode] = useState<'1v1' | '3v3'>('1v1');
   const [gameMode, setGameMode] = useState<'versus' | 'tournament'>('versus'); // トップページ：通常の対戦 / トーナメント
   const [oppView, setOppView] = useState<'show' | 'hide'>('show'); // CPU対戦：相手の落とす位置を見せるか
+  const [diff, setDiff] = useState<Diff>('normal'); // CPUの強さ
+  const diffRef = useRef<Diff>('normal');
   const [tCpu, setTCpu] = useState(7); // トーナメント：CPUの数（0〜32）
   const [tHumans, setTHumans] = useState(1); // トーナメント：プレイヤーの数（0〜32）
   const [vs, setVs] = useState<'cpu' | '2p'>('cpu'); // 対戦相手：CPU / 2人対戦
@@ -674,12 +691,22 @@ export function Beyblade() {
   phaseRef.current = phase;
   modeRef.current = shotMode;
   vsRef.current = vs;
+  diffRef.current = diff;
   hideOppRef.current = (vs === 'cpu' && oppView === 'hide') || gameMode === 'tournament';
   mode2Ref.current = shotMode2;
   sideRef.current = mySide;
 
   // CPUは自分の半分の中で、毎回ちがう場所・シュートの仕方・向きで落とす（ラウンド開始時に決まり、向きを決めるときから見える）
-  const planCpu = (style?: Style) => {
+  const planCpu = (style0?: Style) => {
+    const d = diffRef.current;
+    // やさしい：タイプ別の上手な打ち方をしない / つよい：タイプがなければ、技巧派かアタックの打ち方
+    const style: Style | undefined = d === 'easy' ? undefined : d === 'hard' && !style0 ? (Math.random() < 0.6 ? 'technique' : 'attacker') : style0;
+    const pl = planCpuBase(style);
+    if (d === 'easy') return { ...pl, power: 0.35 + 0.25 * Math.random() }; // 勢いが弱い
+    if (d === 'hard') return { ...pl, power: Math.max((pl as { power?: number }).power ?? 0.9, 0.95) };
+    return pl;
+  };
+  const planCpuBase = (style?: Style) => {
     const cpuSx = sideRef.current === 'left' ? 1 : -1; // 自分と反対側
     const lim = R - BEY_R - 8, m = BEY_R + 8;
     const dir = TYPES.cpu.spinDir;
@@ -779,6 +806,8 @@ export function Beyblade() {
     if (vs === '2p') cpuDeck = customs2.slice(0, n);
     else {
       cpuDeck = randomDeck(cpuSels.slice(0, n)); // 3体で同じパーツを重ねない
+      // つよい：パーツを選ばなかった1on1の相手は、強めのカスタムから選ぶ
+      if (diff === 'hard' && n === 1 && !cpuSels[0].blade && !cpuSels[0].ratchet && !cpuSels[0].bit) cpuDeck = [{ ...HARD_POOL[Math.floor(Math.random() * HARD_POOL.length)] }];
       const u = urlCustom('cpu');
       if (u) cpuDeck[0] = u;
     }
@@ -928,10 +957,15 @@ export function Beyblade() {
     const my = dropRef.current, cpu = cpuPlanRef.current;
     if (phaseRef.current !== 'count' || !my || !cpu) return;
     countTimers.current.forEach(window.clearTimeout);
-    beysRef.current = [
+    const bs: [Bey, Bey] = [
       makeBey('me', my.x, my.y, modeRef.current === 'diag', aimRef.current, 0.85),
       makeBey('cpu', cpu.x, cpu.y, cpu.diag, cpu.aim, vsRef.current === '2p' ? 0.85 : cpu.power ?? 0.7 + Math.random() * 0.3),
     ];
+    if (vsRef.current === 'cpu') { // CPUの強さ：ベイの回転数が変わる
+      const m = DIFF_SPIN[diffRef.current];
+      bs[1].spinMax *= m; bs[1].spin *= m;
+    }
+    beysRef.current = bs;
     endedRef.current = false;
     (window as unknown as { __dashes?: number[] }).__dashes = [0, 0];
     setPhase('battle');
@@ -1623,6 +1657,21 @@ export function Beyblade() {
                 ))}
               </div>
               {vs === 'cpu' && (
+                <>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <span style={{ fontSize: 15, fontWeight: 700 }}>CPUの強さ：</span>
+                {(['easy', 'normal', 'hard'] as const).map(k => (
+                  <button
+                    key={k}
+                    onClick={() => setDiff(k)}
+                    style={{
+                      padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 700,
+                      border: `3px solid ${diff === k ? '#ffd740' : '#2a3566'}`, background: diff === k ? '#14204f' : '#0a1030',
+                    }}
+                  >{DIFF_INFO[k].label}</button>
+                ))}
+                <span style={{ fontSize: 11, opacity: 0.75 }}>{DIFF_INFO[diff].desc}</span>
+              </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
                   <span style={{ fontSize: 15, fontWeight: 700 }}>相手の落とす位置：</span>
                   {([['show', '見える'], ['hide', '見えない']] as const).map(([k, label]) => (
@@ -1637,6 +1686,7 @@ export function Beyblade() {
                   ))}
                   <span style={{ fontSize: 11, opacity: 0.75 }}>（相手の打ち方と向きは、どちらでも見えません）</span>
                 </div>
+                </>
               )}
             </>
           )}
@@ -1665,6 +1715,21 @@ export function Beyblade() {
                   <span style={{ fontSize: 22, fontWeight: 900, width: 36 }}>{val}</span>
                 </div>
               ))}
+
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <span style={{ fontSize: 15, fontWeight: 700 }}>CPUの強さ：</span>
+                {(['easy', 'normal', 'hard'] as const).map(k => (
+                  <button
+                    key={k}
+                    onClick={() => setDiff(k)}
+                    style={{
+                      padding: '8px 18px', borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 700,
+                      border: `3px solid ${diff === k ? '#ffd740' : '#2a3566'}`, background: diff === k ? '#14204f' : '#0a1030',
+                    }}
+                  >{DIFF_INFO[k].label}</button>
+                ))}
+                <span style={{ fontSize: 11, opacity: 0.75 }}>{DIFF_INFO[diff].desc}</span>
+              </div>
               <div style={{ fontSize: 14, textAlign: 'center', opacity: 0.9 }}>
                 参加：合計 <b>{tCpu + tHumans}</b> 人（最大32人）。立ち位置（左右）は試合ごとにランダム、試合前に相手の落とす位置は見えません。
                 {tCpu + tHumans < 2 && <div style={{ color: '#ff8b8b' }}>2人以上にしてください</div>}
