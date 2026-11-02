@@ -546,7 +546,7 @@ function drawStadium(ctx: CanvasRenderingContext2D) {
   ctx.lineTo(half, half - cut); ctx.lineTo(half - cut, half); ctx.lineTo(-half + cut, half);
   ctx.lineTo(-half, half - cut); ctx.lineTo(-half, -half + cut); ctx.closePath();
   const fg = ctx.createLinearGradient(0, -half, 0, half);
-  fg.addColorStop(0, '#f3f6fb'); fg.addColorStop(1, '#dfe6f0');
+  fg.addColorStop(0, '#eef3f8'); fg.addColorStop(1, '#d5dde8');
   ctx.fillStyle = fg; ctx.fill();
   ctx.lineWidth = 6; ctx.strokeStyle = '#aab6c9'; ctx.stroke();
   // 下側の凹みパネル
@@ -587,22 +587,36 @@ function drawStadium(ctx: CanvasRenderingContext2D) {
   ctx.beginPath(); ctx.arc(0, 0, R + 12, 0, Math.PI * 2);
   ctx.fillStyle = '#b8c3d4'; ctx.fill();
   const bowl = ctx.createRadialGradient(-30, -40, 20, 0, 0, R);
-  bowl.addColorStop(0, '#ffffff'); bowl.addColorStop(1, '#d8e0ec');
+  bowl.addColorStop(0, '#ffffff'); bowl.addColorStop(0.75, '#eef3f9'); bowl.addColorStop(1, '#d3dcea');
   ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fillStyle = bowl; ctx.fill();
   // 出口部分は壁を開ける
   ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(120,135,160,0.55)';
   for (const f of [0.8, 0.54]) { ctx.beginPath(); ctx.arc(0, 0, R * f, 0, Math.PI * 2); ctx.stroke(); }
-  // Xライン（オレンジの円形リング）
-  ctx.lineWidth = 20; ctx.strokeStyle = '#e9955a';
+  // Xライン（本物は透明なすり鉢の内側にある、緑色のつやのあるリング）
+  const gg = ctx.createLinearGradient(0, -R, 0, R);
+  gg.addColorStop(0, '#9be84a'); gg.addColorStop(0.5, '#6fcf2a'); gg.addColorStop(1, '#8edb3c');
+  ctx.lineWidth = 14; ctx.strokeStyle = gg;
   ctx.beginPath(); ctx.arc(0, 0, R * 0.9, 0, Math.PI * 2); ctx.stroke();
-  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(120,60,20,0.45)';
-  ctx.beginPath(); ctx.arc(0, 0, R * 0.9 + 10, 0, Math.PI * 2); ctx.stroke();
-  ctx.beginPath(); ctx.arc(0, 0, R * 0.9 - 10, 0, Math.PI * 2); ctx.stroke();
-  // 上部のオレンジの切り欠き
-  ctx.fillStyle = '#f0a43a';
+  ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.beginPath(); ctx.arc(0, 0, R * 0.9 - 3, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(40,110,10,0.55)';
+  ctx.beginPath(); ctx.arc(0, 0, R * 0.9 + 7.5, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, R * 0.9 - 7.5, 0, Math.PI * 2); ctx.stroke();
+  // 上部の緑の部品：中央に向かってXダッシュで発射しやすいよう、少し下向きの突起がある
+  const ty = -R * 0.9;
   ctx.beginPath();
-  ctx.moveTo(-30, -R * 0.78); ctx.lineTo(30, -R * 0.78); ctx.lineTo(24, -R * 0.78 + 26); ctx.lineTo(-24, -R * 0.78 + 26);
-  ctx.closePath(); ctx.fill();
+  ctx.moveTo(-58, ty - 9); ctx.lineTo(58, ty - 9); ctx.lineTo(46, ty + 8);
+  ctx.lineTo(22, ty + 12); ctx.lineTo(14, ty + 34); ctx.lineTo(0, ty + 42); ctx.lineTo(-14, ty + 34); ctx.lineTo(-22, ty + 12);
+  ctx.lineTo(-46, ty + 8); ctx.closePath();
+  const tg = ctx.createLinearGradient(0, ty - 9, 0, ty + 42);
+  tg.addColorStop(0, '#8ee03c'); tg.addColorStop(1, '#5fbf22');
+  ctx.fillStyle = tg; ctx.fill();
+  ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(30,95,10,0.75)'; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-40, ty - 3); ctx.lineTo(40, ty - 3); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.stroke();
+  // 台座の文字
+  ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(95,105,125,0.55)';
+  ctx.fillText('BEYBLADE X', 0, -R - 24);
+  ctx.textAlign = 'start';
   // エクストリーム／オーバーゾーンの手前の段
   for (const phi of [0, OVER_PHI, -OVER_PHI]) {
     ctx.save(); ctx.rotate(-phi);
@@ -1466,7 +1480,7 @@ export function Beyblade() {
           ctx.translate(b.x, b.y);
           ctx.fillStyle = 'rgba(0,0,0,0.22)';
           ctx.beginPath(); ctx.ellipse(3, 5, BEY_R, BEY_R * 0.85, 0, 0, Math.PI * 2); ctx.fill();
-          drawBey(ctx, t.color, i === 0 ? '#5aabff' : '#ef4444', b.angle, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, t.sprite, t.spinDir);
+          drawBey(ctx, t.color, i === 0 ? '#38b6ff' : '#ff3ea5', b.angle, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, t.sprite, t.spinDir);
           ctx.restore();
           if (b.dashFx > 0) {
             ctx.fillStyle = `rgba(230,110,0,${Math.min(1, b.dashFx * 1.5)})`;
@@ -1504,28 +1518,28 @@ export function Beyblade() {
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current && (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 0))) {
         const g = dropRef.current;
         const diag = modeRef.current === 'diag';
-        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y, TYPES.me.spinDir), diag, TYPES.me.color, '#5aabff', '#e8590c', `${namesRef.current.me}：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, TYPES.me.sprite, TYPES.me.spinDir);
+        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y, TYPES.me.spinDir), diag, TYPES.me.color, '#38b6ff', '#e8590c', `${namesRef.current.me}：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, TYPES.me.sprite, TYPES.me.spinDir);
       }
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && (vsRef.current === '2p' ? (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 1)) : !hideOppRef.current)) {
         const c = cpuPlanRef.current;
-        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ef4444', '#d62828', `${namesRef.current.cpu}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite, TYPES.cpu.spinDir, vsRef.current === '2p');
+        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ff3ea5', '#d81b8a', `${namesRef.current.cpu}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite, TYPES.cpu.spinDir, vsRef.current === '2p');
       }
       // 相手の落とす位置を隠しているときのヒント：その位置にランチャーを置く（向きや打ち方は分からない）
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && vsRef.current === 'cpu' && hideOppRef.current) {
         const c = cpuPlanRef.current, im = c.x < 0 ? LAUNCHERS.red : LAUNCHERS.black;
         if (im.complete && im.naturalWidth > 0) {
-          // ランチャーを縦向きに大きく置く（左右どちらかの半分の約3分の1を隠す）。正確な位置は分からないように、少しずらして描く
-          // （同じ位置なら同じずれ方なので、ちらつかない）。落とせる半分（左右どちらか）と、すり鉢の外にははみ出さない
+          // ランチャーは横向きのまま、落とせる半分（左右どちらか）の約3分の1を隠す大きさで置く。正確な位置は分からないように少しずらして描く
+          // （同じ位置なら同じずれ方なので、ちらつかない）。落とせる半分と、すり鉢の外にははみ出さない
           const sd = c.x < 0 ? -1 : 1;
-          const sh = 185, lg = (sh * im.naturalWidth) / im.naturalHeight; // 縦向き：短い辺 sh、長い辺 lg
+          const lw = 190, lh = (lw * im.naturalHeight) / im.naturalWidth;
           const hz = (k: number) => { const v = Math.sin(c.x * 12.9898 + c.y * 78.233 + k) * 43758.5453; return v - Math.floor(v) - 0.5; };
-          const cx = sd * (R / 2 + hz(1) * 60), cy = Math.max(-100, Math.min(100, c.y * 0.35 + hz(2) * 90));
+          const cx = sd * (R / 2 + hz(1) * 40), cy = Math.max(-150, Math.min(150, c.y * 0.5 + hz(2) * 80));
           ctx.save();
           ctx.beginPath(); ctx.arc(0, 0, R - 2, 0, Math.PI * 2); ctx.clip();
           ctx.beginPath(); ctx.rect(sd < 0 ? -R : 2, -R, R, R * 2); ctx.clip();
-          ctx.translate(cx, cy); ctx.rotate(sd < 0 ? -Math.PI / 2 : Math.PI / 2);
+          ctx.translate(cx, cy);
           ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 16;
-          ctx.drawImage(im, -lg / 2, -sh / 2, lg, sh);
+          ctx.drawImage(im, -lw / 2, -lh / 2, lw, lh);
           ctx.restore();
         }
       }
@@ -1659,18 +1673,19 @@ export function Beyblade() {
   const sideW = Math.floor((FW - pad * 2 - cW - 12) / 2);
   const cs = cH / 700; // スタジアムの文字の大きさの倍率
   const ents = {
-    me: { name: nameMe, color: '#5aabff', pt: score.me, bey: TYPES.me },
-    cpu: { name: nameCpu, color: '#ef4444', pt: score.cpu, bey: TYPES.cpu },
+    me: { name: nameMe, color: '#38b6ff', pt: score.me, bey: TYPES.me },
+    cpu: { name: nameCpu, color: '#ff3ea5', pt: score.cpu, bey: TYPES.cpu },
   };
   const sideCol = (key: 'me' | 'cpu', side: 'left' | 'right') => {
     const ent = ents[key];
     const isLeftCol = side === 'left';
+    const compact = sideW < 175; // 幅のせまい画面では、飾りを減らして収める
     let controls: React.ReactNode = null;
     if (phase === 'launch') {
       if (vs === 'cpu' && key === 'me') {
         controls = (
           <>
-            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{hasDrop ? 'ドラッグで向きを決めて、スタート' : `${side === 'left' ? '左' : '右'}半分をタップして、落とす場所を決める`}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{hasDrop ? 'ドラッグで向きを決めて、スタート' : `${side === 'left' ? '左' : '右'}半分をタップ${compact ? '' : 'して、落とす場所を決める'}`}</div>
             {modeBtns(shotMode, setShotMode, '#ffd740')}
             <button style={{ ...yb, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={shoot}>スタート</button>
           </>
@@ -1679,7 +1694,7 @@ export function Beyblade() {
         controls = (
           <>
             <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{(key === 'me' ? hasDrop : hasDrop2) ? 'ドラッグで向き' : `${key === 'me' ? '左' : '右'}半分をタップ`}</div>
-            {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ef4444')}
+            {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ff3ea5')}
           </>
         );
       } else if (seq && ((placeStep === 0 && key === 'me') || (placeStep === 1 && key === 'cpu'))) {
@@ -1688,7 +1703,7 @@ export function Beyblade() {
             <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>
               {key === 'me' ? (hasDrop ? 'ドラッグで向き → 「決定」' : '左半分をタップ（相手は見ないでね）') : (hasDrop2 ? 'ドラッグで向き → 「スタート」' : '右半分をタップ')}
             </div>
-            {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ef4444')}
+            {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ff3ea5')}
             {key === 'me'
               ? <button style={{ ...yb, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={() => setPlaceStep(1)}>決定</button>
               : <button style={{ ...yb, opacity: hasDrop2 ? 1 : 0.4 }} disabled={!hasDrop2} onClick={shoot}>スタート</button>}
@@ -1698,18 +1713,24 @@ export function Beyblade() {
         controls = <div style={{ fontSize: 12, opacity: 0.7 }}>{placeStep === 1 ? '（相手が場所を決めています）' : '待っててね'}</div>;
       }
     }
+    // 試合の表示（ラベル）：トーナメントなら回戦、対戦なら 1on1 / 3on3
+    const tm = tourMatchRef.current, tt = tourRef.current;
+    const matchLabel = gameMode === 'tournament' && tm && tt ? roundLabel(tt.rounds[tm.r].length, tm.r) : `${mode === '3v3' ? `3on3・第${roundIdx + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : '1on1'}`;
     return (
-      <div style={{ width: sideW, height: cH, flex: '0 0 auto', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 4, textAlign: isLeftCol ? 'left' : 'right' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <div style={{ fontSize: 14, fontWeight: 900, lineHeight: 1.1, color: ent.color, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ent.name}</div>
-          <div style={{ fontSize: 12.5, fontWeight: 800, color: ent.bey.color, lineHeight: 1.2 }}>{ent.bey.name}</div>
-          <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1, color: ent.color }}>{ent.pt}</div>
-          {isLeftCol && <div style={{ fontSize: 11, opacity: 0.7 }}>{WIN_POINTS}pt先取{mode === '3v3' ? `・第${roundIdx + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : ''}</div>}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      // 中継画面のような表示：枠は自分が青、相手がピンク。大きな得点、ブレーダー名、下にベイの名前
+      <div style={{
+        width: sideW, height: cH, flex: '0 0 auto', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 7px', textAlign: 'center',
+        background: 'linear-gradient(180deg,#07102c,#030618)', border: `2px solid ${ent.color}`, borderRadius: 10, boxShadow: `0 0 14px ${ent.color}66, inset 0 0 18px ${ent.color}22`,
+      }}>
+        <div style={{ fontSize: 11, fontWeight: 800, opacity: 0.85, letterSpacing: 1 }}>{isLeftCol ? `${WIN_POINTS}pt先取` : matchLabel}</div>
+        <div style={{ fontSize: compact ? 36 : 52, fontWeight: 900, lineHeight: 1, color: '#fff', textShadow: `0 0 12px ${ent.color}` }}>{ent.pt}</div>
+        {!compact && <div style={{ fontSize: 10, fontWeight: 700, color: ent.color, borderTop: `1px solid ${ent.color}88`, paddingTop: 2 }}>ブレーダー名</div>}
+        <div style={{ fontSize: compact ? 13 : 15, fontWeight: 900, lineHeight: 1.15, padding: '3px 4px', border: `2px solid ${ent.color}`, borderRadius: 6, background: '#050b22', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ent.name}</div>
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 3, textAlign: 'left', fontSize: compact ? 11 : 12 }}>
           {controls}
-          {isLeftCol && <button onClick={backToSelect} style={{ ...sb(false), fontSize: 12, padding: '2px 6px', alignSelf: 'flex-start' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>}
+          {isLeftCol && <button onClick={backToSelect} style={{ ...sb(false), fontSize: 12, padding: '2px 8px', alignSelf: 'flex-start' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>}
         </div>
+        <div style={{ fontSize: 12, fontWeight: 900, padding: '4px 4px', borderRadius: 6, background: `linear-gradient(90deg,${ent.color}55,${ent.color}22)`, border: `1px solid ${ent.color}`, lineHeight: 1.2, wordBreak: 'keep-all' }}>{ent.bey.name}</div>
       </div>
     );
   };
