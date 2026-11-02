@@ -1697,6 +1697,7 @@ export function Beyblade() {
               </div>
             )}
             <button style={{ ...yb, opacity: gameMode === 'tournament' && tCpu + tHumans < 2 ? 0.4 : 1 }} disabled={gameMode === 'tournament' && tCpu + tHumans < 2} onClick={() => { setWho(0); setSlot(0); setPhase('select'); }}>次へ（カスタマイズ）</button>
+            <div style={{ fontSize: 8.5, opacity: 0.55 }}>非公式のファンメイド作品です。ベイブレードX・各パーツの名称や画像の権利は各権利者に帰属します。</div>
           </div>
         )}
 
