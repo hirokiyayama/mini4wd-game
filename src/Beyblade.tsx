@@ -1459,8 +1459,11 @@ export function Beyblade() {
         // 回転が止まったら、その場で止まる
         if (b.spin <= 0) {
           b.riding = false; b.holdT = 0;
-          b.vx *= 1 - 7 * DT; b.vy *= 1 - 7 * DT;
+          b.vx *= 1 - 12 * DT; b.vy *= 1 - 12 * DT;
           b.x += b.vx * DT; b.y += b.vy * DT;
+          // 止まったベイは、勢いが残っていてもスタジアムの外には出ない（スピンフィニッシュは必ず場内）
+          const d0 = Math.hypot(b.x, b.y), lim0 = R - BEY_R * 1.1;
+          if (d0 > lim0) { b.x *= lim0 / d0; b.y *= lim0 / d0; b.vx = 0; b.vy = 0; }
           continue;
         }
 
