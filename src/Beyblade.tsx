@@ -1514,12 +1514,18 @@ export function Beyblade() {
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && vsRef.current === 'cpu' && hideOppRef.current) {
         const c = cpuPlanRef.current, im = c.x < 0 ? LAUNCHERS.red : LAUNCHERS.black;
         if (im.complete && im.naturalWidth > 0) {
-          const w = 210, h = (w * im.naturalHeight) / im.naturalWidth;
-          // 正確な位置は分からないように、ランチャーをずらして描く（同じ位置なら同じずれ方なので、ちらつかない）
+          // ランチャーを縦向きに大きく置く（その半分のスタジアムの約3分の1を隠す）。正確な位置は分からないように、少しずらして描く
+          // （同じ位置なら同じずれ方なので、ちらつかない）。落とせる半分（左右どちらか）と、すり鉢の外にははみ出さない
+          const sd = c.x < 0 ? -1 : 1;
+          const sh = 245, lg = (sh * im.naturalWidth) / im.naturalHeight; // 縦向き：短い辺 sh、長い辺 lg
           const hz = (k: number) => { const v = Math.sin(c.x * 12.9898 + c.y * 78.233 + k) * 43758.5453; return v - Math.floor(v) - 0.5; };
-          ctx.save(); ctx.translate(c.x + hz(1) * 90, c.y + hz(2) * 90);
-          ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(4, h * 0.38, w * 0.45, h * 0.22, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.drawImage(im, -w / 2, -h / 2, w, h);
+          const cx = sd * (R / 2 + 2) + hz(1) * 10, cy = Math.max(-45, Math.min(45, c.y * 0.2 + hz(2) * 70));
+          ctx.save();
+          ctx.beginPath(); ctx.arc(0, 0, R - 2, 0, Math.PI * 2); ctx.clip();
+          ctx.beginPath(); ctx.rect(sd < 0 ? -R : 2, -R, R, R * 2); ctx.clip();
+          ctx.translate(cx, cy); ctx.rotate(sd < 0 ? -Math.PI / 2 : Math.PI / 2);
+          ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 16;
+          ctx.drawImage(im, -lg / 2, -sh / 2, lg, sh);
           ctx.restore();
         }
       }
