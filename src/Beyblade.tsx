@@ -1669,7 +1669,8 @@ export function Beyblade() {
   const sideMin = 128;
   const cW = Math.min(((FH - pad * 2) * W) / H, FW - pad * 2 - sideMin * 2 - 12);
   const cH = (cW * H) / W;
-  const sideW = Math.floor((FW - pad * 2 - cW - 12) / 2);
+  const ov = Math.floor(cW * 0.11); // スタジアムの左右の余白（何も描かない部分）に、パネルをはみ出させて広くする
+  const sideW = Math.floor((FW - pad * 2 - cW - 12) / 2) + ov;
   const cs = cH / 700; // スタジアムの文字の大きさの倍率
   const ents = {
     me: { name: nameMe, color: '#38b6ff', pt: score.me, bey: TYPES.me },
@@ -1718,7 +1719,7 @@ export function Beyblade() {
     return (
       // 中継画面のような表示：枠は自分が青、相手がピンク。大きな得点、ブレーダー名、下にベイの名前
       <div style={{
-        width: sideW, height: cH, flex: '0 0 auto', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 7px', textAlign: 'center',
+        width: sideW, height: cH, flex: '0 0 auto', position: 'relative', zIndex: 2, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 7px', textAlign: 'center',
         background: 'linear-gradient(180deg,#07102c,#030618)', border: `2px solid ${ent.color}`, borderRadius: 10, boxShadow: `0 0 14px ${ent.color}66, inset 0 0 18px ${ent.color}22`,
       }}>
         <div style={{ fontSize: 11, fontWeight: 800, opacity: 0.85, letterSpacing: 1 }}>{isLeftCol ? `${WIN_POINTS}pt先取` : matchLabel}</div>
@@ -1978,7 +1979,7 @@ export function Beyblade() {
           // ---- 対戦画面：左右の列（名前・点数・ベイ・操作）+ 中央のスタジアム
           <div style={{ position: 'absolute', inset: 0, padding: pad, display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'center' }}>
             {mySide === 'left' ? sideCol('me', 'left') : sideCol('cpu', 'left')}
-            <div style={{ position: 'relative', width: cW, height: cH, flex: '0 0 auto' }}>
+            <div style={{ position: 'relative', width: cW, height: cH, flex: '0 0 auto', margin: `0 ${-ov}px` }}>
               <canvas
                 ref={canvasRef} width={W} height={H}
                 onPointerDown={onPointerDown} onPointerMove={onPointerMove}
