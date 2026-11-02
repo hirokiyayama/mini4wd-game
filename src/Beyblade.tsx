@@ -1514,8 +1514,10 @@ export function Beyblade() {
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && vsRef.current === 'cpu' && hideOppRef.current) {
         const c = cpuPlanRef.current, im = c.x < 0 ? LAUNCHERS.red : LAUNCHERS.black;
         if (im.complete && im.naturalWidth > 0) {
-          const w = 120, h = (w * im.naturalHeight) / im.naturalWidth;
-          ctx.save(); ctx.translate(c.x, c.y);
+          const w = 210, h = (w * im.naturalHeight) / im.naturalWidth;
+          // 正確な位置は分からないように、ランチャーをずらして描く（同じ位置なら同じずれ方なので、ちらつかない）
+          const hz = (k: number) => { const v = Math.sin(c.x * 12.9898 + c.y * 78.233 + k) * 43758.5453; return v - Math.floor(v) - 0.5; };
+          ctx.save(); ctx.translate(c.x + hz(1) * 90, c.y + hz(2) * 90);
           ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(4, h * 0.38, w * 0.45, h * 0.22, 0, 0, Math.PI * 2); ctx.fill();
           ctx.drawImage(im, -w / 2, -h / 2, w, h);
           ctx.restore();
@@ -1853,16 +1855,22 @@ export function Beyblade() {
                 {Array.from({ length: mode === '3v3' ? 3 : 1 }, (_, n) => (
                   <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 800, color: '#ef4444', fontSize: 13, minWidth: 74 }}>{mode === '3v3' ? `CPUのベイ${n + 1}` : 'CPUのベイ'}</span>
-                    {([['ブレード', BLADES, 'blade'], ['ラチェット', RATCHETS, 'ratchet'], ['ビット', BITS, 'bit']] as const).map(([label, list, key]) => (
+                    {([['ブレード', BLADES, 'blade'], ['ラチェット', RATCHETS, 'ratchet'], ['ビット', BITS, 'bit']] as const).map(([label, list, key]) => { const cpuInt = !!BLADES.find(b => b.id === cpuSels[n].blade)?.integrated; return (
                       <label key={key} style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 4 }}>
                         {label}
-                        <select value={cpuSels[n][key]} onChange={e => setCpuSels(cs => cs.map((c, i) => (i === n ? { ...c, [key]: e.target.value } : c)))}
-                          style={{ padding: '2px 4px', borderRadius: 5, background: '#14204f', color: '#fff', border: '1px solid #2a3566', fontSize: 12.5 }}>
-                          <option value="">ランダム</option>
+                        <select value={key === 'ratchet' && cpuInt ? '' : cpuSels[n][key]} disabled={key === 'ratchet' && cpuInt}
+                          onChange={e => setCpuSels(cs => cs.map((c, i) => {
+                            if (i !== n) return c;
+                            const nc = { ...c, [key]: e.target.value };
+                            if (key === 'blade' && BLADES.find(b => b.id === e.target.value)?.integrated) nc.ratchet = ''; // 一体型のブレードはラチェットなし
+                            return nc;
+                          }))}
+                          style={{ padding: '2px 4px', borderRadius: 5, background: '#14204f', color: '#fff', border: '1px solid #2a3566', fontSize: 12.5, opacity: key === 'ratchet' && cpuInt ? 0.5 : 1 }}>
+                          <option value="">{key === 'ratchet' && cpuInt ? 'なし（一体型）' : 'ランダム'}</option>
                           {list.map(pt => <option key={pt.id} value={pt.id} disabled={mode === '3v3' && cpuSels.some((c, i) => i !== n && c[key] === pt.id)}>{pt.name}</option>)}
                         </select>
                       </label>
-                    ))}
+                    ); })}
                   </div>
                 ))}
               </div>
