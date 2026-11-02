@@ -1589,7 +1589,7 @@ export function Beyblade() {
         }
       }
 
-      { const w = window as unknown as { __maxd?: number }; for (const q of beys) if (!q.out && q.outT <= 0 && !exitKind(q.x, q.y)) w.__maxd = Math.max(w.__maxd ?? 0, Math.hypot(q.x, q.y)); } // 動作確認用：出口以外で壁の外に出た最大距離
+      { const w = window as unknown as { __maxd?: number }; for (const q of beys) { if (!Number.isFinite(q.x + q.y + q.spin)) (w as { __nan?: boolean }).__nan = true; } for (const q of beys) if (!q.out && q.outT <= 0 && !exitKind(q.x, q.y)) w.__maxd = Math.max(w.__maxd ?? 0, Math.hypot(q.x, q.y)); } // 動作確認用：出口以外で壁の外に出た最大距離
       if (endedRef.current) return;
 
       // ベイ同士の衝突
@@ -1821,6 +1821,10 @@ export function Beyblade() {
       for (let i = parts.length - 1; i >= 0; i--) {
         const p = parts[i];
         p.life -= 1 / 60; p.x += p.vx / 60; p.y += p.vy / 60; p.vx *= 0.985; p.vy *= 0.985; p.rot += p.vr / 60;
+        // バーストで飛び散ったパーツも、壁の外には出ない（壁で跳ね返る）
+        { const dd = Math.hypot(p.x, p.y), lp = R - 6;
+          if (dd > lp) { const nx = p.x / dd, ny = p.y / dd, ov = p.vx * nx + p.vy * ny; p.x = nx * lp; p.y = ny * lp; if (ov > 0) { p.vx -= 1.6 * ov * nx; p.vy -= 1.6 * ov * ny; } } }
+        { const w = window as unknown as { __maxp?: number }; w.__maxp = Math.max(w.__maxp ?? 0, Math.hypot(p.x, p.y)); } // 動作確認用
         if (p.life <= 0) { parts.splice(i, 1); continue; }
         ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
         ctx.fillStyle = p.color; ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
