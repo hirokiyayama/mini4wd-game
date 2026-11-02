@@ -6,6 +6,8 @@ import meteorImg from './assets/beys/meteor.png';
 import cobaltImg from './assets/beys/cobalt.png';
 import gloryImg from './assets/beys/glory.png';
 import knight2Img from './assets/beys/knight2.png';
+import { createRoom, joinRoom, randomCode } from './online';
+import type { Link, Msg } from './online';
 import launcherRedImg from './assets/launcher_red.png';
 import launcherBlackImg from './assets/launcher_black.png';
 
@@ -484,7 +486,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     spin: spinMax, spinMax, burst: 0, angle: 0,
     dir: TYPES[type].spinDir, curl: 1.1 * TYPES[type].spinDir, dashT: 0, dashCd: 0, dashFx: 0, trail: [], out: false, dead: false,
     // 斜め：その場にとどまる（R系は短く、よく動く） / Hは水平でも少しとどまる
-    holdT: diag ? (mob > 1 ? 0.8 : 1.4) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
+    holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
     outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
@@ -657,7 +659,7 @@ function useFrame() {
 export function Beyblade() {
   const frame = useFrame();
   const [cpuOpen, setCpuOpen] = useState(false); // カスタマイズ画面：CPUのベイ設定を開く
-  const [phase, setPhase] = useState<'top' | 'select' | 'order' | 'tbracket' | 'tchamp' | 'launch' | 'count' | 'battle' | 'result' | 'over'>('top');
+  const [phase, setPhase] = useState<'top' | 'lobby' | 'select' | 'order' | 'tbracket' | 'tchamp' | 'launch' | 'count' | 'battle' | 'result' | 'over'>('top');
   const [shotMode, setShotMode] = useState<'flat' | 'diag'>('flat');
   const [hasDrop, setHasDrop] = useState(false);
   const [mySide, setMySide] = useState<'left' | 'right'>('left'); // 自分が立つ側（左の人は左半分、右の人は右半分にしか落とせない）
@@ -684,12 +686,16 @@ export function Beyblade() {
   const custom = curDeck[slot];
   const setCustom = (f: (c: Custom) => Custom) => setDecks(ds => ds.map((d, i) => (i === who ? d.map((c, j) => (j === slot ? f(c) : c)) : d)));
   const [names, setNames] = useState<{ me: string; cpu: string } | null>(null); // トーナメントの試合中の名前
-  const defaultName = (k: number) => (gameMode === 'versus' ? (vs === 'cpu' ? 'あなた' : `プレイヤー${k + 1}`) : `プレイヤー${k + 1}`);
+  const [online, setOnline] = useState<'host' | 'guest' | null>(null);
+  const onlineRef = useRef<'host' | 'guest' | null>(null);
+  onlineRef.current = online;
+  const defaultName = (k: number) => (online ? (online === 'host' ? 'ホスト' : 'ゲスト') : gameMode === 'versus' ? (vs === 'cpu' ? 'あなた' : `プレイヤー${k + 1}`) : `プレイヤー${k + 1}`);
   const playerName = (k: number) => playerNames[k].trim() || defaultName(k);
   const nameMe = names?.me ?? playerName(0);
   const nameCpu = names?.cpu ?? (vs === '2p' ? playerName(1) : 'CPU');
   const namesRef = useRef({ me: 'あなた', cpu: 'CPU' });
   namesRef.current = { me: nameMe, cpu: nameCpu };
+  const namesNowRef = useRef<{ me: string; cpu: string }>({ me: 'ホスト', cpu: 'ゲスト' }); // オンライン：この対戦の名前
   const tourRef = useRef<Tour | null>(null);
   const [, setTick] = useState(0);
   const bump = () => setTick(t => t + 1);
@@ -720,6 +726,25 @@ export function Beyblade() {
   const [score, setScore] = useState({ me: 0, cpu: 0 });
   const [message, setMessage] = useState<{ winner: 'me' | 'cpu'; finish: Finish } | null>(null);
 
+  // ---- オンライン対戦：ホスト（部屋を作った側）が計算して、ゲストには動きを送る
+  const linkRef = useRef<Link | null>(null);
+  const cancelRef = useRef<(() => void) | null>(null);
+  const handleMsgRef = useRef<(m: Msg) => void>(() => {});
+  const [roomCode, setRoomCode] = useState('');
+  const [joinCode, setJoinCode] = useState('');
+  const [lobbyMsg, setLobbyMsg] = useState('');
+  const [topOnline, setTopOnline] = useState(false);
+  const [guestInfo, setGuestInfo] = useState<{ custom: Custom; name: string } | null>(null); // ホスト側：ゲストが準備OKか
+  const [selfReady, setSelfReady] = useState(false); // 自分の準備OK / 場所の決定
+  const [placeLeft, setPlaceLeft] = useState(10); // 場所決めの残り秒数
+  const deadlineRef = useRef(0);
+  const selfReadyRef = useRef(false);
+  selfReadyRef.current = selfReady;
+  const placeSentRef = useRef(0);
+  const ghostDispRef = useRef<{ x: number; y: number } | null>(null); // 相手のランチャーの表示位置（なめらかに動かす）
+  const readyRef = useRef({ host: false, guest: false });
+  const snapsRef = useRef<{ t: number; b: number[][] }[]>([]);
+  const lastSendRef = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const beysRef = useRef<[Bey, Bey] | null>(null);
   const sparksRef = useRef<Spark[]>([]);
@@ -841,6 +866,13 @@ export function Beyblade() {
     aim2Ref.current = null;
     setHasDrop2(false);
     setHasDrop(false);
+    if (onlineRef.current === 'host') { // オンライン：場所決めは10秒。両方が「決定」するか、時間切れでシュート
+      readyRef.current = { host: false, guest: false };
+      setSelfReady(false);
+      deadlineRef.current = Date.now() + 10000;
+      setPlaceLeft(10);
+      linkRef.current?.send({ t: 'round', me: m, cpu: c, names: namesNowRef.current, score: scoreRef.current });
+    }
     setPhase('launch');
   };
 
@@ -1018,6 +1050,7 @@ export function Beyblade() {
     beysRef.current = bs;
     endedRef.current = false;
     (window as unknown as { __dashes?: number[] }).__dashes = [0, 0];
+    linkRef.current?.send({ t: 'fire' });
     setPhase('battle');
   }, []);
 
@@ -1029,12 +1062,13 @@ export function Beyblade() {
     beysRef.current = null;
     partsRef.current = [];
     setPhase('count');
-    setCount(3);
+    const cnt = (n: number | null) => { setCount(n); linkRef.current?.send({ t: 'count', n }); }; // オンライン：相手にもカウントを見せる
+    cnt(3);
     countTimers.current.forEach(window.clearTimeout);
     countTimers.current = [
-      window.setTimeout(() => setCount(2), 800 / countScale),
-      window.setTimeout(() => setCount(1), 1600 / countScale),
-      window.setTimeout(() => setCount(0), 2400 / countScale),
+      window.setTimeout(() => cnt(2), 800 / countScale),
+      window.setTimeout(() => cnt(1), 1600 / countScale),
+      window.setTimeout(() => cnt(0), 2400 / countScale),
       window.setTimeout(() => { setCount(null); fireNow(); }, 3200 / countScale),
     ];
   }, [fireNow, countScale]);
@@ -1048,12 +1082,13 @@ export function Beyblade() {
   };
   // タップで落とす場所を決め、ドラッグで走らせる向きを決める
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (phaseRef.current !== 'launch') return;
+    if (phaseRef.current !== 'launch' || (onlineRef.current && selfReadyRef.current)) return;
     const p = toStadium(e);
     const lim = R - BEY_R - 8, m = BEY_R + 8;
     const two = vsRef.current === '2p';
     // 2人対戦：左半分をタップ＝プレイヤー1、右半分をタップ＝プレイヤー2
     const player: 0 | 1 = two ? (p.x < 0 ? 0 : 1) : 0;
+    if (onlineRef.current && (player !== (onlineRef.current === 'host' ? 0 : 1) || selfReadyRef.current)) return; // オンライン：自分の半分だけ。決定後は動かせない
     if (two && seqRef.current && player !== placeStepRef.current) return; // トーナメントの2人対戦：順番に決める
     const sx = two ? (player === 0 ? -1 : 1) : sideRef.current === 'left' ? -1 : 1;
     // 左側の人は左半分、右側の人は右半分にしか落とせない
@@ -1065,10 +1100,12 @@ export function Beyblade() {
       dropRef.current = { x, y };
       aimRef.current = null;
       setHasDrop(true);
+      if (onlineRef.current === 'host') linkRef.current?.send({ t: 'ghost', x, y });
     } else {
       aim2Ref.current = null;
       cpuPlanRef.current = { x, y, diag: mode2Ref.current === 'diag', aim: defaultAim(x, y, TYPES.cpu.spinDir) };
       setHasDrop2(true);
+      if (onlineRef.current === 'guest') sendPlace(false);
     }
   };
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -1080,6 +1117,7 @@ export function Beyblade() {
       const dx = p.x - c.x, dy = p.y - c.y, l = Math.hypot(dx, dy);
       aim2Ref.current = l > 24 ? { x: dx / l, y: dy / l } : null;
       cpuPlanRef.current = { ...c, aim: aim2Ref.current ?? defaultAim(c.x, c.y, TYPES.cpu.spinDir) };
+      if (onlineRef.current === 'guest' && Date.now() - placeSentRef.current > 70) sendPlace(false);
       return;
     }
     if (!dropRef.current) return;
@@ -1098,16 +1136,20 @@ export function Beyblade() {
       if (finish === 'burst') {
         loser.dead = true;
         const t = TYPES[loser.type];
+        const fresh: Part[] = [];
         for (let i = 0; i < 6; i++) {
           const a = Math.random() * Math.PI * 2, sp = 150 + Math.random() * 300;
-          partsRef.current.push({
+          fresh.push({
             x: loser.x, y: loser.y, vx: loser.vx * 0.4 + Math.cos(a) * sp, vy: loser.vy * 0.4 + Math.sin(a) * sp,
             rot: Math.random() * 6, vr: (Math.random() - 0.5) * 24, color: i % 2 ? t.color : '#444', size: 8 + Math.random() * 10, life: 3,
           });
         }
+        partsRef.current.push(...fresh);
         flashRef.current = 1;
+        linkRef.current?.send({ t: 'parts', parts: fresh });
       }
     }
+    linkRef.current?.send({ t: 'end', winner, finish });
     setMessage({ winner, finish });
     // 決着の動きを見せてから結果表示
     timerRef.current = window.setTimeout(() => {
@@ -1115,8 +1157,147 @@ export function Beyblade() {
       scoreRef.current = next;
       setScore(next);
       setPhase(next[winner] >= WIN_POINTS ? 'over' : 'result');
+      linkRef.current?.send({ t: 'res', phase: next[winner] >= WIN_POINTS ? 'over' : 'result', score: next });
     }, 1300);
   }, []);
+
+  // ---------------- オンライン対戦 ----------------
+  const sendOn = (m: Msg) => linkRef.current?.send(m);
+  const sendPlace = (ready: boolean) => { // ゲスト：自分の置き場所・向き・打ち方をホストに伝える
+    const c = cpuPlanRef.current;
+    if (!c) return;
+    placeSentRef.current = Date.now();
+    sendOn({ t: 'place', x: c.x, y: c.y, diag: c.diag, aim: aim2Ref.current, ready });
+  };
+  const leaveOnline = (msg = '') => {
+    cancelRef.current?.(); cancelRef.current = null;
+    const l = linkRef.current; linkRef.current = null;
+    if (l) { l.onClose = () => {}; l.close(); }
+    onlineRef.current = null; setOnline(null);
+    window.clearTimeout(timerRef.current); countTimers.current.forEach(window.clearTimeout);
+    endedRef.current = true;
+    beysRef.current = null; partsRef.current = []; dropRef.current = null; aimRef.current = null; cpuPlanRef.current = null; snapsRef.current = [];
+    setCount(null); setMessage(null); setHasDrop(false); setHasDrop2(false); setGuestInfo(null); setSelfReady(false); setNames(null);
+    setLobbyMsg(msg); setTopOnline(true);
+    setPhase('top');
+  };
+  const attachLink = (link: Link, role: 'host' | 'guest') => {
+    linkRef.current = link; onlineRef.current = role; setOnline(role);
+    link.onMsg = m => handleMsgRef.current(m);
+    link.onClose = () => leaveOnline('相手との接続が切れました');
+    vsRef.current = '2p'; setVs('2p'); setMode('1v1'); setGameMode('versus'); setMySide('left'); sideRef.current = 'left';
+    setGuestInfo(null); setSelfReady(false); setLobbyMsg(''); setWho(0); setSlot(0); setNames(null);
+    setPhase('select');
+  };
+  const makeRoom = () => {
+    setLobbyMsg('');
+    const start = (code: string) => {
+      setRoomCode(code);
+      cancelRef.current = createRoom(code, {
+        onLink: l => (linkRef.current ? l.close() : attachLink(l, 'host')),
+        onError: msg => { cancelRef.current?.(); if (msg === 'unavailable') start(randomCode()); else leaveOnline(msg); },
+      });
+    };
+    start(randomCode());
+    setPhase('lobby');
+  };
+  const enterRoom = () => {
+    if (!/^\d{4}$/.test(joinCode)) { setLobbyMsg('4桁の部屋番号を入れてください'); return; }
+    setLobbyMsg('つないでいます…');
+    cancelRef.current?.();
+    cancelRef.current = joinRoom(joinCode, { onLink: l => attachLink(l, 'guest'), onError: msg => setLobbyMsg(msg) });
+  };
+  // ホスト：ゲストが準備OKなら、対戦を始める
+  const startOnlineMatch = () => {
+    if (!guestInfo) return;
+    const nn = { me: playerNames[0].trim() || 'ホスト', cpu: guestInfo.name };
+    namesNowRef.current = nn; setNames(nn);
+    scoreRef.current = { me: 0, cpu: 0 }; setScore({ me: 0, cpu: 0 }); setMessage(null);
+    setDeck({ me: [customs[0]], cpu: [guestInfo.custom] });
+    setRoundIdx(0); setCycle(0);
+    setupRound(customs[0], guestInfo.custom);
+  };
+  const guestReady = () => {
+    const on = !selfReady;
+    setSelfReady(on);
+    sendOn(on ? { t: 'ready', custom: customs[0], name: playerNames[0].trim() || 'ゲスト' } : { t: 'unready' });
+  };
+  const checkBothReady = () => { if (readyRef.current.host && readyRef.current.guest && phaseRef.current === 'launch') shoot(); };
+  const decide = () => { // 場所を「決定」
+    if (onlineRef.current === 'host') { readyRef.current.host = true; setSelfReady(true); checkBothReady(); }
+    else { setSelfReady(true); sendPlace(true); }
+  };
+  const randomPlan = (side: 'left' | 'right') => { // 時間切れ：自分の半分のランダムな場所・向き・打ち方
+    const sx = side === 'left' ? -1 : 1, lim = R - BEY_R - 8, m = BEY_R + 8;
+    const rr = (0.15 + 0.75 * Math.random()) * lim, phi = (Math.random() - 0.5) * Math.PI * 0.92;
+    const ax = Math.min(Math.max(Math.cos(phi) * rr, m), lim), maxY = Math.sqrt(Math.max(0, lim * lim - ax * ax));
+    const x = ax * sx, y = Math.max(-maxY, Math.min(maxY, Math.sin(phi) * rr));
+    const dir = side === 'left' ? TYPES.me.spinDir : TYPES.cpu.spinDir, a = Math.random() * Math.PI * 2;
+    return { x, y, diag: Math.random() < 0.4, aim: Math.random() < 0.5 ? defaultAim(x, y, dir) : { x: Math.cos(a), y: Math.sin(a) } };
+  };
+  // ホスト：場所決めのタイマー（10秒）。時間切れで決まっていない人はランダムにシュート
+  useEffect(() => {
+    if (online !== 'host' || phase !== 'launch') return;
+    const id = window.setInterval(() => {
+      const left = Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000));
+      setPlaceLeft(left); linkRef.current?.send({ t: 'timer', left });
+      if (Date.now() >= deadlineRef.current) {
+        deadlineRef.current = Infinity;
+        if (!dropRef.current) {
+          const q = randomPlan('left');
+          dropRef.current = { x: q.x, y: q.y }; aimRef.current = q.aim; modeRef.current = q.diag ? 'diag' : 'flat'; setShotMode(q.diag ? 'diag' : 'flat'); setHasDrop(true);
+          linkRef.current?.send({ t: 'ghost', x: q.x, y: q.y });
+        }
+        if (!cpuPlanRef.current) { cpuPlanRef.current = randomPlan('right'); setHasDrop2(true); }
+        shoot();
+      }
+    }, 250);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online, phase, shoot]);
+  // 通信で届いたメッセージ
+  handleMsgRef.current = (m: Msg) => {
+    const role = onlineRef.current;
+    if (role === 'host') {
+      if (m.t === 'ready') setGuestInfo({ custom: m.custom as Custom, name: String(m.name) });
+      else if (m.t === 'unready') setGuestInfo(null);
+      else if (m.t === 'place' && phaseRef.current === 'launch') {
+        const x = Number(m.x), y = Number(m.y), aim = (m.aim as { x: number; y: number } | null) ?? defaultAim(x, y, TYPES.cpu.spinDir);
+        cpuPlanRef.current = { x, y, diag: !!m.diag, aim };
+        setHasDrop2(true);
+        if (m.ready) { readyRef.current.guest = true; checkBothReady(); }
+      }
+      return;
+    }
+    if (role !== 'guest') return;
+    switch (m.t) {
+      case 'round': {
+        TYPES.me = buildBey(m.me as Custom); TYPES.cpu = buildBey(m.cpu as Custom);
+        const nn = m.names as { me: string; cpu: string };
+        namesNowRef.current = nn; setNames(nn);
+        scoreRef.current = m.score as { me: number; cpu: number }; setScore(scoreRef.current);
+        countTimers.current.forEach(window.clearTimeout); window.clearTimeout(timerRef.current);
+        beysRef.current = null; partsRef.current = []; snapsRef.current = []; dropRef.current = null; aimRef.current = null; cpuPlanRef.current = null; aim2Ref.current = null;
+        setMessage(null); setCount(null); setHasDrop(false); setHasDrop2(false); setSelfReady(false); setPlaceLeft(10);
+        vsRef.current = '2p'; setVs('2p');
+        setPhase('launch');
+        break;
+      }
+      case 'ghost': dropRef.current = { x: Number(m.x), y: Number(m.y) }; break;
+      case 'timer': setPlaceLeft(Number(m.left)); break;
+      case 'count':
+        if (phaseRef.current !== 'count') { beysRef.current = null; partsRef.current = []; snapsRef.current = []; setPhase('count'); }
+        setCount(m.n as number | null);
+        break;
+      case 'fire': snapsRef.current = []; beysRef.current = null; setCount(null); setPhase('battle'); break;
+      case 's': snapsRef.current.push({ t: performance.now(), b: m.b as number[][] }); if (snapsRef.current.length > 8) snapsRef.current.shift(); break;
+      case 'sp': for (let i = 0; i < Number(m.n); i++) { const a = Math.random() * Math.PI * 2, v = 80 + Math.random() * 220; sparksRef.current.push({ x: Number(m.x), y: Number(m.y), vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.4 + Math.random() * 0.3 }); } break;
+      case 'parts': partsRef.current.push(...(m.parts as Part[])); break;
+      case 'end': setMessage({ winner: m.winner as 'me' | 'cpu', finish: m.finish as Finish }); break;
+      case 'res': scoreRef.current = m.score as { me: number; cpu: number }; setScore(scoreRef.current); setPhase(m.phase as 'result' | 'over'); break;
+      case 'toSelect': window.clearTimeout(timerRef.current); beysRef.current = null; setMessage(null); setSelfReady(false); setPhase('select'); break;
+    }
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -1157,6 +1338,7 @@ export function Beyblade() {
     const DT = 1 / 120;
 
     const spark = (x: number, y: number, n: number) => {
+      if (onlineRef.current === 'host') linkRef.current?.send({ t: 'sp', x: Math.round(x), y: Math.round(y), n });
       for (let i = 0; i < n; i++) {
         const a = Math.random() * Math.PI * 2;
         const s = 80 + Math.random() * 220;
@@ -1165,6 +1347,7 @@ export function Beyblade() {
     };
 
     const step = () => {
+      if (onlineRef.current === 'guest') return; // ゲストは計算せず、ホストから届いた動きを描くだけ
       const beys = beysRef.current;
       if (!beys) return;
       if (phaseRef.current === 'count') { for (const b of beys) b.angle += 0.6; return; }
@@ -1212,7 +1395,7 @@ export function Beyblade() {
         if (b.holdT > 0) {
           b.holdT -= DT;
           // とどまっていても、狙った向きへほんの少しずつ動く（当てられたら、その場で解除される）
-          const drift = (24 + 0.06 * b.push) * (t.mobility > 1 ? t.mobility ** 2 : 1);
+          const drift = (75 + 0.16 * b.push) * (t.mobility > 1 ? t.mobility ** 2 : 1);
           b.vx += (b.ax * drift + (Math.random() - 0.5) * 20 - b.vx) * 6 * DT;
           b.vy += (b.ay * drift + (Math.random() - 0.5) * 20 - b.vy) * 6 * DT;
           b.x += b.vx * DT; b.y += b.vy * DT;
@@ -1514,25 +1697,31 @@ export function Beyblade() {
         ctx.textAlign = 'start';
         ctx.restore();
       };
-      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current && (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 0))) {
+      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current && onlineRef.current !== 'guest' && (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 0))) {
         const g = dropRef.current;
         const diag = modeRef.current === 'diag';
         drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y, TYPES.me.spinDir), diag, TYPES.me.color, '#38b6ff', '#e8590c', `${namesRef.current.me}：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, TYPES.me.sprite, TYPES.me.spinDir);
       }
-      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && (vsRef.current === '2p' ? (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 1)) : !hideOppRef.current)) {
+      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && onlineRef.current !== 'host' && (vsRef.current === '2p' ? (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 1)) : !hideOppRef.current)) {
         const c = cpuPlanRef.current;
         drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ff3ea5', '#d81b8a', `${namesRef.current.cpu}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite, TYPES.cpu.spinDir, vsRef.current === '2p');
       }
       // 相手の落とす位置を隠しているときのヒント：その位置にランチャーを置く（向きや打ち方は分からない）
-      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && vsRef.current === 'cpu' && hideOppRef.current) {
-        const c = cpuPlanRef.current, im = c.x < 0 ? LAUNCHERS.red : LAUNCHERS.black;
+      // オンライン対戦も同じ：相手が置き場所を迷って動かすと、ランチャーも動く
+      const oRole = onlineRef.current;
+      const oppP = oRole === 'guest' ? dropRef.current : oRole === 'host' || (vsRef.current === 'cpu' && hideOppRef.current) ? cpuPlanRef.current : null;
+      if (!((phaseRef.current === 'launch' || phaseRef.current === 'count') && oppP)) ghostDispRef.current = null;
+      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && oppP) {
+        const gd = ghostDispRef.current ?? (ghostDispRef.current = { x: oppP.x, y: oppP.y });
+        gd.x += (oppP.x - gd.x) * 0.25; gd.y += (oppP.y - gd.y) * 0.25; // なめらかに動かす
+        const c = gd, im = c.x < 0 ? LAUNCHERS.red : LAUNCHERS.black;
         if (im.complete && im.naturalWidth > 0) {
           // ランチャーは横向きのまま、落とせる半分（左右どちらか）の約3分の1を隠す大きさで置く。正確な位置は分からないように少しずらして描く
           // （同じ位置なら同じずれ方なので、ちらつかない）。落とせる半分と、すり鉢の外にははみ出さない
           const sd = c.x < 0 ? -1 : 1;
           const lw = 190, lh = (lw * im.naturalHeight) / im.naturalWidth;
-          const hz = (k: number) => { const v = Math.sin(c.x * 12.9898 + c.y * 78.233 + k) * 43758.5453; return v - Math.floor(v) - 0.5; };
-          const cx = sd * (R / 2 + hz(1) * 40), cy = Math.max(-150, Math.min(150, c.y * 0.5 + hz(2) * 80));
+          const hz = (k: number) => 0.5 * Math.sin(c.x * 0.011 * k + c.y * 0.017 + k * 1.7); // 位置になめらかに応じたずれ（動かしても急には飛ばない）
+          const cx = sd * (R / 2 + hz(1) * 80), cy = Math.max(-150, Math.min(150, c.y * 0.5 + hz(2) * 160));
           ctx.save();
           ctx.beginPath(); ctx.arc(0, 0, R - 2, 0, Math.PI * 2); ctx.clip();
           ctx.beginPath(); ctx.rect(sd < 0 ? -R : 2, -R, R, R * 2); ctx.clip();
@@ -1580,18 +1769,44 @@ export function Beyblade() {
       });
     };
 
+    // ゲスト：届いた動きを、少し遅らせて滑らかにつないで表示する
+    const applyInterp = (now: number) => {
+      const sn = snapsRef.current;
+      if (!sn.length) return;
+      if (!beysRef.current) beysRef.current = [makeBey('me', 0, 0, false, null, 0.85), makeBey('cpu', 0, 0, false, null, 0.85)];
+      const target = now - 80;
+      let ia = 0;
+      for (let i = 0; i < sn.length; i++) if (sn[i].t <= target) ia = i;
+      const A = sn[ia], B = sn[Math.min(ia + 1, sn.length - 1)];
+      const al = B.t > A.t ? Math.max(0, Math.min(1, (target - A.t) / (B.t - A.t))) : 0;
+      beysRef.current.forEach((b, i) => {
+        const a = A.b[i], c = B.b[i];
+        b.x = a[0] + (c[0] - a[0]) * al; b.y = a[1] + (c[1] - a[1]) * al; b.angle = a[2] + (c[2] - a[2]) * al;
+        b.spin = c[3]; b.spinMax = c[4]; b.burst = c[5]; b.dashT = c[6]; b.dashFx = c[7];
+        b.riding = !!(c[8] & 1); b.out = !!(c[8] & 2); b.dead = !!(c[8] & 4);
+        b.trail.push({ x: b.x, y: b.y }); if (b.trail.length > 14) b.trail.shift();
+      });
+      flashRef.current = Math.max(flashRef.current, B.b[0][9] ?? 0);
+    };
     const loop = (now: number) => {
       acc += Math.min(0.05, (now - last) / 1000) * timeScale;
       last = now;
       while (acc >= DT) { step(); acc -= DT; }
+      if (onlineRef.current === 'guest') applyInterp(now);
       draw();
+      // ホスト：ベイの動きをゲストに送る（約30回/秒）
+      if (onlineRef.current === 'host' && beysRef.current && (phaseRef.current === 'battle' || phaseRef.current === 'result' || phaseRef.current === 'over') && now - lastSendRef.current >= 33) {
+        lastSendRef.current = now;
+        const r1 = (v: number) => Math.round(v * 10) / 10, r2 = (v: number) => Math.round(v * 100) / 100;
+        linkRef.current?.send({ t: 's', b: beysRef.current.map(b => [r1(b.x), r1(b.y), r2(b.angle), Math.round(b.spin), Math.round(b.spinMax), Math.round(b.burst), r2(b.dashT), r2(b.dashFx), (b.riding ? 1 : 0) | (b.out ? 2 : 0) | (b.dead ? 4 : 0), r2(flashRef.current)]) });
+      }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [endRound, canvasOn]);
 
-  const humanCount = gameMode === 'tournament' ? tHumans : vs === '2p' ? 2 : 1; // カスタマイズするプレイヤーの数
+  const humanCount = online ? 1 : gameMode === 'tournament' ? tHumans : vs === '2p' ? 2 : 1; // カスタマイズするプレイヤーの数
 
   // 3on3：他のベイで使っているパーツは選べない（公式ルール）
   const usedByOthers = (key: (typeof KEYS)[number]) => {
@@ -1681,8 +1896,18 @@ export function Beyblade() {
     const isLeftCol = side === 'left';
     const compact = sideW < 175; // 幅のせまい画面では、飾りを減らして収める
     let controls: React.ReactNode = null;
+    const isSelf = !!online && (online === 'host') === (key === 'me');
     if (phase === 'launch') {
-      if (vs === 'cpu' && key === 'me') {
+      if (online) { // オンライン：自分のパネルだけ操作できる。相手の置き場所は、ランチャーでだいたいだけ分かる
+        const placed = online === 'host' ? hasDrop : hasDrop2;
+        controls = isSelf ? (
+          <>
+            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{selfReady ? '相手を待っています…' : placed ? 'ドラッグで向き → 「決定」' : `${online === 'host' ? '左' : '右'}半分をタップ`}</div>
+            {!selfReady && (online === 'host' ? modeBtns(shotMode, setShotMode, '#38b6ff') : modeBtns(shotMode2, k => { setMode2(k); sendPlace(false); }, '#ff3ea5'))}
+            <button style={{ ...yb, opacity: placed && !selfReady ? 1 : 0.4 }} disabled={!placed || selfReady} onClick={decide}>決定</button>
+          </>
+        ) : <div style={{ fontSize: 12, opacity: 0.75 }}>相手が場所を決めています…</div>;
+      } else if (vs === 'cpu' && key === 'me') {
         controls = (
           <>
             <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{hasDrop ? 'ドラッグで向きを決めて、スタート' : `${side === 'left' ? '左' : '右'}半分をタップ${compact ? '' : 'して、落とす場所を決める'}`}</div>
@@ -1715,21 +1940,21 @@ export function Beyblade() {
     }
     // 試合の表示（ラベル）：トーナメントなら回戦、対戦なら 1on1 / 3on3
     const tm = tourMatchRef.current, tt = tourRef.current;
-    const matchLabel = gameMode === 'tournament' && tm && tt ? roundLabel(tt.rounds[tm.r].length, tm.r) : `${mode === '3v3' ? `3on3・第${roundIdx + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : '1on1'}`;
+    const matchLabel = online ? 'オンライン' : gameMode === 'tournament' && tm && tt ? roundLabel(tt.rounds[tm.r].length, tm.r) : `${mode === '3v3' ? `3on3・第${roundIdx + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : '1on1'}`;
     return (
       // 中継画面のような表示：枠は自分が青、相手がピンク。大きな得点、ブレーダー名、下にベイの名前
       <div style={{
         width: sideW, height: cH, flex: '0 0 auto', position: 'relative', zIndex: 2, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 7px', textAlign: 'center',
         background: 'linear-gradient(180deg,#07102c,#030618)', border: `2px solid ${ent.color}`, borderRadius: 10, boxShadow: `0 0 14px ${ent.color}66, inset 0 0 18px ${ent.color}22`,
       }}>
-        <div style={{ fontSize: 11, fontWeight: 800, opacity: 0.85, letterSpacing: 1 }}>{isLeftCol ? `${WIN_POINTS}pt先取` : matchLabel}</div>
+        <div style={{ fontSize: 11, fontWeight: 800, opacity: 0.85, letterSpacing: 1 }}>{isSelf ? '★あなた　' : ''}{isLeftCol ? `${WIN_POINTS}pt先取` : matchLabel}</div>
         <div style={{ fontSize: compact ? 36 : 52, fontWeight: 900, lineHeight: 1, color: '#fff', textShadow: `0 0 12px ${ent.color}` }}>{ent.pt}</div>
         {!compact && <div style={{ fontSize: 10, fontWeight: 700, color: ent.color, borderTop: `1px solid ${ent.color}88`, paddingTop: 2 }}>ブレーダー名</div>}
         <div style={{ fontSize: compact ? 13 : 15, fontWeight: 900, lineHeight: 1.15, padding: '3px 4px', border: `2px solid ${ent.color}`, borderRadius: 6, background: '#050b22', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ent.name}</div>
         <div style={{ fontSize: 12, fontWeight: 900, padding: '4px 4px', borderRadius: 6, background: `linear-gradient(90deg,${ent.color}55,${ent.color}22)`, border: `1px solid ${ent.color}`, lineHeight: 1.2, wordBreak: 'keep-all' }}>{ent.bey.name}</div>
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 4, textAlign: 'left', fontSize: compact ? 11 : 12 }}>
           {controls}
-          {isLeftCol && <button onClick={backToSelect} style={{ ...sb(false), fontSize: 12, padding: '2px 8px', alignSelf: 'flex-start', marginTop: 'auto' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>}
+          {isLeftCol && <button onClick={() => (online ? leaveOnline() : backToSelect())} style={{ ...sb(false), fontSize: 12, padding: '2px 8px', alignSelf: 'flex-start', marginTop: 'auto' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>}
         </div>
       </div>
     );
@@ -1754,12 +1979,26 @@ export function Beyblade() {
             <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: 2 }}>BEYBLADE X BATTLE</div>
             <div style={{ display: 'flex', gap: 8 }}>
               {([['versus', '対戦', '相手と戦う（CPU / 2人）'], ['tournament', 'トーナメント', '最大32人で勝ち抜き戦']] as const).map(([k, label, sub]) => (
-                <button key={k} onClick={() => setGameMode(k)} style={{ ...sb(gameMode === k), padding: '5px 22px', textAlign: 'center' }}>
+                <button key={k} onClick={() => { setGameMode(k); setTopOnline(false); setLobbyMsg(''); }} style={{ ...sb(gameMode === k && !topOnline), padding: '5px 18px', textAlign: 'center' }}>
                   <div style={{ fontWeight: 900, fontSize: 15 }}>{label}</div><div style={{ fontSize: 11.5, opacity: 0.85 }}>{sub}</div>
                 </button>
               ))}
+              <button onClick={() => { setTopOnline(true); setLobbyMsg(''); }} style={{ ...sb(topOnline), padding: '5px 18px', textAlign: 'center' }}>
+                <div style={{ fontWeight: 900, fontSize: 15 }}>オンライン</div><div style={{ fontSize: 11.5, opacity: 0.85 }}>部屋番号で2人対戦</div>
+              </button>
             </div>
-            {gameMode === 'versus' ? (
+            {topOnline ? (
+              // オンライン対戦：部屋を作る人と、番号を入れて入る人
+              <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+                <button style={yb} onClick={makeRoom}>部屋を作る</button>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>または</div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input value={joinCode} inputMode="numeric" maxLength={4} placeholder="部屋番号" onChange={e => setJoinCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    style={{ width: 96, padding: '8px 8px', borderRadius: 8, border: '2px solid #2a3566', background: '#0a1030', color: '#fff', fontSize: 18, fontWeight: 800, textAlign: 'center', letterSpacing: 3 }} />
+                  <button style={sb(true)} onClick={enterRoom}>入る</button>
+                </div>
+              </div>
+            ) : gameMode === 'versus' ? (
               <div style={{ display: 'flex', gap: 26, alignItems: 'flex-start' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                   {row('相手', ([['cpu', 'CPU'], ['2p', '2人対戦']] as const).map(([k, l]) => (
@@ -1800,9 +2039,19 @@ export function Beyblade() {
                 </div>
               </div>
             )}
-            <button style={{ ...yb, opacity: gameMode === 'tournament' && tCpu + tHumans < 2 ? 0.4 : 1 }} disabled={gameMode === 'tournament' && tCpu + tHumans < 2} onClick={() => { setWho(0); setSlot(0); setPhase('select'); }}>次へ（カスタマイズ）</button>
+            {lobbyMsg && <div style={{ fontSize: 13, fontWeight: 700, color: '#ffb4b4' }}>{lobbyMsg}</div>}
+            {!topOnline && <button style={{ ...yb, opacity: gameMode === 'tournament' && tCpu + tHumans < 2 ? 0.4 : 1 }} disabled={gameMode === 'tournament' && tCpu + tHumans < 2} onClick={() => { setWho(0); setSlot(0); setPhase('select'); }}>次へ（カスタマイズ）</button>}
             {!frame.emulate && <div style={{ fontSize: 11.5, color: '#ffd740' }}>↕ 画面を上にスクロールすると、ブラウザのメニューが消えて広く遊べます</div>}
             <div style={{ fontSize: 11, opacity: 0.55 }}>非公式のファンメイド作品です。ベイブレードX・各パーツの名称や画像の権利は各権利者に帰属します。</div>
+          </div>
+        )}
+
+        {phase === 'lobby' && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <div style={{ fontSize: 14, fontWeight: 800 }}>部屋を作りました。この番号を相手に伝えてください</div>
+            <div style={{ fontSize: 64, fontWeight: 900, letterSpacing: 10, color: '#ffd740', textShadow: '0 0 16px #ffd74088' }}>{roomCode}</div>
+            <div style={{ fontSize: 13, opacity: 0.85 }}>相手が入るのを待っています…</div>
+            <button style={sb(false)} onClick={() => leaveOnline()}>キャンセル</button>
           </div>
         )}
 
@@ -1810,9 +2059,9 @@ export function Beyblade() {
           // ---- カスタマイズ画面
           <div style={{ position: 'absolute', inset: 0, padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, minHeight: 26 }}>
-              <button onClick={() => setPhase('top')} style={sb(false)}>← トップ</button>
+              <button onClick={() => (online ? leaveOnline() : setPhase('top'))} style={sb(false)}>← トップ</button>
               <span style={{ fontSize: 12.5, opacity: 0.85, whiteSpace: 'nowrap' }}>
-                {gameMode === 'tournament' ? `トーナメント（CPU ${tCpu}・プレイヤー ${tHumans}）` : vs === 'cpu' ? 'CPU対戦' : '2人対戦'}・{mode === '3v3' ? '3on3' : '1on1'}
+                {online ? `オンライン対戦（${online === 'host' ? 'ホスト・部屋' + roomCode : 'ゲスト'}）・1on1` : <>{gameMode === 'tournament' ? `トーナメント（CPU ${tCpu}・プレイヤー ${tHumans}）` : vs === 'cpu' ? 'CPU対戦' : '2人対戦'}・{mode === '3v3' ? '3on3' : '1on1'}</>}
               </span>
               {humanCount > 0 && (
                 <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, fontWeight: 700 }}>
@@ -1867,7 +2116,15 @@ export function Beyblade() {
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-start', minHeight: 30 }}>
               {/* 右下はNetlifyなどの表示とかぶるので、ボタンは左に寄せる */}
-              <button style={yb} onClick={gameMode === 'versus' ? startMatch : startTournament}>{gameMode === 'versus' ? 'バトル開始' : 'トーナメント開始'}</button>
+              {online === 'host' ? (
+                <button style={{ ...yb, opacity: guestInfo ? 1 : 0.4 }} disabled={!guestInfo} onClick={startOnlineMatch}>バトル開始</button>
+              ) : online === 'guest' ? (
+                <button style={selfReady ? sb(true, '#4ade80') : yb} onClick={guestReady}>{selfReady ? '準備OK（解除）' : '準備OK'}</button>
+              ) : (
+                <button style={yb} onClick={gameMode === 'versus' ? startMatch : startTournament}>{gameMode === 'versus' ? 'バトル開始' : 'トーナメント開始'}</button>
+              )}
+              {online === 'host' && <span style={{ fontSize: 12.5, fontWeight: 700, color: guestInfo ? '#4ade80' : '#ffd740' }}>{guestInfo ? `${guestInfo.name} が準備OK` : '相手の準備を待っています…'}</span>}
+              {online === 'guest' && <span style={{ fontSize: 12.5, fontWeight: 700, color: '#ffd740' }}>{selfReady ? 'ホストが始めるのを待っています…' : 'ベイを決めたら「準備OK」'}</span>}
               {gameMode === 'versus' && vs === 'cpu' && (
                 <>
                   <button onClick={() => setCpuOpen(o => !o)} style={sb(cpuOpen)}>CPUのベイ設定 {cpuOpen ? '▲' : '▼'}</button>
@@ -1935,7 +2192,6 @@ export function Beyblade() {
               <button style={{ ...yb, background: '#2a3566', color: '#fff' }} onClick={() => setOrderPick([])}>やり直し</button>
               <button style={{ ...yb, opacity: orderPick.length === 3 ? 1 : 0.4 }} disabled={orderPick.length !== 3} onClick={confirmOrder}>この順番で決定</button>
             </div>
-            {vs === 'cpu' && <div style={{ fontSize: 11.5, opacity: 0.85, textAlign: 'center' }}>CPUの3体：{deck.cpu.map(c => buildBey(c).name).join(' ／ ')}（出す順番は非公開）</div>}
             <button onClick={backToSelect} style={{ ...sb(false), position: 'absolute', left: 6, bottom: 6, fontSize: 12, padding: '2px 6px' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>
           </div>
         )}
@@ -1985,7 +2241,10 @@ export function Beyblade() {
                 onPointerDown={onPointerDown} onPointerMove={onPointerMove}
                 style={{ width: '100%', height: '100%', cursor: phase === 'launch' ? 'crosshair' : 'default', touchAction: 'none' }}
               />
-              {phase === 'launch' && vs === '2p' && !seq && (
+              {phase === 'launch' && online && (
+                <div style={{ position: 'absolute', left: 0, right: 0, top: '17%', textAlign: 'center', pointerEvents: 'none', fontSize: 34 * cs, fontWeight: 900, color: placeLeft <= 3 ? '#ff5a5a' : '#ffd740', textShadow: '0 2px 8px #000' }}>残り {placeLeft}秒</div>
+              )}
+              {phase === 'launch' && vs === '2p' && !seq && !online && (
                 <button style={{ ...yb, position: 'absolute', left: '50%', bottom: 2, transform: 'translateX(-50%)', opacity: hasDrop && hasDrop2 ? 1 : 0.4 }} disabled={!(hasDrop && hasDrop2)} onClick={shoot}>スタート</button>
               )}
               {count !== null && (
@@ -2009,12 +2268,13 @@ export function Beyblade() {
                       <div style={{ fontSize: 36 * cs, fontWeight: 900, color: message.winner === 'me' ? '#5aabff' : '#ef4444' }}>
                         {vs === '2p' || gameMode === 'tournament' ? `${message.winner === 'me' ? nameMe : nameCpu} の勝ち！` : message.winner === 'me' ? 'YOU WIN!' : 'YOU LOSE...'}
                       </div>
-                      {gameMode === 'tournament'
+                      {online === 'guest' ? <div style={{ fontSize: 14 * cs + 4 }}>ホストの操作を待っています…</div>
+                        : gameMode === 'tournament'
                         ? <button style={yb} onClick={() => finishTourMatch(message.winner)}>次へ（トーナメント表）</button>
-                        : <button style={yb} onClick={() => setPhase('select')}>もう一度</button>}
+                        : <button style={yb} onClick={() => { if (online) { sendOn({ t: 'toSelect' }); setGuestInfo(null); setSelfReady(false); } setPhase('select'); }}>もう一度</button>}
                     </>
                   ) : (
-                    <button style={yb} onClick={nextRound}>次のラウンド</button>
+                    online === 'guest' ? <div style={{ fontSize: 14 * cs + 4 }}>ホストの操作を待っています…</div> : <button style={yb} onClick={nextRound}>次のラウンド</button>
                   )}
                 </div>
               )}
