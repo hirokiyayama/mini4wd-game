@@ -665,7 +665,6 @@ export function Beyblade() {
   // 対戦モード：1on1 / 3on3（3体のデッキ。順番を決めて、どちらかが4ポイント取るまで）
   const [mode, setMode] = useState<'1v1' | '3v3'>('1v1');
   const [gameMode, setGameMode] = useState<'versus' | 'tournament'>('versus'); // トップページ：通常の対戦 / トーナメント
-  const [oppView, setOppView] = useState<'show' | 'hide'>('show'); // CPU対戦：相手の落とす位置を見せるか
   const [diff, setDiff] = useState<Diff>('normal'); // CPUの強さ
   const diffRef = useRef<Diff>('normal');
   const [tCpu, setTCpu] = useState(7); // トーナメント：CPUの数（0〜32）
@@ -743,7 +742,7 @@ export function Beyblade() {
   modeRef.current = shotMode;
   vsRef.current = vs;
   diffRef.current = diff;
-  hideOppRef.current = (vs === 'cpu' && oppView === 'hide') || gameMode === 'tournament';
+  hideOppRef.current = vs === 'cpu' || gameMode === 'tournament'; // CPUの落とす位置は常に見えない（ランチャーのヒントだけ）
   mode2Ref.current = shotMode2;
   sideRef.current = mySide;
 
@@ -1726,11 +1725,11 @@ export function Beyblade() {
         <div style={{ fontSize: compact ? 36 : 52, fontWeight: 900, lineHeight: 1, color: '#fff', textShadow: `0 0 12px ${ent.color}` }}>{ent.pt}</div>
         {!compact && <div style={{ fontSize: 10, fontWeight: 700, color: ent.color, borderTop: `1px solid ${ent.color}88`, paddingTop: 2 }}>ブレーダー名</div>}
         <div style={{ fontSize: compact ? 13 : 15, fontWeight: 900, lineHeight: 1.15, padding: '3px 4px', border: `2px solid ${ent.color}`, borderRadius: 6, background: '#050b22', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ent.name}</div>
-        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 3, textAlign: 'left', fontSize: compact ? 11 : 12 }}>
-          {controls}
-          {isLeftCol && <button onClick={backToSelect} style={{ ...sb(false), fontSize: 12, padding: '2px 8px', alignSelf: 'flex-start' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>}
-        </div>
         <div style={{ fontSize: 12, fontWeight: 900, padding: '4px 4px', borderRadius: 6, background: `linear-gradient(90deg,${ent.color}55,${ent.color}22)`, border: `1px solid ${ent.color}`, lineHeight: 1.2, wordBreak: 'keep-all' }}>{ent.bey.name}</div>
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 4, textAlign: 'left', fontSize: compact ? 11 : 12 }}>
+          {controls}
+          {isLeftCol && <button onClick={backToSelect} style={{ ...sb(false), fontSize: 12, padding: '2px 8px', alignSelf: 'flex-start', marginTop: 'auto' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>}
+        </div>
       </div>
     );
   };
@@ -1772,7 +1771,6 @@ export function Beyblade() {
                 {vs === 'cpu' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                     {row('CPUの強さ', (['easy', 'normal', 'hard'] as const).map(k => <button key={k} onClick={() => setDiff(k)} style={sb(diff === k)}>{DIFF_INFO[k].label}</button>))}
-                    {row('相手の位置', ([['show', '見える'], ['hide', '見えない']] as const).map(([k, l]) => <button key={k} onClick={() => setOppView(k)} style={sb(oppView === k)}>{l}</button>))}
                   </div>
                 )}
               </div>
@@ -1866,7 +1864,9 @@ export function Beyblade() {
                 {partPicker('ビット', BITS, custom.bit, id => setCustom(c => ({ ...c, bit: id })), usedByOthers('bit'))}
               </div>
             )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end', minHeight: 30 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-start', minHeight: 30 }}>
+              {/* 右下はNetlifyなどの表示とかぶるので、ボタンは左に寄せる */}
+              <button style={yb} onClick={gameMode === 'versus' ? startMatch : startTournament}>{gameMode === 'versus' ? 'バトル開始' : 'トーナメント開始'}</button>
               {gameMode === 'versus' && vs === 'cpu' && (
                 <>
                   <button onClick={() => setCpuOpen(o => !o)} style={sb(cpuOpen)}>CPUのベイ設定 {cpuOpen ? '▲' : '▼'}</button>
@@ -1874,11 +1874,10 @@ export function Beyblade() {
                   {([['left', '左'], ['right', '右']] as const).map(([k, l]) => <button key={k} onClick={() => setMySide(k)} style={sb(mySide === k)}>{l}</button>)}
                 </>
               )}
-              <button style={yb} onClick={gameMode === 'versus' ? startMatch : startTournament}>{gameMode === 'versus' ? 'バトル開始' : 'トーナメント開始'}</button>
             </div>
             {cpuOpen && gameMode === 'versus' && vs === 'cpu' && (
               // CPUのパーツ選択（選ばなければランダム）。3on3は3体ぶん
-              <div style={{ position: 'absolute', left: 10, right: 10, bottom: 38, padding: 8, borderRadius: 10, background: '#101840', border: '2px solid #5a2a2a', maxHeight: FH - 90, overflowY: 'auto', zIndex: 6, display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <div style={{ position: 'absolute', left: 10, right: 10, bottom: 52, padding: 8, borderRadius: 10, background: '#101840', border: '2px solid #5a2a2a', maxHeight: FH - 90, overflowY: 'auto', zIndex: 6, display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {Array.from({ length: mode === '3v3' ? 3 : 1 }, (_, n) => (
                   <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 800, color: '#ef4444', fontSize: 13, minWidth: 74 }}>{mode === '3v3' ? `CPUのベイ${n + 1}` : 'CPUのベイ'}</span>
