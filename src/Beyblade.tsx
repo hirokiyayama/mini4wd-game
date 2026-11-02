@@ -1637,7 +1637,13 @@ export function Beyblade() {
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+    // スマホ実機：ページをスクロールできるようにして、Safariなどのメニューバーを隠せるようにする（隠れると画面が広がり、枠も追従する）
+    <div style={frame.emulate
+      ? { position: 'fixed', inset: 0, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }
+      : { position: 'relative', background: '#000', minHeight: 'calc(100vh + 70px)', width: '100%' }}>
+     <div style={frame.emulate
+      ? { display: 'contents' }
+      : { position: 'sticky', top: 0, left: 0, width: '100%', height: frame.h, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
       {frame.portrait && <div style={{ position: 'fixed', top: 6, left: 0, right: 0, textAlign: 'center', fontSize: 12, color: '#ffd740', zIndex: 5 }}>スマホを横向きにすると、大きく遊べます</div>}
       <div style={{
         width: FW, height: FH, flex: '0 0 auto', transform: `scale(${frame.scale})`, position: 'relative', overflow: 'hidden', background: '#04071a', color: '#fff',
@@ -1697,6 +1703,7 @@ export function Beyblade() {
               </div>
             )}
             <button style={{ ...yb, opacity: gameMode === 'tournament' && tCpu + tHumans < 2 ? 0.4 : 1 }} disabled={gameMode === 'tournament' && tCpu + tHumans < 2} onClick={() => { setWho(0); setSlot(0); setPhase('select'); }}>次へ（カスタマイズ）</button>
+            {!frame.emulate && <div style={{ fontSize: 9.5, color: '#ffd740' }}>↕ 画面を上にスクロールすると、ブラウザのメニューが消えて広く遊べます</div>}
             <div style={{ fontSize: 8.5, opacity: 0.55 }}>非公式のファンメイド作品です。ベイブレードX・各パーツの名称や画像の権利は各権利者に帰属します。</div>
           </div>
         )}
@@ -1911,6 +1918,7 @@ export function Beyblade() {
           </div>
         )}
       </div>
+     </div>
     </div>
   );
 }
