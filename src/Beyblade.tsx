@@ -6,6 +6,8 @@ import meteorImg from './assets/beys/meteor.png';
 import cobaltImg from './assets/beys/cobalt.png';
 import gloryImg from './assets/beys/glory.png';
 import knight2Img from './assets/beys/knight2.png';
+import launcherRedImg from './assets/launcher_red.png';
+import launcherBlackImg from './assets/launcher_black.png';
 
 // ベイブレードX風バトル（4ポイント先取）
 // スタジアムは参考動画（真上視点）に合わせる：八角形の枠 + 円形のすり鉢 + オレンジのXライン(円形リング)
@@ -14,8 +16,8 @@ const WIN_POINTS = 4;
 const R = 265; // すり鉢の半径
 const BEY_R = 32;
 const W = 900, H = 700, CX = W / 2, CY = 335;
-const EXIT_HALF = 0.24; // 出口の幅（rad）
-const OVER_PHI = 0.6; // 下方向から左右ポケットまでの角度（rad）
+const EXIT_HALF = 0.25; // 出口の幅（rad）
+const OVER_PHI = 0.64; // 下方向から左右ポケットまでの角度（rad）
 
 // 'me' = 自分のベイ, 'cpu' = 相手のベイ（ブレード・ラチェット・ビットの組み合わせから作る）
 type BeyType = 'me' | 'cpu';
@@ -48,6 +50,7 @@ interface PartDef {
   dashCost?: number; // Xダッシュで失う持久の倍率（Nrビット：スタミナロスを軽減）
   kick?: number; // 当たったとき、相手を弾く力の倍率（グローリーワルキューレ：スプリング内蔵の可動刃）
   burstFloor?: number; // ラチェット/ブレードがビットのバースト耐性を一定以上にそろえる（バトルの計算だけ）
+  comeback?: number; // 場外ポケットに入りかけても、回転が強いとスタジアムに戻ってきやすい倍率
   dashLimit?: [number, number]; // 1ラウンドでXダッシュできる回数の上限（最小〜最大からランダム）。Eビットは2〜3回
 }
 const BLADES: PartDef[] = [
@@ -56,12 +59,12 @@ const BLADES: PartDef[] = [
   { id: 'wizard', name: 'ウィザードロッド', desc: '外重心かつ径の大きい5枚刃形状で、遠心力を生み出すことに特化した設計。', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5, img: wizardImg },
   { id: 'aero', name: 'エアロペガサス', desc: '大型の3枚刃が高い打撃力を生む設計。メタルが二重に塗装され性能がアップしている。', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3, img: aeroImg },
   { id: 'shark', name: 'シャークスケイル', desc: '打撃部位を複数備えた大型2枚刃で、低い位置からの強烈なアッパー攻撃に特化した設計。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2, img: sharkImg },
-  { id: 'glory', name: 'グローリーワルキューレ', desc: 'ラチェット一体型のブレード。スプリング内蔵の可動刃が攻撃時にバウンドし、反発力による強烈な弾き性能に特化。メタルが塗装され性能がアップしている。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, img: gloryImg, integrated: true, kick: 1.25, burstFloor: 80 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
+  { id: 'glory', comeback: 2.2, name: 'グローリーワルキューレ', desc: 'ラチェット一体型のブレード。スプリング内蔵の可動刃が攻撃時にバウンドし、反発力による強烈な弾き性能に特化。メタルが塗装され性能がアップしている。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, img: gloryImg, integrated: true, kick: 1.25, burstFloor: 80 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
   { id: 'knight2', name: 'ナイトシールドV2', desc: '6枚の防御刃で衝撃を吸収しやすいダンパー構造を採用。', s: { atk: 22, def: 60, sta: 28 }, hid: { sta: 55 }, weight: 36.5, color: '#4ade80', blades: 6, img: knight2Img },
 ];
 const RATCHETS: PartDef[] = [
-  { id: 'r160', name: '1-60', desc: 'ベイを低めにセットするパーツ。攻撃性能に特化した1枚刃を採用。', s: { atk: 17, def: 9, sta: 4 }, height: 60, weight: 6.0 },
-  { id: 'r170', name: '1-70', desc: 'ベイの高さを中位にセットするパーツ。攻撃性能に特化した1枚刃を採用。', s: { atk: 17, def: 6, sta: 7 }, height: 70, weight: 6.1 },
+  { id: 'r160', comeback: 2.2, name: '1-60', desc: 'ベイを低めにセットするパーツ。攻撃性能に特化した1枚刃を採用。', s: { atk: 17, def: 9, sta: 4 }, height: 60, weight: 6.0 },
+  { id: 'r170', comeback: 2, name: '1-70', desc: 'ベイの高さを中位にセットするパーツ。攻撃性能に特化した1枚刃を採用。', s: { atk: 17, def: 6, sta: 7 }, height: 70, weight: 6.1 },
   { id: 'r360', name: '3-60', desc: 'ベイを低めにセットするパーツ。弾き性能の高い3枚刃を採用。', s: { atk: 15, def: 9, sta: 6 }, height: 60, weight: 6.3 },
   { id: 'r560', name: '5-60', desc: 'ベイを低くにセットするパーツ。分厚く遠心力に優れた5枚刃を採用。', s: { atk: 10, def: 9, sta: 11 }, height: 60, weight: 6.6 },
   { id: 'r760', name: '7-60', desc: 'ベイを低めにセットするパーツ。分厚く防御性能に優れた連打7枚刃を採用。', s: { atk: 8, def: 14, sta: 8 }, height: 60, weight: 7.2 },
@@ -81,6 +84,8 @@ const BITS: PartDef[] = [
 ];
 
 // ブレードの写真（背景を抜いた画像）。戦闘中・プレビューでこの画像を回して描く
+const LAUNCHERS = { red: new Image(), black: new Image() }; // 相手の落とす位置を隠しているときのヒント
+LAUNCHERS.red.src = launcherRedImg; LAUNCHERS.black.src = launcherBlackImg;
 const SPRITES: Record<string, HTMLImageElement> = {};
 for (const bl of BLADES) {
   if (!bl.img) continue;
@@ -184,6 +189,7 @@ function buildBey(c: Custom) {
     mobility: bit.mobility ?? 1,
     steady: bit.steady ?? 1,
     exitResist: bit.exitResist ?? 1,
+    comeback: (bl.comeback ?? 1) * (bl.integrated ? 1 : pick(RATCHETS, c.ratchet).comeback ?? 1), // 場外から戻りやすさ
     dashCd: Math.min(4, Math.max(0.5, 20 / ef.dash)), // ダッシュ値が高いほど、ダッシュ回数が増える
   };
 }
@@ -443,15 +449,18 @@ interface Bey {
   knockT: number; // 相手に当てられて飛ばされた直後の時間（この間に壁へ当たると持久が削られる。自分でぶつかったときは削れない）
   hit: boolean; // 動き出す前に当てられたか（当てられたら矢印の向きではなく、弾かれた向きに進む）
   rideChance: number; onRing: boolean; // 斜めシュートはリングに乗りにくい
+  outT: number; outKind: 'extreme' | 'over'; outPhi: number; retPlan: boolean; retCount: number; grace: number; // 場外ポケット：滞在時間・出口の種類・戻るか・戻った回数・戻った直後の猶予
   dashesLeft: number; // 残りXダッシュ回数（Eビットは2〜3回まで）
 }
 interface Spark { x: number; y: number; vx: number; vy: number; life: number }
 interface Part { x: number; y: number; vx: number; vy: number; rot: number; vr: number; color: string; size: number; life: number }
 
+// 出口に入れる幅：ベイの大きさぶん内側（仕切りの壁にかかっていると入れない）
+const EXIT_ENTRY = EXIT_HALF - 0.07;
 function exitKind(x: number, y: number): 'extreme' | 'over' | null {
   const a = Math.abs(Math.atan2(x, y)); // 下方向が0
-  if (a < EXIT_HALF) return 'extreme';
-  if (Math.abs(a - OVER_PHI) < EXIT_HALF) return 'over';
+  if (a < EXIT_ENTRY) return 'extreme';
+  if (Math.abs(a - OVER_PHI) < EXIT_ENTRY) return 'over';
   return null;
 }
 
@@ -478,6 +487,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.8 : 1.4) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
+    outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -601,6 +611,15 @@ function drawStadium(ctx: CanvasRenderingContext2D) {
     ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(0, 0, R + 1, Math.PI / 2 - EXIT_HALF, Math.PI / 2 + EXIT_HALF); ctx.stroke();
     ctx.restore();
+  }
+  // エクストリームゾーンとオーバーゾーンの間の仕切り壁（ここは通れない）
+  for (const phi of [0, OVER_PHI, -OVER_PHI]) {
+    for (const sg of [-1, 1]) {
+      ctx.save(); ctx.rotate(-(phi + sg * EXIT_HALF));
+      ctx.fillStyle = '#4c5875'; ctx.fillRect(-4.5, R - 10, 9, 58);
+      ctx.fillStyle = '#c3cbe0'; ctx.fillRect(-1.2, R - 10, 2.4, 58);
+      ctx.restore();
+    }
   }
 }
 
@@ -1151,6 +1170,18 @@ export function Beyblade() {
         }
         const t = TYPES[b.type];
         const ratio = Math.max(0, b.spin / b.spinMax);
+        b.grace = Math.max(0, b.grace - DT);
+        if (b.outT > 0) {
+          // 場外ポケットに入った：すぐには勝敗を決めず、少しその場で回る（回転が強ければスタジアムに戻ることがある）
+          b.vx *= 1 - 4 * DT; b.vy *= 1 - 4 * DT;
+          b.x += b.vx * DT; b.y += b.vy * DT;
+          const th = Math.atan2(b.x, b.y), lim2 = EXIT_HALF - 0.06; // 仕切りの壁の間にとどまる
+          const tc = Math.max(b.outPhi - lim2, Math.min(b.outPhi + lim2, th));
+          const rr = Math.max(R + 4, Math.min(R + 26, Math.hypot(b.x, b.y)));
+          b.x = Math.sin(tc) * rr; b.y = Math.cos(tc) * rr;
+          b.spin = Math.max(0, b.spin - 60 * t.decay * DT * 6 * 0.2);
+          continue;
+        }
         b.dashT = Math.max(0, b.dashT - DT);
         b.dashCd = Math.max(0, b.dashCd - DT);
         b.dashFx = Math.max(0, b.dashFx - DT);
@@ -1265,7 +1296,7 @@ export function Beyblade() {
         const outSpeed = (b.vx * b.x + b.vy * b.y) / (d2 || 1);
         const ek = exitKind(b.x, b.y);
         // 出口の手前には段があり、それを越える勢いがないと入れない（エクストリームは特に高い）
-        const needOut = (ek === 'extreme' ? 420 : ek === 'over' ? 300 : 0) * TYPES[b.type].exitResist;
+        const needOut = (ek === 'extreme' ? 420 : ek === 'over' ? 300 : 0) * TYPES[b.type].exitResist * (b.grace > 0 ? 9 : 1);
         if (d2 > lim && (!ek || outSpeed < needOut)) {
           const nx = b.x / d2, ny = b.y / d2;
           const outv = b.vx * nx + b.vy * ny;
@@ -1284,7 +1315,7 @@ export function Beyblade() {
       const [a, b] = beys;
       const dx = b.x - a.x, dy = b.y - a.y;
       const d = Math.hypot(dx, dy) || 0.001;
-      if (d < BEY_R * 2) {
+      if (d < BEY_R * 2 && a.outT <= 0 && b.outT <= 0) {
         const nx = dx / d, ny = dy / d;
         const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
         const ta = TYPES[a.type], tb = TYPES[b.type];
@@ -1352,14 +1383,44 @@ export function Beyblade() {
 
       // 決着判定
       const names = ['me', 'cpu'] as const;
+      // 場外ポケットに入っているベイがいる間は、その行方が決まるまで待つ
+      for (let i = 0; i < 2; i++) {
+        const bey = beys[i];
+        if (bey.outT <= 0) continue;
+        bey.outT -= DT;
+        if (bey.outT > 0) continue;
+        if (bey.retPlan && bey.spin > 0) {
+          // 回転が残っていた：スタジアムに戻ってくる（持久はだいぶ減る）
+          const th = Math.atan2(bey.x, bey.y), rr = R - BEY_R * 1.3;
+          bey.x = Math.sin(th) * rr; bey.y = Math.cos(th) * rr;
+          const ix = -Math.sin(th), iy = -Math.cos(th), lat = (Math.random() - 0.5) * 0.9;
+          const sp2 = 650 + Math.random() * 250;
+          bey.vx = (ix + -iy * lat) * sp2; bey.vy = (iy + ix * lat) * sp2;
+          bey.spin = Math.max(1, bey.spin - bey.spinMax * (0.12 + Math.random() * 0.08));
+          bey.retCount++; bey.grace = 1.2; bey.riding = false; bey.holdT = 0; bey.dashCd = Math.max(bey.dashCd, 0.8);
+          bey.trail = [];
+          { const w = window as unknown as { __ret?: number }; w.__ret = (w.__ret ?? 0) + 1; } // 動作確認用：場外から戻った回数
+          spark(bey.x, bey.y, 16); flashRef.current = 0.5;
+        } else { endRound(names[1 - i], bey.outKind); return; }
+      }
+      if (beys.some(x => x.outT > 0)) return;
       for (let i = 0; i < 2; i++) {
         const bey = beys[i];
         const other = names[1 - i];
         // 回転が5分の1以下になったベイはバーストしない
         if (bey.burst >= 100 && bey.spin / bey.spinMax > 0.2) { endRound(other, 'burst'); return; }
-        if (Math.hypot(bey.x, bey.y) > R) {
+        if (Math.hypot(bey.x, bey.y) > R && bey.grace <= 0) {
           const k = exitKind(bey.x, bey.y);
-          if (k) { endRound(other, k); return; }
+          if (k) {
+            // 出口に入った。回転が強いほど（特に1-60・1-70・グローリーワルキューレ）戻ってきやすい。戻れるのは1回まで
+            const ratio = bey.spin / bey.spinMax;
+            const f = Math.max(0, Math.min(1, (ratio - 0.35) / 0.55));
+            const pr = bey.retCount >= 1 ? 0 : Math.min(0.8, 0.28 * f * TYPES[bey.type].comeback);
+            bey.outT = 0.9; bey.outKind = k; bey.outPhi = k === 'extreme' ? 0 : Math.sign(bey.x || 1) * OVER_PHI;
+            bey.retPlan = Math.random() < pr;
+            bey.vx *= 0.35; bey.vy *= 0.35; bey.riding = false; bey.holdT = 0;
+            return;
+          }
         }
         if (bey.spin <= 0) { endRound(other, 'spin'); return; }
       }
@@ -1448,6 +1509,17 @@ export function Beyblade() {
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && (vsRef.current === '2p' ? (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 1)) : !hideOppRef.current)) {
         const c = cpuPlanRef.current;
         drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ef4444', '#d62828', `${namesRef.current.cpu}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite, TYPES.cpu.spinDir, vsRef.current === '2p');
+      }
+      // 相手の落とす位置を隠しているときのヒント：その位置にランチャーを置く（向きや打ち方は分からない）
+      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && vsRef.current === 'cpu' && hideOppRef.current) {
+        const c = cpuPlanRef.current, im = c.x < 0 ? LAUNCHERS.red : LAUNCHERS.black;
+        if (im.complete && im.naturalWidth > 0) {
+          const w = 120, h = (w * im.naturalHeight) / im.naturalWidth;
+          ctx.save(); ctx.translate(c.x, c.y);
+          ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(4, h * 0.38, w * 0.45, h * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.drawImage(im, -w / 2, -h / 2, w, h);
+          ctx.restore();
+        }
       }
       // バースト：パーツが飛び散る
       const parts = partsRef.current;
