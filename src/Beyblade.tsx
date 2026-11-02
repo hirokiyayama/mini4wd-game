@@ -482,7 +482,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
   const mob = TYPES[type].mobility;
   const sp = (700 + 500 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない
   return {
-    type, x, y, vx: diag ? 0 : a.x * sp, vy: diag ? 0 : a.y * sp,
+    type, x, y, vx: diag ? a.x * (75 + 0.16 * (130 + 140 * power) * (mob > 1 ? 1.3 : 1)) * (mob > 1 ? mob * mob : 1) : a.x * sp, vy: diag ? a.y * (75 + 0.16 * (130 + 140 * power) * (mob > 1 ? 1.3 : 1)) * (mob > 1 ? mob * mob : 1) : a.y * sp,
     spin: spinMax, spinMax, burst: 0, angle: 0,
     dir: TYPES[type].spinDir, curl: 1.1 * TYPES[type].spinDir, dashT: 0, dashCd: 0, dashFx: 0, trail: [], out: false, dead: false,
     // 斜め：その場にとどまる（R系は短く、よく動く） / Hは水平でも少しとどまる
@@ -689,6 +689,12 @@ export function Beyblade() {
   const [online, setOnline] = useState<'host' | 'guest' | null>(null);
   const onlineRef = useRef<'host' | 'guest' | null>(null);
   onlineRef.current = online;
+  const [hostLeft, setHostLeft] = useState(true); // オンライン：ホストが左側か（ホストが選ぶ）
+  const selfIdx: 0 | 1 = online ? ((online === 'host') === hostLeft ? 0 : 1) : 0; // 自分が左(0)・右(1)のどちらか
+  const selfIdxRef = useRef<0 | 1>(0);
+  selfIdxRef.current = selfIdx;
+  const [onlineLabel, setOnlineLabel] = useState('');
+  const ordersRef = useRef<(number[] | null)[]>([null, null]); // オンライン3on3：左・右それぞれが決めた出す順番
   const defaultName = (k: number) => (online ? (online === 'host' ? 'ホスト' : 'ゲスト') : gameMode === 'versus' ? (vs === 'cpu' ? 'あなた' : `プレイヤー${k + 1}`) : `プレイヤー${k + 1}`);
   const playerName = (k: number) => playerNames[k].trim() || defaultName(k);
   const nameMe = names?.me ?? playerName(0);
@@ -713,6 +719,8 @@ export function Beyblade() {
   const [, setCpuCustom] = useState<Custom>(DEFAULT_CUSTOM); // 再描画用（中身は TYPES.cpu に入る）
   const [cpuSels, setCpuSels] = useState<Custom[]>([0, 1, 2].map(() => ({ blade: '', ratchet: '', bit: '' }))); // CPUのパーツ選択（空 = ランダム）
   const [deck, setDeck] = useState<{ me: Custom[]; cpu: Custom[] }>({ me: [], cpu: [] }); // この対戦で使う3体（1on1は1体）
+  const deckRef = useRef(deck);
+  deckRef.current = deck;
   const [orderPick, setOrderPick] = useState<number[]>([]); // 順番決めの途中
   const [order, setOrder] = useState<number[]>([]); // 自分の出す順番（deck.me の番号）
   const cpuOrderRef = useRef<number[]>([0, 1, 2]);
@@ -722,7 +730,9 @@ export function Beyblade() {
   const aim2Ref = useRef<{ x: number; y: number } | null>(null);
   const activeRef = useRef<0 | 1>(0); // ドラッグで向きを決めているプレイヤー
   const [roundIdx, setRoundIdx] = useState(0); // 3体のうち何戦目か
+  const cycleRef = useRef(0);
   const [cycle, setCycle] = useState(0); // 3体使い切って順番を決め直した回数
+  cycleRef.current = cycle;
   const [score, setScore] = useState({ me: 0, cpu: 0 });
   const [message, setMessage] = useState<{ winner: 'me' | 'cpu'; finish: Finish } | null>(null);
 
@@ -734,13 +744,14 @@ export function Beyblade() {
   const [joinCode, setJoinCode] = useState('');
   const [lobbyMsg, setLobbyMsg] = useState('');
   const [topOnline, setTopOnline] = useState(false);
-  const [guestInfo, setGuestInfo] = useState<{ custom: Custom; name: string } | null>(null); // ホスト側：ゲストが準備OKか
+  const [guestInfo, setGuestInfo] = useState<{ deck: Custom[]; name: string } | null>(null); // ホスト側：ゲストが準備OKか
   const [selfReady, setSelfReady] = useState(false); // 自分の準備OK / 場所の決定
   const [placeLeft, setPlaceLeft] = useState(10); // 場所決めの残り秒数
   const deadlineRef = useRef(0);
   const selfReadyRef = useRef(false);
   selfReadyRef.current = selfReady;
   const placeSentRef = useRef(0);
+  const onlineLabelRef = useRef('オンライン');
   const ghostDispRef = useRef<{ x: number; y: number } | null>(null); // 相手のランチャーの表示位置（なめらかに動かす）
   const readyRef = useRef({ host: false, guest: false });
   const snapsRef = useRef<{ t: number; b: number[][] }[]>([]);
@@ -871,7 +882,7 @@ export function Beyblade() {
       setSelfReady(false);
       deadlineRef.current = Date.now() + 10000;
       setPlaceLeft(10);
-      linkRef.current?.send({ t: 'round', me: m, cpu: c, names: namesNowRef.current, score: scoreRef.current });
+      linkRef.current?.send({ t: 'round', me: m, cpu: c, names: namesNowRef.current, score: scoreRef.current, label: onlineLabelRef.current, hostLeft });
     }
     setPhase('launch');
   };
@@ -911,6 +922,12 @@ export function Beyblade() {
   // 3on3：順番を決定（CPUの順番はランダムで非公開）
   const confirmOrder = () => {
     if (orderPick.length !== 3) return;
+    if (online) { // オンライン3on3：自分の順番を決める。両方そろったらホストが始める
+      setSelfReady(true);
+      if (online === 'host') { ordersRef.current[selfIdx] = orderPick; tryStartOrdered(); }
+      else sendOn({ t: 'order', order: orderPick });
+      return;
+    }
     if (vs === '2p') { // 2人対戦：プレイヤー1 → プレイヤー2 の順に、相手に見せずに順番を決める
       if (orderWho === 0) { setOrder(orderPick); setOrderPick([]); setOrderWho(1); return; }
       cpuOrderRef.current = orderPick;
@@ -1020,6 +1037,7 @@ export function Beyblade() {
       const ni = roundIdx + 1;
       if (ni >= 3) { // 3体使い切っても決着がつかなければ、もう一度順番を決める（点数は引き継ぐ）
         beysRef.current = null;
+        if (onlineRef.current === 'host') { ordersRef.current = [null, null]; setSelfReady(false); sendOn({ t: 'toOrder', deck, names: namesNowRef.current, score: scoreRef.current, hostLeft, cycle: cycle + 1 }); }
         setCycle(c => c + 1);
         setOrderPick([]);
         setOrder([]);
@@ -1028,6 +1046,7 @@ export function Beyblade() {
         return;
       }
       setRoundIdx(ni);
+      onlineLabelRef.current = `3on3・第${ni + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}`; setOnlineLabel(onlineLabelRef.current);
       setupRound(deck.me[order[ni]], deck.cpu[cpuOrderRef.current[ni]]);
       return;
     }
@@ -1088,7 +1107,7 @@ export function Beyblade() {
     const two = vsRef.current === '2p';
     // 2人対戦：左半分をタップ＝プレイヤー1、右半分をタップ＝プレイヤー2
     const player: 0 | 1 = two ? (p.x < 0 ? 0 : 1) : 0;
-    if (onlineRef.current && (player !== (onlineRef.current === 'host' ? 0 : 1) || selfReadyRef.current)) return; // オンライン：自分の半分だけ。決定後は動かせない
+    if (onlineRef.current && (player !== selfIdxRef.current || selfReadyRef.current)) return; // オンライン：自分の半分だけ。決定後は動かせない
     if (two && seqRef.current && player !== placeStepRef.current) return; // トーナメントの2人対戦：順番に決める
     const sx = two ? (player === 0 ? -1 : 1) : sideRef.current === 'left' ? -1 : 1;
     // 左側の人は左半分、右側の人は右半分にしか落とせない
@@ -1100,13 +1119,13 @@ export function Beyblade() {
       dropRef.current = { x, y };
       aimRef.current = null;
       setHasDrop(true);
-      if (onlineRef.current === 'host') linkRef.current?.send({ t: 'ghost', x, y });
     } else {
       aim2Ref.current = null;
       cpuPlanRef.current = { x, y, diag: mode2Ref.current === 'diag', aim: defaultAim(x, y, TYPES.cpu.spinDir) };
       setHasDrop2(true);
-      if (onlineRef.current === 'guest') sendPlace(false);
     }
+    if (onlineRef.current === 'host') linkRef.current?.send({ t: 'ghost', x, y }); // 自分の置き場所を相手にランチャーで見せる
+    else if (onlineRef.current === 'guest') sendPlace(false);
   };
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!e.buttons || phaseRef.current !== 'launch') return;
@@ -1124,6 +1143,7 @@ export function Beyblade() {
     const dx = p.x - dropRef.current.x, dy = p.y - dropRef.current.y;
     const l = Math.hypot(dx, dy);
     aimRef.current = l > 24 ? { x: dx / l, y: dy / l } : null;
+    if (onlineRef.current === 'guest' && Date.now() - placeSentRef.current > 70) sendPlace(false);
   };
 
   const endRound = useCallback((winner: 'me' | 'cpu', finish: Finish) => {
@@ -1164,10 +1184,13 @@ export function Beyblade() {
   // ---------------- オンライン対戦 ----------------
   const sendOn = (m: Msg) => linkRef.current?.send(m);
   const sendPlace = (ready: boolean) => { // ゲスト：自分の置き場所・向き・打ち方をホストに伝える
-    const c = cpuPlanRef.current;
-    if (!c) return;
+    if (onlineRef.current !== 'guest') return;
+    let q: { x: number; y: number; diag: boolean; aim: { x: number; y: number } | null } | null = null;
+    if (selfIdxRef.current === 1) { const c = cpuPlanRef.current; if (c) q = { x: c.x, y: c.y, diag: c.diag, aim: aim2Ref.current }; }
+    else if (dropRef.current) q = { x: dropRef.current.x, y: dropRef.current.y, diag: modeRef.current === 'diag', aim: aimRef.current };
+    if (!q) return;
     placeSentRef.current = Date.now();
-    sendOn({ t: 'place', x: c.x, y: c.y, diag: c.diag, aim: aim2Ref.current, ready });
+    sendOn({ t: 'place', x: q.x, y: q.y, diag: q.diag, aim: q.aim, ready });
   };
   const leaveOnline = (msg = '') => {
     cancelRef.current?.(); cancelRef.current = null;
@@ -1207,21 +1230,46 @@ export function Beyblade() {
     cancelRef.current?.();
     cancelRef.current = joinRoom(joinCode, { onLink: l => attachLink(l, 'guest'), onError: msg => setLobbyMsg(msg) });
   };
-  // ホスト：ゲストが準備OKなら、対戦を始める
+  // ホスト：ゲストが準備OKなら、対戦を始める（左側の人が「ベイ1」側、右側の人が「ベイ2」側として扱う）
   const startOnlineMatch = () => {
     if (!guestInfo) return;
-    const nn = { me: playerNames[0].trim() || 'ホスト', cpu: guestInfo.name };
+    const n = mode === '3v3' ? 3 : 1;
+    const hostDeck = customs.slice(0, n), guestDeck = guestInfo.deck.slice(0, n);
+    const hn = playerNames[0].trim() || 'ホスト';
+    const nn = hostLeft ? { me: hn, cpu: guestInfo.name } : { me: guestInfo.name, cpu: hn };
+    const dk = hostLeft ? { me: hostDeck, cpu: guestDeck } : { me: guestDeck, cpu: hostDeck };
     namesNowRef.current = nn; setNames(nn);
     scoreRef.current = { me: 0, cpu: 0 }; setScore({ me: 0, cpu: 0 }); setMessage(null);
-    setDeck({ me: [customs[0]], cpu: [guestInfo.custom] });
-    setRoundIdx(0); setCycle(0);
-    setupRound(customs[0], guestInfo.custom);
+    setDeck(dk); setRoundIdx(0); setCycle(0);
+    if (n === 3) { // 3on3：まず、それぞれが自分のベイの出す順番を決める（相手には見えない）
+      ordersRef.current = [null, null]; setSelfReady(false); setOrderPick([]); setOrder([]); setOrderWho(0);
+      setOnlineLabel('3on3・第1戦');
+      linkRef.current?.send({ t: 'toOrder', deck: dk, names: nn, score: { me: 0, cpu: 0 }, hostLeft, cycle: 0 });
+      beysRef.current = null;
+      setPhase('order');
+      return;
+    }
+    setOnlineLabel('1on1'); onlineLabelRef.current = '1on1';
+    setupRound(dk.me[0], dk.cpu[0]);
   };
   const guestReady = () => {
     const on = !selfReady;
     setSelfReady(on);
-    sendOn(on ? { t: 'ready', custom: customs[0], name: playerNames[0].trim() || 'ゲスト' } : { t: 'unready' });
+    sendOn(on ? { t: 'ready', deck: customs.slice(0, mode === '3v3' ? 3 : 1), name: playerNames[0].trim() || 'ゲスト' } : { t: 'unready' });
   };
+  // オンライン3on3：両方の順番がそろったら、第1戦を始める
+  const tryStartOrdered = () => {
+    const [o0, o1] = ordersRef.current;
+    if (!o0 || !o1 || onlineRef.current !== 'host') return;
+    ordersRef.current = [null, null];
+    setOrder(o0); cpuOrderRef.current = o1; setRoundIdx(0);
+    onlineLabelRef.current = `3on3・第1戦${cycleRef.current > 0 ? `(${cycleRef.current + 1}周目)` : ''}`; setOnlineLabel(onlineLabelRef.current);
+    setupRound(deckRef.current.me[o0[0]], deckRef.current.cpu[o1[0]]);
+  };
+  // ホスト：ゲストに設定（1on1/3on3・左右）を知らせる
+  useEffect(() => {
+    if (online === 'host' && phase === 'select') linkRef.current?.send({ t: 'cfg', mode, hostLeft });
+  }, [online, phase, mode, hostLeft, guestInfo]);
   const checkBothReady = () => { if (readyRef.current.host && readyRef.current.guest && phaseRef.current === 'launch') shoot(); };
   const decide = () => { // 場所を「決定」
     if (onlineRef.current === 'host') { readyRef.current.host = true; setSelfReady(true); checkBothReady(); }
@@ -1246,9 +1294,13 @@ export function Beyblade() {
         if (!dropRef.current) {
           const q = randomPlan('left');
           dropRef.current = { x: q.x, y: q.y }; aimRef.current = q.aim; modeRef.current = q.diag ? 'diag' : 'flat'; setShotMode(q.diag ? 'diag' : 'flat'); setHasDrop(true);
-          linkRef.current?.send({ t: 'ghost', x: q.x, y: q.y });
+          if (selfIdxRef.current === 0) linkRef.current?.send({ t: 'ghost', x: q.x, y: q.y });
         }
-        if (!cpuPlanRef.current) { cpuPlanRef.current = randomPlan('right'); setHasDrop2(true); }
+        if (!cpuPlanRef.current) {
+          const q = randomPlan('right');
+          cpuPlanRef.current = q; setHasDrop2(true);
+          if (selfIdxRef.current === 1) linkRef.current?.send({ t: 'ghost', x: q.x, y: q.y });
+        }
         shoot();
       }
     }, 250);
@@ -1259,12 +1311,16 @@ export function Beyblade() {
   handleMsgRef.current = (m: Msg) => {
     const role = onlineRef.current;
     if (role === 'host') {
-      if (m.t === 'ready') setGuestInfo({ custom: m.custom as Custom, name: String(m.name) });
+      if (m.t === 'ready') setGuestInfo({ deck: m.deck as Custom[], name: String(m.name) });
       else if (m.t === 'unready') setGuestInfo(null);
-      else if (m.t === 'place' && phaseRef.current === 'launch') {
-        const x = Number(m.x), y = Number(m.y), aim = (m.aim as { x: number; y: number } | null) ?? defaultAim(x, y, TYPES.cpu.spinDir);
-        cpuPlanRef.current = { x, y, diag: !!m.diag, aim };
-        setHasDrop2(true);
+      else if (m.t === 'order') { // 3on3：ゲストが順番を決めた
+        ordersRef.current[1 - selfIdxRef.current] = m.order as number[];
+        tryStartOrdered();
+      } else if (m.t === 'place' && phaseRef.current === 'launch') { // ゲストの置き場所（ゲストが入っている側の枠に入れる）
+        const x = Number(m.x), y = Number(m.y), diag = !!m.diag, gi = 1 - selfIdxRef.current;
+        const aim = (m.aim as { x: number; y: number } | null) ?? defaultAim(x, y, gi === 0 ? TYPES.me.spinDir : TYPES.cpu.spinDir);
+        if (gi === 1) { cpuPlanRef.current = { x, y, diag, aim }; setHasDrop2(true); }
+        else { dropRef.current = { x, y }; aimRef.current = (m.aim as { x: number; y: number } | null); modeRef.current = diag ? 'diag' : 'flat'; setShotMode(diag ? 'diag' : 'flat'); setHasDrop(true); }
         if (m.ready) { readyRef.current.guest = true; checkBothReady(); }
       }
       return;
@@ -1274,7 +1330,7 @@ export function Beyblade() {
       case 'round': {
         TYPES.me = buildBey(m.me as Custom); TYPES.cpu = buildBey(m.cpu as Custom);
         const nn = m.names as { me: string; cpu: string };
-        namesNowRef.current = nn; setNames(nn);
+        namesNowRef.current = nn; setNames(nn); setOnlineLabel(String(m.label ?? '')); setHostLeft(!!m.hostLeft); selfIdxRef.current = m.hostLeft ? 1 : 0;
         scoreRef.current = m.score as { me: number; cpu: number }; setScore(scoreRef.current);
         countTimers.current.forEach(window.clearTimeout); window.clearTimeout(timerRef.current);
         beysRef.current = null; partsRef.current = []; snapsRef.current = []; dropRef.current = null; aimRef.current = null; cpuPlanRef.current = null; aim2Ref.current = null;
@@ -1283,7 +1339,24 @@ export function Beyblade() {
         setPhase('launch');
         break;
       }
-      case 'ghost': dropRef.current = { x: Number(m.x), y: Number(m.y) }; break;
+      case 'ghost': { // ホストの置き場所（ホストが入っている側の枠）
+        const q = { x: Number(m.x), y: Number(m.y) };
+        if (selfIdxRef.current === 1) dropRef.current = q; else cpuPlanRef.current = { ...q, diag: false, aim: defaultAim(q.x, q.y, TYPES.cpu.spinDir) };
+        break;
+      }
+      case 'cfg': setMode(m.mode as '1v1' | '3v3'); setHostLeft(!!m.hostLeft); break;
+      case 'toOrder': {
+        const dk = m.deck as { me: Custom[]; cpu: Custom[] };
+        setDeck(dk); setHostLeft(!!m.hostLeft); selfIdxRef.current = m.hostLeft ? 1 : 0;
+        const nn = m.names as { me: string; cpu: string }; namesNowRef.current = nn; setNames(nn);
+        scoreRef.current = m.score as { me: number; cpu: number }; setScore(scoreRef.current);
+        setCycle(Number(m.cycle) || 0); setOnlineLabel(`3on3・第1戦`);
+        countTimers.current.forEach(window.clearTimeout); window.clearTimeout(timerRef.current);
+        beysRef.current = null; partsRef.current = []; snapsRef.current = []; setMessage(null); setCount(null);
+        setOrderPick([]); setOrder([]); setSelfReady(false);
+        setPhase('order');
+        break;
+      }
       case 'timer': setPlaceLeft(Number(m.left)); break;
       case 'count':
         if (phaseRef.current !== 'count') { beysRef.current = null; partsRef.current = []; snapsRef.current = []; setPhase('count'); }
@@ -1697,19 +1770,19 @@ export function Beyblade() {
         ctx.textAlign = 'start';
         ctx.restore();
       };
-      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current && onlineRef.current !== 'guest' && (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 0))) {
+      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current && !(onlineRef.current && selfIdxRef.current !== 0) && (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 0))) {
         const g = dropRef.current;
         const diag = modeRef.current === 'diag';
         drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y, TYPES.me.spinDir), diag, TYPES.me.color, '#38b6ff', '#e8590c', `${namesRef.current.me}：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, TYPES.me.sprite, TYPES.me.spinDir);
       }
-      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && onlineRef.current !== 'host' && (vsRef.current === '2p' ? (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 1)) : !hideOppRef.current)) {
+      if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && !(onlineRef.current && selfIdxRef.current !== 1) && (vsRef.current === '2p' ? (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 1)) : !hideOppRef.current)) {
         const c = cpuPlanRef.current;
         drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ff3ea5', '#d81b8a', `${namesRef.current.cpu}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite, TYPES.cpu.spinDir, vsRef.current === '2p');
       }
       // 相手の落とす位置を隠しているときのヒント：その位置にランチャーを置く（向きや打ち方は分からない）
       // オンライン対戦も同じ：相手が置き場所を迷って動かすと、ランチャーも動く
       const oRole = onlineRef.current;
-      const oppP = oRole === 'guest' ? dropRef.current : oRole === 'host' || (vsRef.current === 'cpu' && hideOppRef.current) ? cpuPlanRef.current : null;
+      const oppP = oRole ? (selfIdxRef.current === 0 ? cpuPlanRef.current : dropRef.current) : vsRef.current === 'cpu' && hideOppRef.current ? cpuPlanRef.current : null;
       if (!((phaseRef.current === 'launch' || phaseRef.current === 'count') && oppP)) ghostDispRef.current = null;
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && oppP) {
         const gd = ghostDispRef.current ?? (ghostDispRef.current = { x: oppP.x, y: oppP.y });
@@ -1896,14 +1969,14 @@ export function Beyblade() {
     const isLeftCol = side === 'left';
     const compact = sideW < 175; // 幅のせまい画面では、飾りを減らして収める
     let controls: React.ReactNode = null;
-    const isSelf = !!online && (online === 'host') === (key === 'me');
+    const isSelf = !!online && selfIdx === (key === 'me' ? 0 : 1);
     if (phase === 'launch') {
       if (online) { // オンライン：自分のパネルだけ操作できる。相手の置き場所は、ランチャーでだいたいだけ分かる
-        const placed = online === 'host' ? hasDrop : hasDrop2;
+        const placed = selfIdx === 0 ? hasDrop : hasDrop2;
         controls = isSelf ? (
           <>
-            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{selfReady ? '相手を待っています…' : placed ? 'ドラッグで向き → 「決定」' : `${online === 'host' ? '左' : '右'}半分をタップ`}</div>
-            {!selfReady && (online === 'host' ? modeBtns(shotMode, setShotMode, '#38b6ff') : modeBtns(shotMode2, k => { setMode2(k); sendPlace(false); }, '#ff3ea5'))}
+            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{selfReady ? '相手を待っています…' : placed ? 'ドラッグで向き → 「決定」' : `${selfIdx === 0 ? '左' : '右'}半分をタップ`}</div>
+            {!selfReady && (selfIdx === 0 ? modeBtns(shotMode, k => { setShotMode(k); modeRef.current = k; sendPlace(false); }, '#38b6ff') : modeBtns(shotMode2, k => { setMode2(k); sendPlace(false); }, '#ff3ea5'))}
             <button style={{ ...yb, opacity: placed && !selfReady ? 1 : 0.4 }} disabled={!placed || selfReady} onClick={decide}>決定</button>
           </>
         ) : <div style={{ fontSize: 12, opacity: 0.75 }}>相手が場所を決めています…</div>;
@@ -1940,7 +2013,7 @@ export function Beyblade() {
     }
     // 試合の表示（ラベル）：トーナメントなら回戦、対戦なら 1on1 / 3on3
     const tm = tourMatchRef.current, tt = tourRef.current;
-    const matchLabel = online ? 'オンライン' : gameMode === 'tournament' && tm && tt ? roundLabel(tt.rounds[tm.r].length, tm.r) : `${mode === '3v3' ? `3on3・第${roundIdx + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : '1on1'}`;
+    const matchLabel = online ? onlineLabel || 'オンライン' : gameMode === 'tournament' && tm && tt ? roundLabel(tt.rounds[tm.r].length, tm.r) : `${mode === '3v3' ? `3on3・第${roundIdx + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : '1on1'}`;
     return (
       // 中継画面のような表示：枠は自分が青、相手がピンク。大きな得点、ブレーダー名、下にベイの名前
       <div style={{
@@ -2061,8 +2134,12 @@ export function Beyblade() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, minHeight: 26 }}>
               <button onClick={() => (online ? leaveOnline() : setPhase('top'))} style={sb(false)}>← トップ</button>
               <span style={{ fontSize: 12.5, opacity: 0.85, whiteSpace: 'nowrap' }}>
-                {online ? `オンライン対戦（${online === 'host' ? 'ホスト・部屋' + roomCode : 'ゲスト'}）・1on1` : <>{gameMode === 'tournament' ? `トーナメント（CPU ${tCpu}・プレイヤー ${tHumans}）` : vs === 'cpu' ? 'CPU対戦' : '2人対戦'}・{mode === '3v3' ? '3on3' : '1on1'}</>}
+                {online ? `オンライン対戦（${online === 'host' ? 'ホスト・部屋' + roomCode : 'ゲスト'}）` : <>{gameMode === 'tournament' ? `トーナメント（CPU ${tCpu}・プレイヤー ${tHumans}）` : vs === 'cpu' ? 'CPU対戦' : '2人対戦'}・{mode === '3v3' ? '3on3' : '1on1'}</>}
               </span>
+              {online === 'host' && (['1v1', '3v3'] as const).map(k => (
+                <button key={k} onClick={() => { setMode(k); if (k === '3v3') setDecks(ds => ds.map(d => dedupeDeck(d))); }} style={sb(mode === k)}>{k === '1v1' ? '1on1' : '3on3'}</button>
+              ))}
+              {online === 'guest' && <span style={{ fontSize: 13, fontWeight: 800, color: '#ffd740' }}>{mode === '3v3' ? '3on3' : '1on1'}・あなたは{selfIdx === 0 ? '左' : '右'}側</span>}
               {humanCount > 0 && (
                 <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, fontWeight: 700 }}>
                   名前
@@ -2123,6 +2200,12 @@ export function Beyblade() {
               ) : (
                 <button style={yb} onClick={gameMode === 'versus' ? startMatch : startTournament}>{gameMode === 'versus' ? 'バトル開始' : 'トーナメント開始'}</button>
               )}
+              {online === 'host' && (
+                <>
+                  <span style={{ fontSize: 12.5, fontWeight: 700 }}>あなたの立ち位置</span>
+                  {([[true, '左'], [false, '右']] as const).map(([k, l]) => <button key={l} onClick={() => setHostLeft(k)} style={sb(hostLeft === k)}>{l}</button>)}
+                </>
+              )}
               {online === 'host' && <span style={{ fontSize: 12.5, fontWeight: 700, color: guestInfo ? '#4ade80' : '#ffd740' }}>{guestInfo ? `${guestInfo.name} が準備OK` : '相手の準備を待っています…'}</span>}
               {online === 'guest' && <span style={{ fontSize: 12.5, fontWeight: 700, color: '#ffd740' }}>{selfReady ? 'ホストが始めるのを待っています…' : 'ベイを決めたら「準備OK」'}</span>}
               {gameMode === 'versus' && vs === 'cpu' && (
@@ -2166,17 +2249,17 @@ export function Beyblade() {
           // ---- 3on3：出す順番を決める
           <div style={{ position: 'absolute', inset: 0, padding: '6px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
             <div style={{ fontSize: 14, fontWeight: 900, textAlign: 'center' }}>
-              {vs === '2p' ? `${orderWho === 0 ? nameMe : nameCpu}の番です：` : ''}{cycle > 0 ? `3体使い切りました。もう一度、順番を決めよう（${cycle + 1}周目）` : '出す順番を決めよう'}
+              {vs === '2p' && !online ? `${orderWho === 0 ? nameMe : nameCpu}の番です：` : ''}{cycle > 0 ? `3体使い切りました。もう一度、順番を決めよう（${cycle + 1}周目）` : '出す順番を決めよう'}
             </div>
-            <div style={{ fontSize: 12, opacity: 0.85, textAlign: 'center' }}>出したい順に、ベイをタップ（1番手 → 3番手）。{WIN_POINTS}ポイント先取。点数は引き継ぎます。{vs === '2p' && '相手に見えないように決めてね。'}</div>
+            <div style={{ fontSize: 12, opacity: 0.85, textAlign: 'center' }}>出したい順に、ベイをタップ（1番手 → 3番手）。{WIN_POINTS}ポイント先取。点数は引き継ぎます。{vs === '2p' && !online && '相手に見えないように決めてね。'}</div>
             <div style={{ fontSize: 26, fontWeight: 900, lineHeight: 1 }}>
               <span style={{ color: '#5aabff' }}>{score.me}</span><span style={{ opacity: 0.6 }}> - </span><span style={{ color: '#ef4444' }}>{score.cpu}</span>
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-              {(vs === '2p' && orderWho === 1 ? deck.cpu : deck.me).map((c, i) => {
+              {(online ? (selfIdx === 0 ? deck.me : deck.cpu) : vs === '2p' && orderWho === 1 ? deck.cpu : deck.me).map((c, i) => {
                 const bey = buildBey(c), pos = orderPick.indexOf(i);
                 return (
-                  <button key={i} onClick={() => { if (pos < 0) setOrderPick(o => [...o, i]); }} style={{
+                  <button key={i} onClick={() => { if (pos < 0 && !selfReady) setOrderPick(o => [...o, i]); }} style={{
                     position: 'relative', width: Math.min(190, (FW - 60) / 3), padding: '6px 6px', borderRadius: 10, cursor: pos < 0 ? 'pointer' : 'default', color: '#fff',
                     border: `3px solid ${pos >= 0 ? bey.color : '#2a3566'}`, background: pos >= 0 ? '#14204f' : '#0a1030', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                   }}>
@@ -2189,10 +2272,10 @@ export function Beyblade() {
               })}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button style={{ ...yb, background: '#2a3566', color: '#fff' }} onClick={() => setOrderPick([])}>やり直し</button>
-              <button style={{ ...yb, opacity: orderPick.length === 3 ? 1 : 0.4 }} disabled={orderPick.length !== 3} onClick={confirmOrder}>この順番で決定</button>
+              <button style={{ ...yb, background: '#2a3566', color: '#fff' }} disabled={selfReady} onClick={() => setOrderPick([])}>やり直し</button>
+              <button style={{ ...yb, opacity: orderPick.length === 3 && !selfReady ? 1 : 0.4 }} disabled={orderPick.length !== 3 || selfReady} onClick={confirmOrder}>{selfReady ? '相手を待っています…' : 'この順番で決定'}</button>
             </div>
-            <button onClick={backToSelect} style={{ ...sb(false), position: 'absolute', left: 6, bottom: 6, fontSize: 12, padding: '2px 6px' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>
+            <button onClick={() => (online ? leaveOnline() : backToSelect())} style={{ ...sb(false), position: 'absolute', left: 6, bottom: 6, fontSize: 12, padding: '2px 6px' }}>{online ? '← 退出' : gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>
           </div>
         )}
 
