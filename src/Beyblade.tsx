@@ -1480,6 +1480,9 @@ export function Beyblade() {
           b.vx += (b.ax * drift + (Math.random() - 0.5) * 20 - b.vx) * 6 * DT;
           b.vy += (b.ay * drift + (Math.random() - 0.5) * 20 - b.vy) * 6 * DT;
           b.x += b.vx * DT; b.y += b.vy * DT;
+          // 斜めシュートで壁の方へ向けても、壁は突き抜けない（その場でとどまっている間は出口にも入らない）
+          { const dh = Math.hypot(b.x, b.y), lh = R - BEY_R * 0.3;
+            if (dh > lh) { const nx = b.x / dh, ny = b.y / dh, ov = b.vx * nx + b.vy * ny; b.x = nx * lh; b.y = ny * lh; if (ov > 0) { b.vx -= ov * nx; b.vy -= ov * ny; } } }
           b.trail.push({ x: b.x, y: b.y });
           if (b.trail.length > 14) b.trail.shift();
           b.spin = Math.max(0, b.spin - 9 * t.decay * DT * 6);
@@ -1586,6 +1589,7 @@ export function Beyblade() {
         }
       }
 
+      { const w = window as unknown as { __maxd?: number }; for (const q of beys) if (!q.out && q.outT <= 0 && !exitKind(q.x, q.y)) w.__maxd = Math.max(w.__maxd ?? 0, Math.hypot(q.x, q.y)); } // 動作確認用：出口以外で壁の外に出た最大距離
       if (endedRef.current) return;
 
       // ベイ同士の衝突
