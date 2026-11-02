@@ -370,9 +370,9 @@ function BracketView({ t, availW, availH }: { t: Tour; availW: number; availH: n
         fontWeight: won ? 900 : 700, fontSize: 13, color: id === null ? '#9a9a9a' : t.entrants[id].human ? '#1d4ed8' : '#111',
         textDecoration: lost ? 'line-through' : 'none', opacity: lost ? 0.55 : 1,
       }}>
-        <span style={{ maxWidth: cw - 8, overflow: 'hidden', textOverflow: 'ellipsis' }}>{id !== null ? short(id) : bye ? <i style={{ fontSize: 11 }}>BYE</i> : ''}</span>
+        <span style={{ maxWidth: cw - 8, overflow: 'hidden', textOverflow: 'ellipsis' }}>{id !== null ? short(id) : bye ? <i style={{ fontSize: 12.5 }}>BYE</i> : ''}</span>
         {c === 0 && (
-          <span style={{ position: 'absolute', [right ? 'right' : 'left']: -27, top: -2, width: 20, height: rh, background: '#a9d11a', color: '#222', fontSize: 11, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' } as React.CSSProperties}>{j + 1}</span>
+          <span style={{ position: 'absolute', [right ? 'right' : 'left']: -27, top: -2, width: 20, height: rh, background: '#a9d11a', color: '#222', fontSize: 12.5, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' } as React.CSSProperties}>{j + 1}</span>
         )}
       </div>
     );
@@ -1509,13 +1509,13 @@ export function Beyblade() {
   // ---------------- スマホ横画面用の見た目（枠のサイズ FW×FH に合わせる） ----------------
   const FW = frame.w, FH = frame.h;
   const sb = (active: boolean, color = '#ffd740'): React.CSSProperties => ({
-    padding: '3px 9px', borderRadius: 7, cursor: 'pointer', color: '#fff', fontWeight: 700, fontSize: 11.5, whiteSpace: 'nowrap',
+    padding: '6px 12px', borderRadius: 8, cursor: 'pointer', color: '#fff', fontWeight: 800, fontSize: 14, whiteSpace: 'nowrap',
     border: `2px solid ${active ? color : '#2a3566'}`, background: active ? '#14204f' : '#0a1030',
   });
-  const yb: React.CSSProperties = { padding: '5px 16px', fontSize: 13, fontWeight: 800, borderRadius: 8, border: 'none', background: '#ffd740', color: '#04071a', cursor: 'pointer', whiteSpace: 'nowrap' };
+  const yb: React.CSSProperties = { padding: '9px 24px', fontSize: 16, fontWeight: 800, borderRadius: 8, border: 'none', background: '#ffd740', color: '#04071a', cursor: 'pointer', whiteSpace: 'nowrap' };
   const row = (label: string, children: React.ReactNode) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-      <span style={{ fontSize: 11.5, fontWeight: 700, minWidth: 66, textAlign: 'right' }}>{label}</span>{children}
+      <span style={{ fontSize: 13.5, fontWeight: 700, minWidth: 70, textAlign: 'right' }}>{label}</span>{children}
     </div>
   );
   const modeBtns = (cur: 'flat' | 'diag', onPick: (k: 'flat' | 'diag') => void, color: string) => (
@@ -1534,14 +1534,14 @@ export function Beyblade() {
     const allBlocked = list.every(pt => blocked.includes(pt.id));
     return (
       <div style={{ flex: list.length > 6 && title === 'ブレード' ? 1.25 : 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3, minHeight: 0 }}>
-        <div style={{ fontWeight: 800, fontSize: 11.5 }}>{title}</div>
+        <div style={{ fontWeight: 800, fontSize: 13 }}>{title}</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
           {list.map(pt => {
             const bl = blocked.includes(pt.id);
             const on = value === pt.id && !allBlocked;
             return (
               <button key={pt.id} onClick={() => { if (!bl) onPick(pt.id); }} style={{
-                display: 'flex', alignItems: 'center', gap: 3, padding: '1px 7px', borderRadius: 12, fontWeight: 700, fontSize: 10.5,
+                display: 'flex', alignItems: 'center', gap: 3, padding: '1px 7px', borderRadius: 12, fontWeight: 700, fontSize: 12.5,
                 cursor: bl ? 'not-allowed' : 'pointer', color: '#fff', opacity: bl ? 0.35 : 1, whiteSpace: 'nowrap',
                 border: `2px solid ${on ? (pt.color ?? '#ffd740') : '#2a3566'}`, background: on ? '#14204f' : '#0a1030',
               }}>
@@ -1552,13 +1552,12 @@ export function Beyblade() {
           })}
         </div>
         {/* 押した（選んだ）パーツの詳細 */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 6px', borderRadius: 6, background: '#0a1030', border: '1px solid #2a3566', fontSize: 9.5, lineHeight: 1.35 }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 6px', borderRadius: 6, background: '#0a1030', border: '1px solid #2a3566', fontSize: 11.5, lineHeight: 1.35 }}>
           {allBlocked ? (
             <div style={{ opacity: 0.8 }}>ラチェット一体型のブレードなので、ラチェットは選べません。</div>
           ) : (
             <>
-              <div style={{ fontWeight: 800, color: sel.color ?? '#fff', fontSize: 11 }}>{sel.name}</div>
-              <div style={{ opacity: 0.85, margin: '2px 0' }}>{sel.desc}</div>
+              <div style={{ fontWeight: 800, color: sel.color ?? '#fff', fontSize: 12.5 }}>{sel.name}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 7px' }}>
                 {STAT_LABELS.filter(([k]) => sel.s[k] !== undefined).map(([k, label]) => <span key={k}>{label} <b>{sel.s[k]}</b></span>)}
                 {sel.height !== undefined && <span>高さ <b>{sel.height}</b></span>}
@@ -1591,23 +1590,22 @@ export function Beyblade() {
       if (vs === 'cpu' && key === 'me') {
         controls = (
           <>
-            <div style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.3 }}>{hasDrop ? 'ドラッグで向きを決めて、スタート' : `${side === 'left' ? '左' : '右'}半分をタップして、落とす場所を決める`}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{hasDrop ? 'ドラッグで向きを決めて、スタート' : `${side === 'left' ? '左' : '右'}半分をタップして、落とす場所を決める`}</div>
             {modeBtns(shotMode, setShotMode, '#ffd740')}
-            <div style={{ fontSize: 8.5, opacity: 0.7, lineHeight: 1.3 }}>水平：すぐダッシュ／斜め：その場にとどまる</div>
             <button style={{ ...yb, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={shoot}>スタート</button>
           </>
         );
       } else if (vs === '2p' && !seq) {
         controls = (
           <>
-            <div style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.3 }}>{(key === 'me' ? hasDrop : hasDrop2) ? 'ドラッグで向き' : `${key === 'me' ? '左' : '右'}半分をタップ`}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{(key === 'me' ? hasDrop : hasDrop2) ? 'ドラッグで向き' : `${key === 'me' ? '左' : '右'}半分をタップ`}</div>
             {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ef4444')}
           </>
         );
       } else if (seq && ((placeStep === 0 && key === 'me') || (placeStep === 1 && key === 'cpu'))) {
         controls = (
           <>
-            <div style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.3 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>
               {key === 'me' ? (hasDrop ? 'ドラッグで向き → 「決定」' : '左半分をタップ（相手は見ないでね）') : (hasDrop2 ? 'ドラッグで向き → 「スタート」' : '右半分をタップ')}
             </div>
             {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ef4444')}
@@ -1617,20 +1615,20 @@ export function Beyblade() {
           </>
         );
       } else if (seq) {
-        controls = <div style={{ fontSize: 10, opacity: 0.7 }}>{placeStep === 1 ? '（相手が場所を決めています）' : '待っててね'}</div>;
+        controls = <div style={{ fontSize: 12, opacity: 0.7 }}>{placeStep === 1 ? '（相手が場所を決めています）' : '待っててね'}</div>;
       }
     }
     return (
       <div style={{ width: sideW, height: cH, flex: '0 0 auto', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 4, textAlign: isLeftCol ? 'left' : 'right' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <div style={{ fontSize: 14, fontWeight: 900, lineHeight: 1.1, color: ent.color, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ent.name}</div>
-          <div style={{ fontSize: 10.5, fontWeight: 800, color: ent.bey.color, lineHeight: 1.2 }}>{ent.bey.name}</div>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: ent.bey.color, lineHeight: 1.2 }}>{ent.bey.name}</div>
           <div style={{ fontSize: 34, fontWeight: 900, lineHeight: 1, color: ent.color }}>{ent.pt}</div>
-          {isLeftCol && <div style={{ fontSize: 9, opacity: 0.7 }}>{WIN_POINTS}pt先取{mode === '3v3' ? `・第${roundIdx + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : ''}</div>}
+          {isLeftCol && <div style={{ fontSize: 11, opacity: 0.7 }}>{WIN_POINTS}pt先取{mode === '3v3' ? `・第${roundIdx + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : ''}</div>}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {controls}
-          {isLeftCol && <button onClick={backToSelect} style={{ ...sb(false), fontSize: 10, padding: '2px 6px', alignSelf: 'flex-start' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>}
+          {isLeftCol && <button onClick={backToSelect} style={{ ...sb(false), fontSize: 12, padding: '2px 6px', alignSelf: 'flex-start' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>}
         </div>
       </div>
     );
@@ -1656,7 +1654,7 @@ export function Beyblade() {
             <div style={{ display: 'flex', gap: 8 }}>
               {([['versus', '対戦', '相手と戦う（CPU / 2人）'], ['tournament', 'トーナメント', '最大32人で勝ち抜き戦']] as const).map(([k, label, sub]) => (
                 <button key={k} onClick={() => setGameMode(k)} style={{ ...sb(gameMode === k), padding: '5px 22px', textAlign: 'center' }}>
-                  <div style={{ fontWeight: 900, fontSize: 15 }}>{label}</div><div style={{ fontSize: 9.5, opacity: 0.85 }}>{sub}</div>
+                  <div style={{ fontWeight: 900, fontSize: 15 }}>{label}</div><div style={{ fontSize: 11.5, opacity: 0.85 }}>{sub}</div>
                 </button>
               ))}
             </div>
@@ -1685,7 +1683,7 @@ export function Beyblade() {
                   )))}
                   {([['CPUの数', tCpu, (v: number) => setTCpu(Math.max(0, Math.min(32 - tHumans, v))), '#ef4444'], ['プレイヤーの数', tHumans, (v: number) => setTHumans(Math.max(0, Math.min(32 - tCpu, v))), '#5aabff']] as const).map(([label, val, set, color]) => (
                     <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ fontSize: 11.5, fontWeight: 700, minWidth: 66, textAlign: 'right', color }}>{label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, minWidth: 66, textAlign: 'right', color }}>{label}</span>
                       <button style={{ ...sb(false), padding: '0 8px', fontSize: 14 }} onClick={() => set(val - 1)}>−</button>
                       <input type="range" min={0} max={32} value={val} onChange={e => set(Number(e.target.value))} style={{ width: 100 }} />
                       <button style={{ ...sb(false), padding: '0 8px', fontSize: 14 }} onClick={() => set(val + 1)}>＋</button>
@@ -1695,7 +1693,7 @@ export function Beyblade() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxWidth: 230 }}>
                   {row('CPUの強さ', (['easy', 'normal', 'hard'] as const).map(k => <button key={k} onClick={() => setDiff(k)} style={sb(diff === k)}>{DIFF_INFO[k].label}</button>))}
-                  <div style={{ fontSize: 10, opacity: 0.85, lineHeight: 1.4 }}>
+                  <div style={{ fontSize: 12, opacity: 0.85, lineHeight: 1.4 }}>
                     参加：合計 <b>{tCpu + tHumans}</b> 人（最大32人）。立ち位置は試合ごとにランダム、試合前に相手の落とす位置は見えません。
                     {tCpu + tHumans < 2 && <div style={{ color: '#ff8b8b' }}>2人以上にしてください</div>}
                   </div>
@@ -1703,8 +1701,8 @@ export function Beyblade() {
               </div>
             )}
             <button style={{ ...yb, opacity: gameMode === 'tournament' && tCpu + tHumans < 2 ? 0.4 : 1 }} disabled={gameMode === 'tournament' && tCpu + tHumans < 2} onClick={() => { setWho(0); setSlot(0); setPhase('select'); }}>次へ（カスタマイズ）</button>
-            {!frame.emulate && <div style={{ fontSize: 9.5, color: '#ffd740' }}>↕ 画面を上にスクロールすると、ブラウザのメニューが消えて広く遊べます</div>}
-            <div style={{ fontSize: 8.5, opacity: 0.55 }}>非公式のファンメイド作品です。ベイブレードX・各パーツの名称や画像の権利は各権利者に帰属します。</div>
+            {!frame.emulate && <div style={{ fontSize: 11.5, color: '#ffd740' }}>↕ 画面を上にスクロールすると、ブラウザのメニューが消えて広く遊べます</div>}
+            <div style={{ fontSize: 11, opacity: 0.55 }}>非公式のファンメイド作品です。ベイブレードX・各パーツの名称や画像の権利は各権利者に帰属します。</div>
           </div>
         )}
 
@@ -1713,15 +1711,15 @@ export function Beyblade() {
           <div style={{ position: 'absolute', inset: 0, padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, minHeight: 26 }}>
               <button onClick={() => setPhase('top')} style={sb(false)}>← トップ</button>
-              <span style={{ fontSize: 10.5, opacity: 0.85, whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 12.5, opacity: 0.85, whiteSpace: 'nowrap' }}>
                 {gameMode === 'tournament' ? `トーナメント（CPU ${tCpu}・プレイヤー ${tHumans}）` : vs === 'cpu' ? 'CPU対戦' : '2人対戦'}・{mode === '3v3' ? '3on3' : '1on1'}
               </span>
               {humanCount > 0 && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 700 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, fontWeight: 700 }}>
                   名前
                   <input value={playerNames[who]} placeholder={defaultName(who)} maxLength={12}
                     onChange={e => setPlayerNames(ns => ns.map((n, i) => (i === who ? e.target.value : n)))}
-                    style={{ padding: '2px 6px', borderRadius: 6, border: '2px solid #2a3566', background: '#0a1030', color: '#fff', fontSize: 11.5, width: 96 }} />
+                    style={{ padding: '2px 6px', borderRadius: 6, border: '2px solid #2a3566', background: '#0a1030', color: '#fff', fontSize: 13, width: 96 }} />
                 </label>
               )}
               {humanCount > 1 && (
@@ -1736,7 +1734,7 @@ export function Beyblade() {
             {humanCount > 0 && mode === '3v3' && (
               <div style={{ display: 'flex', gap: 4 }}>
                 {[0, 1, 2].map(i => (
-                  <button key={i} onClick={() => setSlot(i)} style={{ ...sb(slot === i, buildBey(curDeck[i]).color), fontSize: 10, padding: '1px 8px' }}>
+                  <button key={i} onClick={() => setSlot(i)} style={{ ...sb(slot === i, buildBey(curDeck[i]).color), fontSize: 12, padding: '1px 8px' }}>
                     ベイ{i + 1}：<span style={{ color: buildBey(curDeck[i]).color }}>{buildBey(curDeck[i]).name}</span>
                   </button>
                 ))}
@@ -1748,11 +1746,11 @@ export function Beyblade() {
               <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 8 }}>
                 <div style={{ flex: '0 0 150px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: 6, borderRadius: 10, background: '#0a1030', border: '2px solid #2a3566', overflow: 'hidden' }}>
                   <canvas ref={previewRef} width={170} height={170} style={{ width: 92, height: 92, flex: '0 0 auto' }} />
-                  <div style={{ fontWeight: 900, fontSize: 11.5, color: myBey.color, textAlign: 'center', lineHeight: 1.2 }}>{myBey.name}</div>
+                  <div style={{ fontWeight: 900, fontSize: 13, color: myBey.color, textAlign: 'center', lineHeight: 1.2 }}>{myBey.name}</div>
                   <div style={{ width: '100%' }}>
                     {STAT_LABELS.map(([key, label]) => (
-                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, marginTop: 2 }}>
-                        <span style={{ width: 52, whiteSpace: 'nowrap' }}>{label}</span>
+                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, marginTop: 2 }}>
+                        <span style={{ width: 70, whiteSpace: 'nowrap' }}>{label}</span>
                         <div style={{ flex: 1, height: 4, background: '#1b2551', borderRadius: 2 }}>
                           <div style={{ width: `${Math.min(100, (myBey.stats[key] / STAT_MAX[key]) * 100)}%`, height: '100%', borderRadius: 2, background: myBey.color }} />
                         </div>
@@ -1760,7 +1758,7 @@ export function Beyblade() {
                       </div>
                     ))}
                   </div>
-                  <div style={{ fontSize: 9, opacity: 0.85, textAlign: 'center' }}>{myBey.weight}g・高さ{myBey.height}・<span style={{ color: myBey.spinDir === -1 ? '#ffd740' : '#9fb2ff', fontWeight: 700 }}>{myBey.spinDir === -1 ? '左回転' : '右回転'}</span></div>
+                  <div style={{ fontSize: 11, opacity: 0.85, textAlign: 'center' }}>{myBey.weight}g・高さ{myBey.height}・<span style={{ color: myBey.spinDir === -1 ? '#ffd740' : '#9fb2ff', fontWeight: 700 }}>{myBey.spinDir === -1 ? '左回転' : '右回転'}</span></div>
                 </div>
                 {partPicker('ブレード', BLADES, custom.blade, id => setCustom(c => ({ ...c, blade: id })), usedByOthers('blade'))}
                 {partPicker('ラチェット', RATCHETS, custom.ratchet, id => setCustom(c => ({ ...c, ratchet: id })), usedByOthers('ratchet'))}
@@ -1771,7 +1769,7 @@ export function Beyblade() {
               {gameMode === 'versus' && vs === 'cpu' && (
                 <>
                   <button onClick={() => setCpuOpen(o => !o)} style={sb(cpuOpen)}>CPUのベイ設定 {cpuOpen ? '▲' : '▼'}</button>
-                  <span style={{ fontSize: 10.5, fontWeight: 700 }}>立ち位置</span>
+                  <span style={{ fontSize: 12.5, fontWeight: 700 }}>立ち位置</span>
                   {([['left', '左'], ['right', '右']] as const).map(([k, l]) => <button key={k} onClick={() => setMySide(k)} style={sb(mySide === k)}>{l}</button>)}
                 </>
               )}
@@ -1782,12 +1780,12 @@ export function Beyblade() {
               <div style={{ position: 'absolute', left: 10, right: 10, bottom: 38, padding: 8, borderRadius: 10, background: '#101840', border: '2px solid #5a2a2a', maxHeight: FH - 90, overflowY: 'auto', zIndex: 6, display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {Array.from({ length: mode === '3v3' ? 3 : 1 }, (_, n) => (
                   <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 800, color: '#ef4444', fontSize: 11.5, minWidth: 74 }}>{mode === '3v3' ? `CPUのベイ${n + 1}` : 'CPUのベイ'}</span>
+                    <span style={{ fontWeight: 800, color: '#ef4444', fontSize: 13, minWidth: 74 }}>{mode === '3v3' ? `CPUのベイ${n + 1}` : 'CPUのベイ'}</span>
                     {([['ブレード', BLADES, 'blade'], ['ラチェット', RATCHETS, 'ratchet'], ['ビット', BITS, 'bit']] as const).map(([label, list, key]) => (
-                      <label key={key} style={{ fontSize: 10.5, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <label key={key} style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 4 }}>
                         {label}
                         <select value={cpuSels[n][key]} onChange={e => setCpuSels(cs => cs.map((c, i) => (i === n ? { ...c, [key]: e.target.value } : c)))}
-                          style={{ padding: '2px 4px', borderRadius: 5, background: '#14204f', color: '#fff', border: '1px solid #2a3566', fontSize: 10.5 }}>
+                          style={{ padding: '2px 4px', borderRadius: 5, background: '#14204f', color: '#fff', border: '1px solid #2a3566', fontSize: 12.5 }}>
                           <option value="">ランダム</option>
                           {list.map(pt => <option key={pt.id} value={pt.id} disabled={mode === '3v3' && cpuSels.some((c, i) => i !== n && c[key] === pt.id)}>{pt.name}</option>)}
                         </select>
@@ -1806,7 +1804,7 @@ export function Beyblade() {
             <div style={{ fontSize: 14, fontWeight: 900, textAlign: 'center' }}>
               {vs === '2p' ? `${orderWho === 0 ? nameMe : nameCpu}の番です：` : ''}{cycle > 0 ? `3体使い切りました。もう一度、順番を決めよう（${cycle + 1}周目）` : '出す順番を決めよう'}
             </div>
-            <div style={{ fontSize: 10, opacity: 0.85, textAlign: 'center' }}>出したい順に、ベイをタップ（1番手 → 3番手）。{WIN_POINTS}ポイント先取。点数は引き継ぎます。{vs === '2p' && '相手に見えないように決めてね。'}</div>
+            <div style={{ fontSize: 12, opacity: 0.85, textAlign: 'center' }}>出したい順に、ベイをタップ（1番手 → 3番手）。{WIN_POINTS}ポイント先取。点数は引き継ぎます。{vs === '2p' && '相手に見えないように決めてね。'}</div>
             <div style={{ fontSize: 26, fontWeight: 900, lineHeight: 1 }}>
               <span style={{ color: '#5aabff' }}>{score.me}</span><span style={{ opacity: 0.6 }}> - </span><span style={{ color: '#ef4444' }}>{score.cpu}</span>
             </div>
@@ -1819,8 +1817,8 @@ export function Beyblade() {
                     border: `3px solid ${pos >= 0 ? bey.color : '#2a3566'}`, background: pos >= 0 ? '#14204f' : '#0a1030', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                   }}>
                     {bey.sprite && <img src={bey.sprite.src} alt="" width={58} height={58} />}
-                    <div style={{ fontWeight: 800, color: bey.color, textAlign: 'center', fontSize: 11.5, lineHeight: 1.2 }}>{bey.name}</div>
-                    <div style={{ fontSize: 9, opacity: 0.85 }}>攻{bey.stats.atk} 防{bey.stats.def} 持{bey.stats.sta} ダ{bey.stats.dash} 耐{bey.stats.burst}</div>
+                    <div style={{ fontWeight: 800, color: bey.color, textAlign: 'center', fontSize: 13, lineHeight: 1.2 }}>{bey.name}</div>
+                    <div style={{ fontSize: 11, opacity: 0.85 }}>攻{bey.stats.atk} 防{bey.stats.def} 持{bey.stats.sta} ダ{bey.stats.dash} 耐{bey.stats.burst}</div>
                     {pos >= 0 && <div style={{ position: 'absolute', top: -9, left: -9, width: 26, height: 26, borderRadius: 13, background: '#ffd740', color: '#04071a', fontWeight: 900, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pos + 1}</div>}
                   </button>
                 );
@@ -1830,8 +1828,8 @@ export function Beyblade() {
               <button style={{ ...yb, background: '#2a3566', color: '#fff' }} onClick={() => setOrderPick([])}>やり直し</button>
               <button style={{ ...yb, opacity: orderPick.length === 3 ? 1 : 0.4 }} disabled={orderPick.length !== 3} onClick={confirmOrder}>この順番で決定</button>
             </div>
-            {vs === 'cpu' && <div style={{ fontSize: 9.5, opacity: 0.85, textAlign: 'center' }}>CPUの3体：{deck.cpu.map(c => buildBey(c).name).join(' ／ ')}（出す順番は非公開）</div>}
-            <button onClick={backToSelect} style={{ ...sb(false), position: 'absolute', left: 6, bottom: 6, fontSize: 10, padding: '2px 6px' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>
+            {vs === 'cpu' && <div style={{ fontSize: 11.5, opacity: 0.85, textAlign: 'center' }}>CPUの3体：{deck.cpu.map(c => buildBey(c).name).join(' ／ ')}（出す順番は非公開）</div>}
+            <button onClick={backToSelect} style={{ ...sb(false), position: 'absolute', left: 6, bottom: 6, fontSize: 12, padding: '2px 6px' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>
           </div>
         )}
 
@@ -1845,18 +1843,18 @@ export function Beyblade() {
           return (
             <div style={{ position: 'absolute', inset: 0, padding: '5px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 22 }}>
-                <span style={{ fontSize: 11, opacity: 0.85 }}>トーナメント（{t.entrants.length}人・{t.fmt === '3v3' ? '3on3' : '1on1'}）</span>
+                <span style={{ fontSize: 12.5, opacity: 0.85 }}>トーナメント（{t.entrants.length}人・{t.fmt === '3v3' ? '3on3' : '1on1'}）</span>
                 <button style={sb(false)} onClick={() => { tourRef.current = null; setPhase('top'); }}>{phase === 'tchamp' ? 'トップへ' : '中断してトップへ'}</button>
               </div>
               {phase === 'tchamp' && t.champion !== null ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: headH - 8 }}>
                   <span style={{ fontSize: 13, opacity: 0.85 }}>優勝</span>
                   <div style={{ color: '#ffd740', textShadow: '0 2px 10px #000' }}><NameBlock e={t.entrants[t.champion]} nameSize={24} catchSize={11} /></div>
-                  <span style={{ fontSize: 10.5, opacity: 0.75 }}>{t.entrants.some(e => e.human) && (t.entrants[t.champion].human ? 'おめでとう！' : 'プレイヤーは敗退しました')}</span>
+                  <span style={{ fontSize: 12.5, opacity: 0.75 }}>{t.entrants.some(e => e.human) && (t.entrants[t.champion].human ? 'おめでとう！' : 'プレイヤーは敗退しました')}</span>
                 </div>
               ) : cur ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, padding: '3px 10px', borderRadius: 10, border: '2px solid #ffd740', background: '#14204f', minHeight: headH - 12 }}>
-                  <span style={{ fontSize: 10.5, opacity: 0.85 }}>次の試合：{curLabel}</span>
+                  <span style={{ fontSize: 12.5, opacity: 0.85 }}>次の試合：{curLabel}</span>
                   <NameBlock e={t.entrants[cur.a!]} nameSize={17} catchSize={9.5} color={t.entrants[cur.a!].human ? '#5aabff' : '#fff'} />
                   <span style={{ opacity: 0.6, fontWeight: 900 }}>vs</span>
                   <NameBlock e={t.entrants[cur.b!]} nameSize={17} catchSize={9.5} color={t.entrants[cur.b!].human ? '#5aabff' : '#fff'} />
