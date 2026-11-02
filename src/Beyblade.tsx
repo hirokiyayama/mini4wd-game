@@ -1514,12 +1514,12 @@ export function Beyblade() {
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && vsRef.current === 'cpu' && hideOppRef.current) {
         const c = cpuPlanRef.current, im = c.x < 0 ? LAUNCHERS.red : LAUNCHERS.black;
         if (im.complete && im.naturalWidth > 0) {
-          // ランチャーを縦向きに大きく置く（その半分のスタジアムの約3分の1を隠す）。正確な位置は分からないように、少しずらして描く
+          // ランチャーを縦向きに大きく置く（左右どちらかの半分の約3分の1を隠す）。正確な位置は分からないように、少しずらして描く
           // （同じ位置なら同じずれ方なので、ちらつかない）。落とせる半分（左右どちらか）と、すり鉢の外にははみ出さない
           const sd = c.x < 0 ? -1 : 1;
-          const sh = 245, lg = (sh * im.naturalWidth) / im.naturalHeight; // 縦向き：短い辺 sh、長い辺 lg
+          const sh = 185, lg = (sh * im.naturalWidth) / im.naturalHeight; // 縦向き：短い辺 sh、長い辺 lg
           const hz = (k: number) => { const v = Math.sin(c.x * 12.9898 + c.y * 78.233 + k) * 43758.5453; return v - Math.floor(v) - 0.5; };
-          const cx = sd * (R / 2 + 2) + hz(1) * 10, cy = Math.max(-45, Math.min(45, c.y * 0.2 + hz(2) * 70));
+          const cx = sd * (R / 2 + hz(1) * 60), cy = Math.max(-100, Math.min(100, c.y * 0.35 + hz(2) * 90));
           ctx.save();
           ctx.beginPath(); ctx.arc(0, 0, R - 2, 0, Math.PI * 2); ctx.clip();
           ctx.beginPath(); ctx.rect(sd < 0 ? -R : 2, -R, R, R * 2); ctx.clip();
