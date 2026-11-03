@@ -453,10 +453,19 @@ interface Bey {
   hit: boolean; // 動き出す前に当てられたか（当てられたら矢印の向きではなく、弾かれた向きに進む）
   rideChance: number; onRing: boolean; // 斜めシュートはリングに乗りにくい
   age: number; // 発射してからの時間（秒）
+  coast: number; // ダッシュのあと、すぐに失速する時間
   outT: number; outKind: 'extreme' | 'over'; outPhi: number; retPlan: boolean; retCount: number; grace: number; // 場外ポケット：滞在時間・出口の種類・戻るか・戻った回数・戻った直後の猶予
   dashesLeft: number; // 残りXダッシュ回数（Eビットは2〜3回まで）
 }
-interface Spark { x: number; y: number; vx: number; vy: number; life: number }
+interface Spark { x: number; y: number; vx: number; vy: number; life: number; max: number; w: number }
+// 火花を作る（ぶつかった・壁に当たった・ダッシュの瞬間など）。多めに、速く、尾を引いて飛び散る
+function makeSparks(arr: Spark[], x: number, y: number, n: number) {
+  const k = Math.min(70, Math.round(n * 2.6));
+  for (let i = 0; i < k; i++) {
+    const a = Math.random() * Math.PI * 2, v = 140 + Math.random() * 520, life = 0.35 + Math.random() * 0.6;
+    arr.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life, max: life, w: 1.6 + Math.random() * 2.2 });
+  }
+}
 interface Part { x: number; y: number; vx: number; vy: number; rot: number; vr: number; color: string; size: number; life: number }
 
 // 出口に入れる幅：ベイの大きさぶん内側（仕切りの壁にかかっていると入れない）
@@ -491,7 +500,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    age: 0, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
+    age: 0, coast: 0, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -1367,7 +1376,7 @@ export function Beyblade() {
         break;
       case 'fire': snapsRef.current = []; beysRef.current = null; setCount(null); setPhase('battle'); break;
       case 's': snapsRef.current.push({ t: performance.now(), b: m.b as number[][] }); if (snapsRef.current.length > 8) snapsRef.current.shift(); break;
-      case 'sp': for (let i = 0; i < Number(m.n); i++) { const a = Math.random() * Math.PI * 2, v = 80 + Math.random() * 220; sparksRef.current.push({ x: Number(m.x), y: Number(m.y), vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.4 + Math.random() * 0.3 }); } break;
+      case 'sp': makeSparks(sparksRef.current, Number(m.x), Number(m.y), Number(m.n)); break;
       case 'parts': partsRef.current.push(...(m.parts as Part[])); break;
       case 'end': setMessage({ winner: m.winner as 'me' | 'cpu', finish: m.finish as Finish }); break;
       case 'res': scoreRef.current = m.score as { me: number; cpu: number }; setScore(scoreRef.current); setPhase(m.phase as 'result' | 'over'); break;
@@ -1415,11 +1424,7 @@ export function Beyblade() {
 
     const spark = (x: number, y: number, n: number) => {
       if (onlineRef.current === 'host') linkRef.current?.send({ t: 'sp', x: Math.round(x), y: Math.round(y), n });
-      for (let i = 0; i < n; i++) {
-        const a = Math.random() * Math.PI * 2;
-        const s = 80 + Math.random() * 220;
-        sparksRef.current.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.4 + Math.random() * 0.3 });
-      }
+      makeSparks(sparksRef.current, x, y, n);
     };
 
     const step = () => {
@@ -1456,6 +1461,7 @@ export function Beyblade() {
           continue;
         }
         b.dashT = Math.max(0, b.dashT - DT);
+        b.coast = Math.max(0, b.coast - DT);
         b.dashCd = Math.max(0, b.dashCd - DT);
         b.dashFx = Math.max(0, b.dashFx - DT);
         b.knockT = Math.max(0, b.knockT - DT);
@@ -1540,34 +1546,34 @@ export function Beyblade() {
           const d = Math.hypot(b.x, b.y) || 1;
           // 右回転は反時計回りにリングを走る（右側を駆け上がる）。左回転はその鏡写し（左側を駆け上がる）
           const tx = (b.dir * b.y) / d, ty = (-b.dir * b.x) / d;
-          const rs = 900 * t.dash;
+          const rs = 1250 * t.dash;
           const fix = (R * 0.9 - d) * 8; // リングの上に保つ
           b.vx = tx * rs + (b.x / d) * fix; b.vy = ty * rs + (b.y / d) * fix;
           b.x += b.vx * DT; b.y += b.vy * DT;
           b.trail.push({ x: b.x, y: b.y });
           if (b.trail.length > 14) b.trail.shift();
-          b.spin = Math.max(0, b.spin - (4.5 + rs * 0.02) * t.decay * DT * 6);
+          b.spin = Math.max(0, b.spin - (4.5 + rs * 0.0145) * t.decay * DT * 6);
           const atTop = Math.abs(Math.atan2(b.y, b.x) + Math.PI / 2) < 0.2;
           if (atTop && b.rideT > 0.05) {
             // 上側から中央へ発射
             const nx = -b.x / d, ny = -b.y / d;
             let dx = nx * 0.85 + tx * 0.35, dy = ny * 0.85 + ty * 0.35;
             const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
-            const dashSpeed = (1100 + 350 * ratio) * t.dash * (0.5 + 0.5 * ratio); // 回転が落ちるとダッシュも弱くなる
+            const dashSpeed = (1650 + 520 * ratio) * t.dash * (0.55 + 0.45 * ratio); // 回転が落ちるとダッシュも弱くなる
             b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
             b.riding = false;
-            b.dashT = 0.4; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
+            b.dashT = 0.4; b.coast = 1.0; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
             b.rideChance = 1; // 1回ダッシュしたら、斜めシュートでも水平と同じ（R/LRはここから何度もダッシュ）
             b.dashesLeft--;
             b.spin = Math.max(0, b.spin - b.spinMax * 0.05 * t.dashCost); // Xダッシュでも持久が削られる（回数が多いR/LRほど消耗する）
             { const w = window as unknown as { __dashes?: number[] }; (w.__dashes ??= [0, 0])[beys.indexOf(b)]++; } // 動作確認用のダッシュ回数カウンタ
-            spark(b.x, b.y, 14);
+            spark(b.x, b.y, 22);
           } else if (b.rideT > 3.2) {
             b.riding = false; b.dashCd = 0.6;
           }
           continue;
         }
-        const damp = 1 - (0.08 + (1 - ratio) * 0.7 + (b.dashT > 0 ? 1.3 : 0)) * DT; // ダッシュ中は失速し、反対側のライン付近まで届く
+        const damp = 1 - (0.08 + (1 - ratio) * 0.7 + (b.dashT > 0 ? 2.0 : 0) + (b.coast > 0 && b.dashT <= 0 ? 2.6 : 0) + (b.knockT > 0 ? 4.5 : 0)) * DT; // ダッシュ中は失速し、反対側のライン付近まで届く
         b.vx *= damp; b.vy *= damp;
         speed = Math.hypot(b.vx, b.vy);
         // 巡航：回転が残っている間は、止まらずに動き続ける（今の向きに沿って、目標の速さまで加速する）。回転が落ちるほど遅くなる
@@ -1579,7 +1585,7 @@ export function Beyblade() {
             b.vx += dx * acc; b.vy += dy * acc; speed = Math.hypot(b.vx, b.vy);
           }
         }
-        if (speed > 1800) { b.vx *= 1800 / speed; b.vy *= 1800 / speed; speed = 1800; } // 速すぎて突き抜けないように上限
+        { const cap = b.dashT > 0 ? 2800 : b.knockT > 0 ? 850 : 1800; if (speed > cap) { b.vx *= cap / speed; b.vy *= cap / speed; speed = cap; } } // ぶつかって飛ばされたあとは、反対側まで飛んでいかない // 速すぎて突き抜けないように上限
         b.x += b.vx * DT; b.y += b.vy * DT;
         b.trail.push({ x: b.x, y: b.y });
         if (b.trail.length > 14) b.trail.shift();
@@ -1596,9 +1602,9 @@ export function Beyblade() {
           const nx = b.x / d2, ny = b.y / d2;
           const outv = b.vx * nx + b.vy * ny;
           if (outv > 0) {
-            b.vx -= 1.55 * outv * nx; b.vy -= 1.55 * outv * ny;
+            b.vx -= 1.4 * outv * nx; b.vy -= 1.4 * outv * ny;
             // 相手に強く飛ばされて壁に当たって戻ってくると、持久が少し削られる（自分でぶつかったときは削れない）
-            if (outv > 150 && b.knockT > 0) { b.spin = Math.max(0, b.spin - 0.4 * outv); spark(b.x, b.y, 4); }
+            if (outv > 150 && b.knockT > 0) { b.spin = Math.max(0, b.spin - 0.4 * outv); spark(b.x, b.y, 10); }
           }
           b.x = nx * lim; b.y = ny * lim;
         }
@@ -1625,7 +1631,7 @@ export function Beyblade() {
           // 弾く力は、ぶつかった2つのベイの回転の強さで決まる。回転が落ちるほど、反発が小さくなる
           // （満タンの回転では係数4.6、回転が3割なら約1.8、1割なら約1.3）
           const spinPow = Math.pow((a.spin / a.spinMax + b.spin / b.spinMax) / 2, 1.3);
-          const j = ((1.1 + 3.5 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
+          const j = ((1.0 + 1.8 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
           const sa0 = Math.hypot(a.vx, a.vy), sb0 = Math.hypot(b.vx, b.vy);
           a.vx -= (j / ma) * nx * ta.steady * tb.kick; a.vy -= (j / ma) * ny * ta.steady * tb.kick;
           b.vx += (j / mb) * nx * tb.steady * ta.kick; b.vy += (j / mb) * ny * tb.steady * ta.kick;
@@ -1663,7 +1669,7 @@ export function Beyblade() {
               Rb.spin = Math.min(Rb.spinMax * 1.05, Rb.spin + T * 0.7);
             }
           }
-          spark((a.x + b.x) / 2, (a.y + b.y) / 2, 8 + Math.floor(impact / 40));
+          spark((a.x + b.x) / 2, (a.y + b.y) / 2, 12 + Math.floor(impact / 22));
           flashRef.current = Math.min(1, impact / 600);
           // 動き出す前に当てられたら、弾かれて進行方向が変わる（矢印の向きには戻らない）
           for (const x of [a, b]) {
@@ -1848,12 +1854,19 @@ export function Beyblade() {
       }
       // 火花
       const sp = sparksRef.current;
+      (window as unknown as { __sparks?: number }).__sparks = sp.length; // 動作確認用
       for (let i = sp.length - 1; i >= 0; i--) {
         const s = sp[i];
-        s.life -= 1 / 60; s.x += s.vx / 60; s.y += s.vy / 60;
+        s.life -= 1 / 60; s.x += s.vx / 60; s.y += s.vy / 60; s.vx *= 0.955; s.vy *= 0.955;
         if (s.life <= 0) { sp.splice(i, 1); continue; }
-        ctx.fillStyle = `rgba(255,170,40,${Math.min(1, s.life * 2)})`;
-        ctx.fillRect(s.x - 1.5, s.y - 1.5, 3, 3);
+        // 尾を引く火花：はじめは白っぽく明るく、だんだん橙になって消える
+        const f = s.life / s.max, g = Math.round(150 + 105 * f), bl = Math.round(40 + 160 * f * f);
+        const tx = s.x - s.vx * 0.05, ty = s.y - s.vy * 0.05;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = `rgba(235,90,10,${Math.min(1, f * 1.6)})`; ctx.lineWidth = s.w * (1 + f) + 1.5; // 白いスタジアムでも見えるよう、橙色の縁を付ける
+        ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(tx, ty); ctx.stroke();
+        ctx.strokeStyle = `rgba(255,${g},${bl},${Math.min(1, f * 1.8)})`; ctx.lineWidth = s.w * (0.5 + f);
+        ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(tx, ty); ctx.stroke();
       }
       ctx.restore();
 
