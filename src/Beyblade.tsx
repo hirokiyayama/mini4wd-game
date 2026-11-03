@@ -498,6 +498,7 @@ interface Bey {
   coast: number; // ダッシュのあと、すぐに失速する時間
   ph0: number; // 進路のゆれの位相
   dAt: number; // （未使用）
+  outAng: number; prevTh: number; // リングの外側を回った角度（1周回ったら、次の動きに移る）
   postT: number; // ぶつかってからの、惰性で動く時間（この間は、ビットごとの円・楕円の動きを切る）
   eAng: number; er: number; // 平らな底のビットの楕円の向き・ひらべったさ
   mode: number; r0: number; osgn: number; // ぶつかったあとの動き：0=そのまま 1=真ん中に戻る 2=その周りを回る（半径・回る向き）
@@ -554,7 +555,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
+    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -1685,6 +1686,33 @@ export function Beyblade() {
         b.trail.push({ x: b.x, y: b.y });
         if (b.trail.length > 14) b.trail.shift();
         b.spin = Math.max(0, b.spin - (4.5 + speed * 0.005) * t.decay * DT * 6);
+        { // リングの外側を、時計回りなどで1周したら：上まで来たところで、真ん中へダッシュする／下のオーバー・エクストリームゾーンへ向かう／スタジアム内へ戻る、のどれかになる（ずっと回り続けない）
+          const dd0 = Math.hypot(b.x, b.y), th0 = Math.atan2(b.y, b.x);
+          if (dd0 > R * 0.86 && !b.riding && b.dashT <= 0) {
+            let dth = th0 - b.prevTh; dth = Math.atan2(Math.sin(dth), Math.cos(dth));
+            b.outAng += Math.abs(dth);
+          } else if (dd0 < R * 0.75) b.outAng = 0;
+          b.prevTh = th0;
+          const nearTop = Math.abs(Math.atan2(Math.sin(th0 + Math.PI / 2), Math.cos(th0 + Math.PI / 2))) < 0.4;
+          if (b.outAng > Math.PI * 1.3 && (nearTop || b.outAng > Math.PI * 2.6) && dd0 > R * 0.8) {
+            b.outAng = 0;
+            const nx0 = -b.x / dd0, ny0 = -b.y / dd0, rr = Math.random();
+            const dsp = (1500 + 200 * ratio) * t.dash * (0.4 + 0.6 * Math.pow(ratio, 1.4));
+            let ax = nx0, ay = ny0, sp2 = dsp;
+            if (rr < 0.5) { // 真ん中へダッシュ
+              const j0 = (Math.random() + Math.random() - 1) * 0.3; ax = nx0 * Math.cos(j0) - ny0 * Math.sin(j0); ay = nx0 * Math.sin(j0) + ny0 * Math.cos(j0);
+            } else if (rr < 0.75) { // 下のオーバー／エクストリームゾーンへ
+              const phi = Math.random() < 0.35 ? 0 : (Math.random() < 0.5 ? -OVER_PHI : OVER_PHI), qx = Math.sin(phi) * (R + 12) - b.x, qy = Math.cos(phi) * (R + 12) - b.y, ql = Math.hypot(qx, qy) || 1;
+              ax = qx / ql; ay = qy / ql;
+            } else { // スタジアム内へ戻る
+              const tx2 = (Math.random() - 0.5) * R * 0.9, ty2 = (Math.random() - 0.5) * R * 0.9, ql = Math.hypot(tx2 - b.x, ty2 - b.y) || 1;
+              ax = (tx2 - b.x) / ql; ay = (ty2 - b.y) / ql; sp2 = 650 + 250 * Math.random();
+            }
+            b.vx = ax * sp2; b.vy = ay * sp2;
+            if (rr < 0.75) { b.dashT = 0.4; b.coast = 1.0; b.dashFx = 0.7; b.spin = Math.max(0, b.spin - b.spinMax * 0.05 * t.dashCost); spark(b.x, b.y, 22); }
+            speed = Math.hypot(b.vx, b.vy);
+          }
+        }
         { // リングよりも外側（壁との間）には、とどまれない：内側へ押し戻される（出口の手前は除く）
           const dd = Math.hypot(b.x, b.y);
           if (dd > R * 0.9 + 3 && !exitKind(b.x, b.y)) {
