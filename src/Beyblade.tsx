@@ -89,10 +89,49 @@ const BITS: PartDef[] = [
 const LAUNCHERS = { red: new Image(), black: new Image() }; // 相手の落とす位置を隠しているときのヒント
 LAUNCHERS.red.src = launcherRedImg; LAUNCHERS.black.src = launcherBlackImg;
 const SPRITES: Record<string, HTMLImageElement> = {};
+
+// ---- ブレードの形：写真の輪郭から、角度ごとの半径を作る（丸くない・凹凸がある）。当たる場所によって、弾く向き・飛ぶ量が変わり、形がいびつなほど動きが不規則になる
+const SHAPE_N = 72;
+const SHAPES: Record<string, { r: Float32Array; mean: number; nr: number }> = {};
+function computeShape(id: string, im: HTMLImageElement) {
+  const S = im.naturalWidth || 256;
+  const cv = document.createElement('canvas'); cv.width = cv.height = S;
+  const c2 = cv.getContext('2d'); if (!c2) return;
+  c2.drawImage(im, 0, 0, S, S);
+  const data = c2.getImageData(0, 0, S, S).data;
+  const r = new Float32Array(SHAPE_N), c0 = S / 2;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    if (data[(y * S + x) * 4 + 3] < 128) continue;
+    const dx = x + 0.5 - c0, dy = y + 0.5 - c0, rr = Math.hypot(dx, dy);
+    const k = Math.floor(((Math.atan2(dy, dx) + Math.PI) / (2 * Math.PI)) * SHAPE_N) % SHAPE_N;
+    if (rr > r[k]) r[k] = rr;
+  }
+  // 抜けを埋めて、なめらかにする
+  for (let k = 0; k < SHAPE_N; k++) if (r[k] === 0) r[k] = (r[(k + SHAPE_N - 1) % SHAPE_N] + r[(k + 1) % SHAPE_N]) / 2 || 1;
+  const sm = new Float32Array(SHAPE_N), sc = (BEY_R * 2.15) / S;
+  for (let k = 0; k < SHAPE_N; k++) sm[k] = ((r[(k + SHAPE_N - 1) % SHAPE_N] + 2 * r[k] + r[(k + 1) % SHAPE_N]) / 4) * sc;
+  let mean = 0; for (const v of sm) mean += v; mean /= SHAPE_N;
+  let sd = 0; for (const v of sm) sd += (v - mean) ** 2; sd = Math.sqrt(sd / SHAPE_N) / mean;
+  SHAPES[id] = { r: sm, mean, nr: Math.max(0, Math.min(1, (sd - 0.015) / 0.035)) }; // nr：0＝まん丸 … 1＝いびつ
+  (window as unknown as { __shapes?: typeof SHAPES }).__shapes = SHAPES; // 動作確認用
+}
+const nrOf = (id: string) => SHAPES[id]?.nr ?? 0.5;
+function shapeR(id: string, th: number) { // 角度 th（ベイから見た向き）での半径
+  const sh = SHAPES[id];
+  if (!sh) return BEY_R;
+  const u = (((th + Math.PI) / (2 * Math.PI)) % 1 + 1) % 1, t = u * SHAPE_N - 0.5, i0 = Math.floor(t), f = t - i0;
+  return sh.r[((i0 % SHAPE_N) + SHAPE_N) % SHAPE_N] * (1 - f) + sh.r[(((i0 + 1) % SHAPE_N) + SHAPE_N) % SHAPE_N] * f;
+}
+function shapeNormal(id: string, th: number) { // その点の外向きの法線の向き（凹凸があると、中心からの向きとずれる）
+  const h = (2 * Math.PI) / SHAPE_N, r = shapeR(id, th), dr = (shapeR(id, th + h) - shapeR(id, th - h)) / (2 * h);
+  return Math.atan2(r * Math.sin(th) - dr * Math.cos(th), r * Math.cos(th) + dr * Math.sin(th));
+}
 for (const bl of BLADES) {
   if (!bl.img) continue;
   const im = new Image();
+  im.onload = () => computeShape(bl.id, im);
   im.src = bl.img;
+  if (im.complete && im.naturalWidth) computeShape(bl.id, im);
   SPRITES[bl.id] = im;
 }
 
@@ -189,6 +228,7 @@ function buildBey(c: Custom) {
     spinDir: bl.spinDir ?? 1, // 左回転ブレードは -1
     absorb: (bl.absorb ?? 0) * (bit.absorbBit ?? 0.25), // 左回転の回転吸収力（Eビットで大きく発揮される）
     mobility: bit.mobility ?? 1,
+    bid: bl.id, // ブレードの種類（形の計算に使う）
     cruise: 360 * Math.sqrt(bit.mobility ?? 1), // 実際の動画：ベイは中央に落ち着いても止まらず、一定の速さで動き回り続ける（Rなど動き回るビットは速く、Hは遅い）
     steady: bit.steady ?? 1,
     exitResist: bit.exitResist ?? 1,
@@ -1596,7 +1636,7 @@ export function Beyblade() {
           b.kickT -= DT;
           if (b.kickT <= 0 && speed > 40) {
             b.kickT = 0.1 + Math.random() * 0.35;
-            const irr = Math.sqrt(t.mobility), rot = (Math.random() + Math.random() - 1) * 3.1 * irr * (0.4 + 0.6 * Math.sqrt(ratio));
+            const irr = Math.sqrt(t.mobility) * (0.75 + 0.75 * nrOf(t.bid)), rot = (Math.random() + Math.random() - 1) * 3.1 * irr * (0.4 + 0.6 * Math.sqrt(ratio));
             const sc = 0.55 + Math.random() * 0.95, cs2 = Math.cos(rot), sn2 = Math.sin(rot);
             const nvx = (b.vx * cs2 - b.vy * sn2) * sc, nvy = (b.vx * sn2 + b.vy * cs2) * sc;
             b.vx = nvx; b.vy = nvy; speed = Math.hypot(b.vx, b.vy);
@@ -1635,10 +1675,25 @@ export function Beyblade() {
       const [a, b] = beys;
       const dx = b.x - a.x, dy = b.y - a.y;
       const d = Math.hypot(dx, dy) || 0.001;
-      if (d < BEY_R * 2 && a.outT <= 0 && b.outT <= 0) {
-        const nx = dx / d, ny = dy / d;
+      const ta = TYPES[a.type], tb = TYPES[b.type];
+      const phi = Math.atan2(dy, dx), tha = phi - a.angle, thb = phi + Math.PI - b.angle;
+      const ra = shapeR(ta.bid, tha), rb = shapeR(tb.bid, thb); // 当たる場所での、それぞれの半径（丸くない）
+      if (d < ra + rb && a.outT <= 0 && b.outT <= 0) {
+        // 当たった点の向き：凹凸があると、中心どうしを結ぶ向きからずれて、弾く向きが変わる（ずれは最大約40度）
+        const cxl = dx / d, cyl = dy / d;
+        const Na = shapeNormal(ta.bid, tha) + a.angle, Nb = shapeNormal(tb.bid, thb) + b.angle;
+        let nx = cxl, ny = cyl;
+        { const sx = Math.cos(Na) - Math.cos(Nb), sy = Math.sin(Na) - Math.sin(Nb);
+          if (Math.hypot(sx, sy) > 0.3) {
+            const base = Math.atan2(cyl, cxl);
+            let df = Math.atan2(sy, sx) - base; df = Math.atan2(Math.sin(df), Math.cos(df));
+            df = Math.max(-0.7, Math.min(0.7, df));
+            nx = Math.cos(base + df); ny = Math.sin(base + df);
+          } }
+        // とがったところで当たるほど強く飛ばす／いびつなブレードほど飛ばしやすい
+        const ma0 = SHAPES[ta.bid]?.mean ?? BEY_R, mb0 = SHAPES[tb.bid]?.mean ?? BEY_R;
+        const lobe = Math.pow(Math.min(1.25, Math.max(0.8, (ra / ma0 + rb / mb0) / 2)), 2) * (1 + 0.3 * (nrOf(ta.bid) + nrOf(tb.bid)) / 2);
         const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
-        const ta = TYPES[a.type], tb = TYPES[b.type];
         // 斜めシュートで固定されている間は飛ばされにくい
         const ma = ta.mass * (a.holdT > 0 ? 2.2 : 1), mb = tb.mass * (b.holdT > 0 ? 2.2 : 1);
         if (rel > 0) {
@@ -1648,7 +1703,7 @@ export function Beyblade() {
           // 弾く力は、ぶつかった2つのベイの回転の強さで決まる。回転が落ちるほど、反発が小さくなる
           // （満タンの回転では係数4.6、回転が3割なら約1.8、1割なら約1.3）
           const spinPow = Math.pow((a.spin / a.spinMax + b.spin / b.spinMax) / 2, 1.3);
-          const j = ((1.0 + 1.8 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
+          const j = (lobe * (1.0 + 1.8 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
           const sa0 = Math.hypot(a.vx, a.vy), sb0 = Math.hypot(b.vx, b.vy);
           a.vx -= (j / ma) * nx * ta.steady * tb.kick; a.vy -= (j / ma) * ny * ta.steady * tb.kick;
           b.vx += (j / mb) * nx * tb.steady * ta.kick; b.vy += (j / mb) * ny * tb.steady * ta.kick;
@@ -1695,10 +1750,10 @@ export function Beyblade() {
             if (x.holdT > 0) { x.holdT = 0; x.dashCd = Math.max(x.dashCd, 0.8); }
           }
         }
-        const overlap = BEY_R * 2 - d;
+        const overlap = ra + rb - d;
         const shareA = (1 / ma) / (1 / ma + 1 / mb);
-        a.x -= nx * overlap * shareA; a.y -= ny * overlap * shareA;
-        b.x += nx * overlap * (1 - shareA); b.y += ny * overlap * (1 - shareA);
+        a.x -= cxl * overlap * shareA; a.y -= cyl * overlap * shareA;
+        b.x += cxl * overlap * (1 - shareA); b.y += cyl * overlap * (1 - shareA);
       }
 
       // 決着判定
