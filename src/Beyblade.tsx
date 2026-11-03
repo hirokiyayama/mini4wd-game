@@ -1633,13 +1633,10 @@ export function Beyblade() {
           if (atTop && b.rideT > 0.05) {
             // 上側から中央へ発射
             const nx = -b.x / d, ny = -b.y / d;
-            // 動画（61回）：ダッシュの向きは、真ん中の方向を中心に、約±37度ばらつく（スタート位置とはほぼ無関係）。真ん中にとどまっているベイにも当たる
-            const foe = beys.find(q => q !== b && !q.dead && q.outT <= 0);
-            let ax0 = nx, ay0 = ny;
-            if (foe && Math.hypot(foe.x, foe.y) < 120) { const fx = foe.x - b.x, fy = foe.y - b.y, fl = Math.hypot(fx, fy) || 1; ax0 = nx * 0.5 + (fx / fl) * 0.5; ay0 = ny * 0.5 + (fy / fl) * 0.5; } // 相手が真ん中にいれば、その方向へ少し寄る
-            // 真ん中に向かうこともあれば、勢いがあるときは、少し真ん中より左へ向かうこともある（左回転のベイは、左右が逆）
-            const aimErr = (Math.random() + Math.random() - 1) * 1.1 + b.dir * ratio * ratio * 0.45 * Math.random();
-            let dx = ax0 * Math.cos(aimErr) - ay0 * Math.sin(aimErr), dy = ax0 * Math.sin(aimErr) + ay0 * Math.cos(aimErr);
+            // ダッシュの向き：真ん中に向かうか、回転が強いときは、真ん中より少し左へ向かう（右のオーバーゾーン側へは向かわない。左回転のベイは左右が逆）
+            const lean = 0.35 * Math.pow(ratio, 1.2) * (0.3 + 0.9 * Math.random()), jit = (Math.random() + Math.random() - 1) * 0.14;
+            let dx = nx * 0.85 + tx * lean, dy = ny * 0.85 + ty * lean;
+            { const cj = Math.cos(jit), sj = Math.sin(jit), ndx = dx * cj - dy * sj, ndy = dx * sj + dy * cj; dx = ndx; dy = ndy; }
             const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
             const dashSpeed = (1500 + 200 * ratio) * t.dash * (0.6 + 0.4 * ratio); // 回転が落ちるとダッシュも弱くなる
             b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
