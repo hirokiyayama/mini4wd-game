@@ -1553,7 +1553,7 @@ export function Beyblade() {
 
         // すり鉢の傾斜（中央へ引く）
         // 実際の動画：最初はリングの近くを動き回り、時間がたつにつれて中央付近に集まる（すり鉢の中心へ引かれる力が、だんだん強くなる）
-        const aT = Math.max(0, Math.min(1, (b.age - 6) / 8)), kPull = 3.5 + 5 * aT * aT * (3 - 2 * aT);
+        const aT = Math.max(0, Math.min(1, (b.age - 6) / 8)), kPull = 3.5 + 10.5 * aT * aT * (3 - 2 * aT);
         b.vx += -b.x * kPull * DT;
         b.vy += -b.y * kPull * DT;
         // ジャイロ効果で軌道が緩やかにカーブする
@@ -1626,7 +1626,8 @@ export function Beyblade() {
         speed = Math.hypot(b.vx, b.vy);
         // 巡航：回転が残っている間は、止まらずに動き続ける（今の向きに沿って、目標の速さまで加速する）。回転が落ちるほど遅くなる
         if (b.dashT <= 0 && b.knockT <= 0) {
-          const vt = t.cruise * (0.2 + 0.8 * Math.sqrt(ratio));
+          const ageT = Math.max(0, Math.min(1, (b.age - 6) / 9)), ageF = 1 - 0.65 * ageT * ageT * (3 - 2 * ageT); // 動画：後半は、2体が中央に寄り添って、ゆっくり動く
+          const vt = t.cruise * ageF * (0.2 + 0.8 * Math.sqrt(ratio));
           if (speed < vt) {
             const dx = speed > 15 ? b.vx / speed : Math.cos(b.angle), dy = speed > 15 ? b.vy / speed : Math.sin(b.angle);
             const acc = (vt - speed) * 2.5 * DT;
