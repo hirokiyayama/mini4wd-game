@@ -189,6 +189,7 @@ function buildBey(c: Custom) {
     spinDir: bl.spinDir ?? 1, // 左回転ブレードは -1
     absorb: (bl.absorb ?? 0) * (bit.absorbBit ?? 0.25), // 左回転の回転吸収力（Eビットで大きく発揮される）
     mobility: bit.mobility ?? 1,
+    cruise: 230 * Math.sqrt(bit.mobility ?? 1), // 実際の動画：ベイは中央に落ち着いても止まらず、一定の速さで動き回り続ける（Rなど動き回るビットは速く、Hは遅い）
     steady: bit.steady ?? 1,
     exitResist: bit.exitResist ?? 1,
     comeback: (bl.comeback ?? 1) * (bl.integrated ? 1 : pick(RATCHETS, c.ratchet).comeback ?? 1), // 場外から戻りやすさ
@@ -1565,6 +1566,15 @@ export function Beyblade() {
         const damp = 1 - (0.08 + (1 - ratio) * 0.7 + (b.dashT > 0 ? 1.3 : 0)) * DT; // ダッシュ中は失速し、反対側のライン付近まで届く
         b.vx *= damp; b.vy *= damp;
         speed = Math.hypot(b.vx, b.vy);
+        // 巡航：回転が残っている間は、止まらずに動き続ける（今の向きに沿って、目標の速さまで加速する）。回転が落ちるほど遅くなる
+        if (b.dashT <= 0 && b.knockT <= 0) {
+          const vt = t.cruise * (0.2 + 0.8 * Math.sqrt(ratio));
+          if (speed < vt) {
+            const dx = speed > 15 ? b.vx / speed : Math.cos(b.angle), dy = speed > 15 ? b.vy / speed : Math.sin(b.angle);
+            const acc = (vt - speed) * 2.5 * DT;
+            b.vx += dx * acc; b.vy += dy * acc; speed = Math.hypot(b.vx, b.vy);
+          }
+        }
         if (speed > 1800) { b.vx *= 1800 / speed; b.vy *= 1800 / speed; speed = 1800; } // 速すぎて突き抜けないように上限
         b.x += b.vx * DT; b.y += b.vy * DT;
         b.trail.push({ x: b.x, y: b.y });
