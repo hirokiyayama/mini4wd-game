@@ -1696,9 +1696,12 @@ export function Beyblade() {
           const nearTop = Math.abs(Math.atan2(Math.sin(th0 + Math.PI / 2), Math.cos(th0 + Math.PI / 2))) < 0.4;
           if (b.outAng > Math.PI * 1.3 && (nearTop || b.outAng > Math.PI * 2.6) && dd0 > R * 0.8) {
             b.outAng = 0;
-            const nx0 = -b.x / dd0, ny0 = -b.y / dd0, rr = Math.random();
+            const nx0 = -b.x / dd0, ny0 = -b.y / dd0;
+            // 右回転のベイは時計回りで、左回転のベイは反時計回りでは、エクストリームダッシュしない（回る向きと逆に動いているとき）
+            const against = (b.x * b.vy - b.y * b.vx) * b.dir > 0;
+            const rr = against ? 0.5 + Math.random() * 0.5 : Math.random();
             const dsp = (1500 + 200 * ratio) * t.dash * (0.4 + 0.6 * Math.pow(ratio, 1.4));
-            let ax = nx0, ay = ny0, sp2 = dsp;
+            let ax = nx0, ay = ny0, sp2 = against ? 1000 : dsp;
             if (rr < 0.5) { // 真ん中へダッシュ
               const j0 = (Math.random() + Math.random() - 1) * 0.3; ax = nx0 * Math.cos(j0) - ny0 * Math.sin(j0); ay = nx0 * Math.sin(j0) + ny0 * Math.cos(j0);
             } else if (rr < 0.75) { // 下のオーバー／エクストリームゾーンへ
@@ -1709,7 +1712,7 @@ export function Beyblade() {
               ax = (tx2 - b.x) / ql; ay = (ty2 - b.y) / ql; sp2 = 650 + 250 * Math.random();
             }
             b.vx = ax * sp2; b.vy = ay * sp2;
-            if (rr < 0.75) { b.dashT = 0.4; b.coast = 1.0; b.dashFx = 0.7; b.spin = Math.max(0, b.spin - b.spinMax * 0.05 * t.dashCost); spark(b.x, b.y, 22); }
+            if (rr < 0.75 && !against) { b.dashT = 0.4; b.coast = 1.0; b.dashFx = 0.7; b.spin = Math.max(0, b.spin - b.spinMax * 0.05 * t.dashCost); spark(b.x, b.y, 22); }
             speed = Math.hypot(b.vx, b.vy);
           }
         }
@@ -1737,7 +1740,7 @@ export function Beyblade() {
             { const inn = -(b.vx * nx + b.vy * ny); if (inn < 160) { b.vx -= nx * (160 - inn); b.vy -= ny * (160 - inn); } } // 壁に当たったら、必ずリング内へ戻る向きの速さが残る
             if (t.flat) { b.eAng = Math.random() * Math.PI; b.er = 0.35 + Math.random() * 0.25; } // 壁に当たると、楕円の向きが変わる（軌道が変わる）
             // 相手に強く飛ばされて壁に当たって戻ってくると、持久が少し削られる（自分でぶつかったときは削れない）
-            if (outv > 150 && b.knockT > 0) { b.spin = Math.max(0, b.spin - 0.4 * outv); spark(b.x, b.y, 10); }
+            if (outv > 150 && b.knockT > 0) { b.spin = Math.max(0, b.spin - 0.4 * outv); }
           }
           b.x = nx * lim; b.y = ny * lim;
         }
