@@ -497,6 +497,7 @@ interface Bey {
   age: number; // 発射してからの時間（秒）
   coast: number; // ダッシュのあと、すぐに失速する時間
   ph0: number; // 進路のゆれの位相
+  dAt: number; // ダッシュを始める位置（上の緑の突起のどこに当たるか。毎回ずれる）
   eAng: number; er: number; // 平らな底のビットの楕円の向き・ひらべったさ
   mode: number; r0: number; osgn: number; // ぶつかったあとの動き：0=そのまま 1=真ん中に戻る 2=その周りを回る（半径・回る向き）
   outT: number; outKind: 'extreme' | 'over'; outPhi: number; retPlan: boolean; retCount: number; grace: number; // 場外ポケット：滞在時間・出口の種類・戻るか・戻った回数・戻った直後の猶予
@@ -552,7 +553,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    age: 0, coast: 0, ph0: Math.random() * 6.28, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
+    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -1603,11 +1604,11 @@ export function Beyblade() {
         const ringTx = (b.dir * b.y) / (dist || 1), ringTy = (-b.dir * b.x) / (dist || 1);
         const alongRing = b.vx * ringTx + b.vy * ringTy; // リングをたどる向きの速さ（負なら逆走）
         if (!b.riding && b.dashesLeft > 0 && b.dashCd <= 0 && ratio > 0.15 && speed > 120 && dist > R * 0.8 && alongRing > 0.2 * speed) {
-          if (b.rideChance >= 1) { b.riding = true; b.rideT = 0; }
+          if (b.rideChance >= 1) { b.riding = true; b.rideT = 0; b.dAt = Math.max(-1, Math.min(1, (Math.random() + Math.random() - 1) * 1.5)); }
           else if (!b.onRing) {
             // 斜めシュートはリングに乗りにくい（乗れないぶん、自爆しにくい）
             b.onRing = true;
-            if (Math.random() < b.rideChance) { b.riding = true; b.rideT = 0; }
+            if (Math.random() < b.rideChance) { b.riding = true; b.rideT = 0; b.dAt = Math.max(-1, Math.min(1, (Math.random() + Math.random() - 1) * 1.5)); }
             else b.rideChance = Math.min(1, b.rideChance + 0.2);
           }
         }
@@ -1624,18 +1625,19 @@ export function Beyblade() {
           b.trail.push({ x: b.x, y: b.y });
           if (b.trail.length > 14) b.trail.shift();
           b.spin = Math.max(0, b.spin - (4.5 + rs * 0.0145) * t.decay * DT * 6);
-          const atTop = Math.abs(Math.atan2(b.y, b.x) + Math.PI / 2) < 0.2;
+          // 動画：ダッシュを始める位置は、真上を中心に、左右に約±35度ばらつく（上の緑の突起は幅がある）
+          const dAng = Math.atan2(b.y, b.x) + Math.PI / 2 - b.dAt, atTop = Math.abs(Math.atan2(Math.sin(dAng), Math.cos(dAng))) < 0.12;
           if (atTop && b.rideT > 0.05) {
             // 上側から中央へ発射
             const nx = -b.x / d, ny = -b.y / d;
-            // 真ん中にとどまっているベイを狙う。ただし、回転が弱いほど・リングの当たり所によって、角度はずれる（全部が同じ角度ではない）
+            // 動画（61回）：ダッシュの向きは、真ん中の方向を中心に、約±37度ばらつく（スタート位置とはほぼ無関係）。真ん中にとどまっているベイにも当たる
             const foe = beys.find(q => q !== b && !q.dead && q.outT <= 0);
             let ax0 = nx, ay0 = ny;
-            if (foe) { const fx = foe.x + foe.vx * 0.12 - b.x, fy = foe.y + foe.vy * 0.12 - b.y, fl = Math.hypot(fx, fy); if (fl > 90) { ax0 = fx / fl; ay0 = fy / fl; } }
-            const aimErr = (Math.random() + Math.random() - 1) * (0.2 + 0.55 * (1 - ratio)) + (Math.random() - 0.5) * 0.25;
-            let dx = (ax0 * 0.9 + tx * 0.15) * Math.cos(aimErr) - (ay0 * 0.9 + ty * 0.15) * Math.sin(aimErr), dy = (ax0 * 0.9 + tx * 0.15) * Math.sin(aimErr) + (ay0 * 0.9 + ty * 0.15) * Math.cos(aimErr);
+            if (foe && Math.hypot(foe.x, foe.y) < 120) { const fx = foe.x - b.x, fy = foe.y - b.y, fl = Math.hypot(fx, fy) || 1; ax0 = nx * 0.5 + (fx / fl) * 0.5; ay0 = ny * 0.5 + (fy / fl) * 0.5; } // 相手が真ん中にいれば、その方向へ少し寄る
+            const aimErr = (Math.random() + Math.random() - 1) * 1.6 * (0.9 + 0.3 * (1 - ratio));
+            let dx = ax0 * Math.cos(aimErr) - ay0 * Math.sin(aimErr), dy = ax0 * Math.sin(aimErr) + ay0 * Math.cos(aimErr);
             const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
-            const dashSpeed = (1650 + 520 * ratio) * t.dash * (0.55 + 0.45 * ratio); // 回転が落ちるとダッシュも弱くなる
+            const dashSpeed = (1500 + 200 * ratio) * t.dash * (0.6 + 0.4 * ratio); // 回転が落ちるとダッシュも弱くなる
             b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
             b.riding = false;
             b.dashT = 0.4; b.coast = 1.0; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
@@ -1649,7 +1651,7 @@ export function Beyblade() {
           }
           continue;
         }
-        const damp = 1 - (0.08 + (1 - ratio) * 0.7 + (b.dashT > 0 ? 2.0 : 0) + (b.coast > 0 && b.dashT <= 0 ? 2.6 : 0) + (b.knockT > 0 ? 2.6 : 0)) * DT; // ダッシュ中は失速し、反対側のライン付近まで届く
+        const damp = 1 - (0.08 + (1 - ratio) * 0.7 + (b.dashT > 0 ? 2.0 : 0) + (b.coast > 0 && b.dashT <= 0 ? 0.6 : 0) + (b.knockT > 0 ? 2.6 : 0)) * DT; // ダッシュ中は失速し、反対側のライン付近まで届く
         b.vx *= damp; b.vy *= damp;
         speed = Math.hypot(b.vx, b.vy);
         // 巡航：回転が残っている間は、止まらずに動き続ける（今の向きに沿って、目標の速さまで加速する）。回転が落ちるほど遅くなる
