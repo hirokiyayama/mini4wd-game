@@ -542,7 +542,7 @@ function defaultAim(x: number, y: number, dir: 1 | -1 = 1) {
 // 水平シュート：すぐにリングへ向かいエクストリームダッシュ / 斜めシュート：その場でほんの少し動きながらとどまり、それから動き出す（その間は飛ばされにくい）
 // power(0〜1)：発射時のゲージで決まる。回転数と飛び出しの勢いに効く
 function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: number; y: number } | null, power: number): Bey {
-  const spinMax = 3750 * (0.6 + 0.4 * power);
+  const spinMax = 3350 * (0.6 + 0.4 * power);
   const a = aim ?? defaultAim(x, y, TYPES[type].spinDir);
   const mob = TYPES[type].mobility;
   const sp = (700 + 500 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない
@@ -1751,7 +1751,7 @@ export function Beyblade() {
           // 弾く力は、ぶつかった2つのベイの回転の強さで決まる。回転が落ちるほど、反発が小さくなる
           // （満タンの回転では係数4.6、回転が3割なら約1.8、1割なら約1.3）
           const spinPow = Math.pow((a.spin / a.spinMax + b.spin / b.spinMax) / 2, 1.3);
-          const avgR = (a.spin / a.spinMax + b.spin / b.spinMax) / 2, hitVar = (0.6 + 0.95 * Math.random()) * (0.35 + 0.65 * avgR); // 回転が少ないと、あまり弾かない； // 当たり所（凹凸）によって、はじける距離が毎回ちがう
+          const avgR = (a.spin / a.spinMax + b.spin / b.spinMax) / 2, hitVar = (0.6 + 0.95 * Math.random()) * (0.5 + 0.9 * Math.pow(avgR, 1.2)); // 回転が少ないと、あまり弾かない； // 当たり所（凹凸）によって、はじける距離が毎回ちがう
           const j = (hitVar * lobe * (1.1 + 3.5 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
           const sa0 = Math.hypot(a.vx, a.vy), sb0 = Math.hypot(b.vx, b.vy);
           a.vx -= (j / ma) * nx * ta.steady * tb.kick; a.vy -= (j / ma) * ny * ta.steady * tb.kick;
