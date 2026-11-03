@@ -189,7 +189,7 @@ function buildBey(c: Custom) {
     spinDir: bl.spinDir ?? 1, // 左回転ブレードは -1
     absorb: (bl.absorb ?? 0) * (bit.absorbBit ?? 0.25), // 左回転の回転吸収力（Eビットで大きく発揮される）
     mobility: bit.mobility ?? 1,
-    cruise: 230 * Math.sqrt(bit.mobility ?? 1), // 実際の動画：ベイは中央に落ち着いても止まらず、一定の速さで動き回り続ける（Rなど動き回るビットは速く、Hは遅い）
+    cruise: 360 * Math.sqrt(bit.mobility ?? 1), // 実際の動画：ベイは中央に落ち着いても止まらず、一定の速さで動き回り続ける（Rなど動き回るビットは速く、Hは遅い）
     steady: bit.steady ?? 1,
     exitResist: bit.exitResist ?? 1,
     comeback: (bl.comeback ?? 1) * (bl.integrated ? 1 : pick(RATCHETS, c.ratchet).comeback ?? 1), // 場外から戻りやすさ
@@ -1579,7 +1579,7 @@ export function Beyblade() {
         b.x += b.vx * DT; b.y += b.vy * DT;
         b.trail.push({ x: b.x, y: b.y });
         if (b.trail.length > 14) b.trail.shift();
-        b.spin = Math.max(0, b.spin - (4.5 + speed * 0.02) * t.decay * DT * 6);
+        b.spin = Math.max(0, b.spin - (4.5 + speed * 0.012) * t.decay * DT * 6);
 
         // 外周の壁：出口以外は弾き返す
         const d2 = Math.hypot(b.x, b.y);
