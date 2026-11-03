@@ -494,7 +494,7 @@ interface Bey {
   rideChance: number; onRing: boolean; // 斜めシュートはリングに乗りにくい
   age: number; // 発射してからの時間（秒）
   coast: number; // ダッシュのあと、すぐに失速する時間
-  kickT: number; // 次の「ふらつき」までの時間（実際のベイは、動きがかなり不規則）
+  ph0: number; // 進路のゆれの位相
   outT: number; outKind: 'extreme' | 'over'; outPhi: number; retPlan: boolean; retCount: number; grace: number; // 場外ポケット：滞在時間・出口の種類・戻るか・戻った回数・戻った直後の猶予
   dashesLeft: number; // 残りXダッシュ回数（Eビットは2〜3回まで）
 }
@@ -548,7 +548,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    age: 0, coast: 0, kickT: 0.2 + Math.random() * 0.4, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
+    age: 0, coast: 0, ph0: Math.random() * 6.28, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -1621,7 +1621,7 @@ export function Beyblade() {
           }
           continue;
         }
-        const damp = 1 - (0.08 + (1 - ratio) * 0.7 + (b.dashT > 0 ? 2.0 : 0) + (b.coast > 0 && b.dashT <= 0 ? 2.6 : 0) + (b.knockT > 0 ? 4.5 : 0)) * DT; // ダッシュ中は失速し、反対側のライン付近まで届く
+        const damp = 1 - (0.08 + (1 - ratio) * 0.7 + (b.dashT > 0 ? 2.0 : 0) + (b.coast > 0 && b.dashT <= 0 ? 2.6 : 0) + (b.knockT > 0 ? 3.2 : 0)) * DT; // ダッシュ中は失速し、反対側のライン付近まで届く
         b.vx *= damp; b.vy *= damp;
         speed = Math.hypot(b.vx, b.vy);
         // 巡航：回転が残っている間は、止まらずに動き続ける（今の向きに沿って、目標の速さまで加速する）。回転が落ちるほど遅くなる
@@ -1634,21 +1634,15 @@ export function Beyblade() {
             b.vx += dx * acc; b.vy += dy * acc; speed = Math.hypot(b.vx, b.vy);
           }
           // ふらつき：実際のベイは、規則的な円を描かず、向きも速さもふらふらと不規則に変わる（動き回るビットほど大きい）
-          b.kickT -= DT;
-          if (b.kickT <= 0 && speed > 40) {
-            // たまに向きが少し変わるだけ（動画では、中盤以降の動きはなめらか。大きく向きが変わるのは、ぶつかったときが中心）
-            b.kickT = 0.5 + Math.random() * 1.1;
-            const irr = Math.sqrt(t.mobility) * (0.7 + 0.6 * nrOf(t.bid)), rot = (Math.random() + Math.random() - 1) * 1.0 * irr * (0.4 + 0.6 * Math.sqrt(ratio));
-            const sc = 0.82 + Math.random() * 0.36, cs2 = Math.cos(rot), sn2 = Math.sin(rot);
-            const nvx = (b.vx * cs2 - b.vy * sn2) * sc, nvy = (b.vx * sn2 + b.vy * cs2) * sc;
-            b.vx = nvx; b.vy = nvy; speed = Math.hypot(b.vx, b.vy);
-          }
+          // 進路のゆるやかなゆれ：ぶつかっていないのに、急にカクッと向きが変わることはない（なめらかに、少しずつ曲がる）。いびつなブレードほど大きい
+          { const turn = 0.45 * Math.sqrt(t.mobility) * (0.5 + nrOf(t.bid)) * (Math.sin(b.age * 0.9 + b.ph0) + 0.6 * Math.sin(b.age * 2.1 + b.ph0 * 1.7)) * (0.4 + 0.6 * Math.sqrt(ratio)) * DT;
+            const cs2 = Math.cos(turn), sn2 = Math.sin(turn), nvx = b.vx * cs2 - b.vy * sn2, nvy = b.vx * sn2 + b.vy * cs2; b.vx = nvx; b.vy = nvy; }
         }
-        { const cap = b.dashT > 0 ? 2800 : b.knockT > 0 ? 850 : 1800; if (speed > cap) { b.vx *= cap / speed; b.vy *= cap / speed; speed = cap; } } // ぶつかって飛ばされたあとは、反対側まで飛んでいかない // 速すぎて突き抜けないように上限
+        { const cap = b.dashT > 0 ? 2800 : b.knockT > 0 ? 1500 : 1800; if (speed > cap) { b.vx *= cap / speed; b.vy *= cap / speed; speed = cap; } } // ぶつかって飛ばされたあとは、反対側まで飛んでいかない // 速すぎて突き抜けないように上限
         b.x += b.vx * DT; b.y += b.vy * DT;
         b.trail.push({ x: b.x, y: b.y });
         if (b.trail.length > 14) b.trail.shift();
-        b.spin = Math.max(0, b.spin - (4.5 + speed * 0.012) * t.decay * DT * 6);
+        b.spin = Math.max(0, b.spin - (4.5 + speed * 0.005) * t.decay * DT * 6);
 
         // 外周の壁：出口以外は弾き返す
         const d2 = Math.hypot(b.x, b.y);
@@ -1661,7 +1655,7 @@ export function Beyblade() {
           const nx = b.x / d2, ny = b.y / d2;
           const outv = b.vx * nx + b.vy * ny;
           if (outv > 0) {
-            b.vx -= 1.4 * outv * nx; b.vy -= 1.4 * outv * ny;
+            b.vx -= 1.55 * outv * nx; b.vy -= 1.55 * outv * ny;
             // 相手に強く飛ばされて壁に当たって戻ってくると、持久が少し削られる（自分でぶつかったときは削れない）
             if (outv > 150 && b.knockT > 0) { b.spin = Math.max(0, b.spin - 0.4 * outv); spark(b.x, b.y, 10); }
           }
@@ -1705,7 +1699,7 @@ export function Beyblade() {
           // 弾く力は、ぶつかった2つのベイの回転の強さで決まる。回転が落ちるほど、反発が小さくなる
           // （満タンの回転では係数4.6、回転が3割なら約1.8、1割なら約1.3）
           const spinPow = Math.pow((a.spin / a.spinMax + b.spin / b.spinMax) / 2, 1.3);
-          const j = (lobe * (1.0 + 1.8 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
+          const j = (lobe * (1.1 + 3.5 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
           const sa0 = Math.hypot(a.vx, a.vy), sb0 = Math.hypot(b.vx, b.vy);
           a.vx -= (j / ma) * nx * ta.steady * tb.kick; a.vy -= (j / ma) * ny * ta.steady * tb.kick;
           b.vx += (j / mb) * nx * tb.steady * ta.kick; b.vy += (j / mb) * ny * tb.steady * ta.kick;
@@ -1713,7 +1707,7 @@ export function Beyblade() {
           if (Math.hypot(a.vx, a.vy) > Math.max(250, sa0 * 1.15)) a.knockT = 1.2;
           if (Math.hypot(b.vx, b.vy) > Math.max(250, sb0 * 1.15)) b.knockT = 1.2;
           // Xダッシュ中の打撃は強い（Eビットはスマッシュ攻撃でさらに強い）
-          const impact = rel * Math.max(a.dashT > 0 ? 1.5 * ta.smash : 1, b.dashT > 0 ? 1.5 * tb.smash : 1) * (0.45 + 0.55 * spinPow);
+          const impact = Math.min(1, rel / 120) * rel * Math.max(a.dashT > 0 ? 1.5 * ta.smash : 1, b.dashT > 0 ? 1.5 * tb.smash : 1) * (0.45 + 0.55 * spinPow);
           // 反対回転どうしが当たると、接触面の動きが揃ってスピンの削れが少し減る
           const oppo = a.dir !== b.dir ? 0.6 : 1;
           // バースト：ラチェットにうまく強打が当たると一発で起こる。強く当たるほど・当てる側の回転が強いほど確率が高く、
