@@ -1562,7 +1562,8 @@ export function Beyblade() {
         const sT0 = Math.max(0, Math.min(1, (0.68 - ratio) / 0.38)), wMode = 1 - sT0 * sT0 * (3 - 2 * sT0); // 回転が強いほど1（ぶつかったあとの別々の動きが、はっきり出る）
         // 実際の動画：最初はリングの近くを動き回り、時間がたつにつれて中央付近に集まる（すり鉢の中心へ引かれる力が、だんだん強くなる）
         const aT = Math.max(0, Math.min(1, (0.68 - ratio) / 0.38));
-        let kPull = 3.5 + 10.5 * aT * aT * (3 - 2 * aT);
+        let kPull = 1.5 + 4.5 * aT * aT * (3 - 2 * aT);
+        kPull *= 0.3 + 0.7 * Math.max(0, Math.min(1, 1 - b.postT)); // ぶつかった直後は、真ん中へ引き戻されず、はじけた向きへ惰性で動く
         if (b.mode === 2 && !t.flat) kPull *= 1 - 0.85 * wMode; // 回る動き：真ん中には引かれず、決まった半径を回る
         else if (b.mode === 1) kPull += 7 * wMode; // 真ん中に戻る動き
         const shp = Math.max(0, Math.min(1, 1 - b.postT)); // ぶつかった直後は0（円・楕円の力なし）、時間がたつと1に戻る
@@ -1718,7 +1719,7 @@ export function Beyblade() {
           if (Math.hypot(sx, sy) > 0.3) {
             const base = Math.atan2(cyl, cxl);
             let df = Math.atan2(sy, sx) - base; df = Math.atan2(Math.sin(df), Math.cos(df));
-            df = Math.max(-1.0, Math.min(1.0, df + (Math.random() - 0.5) * 0.5)); // 当たり所のばらつき
+            df = Math.max(-1.0, Math.min(1.0, df + (Math.random() - 0.5) * 0.9)); // 当たり所のばらつき
             nx = Math.cos(base + df); ny = Math.sin(base + df);
           } }
         // とがったところで当たるほど強く飛ばす／いびつなブレードほど飛ばしやすい
@@ -1734,7 +1735,8 @@ export function Beyblade() {
           // 弾く力は、ぶつかった2つのベイの回転の強さで決まる。回転が落ちるほど、反発が小さくなる
           // （満タンの回転では係数4.6、回転が3割なら約1.8、1割なら約1.3）
           const spinPow = Math.pow((a.spin / a.spinMax + b.spin / b.spinMax) / 2, 1.3);
-          const j = (lobe * (1.1 + 3.5 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
+          const hitVar = 0.6 + 0.95 * Math.random(); // 当たり所（凹凸）によって、はじける距離が毎回ちがう
+          const j = (hitVar * lobe * (1.1 + 3.5 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
           const sa0 = Math.hypot(a.vx, a.vy), sb0 = Math.hypot(b.vx, b.vy);
           a.vx -= (j / ma) * nx * ta.steady * tb.kick; a.vy -= (j / ma) * ny * ta.steady * tb.kick;
           b.vx += (j / mb) * nx * tb.steady * ta.kick; b.vy += (j / mb) * ny * tb.steady * ta.kick;
