@@ -495,6 +495,7 @@ interface Bey {
   age: number; // 発射してからの時間（秒）
   coast: number; // ダッシュのあと、すぐに失速する時間
   ph0: number; // 進路のゆれの位相
+  mode: number; r0: number; osgn: number; // ぶつかったあとの動き：0=そのまま 1=真ん中に戻る 2=その周りを回る（半径・回る向き）
   outT: number; outKind: 'extreme' | 'over'; outPhi: number; retPlan: boolean; retCount: number; grace: number; // 場外ポケット：滞在時間・出口の種類・戻るか・戻った回数・戻った直後の猶予
   dashesLeft: number; // 残りXダッシュ回数（Eビットは2〜3回まで）
 }
@@ -548,7 +549,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    age: 0, coast: 0, ph0: Math.random() * 6.28, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
+    age: 0, coast: 0, ph0: Math.random() * 6.28, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -1552,10 +1553,21 @@ export function Beyblade() {
         }
 
         // すり鉢の傾斜（中央へ引く）
+        const sT0 = Math.max(0, Math.min(1, (0.68 - ratio) / 0.38)), wMode = 1 - sT0 * sT0 * (3 - 2 * sT0); // 回転が強いほど1（ぶつかったあとの別々の動きが、はっきり出る）
         // 実際の動画：最初はリングの近くを動き回り、時間がたつにつれて中央付近に集まる（すり鉢の中心へ引かれる力が、だんだん強くなる）
-        const aT = Math.max(0, Math.min(1, (0.68 - ratio) / 0.38)), kPull = 3.5 + 10.5 * aT * aT * (3 - 2 * aT);
+        const aT = Math.max(0, Math.min(1, (0.68 - ratio) / 0.38));
+        let kPull = 3.5 + 10.5 * aT * aT * (3 - 2 * aT);
+        if (b.mode === 2) kPull *= 1 - 0.85 * wMode; // 回る動き：真ん中には引かれず、決まった半径を回る
+        else if (b.mode === 1) kPull += 7 * wMode; // 真ん中に戻る動き
         b.vx += -b.x * kPull * DT;
         b.vy += -b.y * kPull * DT;
+        if (b.mode === 2 && wMode > 0.02 && b.dashT <= 0) { // 一方のベイは、真ん中の周りを回り続ける
+          const rr = Math.hypot(b.x, b.y) || 1, ux = b.x / rr, uy = b.y / rr, tx = -uy * b.osgn, ty = ux * b.osgn;
+          const pull = -(rr - b.r0) * 7 * wMode;
+          b.vx += ux * pull * DT; b.vy += uy * pull * DT;
+          const vtan = b.vx * tx + b.vy * ty, tgt = t.cruise * 0.95 * wMode;
+          if (vtan < tgt) { b.vx += tx * (tgt - vtan) * 3 * DT; b.vy += ty * (tgt - vtan) * 3 * DT; }
+        }
         // ジャイロ効果で軌道が緩やかにカーブする
         const c = b.curl * 0.35 * (0.3 + ratio) * DT; // ゆるやかなカーブ（外周をぐるぐる回り続けないように）
         const cs = Math.cos(c), sn = Math.sin(c);
@@ -1628,7 +1640,7 @@ export function Beyblade() {
         if (b.dashT <= 0 && b.knockT <= 0) {
           // 回転が強いうちは動き回り、回転が弱まるにつれて、中央に寄り添ってゆっくり動く（回転が強いうちにぶつかると、弾ける向きがばらばらで、何度も続けて真ん中でぶつからない）
           const ageT = Math.max(0, Math.min(1, (0.68 - ratio) / 0.38)), ageF = 1 - 0.65 * ageT * ageT * (3 - 2 * ageT);
-          const vt = t.cruise * ageF * (0.2 + 0.8 * Math.sqrt(ratio));
+          const vt = t.cruise * ageF * (1 - (1 - (b.mode === 2 ? 0.2 : b.mode === 1 ? 0.5 : 1)) * wMode) * (0.2 + 0.8 * Math.sqrt(ratio));
           if (speed < vt) {
             const dx = speed > 15 ? b.vx / speed : Math.cos(b.angle), dy = speed > 15 ? b.vy / speed : Math.sin(b.angle);
             const acc = (vt - speed) * 2.5 * DT;
@@ -1707,6 +1719,16 @@ export function Beyblade() {
           // 当てられて速度が増したほう＝飛ばされたほう
           if (Math.hypot(a.vx, a.vy) > Math.max(250, sa0 * 1.15)) a.knockT = 1.2;
           if (Math.hypot(b.vx, b.vy) > Math.max(250, sb0 * 1.15)) b.knockT = 1.2;
+          // ぶつかったあとの動き：2体は同じ動きをしない。一方は真ん中に戻り、もう一方はその周りを回る（ビット・回転の強さ・当たり方で変わる）
+          if (Math.min(a.spin / a.spinMax, b.spin / b.spinMax) > 0.3) {
+            const fa = Math.hypot(a.vx, a.vy), fb = Math.hypot(b.vx, b.vy), mobA = ta.mobility, mobB = tb.mobility;
+            const pa = Math.max(0.15, Math.min(0.85, 0.5 + (fa - fb) / 1200 + 0.3 * (mobA - mobB) + (Math.random() - 0.5) * 0.4)); // a が「回る」側になる確率
+            const aOrbit = Math.random() < pa;
+            const setMode = (x: Bey, orbit: boolean) => {
+              x.mode = orbit ? 2 : 1; x.r0 = (0.4 + 0.35 * Math.random()) * 238; x.osgn = (x.x * x.vy - x.y * x.vx) >= 0 ? 1 : -1;
+            };
+            setMode(a, aOrbit); setMode(b, !aOrbit);
+          }
           // Xダッシュ中の打撃は強い（Eビットはスマッシュ攻撃でさらに強い）
           const impact = Math.min(1, rel / 120) * rel * Math.max(a.dashT > 0 ? 1.5 * ta.smash : 1, b.dashT > 0 ? 1.5 * tb.smash : 1) * (0.45 + 0.55 * spinPow);
           // 反対回転どうしが当たると、接触面の動きが揃ってスピンの削れが少し減る
