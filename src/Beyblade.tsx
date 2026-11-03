@@ -1687,8 +1687,9 @@ export function Beyblade() {
         b.spin = Math.max(0, b.spin - (4.5 + speed * 0.005) * t.decay * DT * 6);
         { // リングよりも外側（壁との間）には、とどまれない：内側へ押し戻される（出口の手前は除く）
           const dd = Math.hypot(b.x, b.y);
-          if (dd > R * 0.9 + 6 && !exitKind(b.x, b.y)) {
-            const f = Math.min(1.5, (dd - (R * 0.9 + 6)) / 8) * 1400 * DT;
+          if (dd > R * 0.9 + 3 && !exitKind(b.x, b.y)) {
+            // 時計回りなど、壁に沿って回り続けようとしても、強く内側へ押し戻される（リングの外側では、円を描いて回り続けられない）
+            const f = Math.min(2, (dd - (R * 0.9 + 3)) / 5) * 3200 * DT;
             b.vx -= (b.x / dd) * f; b.vy -= (b.y / dd) * f;
           }
         }
