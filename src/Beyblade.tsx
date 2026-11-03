@@ -1635,9 +1635,10 @@ export function Beyblade() {
           // ふらつき：実際のベイは、規則的な円を描かず、向きも速さもふらふらと不規則に変わる（動き回るビットほど大きい）
           b.kickT -= DT;
           if (b.kickT <= 0 && speed > 40) {
-            b.kickT = 0.1 + Math.random() * 0.35;
-            const irr = Math.sqrt(t.mobility) * (0.75 + 0.75 * nrOf(t.bid)), rot = (Math.random() + Math.random() - 1) * 3.1 * irr * (0.4 + 0.6 * Math.sqrt(ratio));
-            const sc = 0.55 + Math.random() * 0.95, cs2 = Math.cos(rot), sn2 = Math.sin(rot);
+            // たまに向きが少し変わるだけ（動画では、中盤以降の動きはなめらか。大きく向きが変わるのは、ぶつかったときが中心）
+            b.kickT = 0.5 + Math.random() * 1.1;
+            const irr = Math.sqrt(t.mobility) * (0.7 + 0.6 * nrOf(t.bid)), rot = (Math.random() + Math.random() - 1) * 1.0 * irr * (0.4 + 0.6 * Math.sqrt(ratio));
+            const sc = 0.82 + Math.random() * 0.36, cs2 = Math.cos(rot), sn2 = Math.sin(rot);
             const nvx = (b.vx * cs2 - b.vy * sn2) * sc, nvy = (b.vx * sn2 + b.vy * cs2) * sc;
             b.vx = nvx; b.vy = nvy; speed = Math.hypot(b.vx, b.vy);
           }
