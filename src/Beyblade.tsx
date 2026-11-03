@@ -454,6 +454,7 @@ interface Bey {
   rideChance: number; onRing: boolean; // 斜めシュートはリングに乗りにくい
   age: number; // 発射してからの時間（秒）
   coast: number; // ダッシュのあと、すぐに失速する時間
+  kickT: number; // 次の「ふらつき」までの時間（実際のベイは、動きがかなり不規則）
   outT: number; outKind: 'extreme' | 'over'; outPhi: number; retPlan: boolean; retCount: number; grace: number; // 場外ポケット：滞在時間・出口の種類・戻るか・戻った回数・戻った直後の猶予
   dashesLeft: number; // 残りXダッシュ回数（Eビットは2〜3回まで）
 }
@@ -507,7 +508,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    age: 0, coast: 0, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
+    age: 0, coast: 0, kickT: 0.2 + Math.random() * 0.4, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -1590,6 +1591,15 @@ export function Beyblade() {
             const dx = speed > 15 ? b.vx / speed : Math.cos(b.angle), dy = speed > 15 ? b.vy / speed : Math.sin(b.angle);
             const acc = (vt - speed) * 2.5 * DT;
             b.vx += dx * acc; b.vy += dy * acc; speed = Math.hypot(b.vx, b.vy);
+          }
+          // ふらつき：実際のベイは、規則的な円を描かず、向きも速さもふらふらと不規則に変わる（動き回るビットほど大きい）
+          b.kickT -= DT;
+          if (b.kickT <= 0 && speed > 40) {
+            b.kickT = 0.1 + Math.random() * 0.35;
+            const irr = Math.sqrt(t.mobility), rot = (Math.random() + Math.random() - 1) * 2.3 * irr * (0.4 + 0.6 * Math.sqrt(ratio));
+            const sc = 0.55 + Math.random() * 0.95, cs2 = Math.cos(rot), sn2 = Math.sin(rot);
+            const nvx = (b.vx * cs2 - b.vy * sn2) * sc, nvy = (b.vx * sn2 + b.vy * cs2) * sc;
+            b.vx = nvx; b.vy = nvy; speed = Math.hypot(b.vx, b.vy);
           }
         }
         { const cap = b.dashT > 0 ? 2800 : b.knockT > 0 ? 850 : 1800; if (speed > cap) { b.vx *= cap / speed; b.vy *= cap / speed; speed = cap; } } // ぶつかって飛ばされたあとは、反対側まで飛んでいかない // 速すぎて突き抜けないように上限
