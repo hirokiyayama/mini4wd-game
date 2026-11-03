@@ -452,6 +452,7 @@ interface Bey {
   knockT: number; // 相手に当てられて飛ばされた直後の時間（この間に壁へ当たると持久が削られる。自分でぶつかったときは削れない）
   hit: boolean; // 動き出す前に当てられたか（当てられたら矢印の向きではなく、弾かれた向きに進む）
   rideChance: number; onRing: boolean; // 斜めシュートはリングに乗りにくい
+  age: number; // 発射してからの時間（秒）
   outT: number; outKind: 'extreme' | 'over'; outPhi: number; retPlan: boolean; retCount: number; grace: number; // 場外ポケット：滞在時間・出口の種類・戻るか・戻った回数・戻った直後の猶予
   dashesLeft: number; // 残りXダッシュ回数（Eビットは2〜3回まで）
 }
@@ -490,7 +491,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
+    age: 0, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -1442,6 +1443,7 @@ export function Beyblade() {
         const t = TYPES[b.type];
         const ratio = Math.max(0, b.spin / b.spinMax);
         b.grace = Math.max(0, b.grace - DT);
+        b.age += DT;
         if (b.outT > 0) {
           // 場外ポケットに入った：すぐには勝敗を決めず、少しその場で回る（回転が強ければスタジアムに戻ることがある）
           b.vx *= 1 - 4 * DT; b.vy *= 1 - 4 * DT;
@@ -1496,8 +1498,10 @@ export function Beyblade() {
         }
 
         // すり鉢の傾斜（中央へ引く）
-        b.vx += -b.x * 1.5 * DT;
-        b.vy += -b.y * 1.5 * DT;
+        // 実際の動画：最初はリングの近くを動き回り、時間がたつにつれて中央付近に集まる（すり鉢の中心へ引かれる力が、だんだん強くなる）
+        const aT = Math.max(0, Math.min(1, (b.age - 6) / 8)), kPull = 1.5 + 6 * aT * aT * (3 - 2 * aT);
+        b.vx += -b.x * kPull * DT;
+        b.vy += -b.y * kPull * DT;
         // ジャイロ効果で軌道が緩やかにカーブする
         const c = b.curl * (0.3 + ratio) * DT;
         const cs = Math.cos(c), sn = Math.sin(c);
