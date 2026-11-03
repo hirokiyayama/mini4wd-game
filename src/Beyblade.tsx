@@ -480,7 +480,7 @@ function defaultAim(x: number, y: number, dir: 1 | -1 = 1) {
 // power(0〜1)：発射時のゲージで決まる。回転数と飛び出しの勢いに効く
 function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: number; y: number } | null, power: number): Bey {
   const spinMax = 3000 * (0.6 + 0.4 * power);
-  const a = diag ? aim ?? defaultAim(x, y, TYPES[type].spinDir) : defaultAim(x, y, TYPES[type].spinDir); // 水平シュートは、向きを決めず、すぐリングに乗る向きで飛ぶ
+  const a = aim ?? defaultAim(x, y, TYPES[type].spinDir);
   const mob = TYPES[type].mobility;
   const sp = (700 + 500 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない
   return {
@@ -1579,7 +1579,7 @@ export function Beyblade() {
             b.vx += dx * acc; b.vy += dy * acc; speed = Math.hypot(b.vx, b.vy);
           }
         }
-        { const cap = b.dashT > 0 ? 1800 : 1250; if (speed > cap) { b.vx *= cap / speed; b.vy *= cap / speed; speed = cap; } } // 速すぎて突き抜けないように上限（ダッシュ以外は、実際の動画くらいの速さまで） // 速すぎて突き抜けないように上限
+        if (speed > 1800) { b.vx *= 1800 / speed; b.vy *= 1800 / speed; speed = 1800; } // 速すぎて突き抜けないように上限
         b.x += b.vx * DT; b.y += b.vy * DT;
         b.trail.push({ x: b.x, y: b.y });
         if (b.trail.length > 14) b.trail.shift();
@@ -1591,7 +1591,7 @@ export function Beyblade() {
         const outSpeed = (b.vx * b.x + b.vy * b.y) / (d2 || 1);
         const ek = exitKind(b.x, b.y);
         // 出口の手前には段があり、それを越える勢いがないと入れない（エクストリームは特に高い）
-        const needOut = (ek === 'extreme' ? 420 : ek === 'over' ? 300 : 0) * TYPES[b.type].exitResist * (b.grace > 0 ? 9 : 1) * (1 + 0.9 * Math.max(0, 1 - b.age / 8));
+        const needOut = (ek === 'extreme' ? 420 : ek === 'over' ? 300 : 0) * TYPES[b.type].exitResist * (b.grace > 0 ? 9 : 1);
         if (d2 > lim && (!ek || outSpeed < needOut)) {
           const nx = b.x / d2, ny = b.y / d2;
           const outv = b.vx * nx + b.vy * ny;
@@ -1642,7 +1642,7 @@ export function Beyblade() {
             const sf = Math.max(0, (v.spin / v.spinMax - 0.2) / 0.8);
             const hardness = Math.min(1.5, Math.max(0, (impact - 300) / 450));
             const attSpin = Math.max(0.3, att.spin / att.spinMax);
-            if (Math.random() < (0.13 * (0.25 + 0.75 * Math.min(1, Math.max(a.age, b.age) / 10)) * hardness * tAtt.atk * attSpin * sf) / tv.burstRes) v.burst = 100;
+            if (Math.random() < (0.13 * hardness * tAtt.atk * attSpin * sf) / tv.burstRes) v.burst = 100;
           };
           tryBurst(a, ta, b, tb);
           tryBurst(b, tb, a, ta);
@@ -1801,11 +1801,11 @@ export function Beyblade() {
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current && !(onlineRef.current && selfIdxRef.current !== 0) && (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 0))) {
         const g = dropRef.current;
         const diag = modeRef.current === 'diag';
-        drawGhost(g, diag ? aimRef.current ?? defaultAim(g.x, g.y, TYPES.me.spinDir) : defaultAim(g.x, g.y, TYPES.me.spinDir), diag, TYPES.me.color, '#38b6ff', '#e8590c', `${namesRef.current.me}：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, TYPES.me.sprite, TYPES.me.spinDir);
+        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y, TYPES.me.spinDir), diag, TYPES.me.color, '#38b6ff', '#e8590c', `${namesRef.current.me}：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, TYPES.me.sprite, TYPES.me.spinDir);
       }
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && !(onlineRef.current && selfIdxRef.current !== 1) && (vsRef.current === '2p' ? (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 1)) : !hideOppRef.current)) {
         const c = cpuPlanRef.current;
-        drawGhost(c, c.diag ? c.aim : defaultAim(c.x, c.y, TYPES.cpu.spinDir), c.diag, TYPES.cpu.color, '#ff3ea5', '#d81b8a', `${namesRef.current.cpu}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite, TYPES.cpu.spinDir, vsRef.current === '2p');
+        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ff3ea5', '#d81b8a', `${namesRef.current.cpu}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite, TYPES.cpu.spinDir, vsRef.current === '2p');
       }
       // 相手の落とす位置を隠しているときのヒント：その位置にランチャーを置く（向きや打ち方は分からない）
       // オンライン対戦も同じ：相手が置き場所を迷って動かすと、ランチャーも動く
@@ -2007,7 +2007,7 @@ export function Beyblade() {
         const placed = selfIdx === 0 ? hasDrop : hasDrop2;
         controls = isSelf ? (
           <>
-            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{selfReady ? '相手を待っています…' : placed ? ((selfIdx === 0 ? shotMode : shotMode2) === 'diag' ? 'ドラッグで向き → 「決定」' : '「決定」でスタート位置が決まります') : `${selfIdx === 0 ? '左' : '右'}半分をタップ`}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{selfReady ? '相手を待っています…' : placed ? 'ドラッグで向き → 「決定」' : `${selfIdx === 0 ? '左' : '右'}半分をタップ`}</div>
             {!selfReady && (selfIdx === 0 ? modeBtns(shotMode, k => { setShotMode(k); modeRef.current = k; sendPlace(false); }, '#38b6ff') : modeBtns(shotMode2, k => { setMode2(k); sendPlace(false); }, '#ff3ea5'))}
             <button style={{ ...yb, opacity: placed && !selfReady ? 1 : 0.4 }} disabled={!placed || selfReady} onClick={decide}>決定</button>
           </>
@@ -2015,7 +2015,7 @@ export function Beyblade() {
       } else if (vs === 'cpu' && key === 'me') {
         controls = (
           <>
-            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{hasDrop ? (shotMode === 'diag' ? 'ドラッグで向きを決めて、スタート' : 'そのままスタート（水平は、すぐリングに乗ります）') : `${side === 'left' ? '左' : '右'}半分をタップ${compact ? '' : 'して、落とす場所を決める'}`}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{hasDrop ? 'ドラッグで向きを決めて、スタート' : `${side === 'left' ? '左' : '右'}半分をタップ${compact ? '' : 'して、落とす場所を決める'}`}</div>
             {modeBtns(shotMode, setShotMode, '#ffd740')}
             <button style={{ ...yb, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={shoot}>スタート</button>
           </>
@@ -2023,7 +2023,7 @@ export function Beyblade() {
       } else if (vs === '2p' && !seq) {
         controls = (
           <>
-            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{(key === 'me' ? hasDrop : hasDrop2) ? ((key === 'me' ? shotMode : shotMode2) === 'diag' ? 'ドラッグで向き' : '水平：向き不要') : `${key === 'me' ? '左' : '右'}半分をタップ`}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{(key === 'me' ? hasDrop : hasDrop2) ? 'ドラッグで向き' : `${key === 'me' ? '左' : '右'}半分をタップ`}</div>
             {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ff3ea5')}
           </>
         );
@@ -2031,7 +2031,7 @@ export function Beyblade() {
         controls = (
           <>
             <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>
-              {key === 'me' ? (hasDrop ? (shotMode === 'diag' ? 'ドラッグで向き → 「決定」' : '「決定」を押してね（水平は向き不要）') : '左半分をタップ（相手は見ないでね）') : (hasDrop2 ? (shotMode2 === 'diag' ? 'ドラッグで向き → 「スタート」' : '「スタート」を押してね（水平は向き不要）') : '右半分をタップ')}
+              {key === 'me' ? (hasDrop ? 'ドラッグで向き → 「決定」' : '左半分をタップ（相手は見ないでね）') : (hasDrop2 ? 'ドラッグで向き → 「スタート」' : '右半分をタップ')}
             </div>
             {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ff3ea5')}
             {key === 'me'
