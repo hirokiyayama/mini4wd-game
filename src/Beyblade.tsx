@@ -751,6 +751,7 @@ export function Beyblade() {
   const selfReadyRef = useRef(false);
   selfReadyRef.current = selfReady;
   const placeSentRef = useRef(0);
+  const tickRef = useRef(0);
   const onlineLabelRef = useRef('オンライン');
   const ghostDispRef = useRef<{ x: number; y: number } | null>(null); // 相手のランチャーの表示位置（なめらかに動かす）
   const readyRef = useRef({ host: false, guest: false });
@@ -1589,6 +1590,7 @@ export function Beyblade() {
         }
       }
 
+      { const w = window as unknown as { __trace?: number[][] }; if (w.__trace && phaseRef.current === 'battle') { tickRef.current++; if (tickRef.current % 8 === 0) w.__trace.push([beys[0].x, beys[0].y, beys[1].x, beys[1].y, beys[0].spin / beys[0].spinMax, beys[1].spin / beys[1].spinMax, beys[0].dashT > 0 || beys[0].riding ? 1 : 0, beys[1].dashT > 0 || beys[1].riding ? 1 : 0]); } } // 動作確認用：ベイの軌道の記録（15回/秒）
       { const w = window as unknown as { __maxd?: number }; for (const q of beys) { if (!Number.isFinite(q.x + q.y + q.spin)) (w as { __nan?: boolean }).__nan = true; } for (const q of beys) if (!q.out && q.outT <= 0 && !exitKind(q.x, q.y)) w.__maxd = Math.max(w.__maxd ?? 0, Math.hypot(q.x, q.y)); } // 動作確認用：出口以外で壁の外に出た最大距離
       if (endedRef.current) return;
 
