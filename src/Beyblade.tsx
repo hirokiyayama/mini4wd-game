@@ -1638,6 +1638,16 @@ export function Beyblade() {
             let dx = nx * 0.85 + tx * lean, dy = ny * 0.85 + ty * lean;
             { const cj = Math.cos(jit), sj = Math.sin(jit), ndx = dx * cj - dy * sj, ndy = dx * sj + dy * cj; dx = ndx; dy = ndy; }
             const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
+            // ちょうどオーバーゾーンに向かう角度は、たまにしか選ばれない（実際にはあるが、少ない）
+            for (let tries = 0; tries < 3; tries++) {
+              const pd = b.x * dx + b.y * dy, disc = pd * pd - (b.x * b.x + b.y * b.y - R * R);
+              if (disc < 0) break;
+              const sL = -pd + Math.sqrt(disc), qx = b.x + dx * sL, qy = b.y + dy * sL, landing = Math.abs(Math.atan2(qx, qy));
+              if (Math.abs(landing - OVER_PHI) < EXIT_HALF + 0.06 && Math.random() < 0.85) {
+                const j2 = (Math.random() + Math.random() - 1) * 0.16, cj = Math.cos(j2), sj = Math.sin(j2);
+                dx = nx * cj - ny * sj; dy = nx * sj + ny * cj; // 真ん中へ向かう向きに、少しだけ揺らして、選び直す
+              } else break;
+            }
             const dashSpeed = (1500 + 200 * ratio) * t.dash * (0.4 + 0.6 * Math.pow(ratio, 1.4)); // 回転が落ちるとダッシュも弱くなる
             b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
             b.riding = false;
