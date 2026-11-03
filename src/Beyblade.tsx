@@ -542,7 +542,7 @@ function defaultAim(x: number, y: number, dir: 1 | -1 = 1) {
 // 水平シュート：すぐにリングへ向かいエクストリームダッシュ / 斜めシュート：その場でほんの少し動きながらとどまり、それから動き出す（その間は飛ばされにくい）
 // power(0〜1)：発射時のゲージで決まる。回転数と飛び出しの勢いに効く
 function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: number; y: number } | null, power: number): Bey {
-  const spinMax = 3000 * (0.6 + 0.4 * power);
+  const spinMax = 3750 * (0.6 + 0.4 * power);
   const a = aim ?? defaultAim(x, y, TYPES[type].spinDir);
   const mob = TYPES[type].mobility;
   const sp = (700 + 500 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない
@@ -1490,7 +1490,7 @@ export function Beyblade() {
       for (const b of beys) {
         if (b.dead) continue;
         // 回転の速さは回転数に応じて落ちていく。0になったら止まる
-        { const rt = Math.max(0, b.spin / b.spinMax); b.angle += b.spin > 0 ? b.dir * (1.5 + 38 * rt * rt) * DT : 0; }
+        { const rt = Math.max(0, b.spin / b.spinMax); b.angle += b.spin > 0 ? b.dir * (2 + 75 * Math.pow(rt, 1.5)) * DT : 0; }
         if (b.out) {
           // 出口から場外ポケットへ滑り込む
           b.vx *= 1 - 5 * DT; b.vy *= 1 - 5 * DT;
@@ -1630,15 +1630,15 @@ export function Beyblade() {
           if (b.trail.length > 14) b.trail.shift();
           b.spin = Math.max(0, b.spin - (4.5 + rs * 0.0145) * t.decay * DT * 6);
           const atTop = Math.abs(Math.atan2(b.y, b.x) + Math.PI / 2) < 0.2;
-          if (atTop && b.rideT > 0.05) {
+          if (atTop && b.rideT > 0.05 && ratio > 0.22) {
             // 上側から中央へ発射
             const nx = -b.x / d, ny = -b.y / d;
             // ダッシュの向き：真ん中に向かうか、回転が強いときは、真ん中より少し左へ向かう（右のオーバーゾーン側へは向かわない。左回転のベイは左右が逆）
-            const lean = 0.35 * Math.pow(ratio, 1.2) * (0.3 + 0.9 * Math.random()), jit = (Math.random() + Math.random() - 1) * 0.14;
+            const lean = Math.random() < 0.4 ? 0.2 * Math.pow(ratio, 1.2) * (0.3 + 0.9 * Math.random()) : 0, jit = (Math.random() + Math.random() - 1) * 0.14;
             let dx = nx * 0.85 + tx * lean, dy = ny * 0.85 + ty * lean;
             { const cj = Math.cos(jit), sj = Math.sin(jit), ndx = dx * cj - dy * sj, ndy = dx * sj + dy * cj; dx = ndx; dy = ndy; }
             const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
-            const dashSpeed = (1500 + 200 * ratio) * t.dash * (0.6 + 0.4 * ratio); // 回転が落ちるとダッシュも弱くなる
+            const dashSpeed = (1500 + 200 * ratio) * t.dash * (0.4 + 0.6 * Math.pow(ratio, 1.4)); // 回転が落ちるとダッシュも弱くなる
             b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
             b.riding = false;
             b.dashT = 0.4; b.coast = 1.0; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
@@ -1675,6 +1675,13 @@ export function Beyblade() {
         b.trail.push({ x: b.x, y: b.y });
         if (b.trail.length > 14) b.trail.shift();
         b.spin = Math.max(0, b.spin - (4.5 + speed * 0.005) * t.decay * DT * 6);
+        { // リングよりも外側（壁との間）には、とどまれない：内側へ押し戻される（出口の手前は除く）
+          const dd = Math.hypot(b.x, b.y);
+          if (dd > R * 0.9 + 6 && !exitKind(b.x, b.y)) {
+            const f = Math.min(1.5, (dd - (R * 0.9 + 6)) / 8) * 1400 * DT;
+            b.vx -= (b.x / dd) * f; b.vy -= (b.y / dd) * f;
+          }
+        }
 
         // 外周の壁：出口以外は弾き返す
         const d2 = Math.hypot(b.x, b.y);
@@ -1688,6 +1695,7 @@ export function Beyblade() {
           const outv = b.vx * nx + b.vy * ny;
           if (outv > 0) {
             b.vx -= 1.55 * outv * nx; b.vy -= 1.55 * outv * ny;
+            { const inn = -(b.vx * nx + b.vy * ny); if (inn < 160) { b.vx -= nx * (160 - inn); b.vy -= ny * (160 - inn); } } // 壁に当たったら、必ずリング内へ戻る向きの速さが残る
             if (t.flat) { b.eAng = Math.random() * Math.PI; b.er = 0.35 + Math.random() * 0.25; } // 壁に当たると、楕円の向きが変わる（軌道が変わる）
             // 相手に強く飛ばされて壁に当たって戻ってくると、持久が少し削られる（自分でぶつかったときは削れない）
             if (outv > 150 && b.knockT > 0) { b.spin = Math.max(0, b.spin - 0.4 * outv); spark(b.x, b.y, 10); }
@@ -1732,7 +1740,7 @@ export function Beyblade() {
           // 弾く力は、ぶつかった2つのベイの回転の強さで決まる。回転が落ちるほど、反発が小さくなる
           // （満タンの回転では係数4.6、回転が3割なら約1.8、1割なら約1.3）
           const spinPow = Math.pow((a.spin / a.spinMax + b.spin / b.spinMax) / 2, 1.3);
-          const hitVar = 0.6 + 0.95 * Math.random(); // 当たり所（凹凸）によって、はじける距離が毎回ちがう
+          const avgR = (a.spin / a.spinMax + b.spin / b.spinMax) / 2, hitVar = (0.6 + 0.95 * Math.random()) * (0.35 + 0.65 * avgR); // 回転が少ないと、あまり弾かない； // 当たり所（凹凸）によって、はじける距離が毎回ちがう
           const j = (hitVar * lobe * (1.1 + 3.5 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
           const sa0 = Math.hypot(a.vx, a.vy), sb0 = Math.hypot(b.vx, b.vy);
           a.vx -= (j / ma) * nx * ta.steady * tb.kick; a.vy -= (j / ma) * ny * ta.steady * tb.kick;
