@@ -1621,7 +1621,7 @@ export function Beyblade() {
           }
           continue;
         }
-        const damp = 1 - (0.08 + (1 - ratio) * 0.7 + (b.dashT > 0 ? 2.0 : 0) + (b.coast > 0 && b.dashT <= 0 ? 2.6 : 0) + (b.knockT > 0 ? 3.2 : 0)) * DT; // ダッシュ中は失速し、反対側のライン付近まで届く
+        const damp = 1 - (0.08 + (1 - ratio) * 0.7 + (b.dashT > 0 ? 2.0 : 0) + (b.coast > 0 && b.dashT <= 0 ? 2.6 : 0) + 0) * DT; // ダッシュ中は失速し、反対側のライン付近まで届く
         b.vx *= damp; b.vy *= damp;
         speed = Math.hypot(b.vx, b.vy);
         // 巡航：回転が残っている間は、止まらずに動き続ける（今の向きに沿って、目標の速さまで加速する）。回転が落ちるほど遅くなる
@@ -1635,10 +1635,10 @@ export function Beyblade() {
           }
           // ふらつき：実際のベイは、規則的な円を描かず、向きも速さもふらふらと不規則に変わる（動き回るビットほど大きい）
           // 進路のゆるやかなゆれ：ぶつかっていないのに、急にカクッと向きが変わることはない（なめらかに、少しずつ曲がる）。いびつなブレードほど大きい
-          { const turn = 0.45 * Math.sqrt(t.mobility) * (0.5 + nrOf(t.bid)) * (Math.sin(b.age * 0.9 + b.ph0) + 0.6 * Math.sin(b.age * 2.1 + b.ph0 * 1.7)) * (0.4 + 0.6 * Math.sqrt(ratio)) * DT;
+          { const turn = 0.22 * Math.sqrt(t.mobility) * (0.5 + nrOf(t.bid)) * (Math.sin(b.age * 0.9 + b.ph0) + 0.6 * Math.sin(b.age * 2.1 + b.ph0 * 1.7)) * (0.4 + 0.6 * Math.sqrt(ratio)) * DT;
             const cs2 = Math.cos(turn), sn2 = Math.sin(turn), nvx = b.vx * cs2 - b.vy * sn2, nvy = b.vx * sn2 + b.vy * cs2; b.vx = nvx; b.vy = nvy; }
         }
-        { const cap = b.dashT > 0 ? 2800 : b.knockT > 0 ? 1500 : 1800; if (speed > cap) { b.vx *= cap / speed; b.vy *= cap / speed; speed = cap; } } // ぶつかって飛ばされたあとは、反対側まで飛んでいかない // 速すぎて突き抜けないように上限
+        { const cap = b.dashT > 0 ? 2800 : 1800; if (speed > cap) { b.vx *= cap / speed; b.vy *= cap / speed; speed = cap; } } // ぶつかって飛ばされたあとは、反対側まで飛んでいかない // 速すぎて突き抜けないように上限
         b.x += b.vx * DT; b.y += b.vy * DT;
         b.trail.push({ x: b.x, y: b.y });
         if (b.trail.length > 14) b.trail.shift();
@@ -1656,6 +1656,7 @@ export function Beyblade() {
           const outv = b.vx * nx + b.vy * ny;
           if (outv > 0) {
             b.vx -= 1.55 * outv * nx; b.vy -= 1.55 * outv * ny;
+            { const vn = b.vx * nx + b.vy * ny, tx = b.vx - vn * nx, ty = b.vy - vn * ny; b.vx = vn * nx + tx * 0.6; b.vy = vn * ny + ty * 0.6; } // 壁の摩擦：壁に沿う速さが弱まる
             // 相手に強く飛ばされて壁に当たって戻ってくると、持久が少し削られる（自分でぶつかったときは削れない）
             if (outv > 150 && b.knockT > 0) { b.spin = Math.max(0, b.spin - 0.4 * outv); spark(b.x, b.y, 10); }
           }
