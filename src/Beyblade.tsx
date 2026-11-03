@@ -1621,7 +1621,7 @@ export function Beyblade() {
           }
           continue;
         }
-        const damp = 1 - (0.08 + (1 - ratio) * 0.7 + (b.dashT > 0 ? 2.0 : 0) + (b.coast > 0 && b.dashT <= 0 ? 2.6 : 0) + 0) * DT; // ダッシュ中は失速し、反対側のライン付近まで届く
+        const damp = 1 - (0.08 + (1 - ratio) * 0.7 + (b.dashT > 0 ? 2.0 : 0) + (b.coast > 0 && b.dashT <= 0 ? 2.6 : 0) + (b.knockT > 0 ? 2.6 : 0)) * DT; // ダッシュ中は失速し、反対側のライン付近まで届く
         b.vx *= damp; b.vy *= damp;
         speed = Math.hypot(b.vx, b.vy);
         // 巡航：回転が残っている間は、止まらずに動き続ける（今の向きに沿って、目標の速さまで加速する）。回転が落ちるほど遅くなる
@@ -1656,7 +1656,6 @@ export function Beyblade() {
           const outv = b.vx * nx + b.vy * ny;
           if (outv > 0) {
             b.vx -= 1.55 * outv * nx; b.vy -= 1.55 * outv * ny;
-            { const vn = b.vx * nx + b.vy * ny, tx = b.vx - vn * nx, ty = b.vy - vn * ny; b.vx = vn * nx + tx * 0.6; b.vy = vn * ny + ty * 0.6; } // 壁の摩擦：壁に沿う速さが弱まる
             // 相手に強く飛ばされて壁に当たって戻ってくると、持久が少し削られる（自分でぶつかったときは削れない）
             if (outv > 150 && b.knockT > 0) { b.spin = Math.max(0, b.spin - 0.4 * outv); spark(b.x, b.y, 10); }
           }
@@ -1684,7 +1683,7 @@ export function Beyblade() {
           if (Math.hypot(sx, sy) > 0.3) {
             const base = Math.atan2(cyl, cxl);
             let df = Math.atan2(sy, sx) - base; df = Math.atan2(Math.sin(df), Math.cos(df));
-            df = Math.max(-0.7, Math.min(0.7, df));
+            df = Math.max(-1.0, Math.min(1.0, df + (Math.random() - 0.5) * 0.5)); // 当たり所のばらつき
             nx = Math.cos(base + df); ny = Math.sin(base + df);
           } }
         // とがったところで当たるほど強く飛ばす／いびつなブレードほど飛ばしやすい
