@@ -56,32 +56,32 @@ interface PartDef {
   dashLimit?: [number, number]; // 1ラウンドでXダッシュできる回数の上限（最小〜最大からランダム）。Eビットは2〜3回
 }
 const BLADES: PartDef[] = [
-  { id: 'meteor', name: 'メテオドラグーン', desc: '大型ラバー軸が搭載された3枚刃で、強烈な一撃を繰り出す。メタルが塗装され性能がアップしている。', s: { atk: 75, def: 15, sta: 35 }, weight: 39.0, color: '#c4b5fd', blades: 3, img: meteorImg, spinDir: -1, absorb: 0.45, burstMod: 1.5 },
+  { id: 'meteor', name: 'メテオドラグーン', desc: '大型ラバー軸が搭載された3枚刃で、強烈な一撃を繰り出す。メタルが塗装され性能がアップしている。', s: { atk: 75, def: 15, sta: 35 }, hid: { sta: 28 }, weight: 39.0, color: '#c4b5fd', blades: 3, img: meteorImg, spinDir: -1, absorb: 0.45, burstMod: 1.5 },
   { id: 'cobalt', name: 'コバルトドラグーン', desc: '先端が分厚い4枚のアッパー刃による高い弾き性能を持った左回転ブレード。', s: { atk: 60, def: 15, sta: 25 }, weight: 37.9, color: '#3b82f6', blades: 4, img: cobaltImg, spinDir: -1, absorb: 1.0, burstMod: 1.0 },
-  { id: 'wizard', name: 'ウィザードロッド', desc: '外重心かつ径の大きい5枚刃形状で、遠心力を生み出すことに特化した設計。', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5, img: wizardImg },
+  { id: 'wizard', name: 'ウィザードロッド', desc: '外重心かつ径の大きい5枚刃形状で、遠心力を生み出すことに特化した設計。', s: { atk: 15, def: 25, sta: 60 }, hid: { sta: 72 }, weight: 35.1, color: '#fbbf24', blades: 5, img: wizardImg },
   { id: 'aero', name: 'エアロペガサス', desc: '大型の3枚刃が高い打撃力を生む設計。メタルが二重に塗装され性能がアップしている。', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3, img: aeroImg },
   { id: 'shark', name: 'シャークスケイル', desc: '打撃部位を複数備えた大型2枚刃で、低い位置からの強烈なアッパー攻撃に特化した設計。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2, img: sharkImg },
   { id: 'glory', comeback: 2.2, name: 'グローリーワルキューレ', desc: 'ラチェット一体型のブレード。スプリング内蔵の可動刃が攻撃時にバウンドし、反発力による強烈な弾き性能に特化。メタルが塗装され性能がアップしている。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, img: gloryImg, integrated: true, kick: 1.25, burstFloor: 80 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
   { id: 'knight2', name: 'ナイトシールドV2', desc: '6枚の防御刃で衝撃を吸収しやすいダンパー構造を採用。', s: { atk: 22, def: 60, sta: 28 }, hid: { sta: 55 }, weight: 36.5, color: '#4ade80', blades: 6, img: knight2Img },
 ];
 const RATCHETS: PartDef[] = [
-  { id: 'r160', comeback: 2.2, name: '1-60', desc: 'ベイを低めにセットするパーツ。攻撃性能に特化した1枚刃を採用。', s: { atk: 17, def: 9, sta: 4 }, height: 60, weight: 6.0 },
+  { id: 'r160', comeback: 2.2, name: '1-60', desc: 'ベイを低めにセットするパーツ。攻撃性能に特化した1枚刃を採用。', s: { atk: 17, def: 9, sta: 4 }, hid: { atk: 25, sta: 8 }, height: 60, weight: 6.0 },
   { id: 'r170', comeback: 2, name: '1-70', desc: 'ベイの高さを中位にセットするパーツ。攻撃性能に特化した1枚刃を採用。', s: { atk: 17, def: 6, sta: 7 }, height: 70, weight: 6.1 },
   { id: 'r360', name: '3-60', desc: 'ベイを低めにセットするパーツ。弾き性能の高い3枚刃を採用。', s: { atk: 15, def: 9, sta: 6 }, height: 60, weight: 6.3 },
   { id: 'r560', name: '5-60', desc: 'ベイを低くにセットするパーツ。分厚く遠心力に優れた5枚刃を採用。', s: { atk: 10, def: 9, sta: 11 }, height: 60, weight: 6.6 },
   { id: 'r760', name: '7-60', desc: 'ベイを低めにセットするパーツ。分厚く防御性能に優れた連打7枚刃を採用。', s: { atk: 8, def: 14, sta: 8 }, height: 60, weight: 7.2 },
   { id: 'r960', name: '9-60', desc: 'ベイを低めにセットするパーツ。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 7 }, hid: { sta: 12, atk: 8 }, height: 60, weight: 6.1 },
-  { id: 'r965', name: '9-65', desc: 'ベイを低めにセットするパーツ。ビットのバースト耐性を一定にする構造によりブレが少ない、シンプルタイプのラチェット。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 7 }, height: 65, weight: 4.3, burstFloor: 50 },
+  { id: 'r965', name: '9-65', desc: 'ベイを低めにセットするパーツ。ビットのバースト耐性を一定にする構造によりブレが少ない、シンプルタイプのラチェット。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 7 }, hid: { atk: 10 }, height: 65, weight: 4.3, burstFloor: 50 },
 ];
 const BITS: PartDef[] = [
-  { id: 'E', name: 'E', desc: '大型のガイドが付いた設計で姿勢をキープしやすく、Xダッシュ時に軸先が浮き上がりスマッシュ攻撃が可能。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, weight: 3.1, smash: 1.35, absorbBit: 1, dashLimit: [2, 3] },
+  { id: 'E', name: 'E', desc: '大型のガイドが付いた設計で姿勢をキープしやすく、Xダッシュ時に軸先が浮き上がりスマッシュ攻撃が可能。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, hid: { sta: 10 }, weight: 3.1, smash: 1.35, absorbBit: 1, dashLimit: [2, 3] },
   { id: 'B', name: 'B', desc: '球状の軸先による、程よい動きで攻撃をかわし高い持久力を実現。', s: { atk: 15, def: 25, sta: 50, dash: 10, burst: 30 }, weight: 2.1 },
-  { id: 'FB', name: 'FB', desc: 'ラチェットに対してフリー回転するビット。細めで球状の軸先により回転のロスを減らす設計。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
+  { id: 'FB', name: 'FB', desc: 'ラチェットに対してフリー回転するビット。細めで球状の軸先により回転のロスを減らす設計。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, hid: { sta: 70 }, weight: 2.0 },
   { id: 'R', name: 'R', desc: '10枚歯ギヤでXダッシュの速度を抑える分、ダッシュ回数を増やす設計。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
-  { id: 'LR', name: 'LR', desc: 'Rビットより1mm低く設計され、アッパー攻撃を得意とする。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, mobility: 1.8 },
+  { id: 'LR', name: 'LR', desc: 'Rビットより1mm低く設計され、アッパー攻撃を得意とする。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, hid: { atk: 40 }, weight: 2.0, mobility: 1.8 },
   { id: 'H', name: 'H', desc: '軸先側の6つの平面形状がベイの傾きを抑制し、常に安定した体勢を保持し続ける設計。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
   { id: 'L', name: 'L', desc: '3段階の高さを持つ軸先により、低速・中速・高速の3パターンの攻撃速度を実現。', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
-  { id: 'Nr', name: 'Nr', desc: '細い球状の軸先で長く回り、10枚刃ギヤでXダッシュ時の速度を抑えスタミナロスを軽減する設計。', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
+  { id: 'Nr', name: 'Nr', desc: '細い球状の軸先で長く回り、10枚刃ギヤでXダッシュ時の速度を抑えスタミナロスを軽減する設計。', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, hid: { sta: 78 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
   { id: 'K', name: 'K', desc: '角ばった軸先側面でスタジアム内を蹴り、連続攻撃やカウンター防御に繋がる動きを実現。', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, weight: 2.1 },
 ];
 
@@ -461,7 +461,7 @@ interface Part { x: number; y: number; vx: number; vy: number; rot: number; vr: 
 const EXIT_ENTRY = EXIT_HALF - 0.07;
 function exitKind(x: number, y: number): 'extreme' | 'over' | null {
   const a = Math.abs(Math.atan2(x, y)); // 下方向が0
-  if (a < EXIT_ENTRY) return 'extreme';
+  if (a < EXIT_ENTRY + 0.03) return 'extreme';
   if (Math.abs(a - OVER_PHI) < EXIT_ENTRY) return 'over';
   return null;
 }
@@ -1576,7 +1576,7 @@ export function Beyblade() {
         const outSpeed = (b.vx * b.x + b.vy * b.y) / (d2 || 1);
         const ek = exitKind(b.x, b.y);
         // 出口の手前には段があり、それを越える勢いがないと入れない（エクストリームは特に高い）
-        const needOut = (ek === 'extreme' ? 420 : ek === 'over' ? 300 : 0) * TYPES[b.type].exitResist * (b.grace > 0 ? 9 : 1);
+        const needOut = (ek === 'extreme' ? 330 : ek === 'over' ? 340 : 0) * TYPES[b.type].exitResist * (b.grace > 0 ? 9 : 1);
         if (d2 > lim && (!ek || outSpeed < needOut)) {
           const nx = b.x / d2, ny = b.y / d2;
           const outv = b.vx * nx + b.vy * ny;
@@ -1626,7 +1626,7 @@ export function Beyblade() {
             const sf = Math.max(0, (v.spin / v.spinMax - 0.2) / 0.8);
             const hardness = Math.min(1.5, Math.max(0, (impact - 300) / 450));
             const attSpin = Math.max(0.3, att.spin / att.spinMax);
-            if (Math.random() < (0.13 * hardness * tAtt.atk * attSpin * sf) / tv.burstRes) v.burst = 100;
+            if (Math.random() < (0.06 * hardness * tAtt.atk * attSpin * sf) / tv.burstRes) v.burst = 100;
           };
           tryBurst(a, ta, b, tb);
           tryBurst(b, tb, a, ta);
