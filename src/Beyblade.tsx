@@ -1596,7 +1596,7 @@ export function Beyblade() {
           b.kickT -= DT;
           if (b.kickT <= 0 && speed > 40) {
             b.kickT = 0.1 + Math.random() * 0.35;
-            const irr = Math.sqrt(t.mobility), rot = (Math.random() + Math.random() - 1) * 2.3 * irr * (0.4 + 0.6 * Math.sqrt(ratio));
+            const irr = Math.sqrt(t.mobility), rot = (Math.random() + Math.random() - 1) * 3.1 * irr * (0.4 + 0.6 * Math.sqrt(ratio));
             const sc = 0.55 + Math.random() * 0.95, cs2 = Math.cos(rot), sn2 = Math.sin(rot);
             const nvx = (b.vx * cs2 - b.vy * sn2) * sc, nvy = (b.vx * sn2 + b.vy * cs2) * sc;
             b.vx = nvx; b.vy = nvy; speed = Math.hypot(b.vx, b.vy);
