@@ -457,9 +457,16 @@ interface Bey {
   outT: number; outKind: 'extreme' | 'over'; outPhi: number; retPlan: boolean; retCount: number; grace: number; // 場外ポケット：滞在時間・出口の種類・戻るか・戻った回数・戻った直後の猶予
   dashesLeft: number; // 残りXダッシュ回数（Eビットは2〜3回まで）
 }
-interface Spark { x: number; y: number; vx: number; vy: number; life: number; max: number; w: number }
+interface Spark { x: number; y: number; vx: number; vy: number; life: number; max: number; w: number; old?: boolean }
 // 火花を作る（ぶつかった・壁に当たった・ダッシュの瞬間など）。多めに、速く、尾を引いて飛び散る
-function makeSparks(arr: Spark[], x: number, y: number, n: number) {
+function makeSparks(arr: Spark[], x: number, y: number, n: number, old = false) {
+  if (old) { // ぶつかったときの火花は、もとの小さな火花のまま
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, v = 80 + Math.random() * 220, life = 0.4 + Math.random() * 0.3;
+      arr.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life, max: life, w: 0, old: true });
+    }
+    return;
+  }
   const k = Math.min(70, Math.round(n * 2.6));
   for (let i = 0; i < k; i++) {
     const a = Math.random() * Math.PI * 2, v = 140 + Math.random() * 520, life = 0.35 + Math.random() * 0.6;
@@ -1376,7 +1383,7 @@ export function Beyblade() {
         break;
       case 'fire': snapsRef.current = []; beysRef.current = null; setCount(null); setPhase('battle'); break;
       case 's': snapsRef.current.push({ t: performance.now(), b: m.b as number[][] }); if (snapsRef.current.length > 8) snapsRef.current.shift(); break;
-      case 'sp': makeSparks(sparksRef.current, Number(m.x), Number(m.y), Number(m.n)); break;
+      case 'sp': makeSparks(sparksRef.current, Number(m.x), Number(m.y), Number(m.n), !!m.old); break;
       case 'parts': partsRef.current.push(...(m.parts as Part[])); break;
       case 'end': setMessage({ winner: m.winner as 'me' | 'cpu', finish: m.finish as Finish }); break;
       case 'res': scoreRef.current = m.score as { me: number; cpu: number }; setScore(scoreRef.current); setPhase(m.phase as 'result' | 'over'); break;
@@ -1422,9 +1429,9 @@ export function Beyblade() {
     let acc = 0;
     const DT = 1 / 120;
 
-    const spark = (x: number, y: number, n: number) => {
-      if (onlineRef.current === 'host') linkRef.current?.send({ t: 'sp', x: Math.round(x), y: Math.round(y), n });
-      makeSparks(sparksRef.current, x, y, n);
+    const spark = (x: number, y: number, n: number, old = false) => {
+      if (onlineRef.current === 'host') linkRef.current?.send({ t: 'sp', x: Math.round(x), y: Math.round(y), n, old });
+      makeSparks(sparksRef.current, x, y, n, old);
     };
 
     const step = () => {
@@ -1669,7 +1676,7 @@ export function Beyblade() {
               Rb.spin = Math.min(Rb.spinMax * 1.05, Rb.spin + T * 0.7);
             }
           }
-          spark((a.x + b.x) / 2, (a.y + b.y) / 2, 12 + Math.floor(impact / 22));
+          spark((a.x + b.x) / 2, (a.y + b.y) / 2, 8 + Math.floor(impact / 40), true);
           flashRef.current = Math.min(1, impact / 600);
           // 動き出す前に当てられたら、弾かれて進行方向が変わる（矢印の向きには戻らない）
           for (const x of [a, b]) {
@@ -1857,8 +1864,9 @@ export function Beyblade() {
       (window as unknown as { __sparks?: number }).__sparks = sp.length; // 動作確認用
       for (let i = sp.length - 1; i >= 0; i--) {
         const s = sp[i];
-        s.life -= 1 / 60; s.x += s.vx / 60; s.y += s.vy / 60; s.vx *= 0.955; s.vy *= 0.955;
+        s.life -= 1 / 60; s.x += s.vx / 60; s.y += s.vy / 60; if (!s.old) { s.vx *= 0.955; s.vy *= 0.955; }
         if (s.life <= 0) { sp.splice(i, 1); continue; }
+        if (s.old) { ctx.fillStyle = `rgba(255,170,40,${Math.min(1, s.life * 2)})`; ctx.fillRect(s.x - 1.5, s.y - 1.5, 3, 3); continue; }
         // 尾を引く火花：はじめは白っぽく明るく、だんだん橙になって消える
         const f = s.life / s.max, g = Math.round(150 + 105 * f), bl = Math.round(40 + 160 * f * f);
         const tx = s.x - s.vx * 0.05, ty = s.y - s.vy * 0.05;
