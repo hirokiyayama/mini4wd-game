@@ -23,7 +23,7 @@ const EXIT_HALF = 0.25; // 出口の幅（rad）
 const WALL_N = 4;
 const sqn = (x: number, y: number) => Math.pow(Math.pow(Math.abs(x), WALL_N) + Math.pow(Math.abs(y), WALL_N), 1 / WALL_N); // 四角い壁での「距離」（壁にぶつかるとき1に近づく）
 const wallAt = (phi: number, H: number) => H / Math.pow(Math.pow(Math.abs(Math.sin(phi)), WALL_N) + Math.pow(Math.abs(Math.cos(phi)), WALL_N), 1 / WALL_N); // 真下を0とした向きphiでの、四角い壁までの距離
-const RING_R = 238.5, NOTCH_DEPTH = 52, NOTCH_A1 = 0.1, NOTCH_A2 = 0.44;
+const RING_R = 238.5, NOTCH_DEPTH = 72, NOTCH_A1 = 0.1, NOTCH_A2 = 0.44;
 function ringRadiusAtAngle(th: number) { // 画面の角度 th（右が0、下が+π/2）でのリングの半径。真上（-π/2）に凹みがある
   const a = Math.abs(Math.atan2(Math.sin(th + Math.PI / 2), Math.cos(th + Math.PI / 2)));
   if (a >= NOTCH_A2) return RING_R;
