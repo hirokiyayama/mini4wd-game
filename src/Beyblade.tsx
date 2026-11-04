@@ -1749,7 +1749,7 @@ export function Beyblade() {
         const outSpeed = b.vx * wnx + b.vy * wny;
         const ek = exitKind(b.x, b.y);
         // 出口の手前には段があり、それを越える勢いがないと入れない（エクストリームは特に高い）
-        const needOut = (ek === 'extreme' ? 420 : ek === 'over' ? 300 : 0) * TYPES[b.type].exitResist * (b.grace > 0 ? 9 : 1) * (endedRef.current ? 1e9 : 1); // 決着したあと、勝ったほうのベイは、場外へ出ない
+        const needOut = (ek === 'extreme' ? 620 : ek === 'over' ? 470 : 0) * TYPES[b.type].exitResist * (b.grace > 0 ? 9 : 1) * (endedRef.current ? 1e9 : 1); // 決着したあと、勝ったほうのベイは、場外へ出ない
         if (s2 > lim && (!ek || outSpeed < needOut)) {
           const nx = wnx, ny = wny;
           const outv = b.vx * nx + b.vy * ny;
