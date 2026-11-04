@@ -1746,7 +1746,7 @@ export function Beyblade() {
         }
         { // リングよりも外側（壁との間）には、とどまれない：内側へ押し戻される（出口の手前は除く）
           const dd = Math.hypot(b.x, b.y);
-          if (dd > ringRadiusAt(b.x, b.y) + 3 && !exitKind(b.x, b.y)) {
+          if (dd > ringRadiusAt(b.x, b.y) + 3 && !exitKind(b.x, b.y) && (b.vx * b.x + b.vy * b.y) / dd < 120) { // 壁へ向かって勢いよく飛んでいるあいだは押し戻さない（途中でふわっと減速せず、壁にガツンと当たって跳ね返る）
             // 時計回りなど、壁に沿って回り続けようとしても、強く内側へ押し戻される（リングの外側では、円を描いて回り続けられない）
             const f = Math.min(2, (dd - (ringRadiusAt(b.x, b.y) + 3)) / 5) * 3200 * DT;
             b.vx -= (b.x / dd) * f; b.vy -= (b.y / dd) * f;
