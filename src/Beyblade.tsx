@@ -106,7 +106,7 @@ const SPRITES: Record<string, HTMLImageElement> = {};
 
 // ---- ブレードの形：写真の輪郭から、角度ごとの半径を作る（丸くない・凹凸がある）。当たる場所によって、弾く向き・飛ぶ量が変わり、形がいびつなほど動きが不規則になる
 const SHAPE_N = 72;
-const SHAPES: Record<string, { r: Float32Array; mean: number; nr: number }> = {};
+const SHAPES: Record<string, { r: Float32Array; mean: number; nr: number; mx: number }> = {};
 function computeShape(id: string, im: HTMLImageElement) {
   const S = im.naturalWidth || 256;
   const cv = document.createElement('canvas'); cv.width = cv.height = S;
@@ -126,7 +126,7 @@ function computeShape(id: string, im: HTMLImageElement) {
   for (let k = 0; k < SHAPE_N; k++) sm[k] = ((r[(k + SHAPE_N - 1) % SHAPE_N] + 2 * r[k] + r[(k + 1) % SHAPE_N]) / 4) * sc;
   let mean = 0; for (const v of sm) mean += v; mean /= SHAPE_N;
   let sd = 0; for (const v of sm) sd += (v - mean) ** 2; sd = Math.sqrt(sd / SHAPE_N) / mean;
-  SHAPES[id] = { r: sm, mean, nr: Math.max(0, Math.min(1, (sd - 0.015) / 0.035)) }; // nr：0＝まん丸 … 1＝いびつ
+  SHAPES[id] = { r: sm, mean, mx: Math.max(...sm), nr: Math.max(0, Math.min(1, (sd - 0.015) / 0.035)) }; // nr：0＝まん丸 … 1＝いびつ
   (window as unknown as { __shapes?: typeof SHAPES }).__shapes = SHAPES; // 動作確認用
 }
 const nrOf = (id: string) => SHAPES[id]?.nr ?? 0.5;
@@ -139,6 +139,23 @@ function shapeR(id: string, th: number) { // 角度 th（ベイから見た向�
 function shapeNormal(id: string, th: number) { // その点の外向きの法線の向き（凹凸があると、中心からの向きとずれる）
   const h = (2 * Math.PI) / SHAPE_N, r = shapeR(id, th), dr = (shapeR(id, th + h) - shapeR(id, th - h)) / (2 * h);
   return Math.atan2(r * Math.sin(th) - dr * Math.cos(th), r * Math.cos(th) + dr * Math.sin(th));
+}
+// 外形どうしの重なり：片方の外形の点が、もう片方の外形の内側に入っているかを調べる。いちばん深く食い込んだ点が「当たった点」で、
+// そのときの相手の外形の向き（法線）が、弾く向きになる。ギザギザのブレードは、刃の先で当たるのか、刃の間に入るのかで、向きも深さも変わる
+function polyContact(ida: string, xa: number, ya: number, aa: number, idb: string, xb: number, yb: number, ab: number): { nx: number; ny: number; pen: number } | null {
+  let pen = 0, nx = 0, ny = 0;
+  const step = (2 * Math.PI) / SHAPE_N;
+  const test = (idv: string, xv: number, yv: number, av: number, ido: string, xo: number, yo: number, ao: number, sign: number) => {
+    for (let k = 0; k < SHAPE_N; k++) {
+      const th = -Math.PI + (k + 0.5) * step, rv = shapeR(idv, th), wa = th + av;
+      const px = xv + rv * Math.cos(wa) - xo, py = yv + rv * Math.sin(wa) - yo, dist = Math.hypot(px, py);
+      const thp = Math.atan2(py, px) - ao, pn = shapeR(ido, thp) - dist;
+      if (pn > pen) { pen = pn; const Nw = shapeNormal(ido, thp) + ao; nx = Math.cos(Nw) * sign; ny = Math.sin(Nw) * sign; }
+    }
+  };
+  test(ida, xa, ya, aa, idb, xb, yb, ab, -1); // aの点がbの中へ：b→aの外向き法線の逆（a→b向き）
+  test(idb, xb, yb, ab, ida, xa, ya, aa, 1);  // bの点がaの中へ：aの外向き法線（a→b向き）
+  return pen > 0 ? { nx, ny, pen } : null;
 }
 for (const bl of BLADES) {
   if (!bl.img) continue;
@@ -1805,18 +1822,17 @@ export function Beyblade() {
       const ta = TYPES[a.type], tb = TYPES[b.type];
       const phi = Math.atan2(dy, dx), tha = phi - a.angle, thb = phi + Math.PI - b.angle;
       const ra = shapeR(ta.bid, tha), rb = shapeR(tb.bid, thb); // 当たる場所での、それぞれの半径（丸くない）
-      if (d < ra + rb && a.outT <= 0 && b.outT <= 0) {
-        // 当たった点の向き：凹凸があると、中心どうしを結ぶ向きからずれて、弾く向きが変わる（ずれは最大約40度）
+      const pc = a.outT <= 0 && b.outT <= 0 && d < (SHAPES[ta.bid]?.mx ?? BEY_R) + (SHAPES[tb.bid]?.mx ?? BEY_R) + 1 ? polyContact(ta.bid, a.x, a.y, a.angle, tb.bid, b.x, b.y, b.angle) : null;
+      if (pc) {
+        // 当たった点の向き：外形どうしの、いちばん深く食い込んだ点での外形の向き。中心どうしを結ぶ向きからのずれは、最大約60度
         const cxl = dx / d, cyl = dy / d;
-        const Na = shapeNormal(ta.bid, tha) + a.angle, Nb = shapeNormal(tb.bid, thb) + b.angle;
         let nx = cxl, ny = cyl;
-        { const sx = Math.cos(Na) - Math.cos(Nb), sy = Math.sin(Na) - Math.sin(Nb);
-          if (Math.hypot(sx, sy) > 0.3) {
-            const base = Math.atan2(cyl, cxl);
-            let df = Math.atan2(sy, sx) - base; df = Math.atan2(Math.sin(df), Math.cos(df));
-            df = Math.max(-1.0, Math.min(1.0, df + (Math.random() - 0.5) * 0.9)); // 当たり所のばらつき
-            nx = Math.cos(base + df); ny = Math.sin(base + df);
-          } }
+        {
+          const base = Math.atan2(cyl, cxl);
+          let df = Math.atan2(pc.ny, pc.nx) - base; df = Math.atan2(Math.sin(df), Math.cos(df));
+          df = Math.max(-1.05, Math.min(1.05, df + (Math.random() - 0.5) * 0.2)); // 当たり所の小さなばらつき
+          nx = Math.cos(base + df); ny = Math.sin(base + df);
+        }
         // とがったところで当たるほど強く飛ばす／いびつなブレードほど飛ばしやすい
         const ma0 = SHAPES[ta.bid]?.mean ?? BEY_R, mb0 = SHAPES[tb.bid]?.mean ?? BEY_R;
         const lobe = Math.pow(Math.min(1.25, Math.max(0.8, (ra / ma0 + rb / mb0) / 2)), 2) * (1 + 0.3 * (nrOf(ta.bid) + nrOf(tb.bid)) / 2);
@@ -1885,10 +1901,10 @@ export function Beyblade() {
             if (x.holdT > 0) { x.holdT = 0; x.dashCd = Math.max(x.dashCd, 0.8); } x.spiralT = 0;
           }
         }
-        const overlap = ra + rb - d;
+        const overlap = pc.pen + 0.3; // 食い込んだぶんだけ、外形の向きに押し出す
         const shareA = (1 / ma) / (1 / ma + 1 / mb);
-        a.x -= cxl * overlap * shareA; a.y -= cyl * overlap * shareA;
-        b.x += cxl * overlap * (1 - shareA); b.y += cyl * overlap * (1 - shareA);
+        a.x -= pc.nx * overlap * shareA; a.y -= pc.ny * overlap * shareA;
+        b.x += pc.nx * overlap * (1 - shareA); b.y += pc.ny * overlap * (1 - shareA);
       }
 
       // 決着判定
