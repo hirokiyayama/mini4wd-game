@@ -19,6 +19,19 @@ const R = 265; // すり鉢の半径
 const BEY_R = 32;
 const W = 900, H = 700, CX = W / 2, CY = 335;
 const EXIT_HALF = 0.25; // 出口の幅（rad）
+// ---- スタジアムの形：緑のリング（エクストリームライン）は円で、上に凹みがある。リングの外の壁は、円ではなく四角（角が丸い）
+const WALL_N = 4;
+const sqn = (x: number, y: number) => Math.pow(Math.pow(Math.abs(x), WALL_N) + Math.pow(Math.abs(y), WALL_N), 1 / WALL_N); // 四角い壁での「距離」（壁にぶつかるとき1に近づく）
+const wallAt = (phi: number, H: number) => H / Math.pow(Math.pow(Math.abs(Math.sin(phi)), WALL_N) + Math.pow(Math.abs(Math.cos(phi)), WALL_N), 1 / WALL_N); // 真下を0とした向きphiでの、四角い壁までの距離
+const RING_R = 238.5, NOTCH_DEPTH = 44, NOTCH_A1 = 0.2, NOTCH_A2 = 0.33;
+function ringRadiusAtAngle(th: number) { // 画面の角度 th（右が0、下が+π/2）でのリングの半径。真上（-π/2）に凹みがある
+  const a = Math.abs(Math.atan2(Math.sin(th + Math.PI / 2), Math.cos(th + Math.PI / 2)));
+  if (a >= NOTCH_A2) return RING_R;
+  if (a <= NOTCH_A1) return RING_R - NOTCH_DEPTH;
+  const u = (NOTCH_A2 - a) / (NOTCH_A2 - NOTCH_A1);
+  return RING_R - NOTCH_DEPTH * u * u * (3 - 2 * u);
+}
+const ringRadiusAt = (x: number, y: number) => ringRadiusAtAngle(Math.atan2(y, x));
 const OVER_PHI = 0.64; // 下方向から左右ポケットまでの角度（rad）
 
 // 'me' = 自分のベイ, 'cpu' = 相手のベイ（ブレード・ラチェット・ビットの組み合わせから作る）
@@ -498,6 +511,7 @@ interface Bey {
   coast: number; // ダッシュのあと、すぐに失速する時間
   ph0: number; // 進路のゆれの位相
   dAt: number; // （未使用）
+  diagShot: boolean; notched: boolean; prevD: number; // 斜めシュートか／上の凹みで一度とどまったか／前の位置のリングからの距離
   outAng: number; prevTh: number; // リングの外側を回った角度（1周回ったら、次の動きに移る）
   postT: number; // ぶつかってからの、惰性で動く時間（この間は、ビットごとの円・楕円の動きを切る）
   eAng: number; er: number; // 平らな底のビットの楕円の向き・ひらべったさ
@@ -555,7 +569,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
+    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, diagShot: diag, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -607,102 +621,87 @@ function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, ang
 }
 
 function drawStadium(ctx: CanvasRenderingContext2D) {
-  // 八角形の透明な枠
-  const half = 330, cut = 100;
-  ctx.beginPath();
-  ctx.moveTo(-half + cut, -half); ctx.lineTo(half - cut, -half); ctx.lineTo(half, -half + cut);
-  ctx.lineTo(half, half - cut); ctx.lineTo(half - cut, half); ctx.lineTo(-half + cut, half);
-  ctx.lineTo(-half, half - cut); ctx.lineTo(-half, -half + cut); ctx.closePath();
-  const fg = ctx.createLinearGradient(0, -half, 0, half);
-  fg.addColorStop(0, '#eef3f8'); fg.addColorStop(1, '#d5dde8');
+  // 実際のスタジアム（上から見た写真）に近づけた絵：透明な四角いケースの中に、黒い皿と、緑のエクストリームライン
+  const half = 330;
+  // ケース（透明・角が丸い四角）
+  ctx.beginPath(); ctx.roundRect(-half, -half, half * 2, half * 2, 78);
+  const fg = ctx.createLinearGradient(-half, -half, half, half);
+  fg.addColorStop(0, '#e6ecf4'); fg.addColorStop(0.5, '#cfd8e4'); fg.addColorStop(1, '#bcc7d6');
   ctx.fillStyle = fg; ctx.fill();
-  ctx.lineWidth = 6; ctx.strokeStyle = '#aab6c9'; ctx.stroke();
-  // 下側の凹みパネル
-  ctx.fillStyle = '#c9d2e0';
-  for (const sx of [-1, 1]) {
-    ctx.beginPath(); ctx.roundRect(sx * 215 - 55, 195, 110, 80, 16); ctx.fill();
-  }
-  // 角の赤い留め具
-  ctx.fillStyle = '#c0392b';
-  for (const [x, y] of [[-290, -290], [290, -290], [-175, 292], [175, 292]]) {
-    ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(y, x) + Math.PI / 2);
-    ctx.fillRect(-7, -14, 14, 28); ctx.restore();
-  }
-
-  // 出口（下側3か所）
-  const drawExit = (phi: number, color: string) => {
-    ctx.save();
-    ctx.rotate(-phi); // 下方向を基準に回す
+  ctx.lineWidth = 6; ctx.strokeStyle = '#9fadc0'; ctx.stroke();
+  // ケースの反射
+  ctx.save(); ctx.beginPath(); ctx.roundRect(-half + 10, -half + 10, half * 2 - 20, half * 2 - 20, 70); ctx.clip();
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.beginPath(); ctx.moveTo(-half, -half); ctx.lineTo(-40, -half); ctx.lineTo(-half, 120); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  // 下側の凹みパネル（ベイを入れるくぼみ）と、留め具
+  ctx.fillStyle = '#aab6c7';
+  for (const sx of [-1, 1]) { ctx.beginPath(); ctx.roundRect(sx * 215 - 58, 200, 116, 78, 16); ctx.fill(); }
+  ctx.fillStyle = '#2a2f37';
+  for (const sx of [-1, 1]) { ctx.beginPath(); ctx.roundRect(sx * 215 - 20, 228, 40, 28, 6); ctx.fill(); }
+  // 四角い壁（黒い皿のふち）：円ではなく、角が丸い四角
+  const H = R + 14;
+  const sqPath = (Hh: number) => {
     ctx.beginPath();
-    ctx.moveTo(-Math.sin(EXIT_HALF) * R, Math.cos(EXIT_HALF) * R);
-    ctx.lineTo(-Math.sin(EXIT_HALF) * (R + 38), Math.cos(EXIT_HALF) * (R + 38));
-    ctx.lineTo(Math.sin(EXIT_HALF) * (R + 38), Math.cos(EXIT_HALF) * (R + 38));
-    ctx.lineTo(Math.sin(EXIT_HALF) * R, Math.cos(EXIT_HALF) * R);
+    for (let i = 0; i <= 180; i++) { const th = (i / 180) * Math.PI * 2, r = wallAt(th, Hh); const x = Math.sin(th) * r, y = Math.cos(th) * r; if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
     ctx.closePath();
-    ctx.fillStyle = color; ctx.fill();
-    ctx.restore();
   };
-  drawExit(0, '#f5b800');
-  drawExit(OVER_PHI, '#d63a2f');
-  drawExit(-OVER_PHI, '#d63a2f');
-  ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#7a5a00';
-  ctx.fillText('EXTREME 3pt', 0, R + 60);
-  ctx.fillStyle = '#9b2a20';
-  for (const sx of [-1, 1]) ctx.fillText('OVER 2pt', Math.sin(OVER_PHI) * (R + 40) * sx, Math.cos(OVER_PHI) * (R + 40) + 26);
-  ctx.textAlign = 'start';
+  sqPath(H + 6); ctx.fillStyle = '#3a414d'; ctx.fill();
+  sqPath(H); const wallG = ctx.createLinearGradient(0, -H, 0, H); wallG.addColorStop(0, '#1b1f26'); wallG.addColorStop(1, '#0d0f13');
+  ctx.fillStyle = wallG; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(160,175,195,0.35)'; ctx.stroke();
+  // 皿の中（黒）：大きな円の段
+  const dish = ctx.createRadialGradient(-20, -30, 20, 0, 0, RING_R + 10);
+  dish.addColorStop(0, '#2b313b'); dish.addColorStop(0.7, '#1a1e25'); dish.addColorStop(1, '#101318');
+  ctx.beginPath(); ctx.arc(0, 0, RING_R + 6, 0, Math.PI * 2); ctx.fillStyle = dish; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(180,195,215,0.28)';
+  for (const f of [0.78, 0.5, 0.26]) { ctx.beginPath(); ctx.arc(0, 0, RING_R * f, 0, Math.PI * 2); ctx.stroke(); }
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.beginPath(); ctx.arc(-18, -22, RING_R * 0.62, 0.2, 1.6); ctx.stroke();
 
-  // すり鉢
-  ctx.beginPath(); ctx.arc(0, 0, R + 12, 0, Math.PI * 2);
-  ctx.fillStyle = '#b8c3d4'; ctx.fill();
-  const bowl = ctx.createRadialGradient(-30, -40, 20, 0, 0, R);
-  bowl.addColorStop(0, '#ffffff'); bowl.addColorStop(0.75, '#eef3f9'); bowl.addColorStop(1, '#d3dcea');
-  ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fillStyle = bowl; ctx.fill();
-  // 出口部分は壁を開ける
-  ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(120,135,160,0.55)';
-  for (const f of [0.8, 0.54]) { ctx.beginPath(); ctx.arc(0, 0, R * f, 0, Math.PI * 2); ctx.stroke(); }
-  // Xライン（本物は透明なすり鉢の内側にある、緑色のつやのあるリング）
-  const gg = ctx.createLinearGradient(0, -R, 0, R);
-  gg.addColorStop(0, '#9be84a'); gg.addColorStop(0.5, '#6fcf2a'); gg.addColorStop(1, '#8edb3c');
-  ctx.lineWidth = 14; ctx.strokeStyle = gg;
-  ctx.beginPath(); ctx.arc(0, 0, R * 0.9, 0, Math.PI * 2); ctx.stroke();
-  ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-  ctx.beginPath(); ctx.arc(0, 0, R * 0.9 - 3, 0, Math.PI * 2); ctx.stroke();
-  ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(40,110,10,0.55)';
-  ctx.beginPath(); ctx.arc(0, 0, R * 0.9 + 7.5, 0, Math.PI * 2); ctx.stroke();
-  ctx.beginPath(); ctx.arc(0, 0, R * 0.9 - 7.5, 0, Math.PI * 2); ctx.stroke();
-  // 上部の緑の部品：中央に向かってXダッシュで発射しやすいよう、少し下向きの突起がある
-  const ty = -R * 0.9;
-  ctx.beginPath();
-  ctx.moveTo(-58, ty - 9); ctx.lineTo(58, ty - 9); ctx.lineTo(46, ty + 8);
-  ctx.lineTo(22, ty + 12); ctx.lineTo(14, ty + 34); ctx.lineTo(0, ty + 42); ctx.lineTo(-14, ty + 34); ctx.lineTo(-22, ty + 12);
-  ctx.lineTo(-46, ty + 8); ctx.closePath();
-  const tg = ctx.createLinearGradient(0, ty - 9, 0, ty + 42);
-  tg.addColorStop(0, '#8ee03c'); tg.addColorStop(1, '#5fbf22');
-  ctx.fillStyle = tg; ctx.fill();
-  ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(30,95,10,0.75)'; ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-40, ty - 3); ctx.lineTo(40, ty - 3); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.stroke();
-  // 台座の文字
-  ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(95,105,125,0.55)';
-  ctx.fillText('BEYBLADE X', 0, -R - 24);
+  // 出口（下側3か所）：四角い壁に沿って、外へ張り出す
+  const px = (phi: number, rr: number) => [Math.sin(phi) * rr, Math.cos(phi) * rr] as const;
+  const drawExit = (phi: number, color: string) => {
+    const p1 = px(phi - EXIT_HALF, wallAt(phi - EXIT_HALF, H)), p2 = px(phi - EXIT_HALF, wallAt(phi - EXIT_HALF, H + 44));
+    const p3 = px(phi + EXIT_HALF, wallAt(phi + EXIT_HALF, H + 44)), p4 = px(phi + EXIT_HALF, wallAt(phi + EXIT_HALF, H));
+    ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.lineTo(p3[0], p3[1]); ctx.lineTo(p4[0], p4[1]); ctx.closePath();
+    ctx.fillStyle = color; ctx.fill();
+  };
+  drawExit(0, '#f5b800'); drawExit(OVER_PHI, '#d63a2f'); drawExit(-OVER_PHI, '#d63a2f');
+  ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#7a5a00';
+  ctx.fillText('EXTREME 3pt', 0, wallAt(0, H) + 60);
+  ctx.fillStyle = '#9b2a20';
+  for (const sx of [-1, 1]) { const q = px(OVER_PHI * sx, wallAt(OVER_PHI, H) + 40); ctx.fillText('OVER 2pt', q[0], q[1] + 26); }
   ctx.textAlign = 'start';
-  // エクストリーム／オーバーゾーンの手前の段
+  // 出口の手前の段と、仕切り壁
   for (const phi of [0, OVER_PHI, -OVER_PHI]) {
-    ctx.save(); ctx.rotate(-phi);
-    ctx.strokeStyle = '#8693ab'; ctx.lineWidth = 10;
-    ctx.beginPath(); ctx.arc(0, 0, R + 5, Math.PI / 2 - EXIT_HALF, Math.PI / 2 + EXIT_HALF); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(0, 0, R + 1, Math.PI / 2 - EXIT_HALF, Math.PI / 2 + EXIT_HALF); ctx.stroke();
-    ctx.restore();
-  }
-  // エクストリームゾーンとオーバーゾーンの間の仕切り壁（ここは通れない）
-  for (const phi of [0, OVER_PHI, -OVER_PHI]) {
+    ctx.beginPath();
+    for (let i = 0; i <= 24; i++) { const th = phi - EXIT_HALF + (i / 24) * EXIT_HALF * 2, q = px(th, wallAt(th, H - 2)); if (i === 0) ctx.moveTo(q[0], q[1]); else ctx.lineTo(q[0], q[1]); }
+    ctx.lineWidth = 9; ctx.strokeStyle = '#7c8899'; ctx.stroke();
+    ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.stroke();
     for (const sg of [-1, 1]) {
-      ctx.save(); ctx.rotate(-(phi + sg * EXIT_HALF));
-      ctx.fillStyle = '#4c5875'; ctx.fillRect(-4.5, R - 10, 9, 58);
-      ctx.fillStyle = '#c3cbe0'; ctx.fillRect(-1.2, R - 10, 2.4, 58);
+      const th = phi + sg * EXIT_HALF, q = px(th, wallAt(th, H));
+      ctx.save(); ctx.translate(q[0], q[1]); ctx.rotate(-th);
+      ctx.fillStyle = '#4c5875'; ctx.fillRect(-4.5, -10, 9, 58); ctx.fillStyle = '#c3cbe0'; ctx.fillRect(-1.2, -10, 2.4, 58);
       ctx.restore();
     }
   }
+  // エクストリームライン（緑・つや付き・ぎざぎざの縁）：ぐるっと一周あって、上に凹みがある
+  const ringPath = (off: number) => {
+    ctx.beginPath();
+    for (let i = 0; i <= 360; i++) { const th = (i / 360) * Math.PI * 2 - Math.PI / 2, r = ringRadiusAtAngle(th) + off; const x = Math.cos(th) * r, y = Math.sin(th) * r; if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.closePath();
+  };
+  ringPath(0); ctx.lineJoin = 'round';
+  ctx.lineWidth = 17; ctx.strokeStyle = '#3f9a14'; ctx.stroke();
+  const gg = ctx.createLinearGradient(0, -RING_R, 0, RING_R); gg.addColorStop(0, '#b4f25a'); gg.addColorStop(0.5, '#79d62c'); gg.addColorStop(1, '#9be84a');
+  ringPath(0); ctx.lineWidth = 13; ctx.strokeStyle = gg; ctx.stroke();
+  ringPath(-2); ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.stroke();
+  ctx.setLineDash([2, 5]); ringPath(8); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(60,140,20,0.7)'; ctx.stroke(); ctx.setLineDash([]); // ぎざぎざ
+  // 台座の文字
+  ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(95,105,125,0.6)';
+  ctx.fillText('BEYBLADE X', 0, -H - 24);
+  ctx.textAlign = 'start';
 }
 
 // スマホの横画面に合わせた枠：実機の横画面ではそのまま、PCなど大きな画面では 844x390 の枠を拡大して表示する
@@ -1228,7 +1227,7 @@ export function Beyblade() {
           const a = Math.random() * Math.PI * 2, sp = 150 + Math.random() * 300;
           fresh.push({
             x: loser.x, y: loser.y, vx: loser.vx * 0.4 + Math.cos(a) * sp, vy: loser.vy * 0.4 + Math.sin(a) * sp,
-            rot: Math.random() * 6, vr: (Math.random() - 0.5) * 24, color: i % 2 ? t.color : '#444', size: 8 + Math.random() * 10, life: 3,
+            rot: Math.random() * 6, vr: (Math.random() - 0.5) * 24, color: i % 2 ? t.color : '#b8c2d4', size: 8 + Math.random() * 10, life: 3,
           });
         }
         partsRef.current.push(...fresh);
@@ -1496,8 +1495,8 @@ export function Beyblade() {
           // 出口から場外ポケットへ滑り込む
           b.vx *= 1 - 5 * DT; b.vy *= 1 - 5 * DT;
           b.x += b.vx * DT; b.y += b.vy * DT;
-          const d = Math.hypot(b.x, b.y);
-          if (d > R + 40) { b.x *= (R + 40) / d; b.y *= (R + 40) / d; }
+          const dq = sqn(b.x, b.y);
+          if (dq > R + 40) { b.x *= (R + 40) / dq; b.y *= (R + 40) / dq; }
           continue;
         }
         const t = TYPES[b.type];
@@ -1511,7 +1510,7 @@ export function Beyblade() {
           b.x += b.vx * DT; b.y += b.vy * DT;
           const th = Math.atan2(b.x, b.y), lim2 = EXIT_HALF - 0.06; // 仕切りの壁の間にとどまる
           const tc = Math.max(b.outPhi - lim2, Math.min(b.outPhi + lim2, th));
-          const rr = Math.max(R + 4, Math.min(R + 26, Math.hypot(b.x, b.y)));
+          const wr = wallAt(tc, R), rr = Math.max(wr + 4, Math.min(wr + 26, Math.hypot(b.x, b.y)));
           b.x = Math.sin(tc) * rr; b.y = Math.cos(tc) * rr;
           b.spin = Math.max(0, b.spin - 60 * t.decay * DT * 6 * 0.2);
           continue;
@@ -1529,10 +1528,11 @@ export function Beyblade() {
           b.x += b.vx * DT; b.y += b.vy * DT;
           // 止まったベイは、勢いが残っていてもスタジアムの外には出ない（スピンフィニッシュは必ず場内）。
           // 激しく壁に当たったときは、いきなり止まらず、少し跳ね返って戻ってから止まる
-          const d0 = Math.hypot(b.x, b.y), lim0 = R - BEY_R * 1.1;
+          const d0 = sqn(b.x, b.y), lim0 = R - BEY_R * 1.1;
           if (d0 > lim0) {
-            const nx = b.x / d0, ny = b.y / d0, outv = b.vx * nx + b.vy * ny;
-            b.x = nx * lim0; b.y = ny * lim0;
+            const g0x = Math.sign(b.x) * Math.pow(Math.abs(b.x), WALL_N - 1), g0y = Math.sign(b.y) * Math.pow(Math.abs(b.y), WALL_N - 1), g0l = Math.hypot(g0x, g0y) || 1;
+            const nx = g0x / g0l, ny = g0y / g0l, outv = b.vx * nx + b.vy * ny;
+            b.x *= lim0 / d0; b.y *= lim0 / d0;
             if (outv > 0) { b.vx -= 1.5 * outv * nx; b.vy -= 1.5 * outv * ny; }
           }
           continue;
@@ -1547,8 +1547,8 @@ export function Beyblade() {
           b.vy += (b.ay * drift + (Math.random() - 0.5) * 20 - b.vy) * 6 * DT;
           b.x += b.vx * DT; b.y += b.vy * DT;
           // 斜めシュートで壁の方へ向けても、壁は突き抜けない（その場でとどまっている間は出口にも入らない）
-          { const dh = Math.hypot(b.x, b.y), lh = R - BEY_R * 0.3;
-            if (dh > lh) { const nx = b.x / dh, ny = b.y / dh, ov = b.vx * nx + b.vy * ny; b.x = nx * lh; b.y = ny * lh; if (ov > 0) { b.vx -= ov * nx; b.vy -= ov * ny; } } }
+          { const dh = sqn(b.x, b.y), lh = R - BEY_R * 0.3;
+            if (dh > lh) { const hx = Math.sign(b.x) * Math.pow(Math.abs(b.x), WALL_N - 1), hy = Math.sign(b.y) * Math.pow(Math.abs(b.y), WALL_N - 1), hl = Math.hypot(hx, hy) || 1, nx = hx / hl, ny = hy / hl, ov = b.vx * nx + b.vy * ny; b.x *= lh / dh; b.y *= lh / dh; if (ov > 0) { b.vx -= ov * nx; b.vy -= ov * ny; } } }
           b.trail.push({ x: b.x, y: b.y });
           if (b.trail.length > 14) b.trail.shift();
           b.spin = Math.max(0, b.spin - 9 * t.decay * DT * 6);
@@ -1624,14 +1624,19 @@ export function Beyblade() {
           // 右回転は反時計回りにリングを走る（右側を駆け上がる）。左回転はその鏡写し（左側を駆け上がる）
           const tx = (b.dir * b.y) / d, ty = (-b.dir * b.x) / d;
           const rs = 1250 * t.dash;
-          const fix = (R * 0.9 - d) * 8; // リングの上に保つ
+          const fix = (ringRadiusAt(b.x, b.y) - d) * 8; // リングの上に保つ（上では凹みに沿う）
           b.vx = tx * rs + (b.x / d) * fix; b.vy = ty * rs + (b.y / d) * fix;
           b.x += b.vx * DT; b.y += b.vy * DT;
           b.trail.push({ x: b.x, y: b.y });
           if (b.trail.length > 14) b.trail.shift();
           b.spin = Math.max(0, b.spin - (4.5 + rs * 0.0145) * t.decay * DT * 6);
           const atTop = Math.abs(Math.atan2(b.y, b.x) + Math.PI / 2) < 0.2;
-          if (atTop && b.rideT > 0.05 && ratio > 0.22) {
+          if (atTop && b.rideT > 0.05 && ratio > 0.22 && b.diagShot && !b.notched) {
+            // 斜めシュート：凹みに少し滞在して、ゆっくり中央に向かって降りてくる
+            b.notched = true; b.riding = false; b.rideChance = 1;
+            const dn = d || 1; b.ax = -b.x / dn; b.ay = -b.y / dn; b.push = 150;
+            b.holdT = 0.7 + Math.random() * 0.6; b.vx = b.ax * 40; b.vy = b.ay * 40; b.dashCd = Math.max(b.dashCd, 0.8);
+          } else if (atTop && b.rideT > 0.05 && ratio > 0.22) {
             // 上側から中央へ発射
             const nx = -b.x / d, ny = -b.y / d;
             // ダッシュの向き：真ん中に向かうか、回転が強いときは、真ん中より少し左へ向かう（右のオーバーゾーン側へは向かわない。左回転のベイは左右が逆）
@@ -1716,24 +1721,37 @@ export function Beyblade() {
             speed = Math.hypot(b.vx, b.vy);
           }
         }
+        { // エクストリームラインは1周ぐるっとあるので、乗り越える勢いがないと、リングの外には出ない
+          const dn = Math.hypot(b.x, b.y), rr0 = ringRadiusAt(b.x, b.y);
+          if (!b.riding && b.prevD > 0 && b.prevD <= rr0 && dn > rr0) {
+            const ov = (b.vx * b.x + b.vy * b.y) / (dn || 1);
+            if (ov < 440 * TYPES[b.type].exitResist && !endedRef.current === true) {
+              b.vx -= 1.4 * ov * (b.x / dn); b.vy -= 1.4 * ov * (b.y / dn);
+              b.x *= (rr0 - 0.5) / dn; b.y *= (rr0 - 0.5) / dn;
+            }
+          }
+          b.prevD = Math.hypot(b.x, b.y);
+        }
         { // リングよりも外側（壁との間）には、とどまれない：内側へ押し戻される（出口の手前は除く）
           const dd = Math.hypot(b.x, b.y);
-          if (dd > R * 0.9 + 3 && !exitKind(b.x, b.y)) {
+          if (dd > ringRadiusAt(b.x, b.y) + 3 && !exitKind(b.x, b.y)) {
             // 時計回りなど、壁に沿って回り続けようとしても、強く内側へ押し戻される（リングの外側では、円を描いて回り続けられない）
-            const f = Math.min(2, (dd - (R * 0.9 + 3)) / 5) * 3200 * DT;
+            const f = Math.min(2, (dd - (ringRadiusAt(b.x, b.y) + 3)) / 5) * 3200 * DT;
             b.vx -= (b.x / dd) * f; b.vy -= (b.y / dd) * f;
           }
         }
 
         // 外周の壁：出口以外は弾き返す
-        const d2 = Math.hypot(b.x, b.y);
-        const lim = R - BEY_R * 0.3;
-        const outSpeed = (b.vx * b.x + b.vy * b.y) / (d2 || 1);
+        const lim = R - BEY_R * 0.3, s2 = sqn(b.x, b.y);
+        // 四角い壁の、外向きの法線
+        const gx = Math.sign(b.x) * Math.pow(Math.abs(b.x), WALL_N - 1), gy = Math.sign(b.y) * Math.pow(Math.abs(b.y), WALL_N - 1), gl = Math.hypot(gx, gy) || 1;
+        const wnx = gx / gl, wny = gy / gl;
+        const outSpeed = b.vx * wnx + b.vy * wny;
         const ek = exitKind(b.x, b.y);
         // 出口の手前には段があり、それを越える勢いがないと入れない（エクストリームは特に高い）
-        const needOut = (ek === 'extreme' ? 420 : ek === 'over' ? 300 : 0) * TYPES[b.type].exitResist * (b.grace > 0 ? 9 : 1);
-        if (d2 > lim && (!ek || outSpeed < needOut)) {
-          const nx = b.x / d2, ny = b.y / d2;
+        const needOut = (ek === 'extreme' ? 420 : ek === 'over' ? 300 : 0) * TYPES[b.type].exitResist * (b.grace > 0 ? 9 : 1) * (endedRef.current ? 1e9 : 1); // 決着したあと、勝ったほうのベイは、場外へ出ない
+        if (s2 > lim && (!ek || outSpeed < needOut)) {
+          const nx = wnx, ny = wny;
           const outv = b.vx * nx + b.vy * ny;
           if (outv > 0) {
             b.vx -= 1.55 * outv * nx; b.vy -= 1.55 * outv * ny;
@@ -1742,12 +1760,12 @@ export function Beyblade() {
             // 相手に強く飛ばされて壁に当たって戻ってくると、持久が少し削られる（自分でぶつかったときは削れない）
             if (outv > 150 && b.knockT > 0) { b.spin = Math.max(0, b.spin - 0.4 * outv); }
           }
-          b.x = nx * lim; b.y = ny * lim;
+          { const k = lim / s2; b.x *= k; b.y *= k; }
         }
       }
 
       { const w = window as unknown as { __trace?: number[][] }; if (w.__trace && phaseRef.current === 'battle') { tickRef.current++; if (tickRef.current % 8 === 0) w.__trace.push([beys[0].x, beys[0].y, beys[1].x, beys[1].y, beys[0].spin / beys[0].spinMax, beys[1].spin / beys[1].spinMax, beys[0].dashT > 0 || beys[0].riding ? 1 : 0, beys[1].dashT > 0 || beys[1].riding ? 1 : 0, beys[0].outT, beys[1].outT, endedRef.current ? 1 : 0, beys[1].dead ? 1 : 0, beys[1].out ? 1 : 0]); } } // 動作確認用：ベイの軌道の記録（15回/秒）
-      { const w = window as unknown as { __maxd?: number }; for (const q of beys) { if (!Number.isFinite(q.x + q.y + q.spin)) (w as { __nan?: boolean }).__nan = true; } for (const q of beys) if (!q.out && q.outT <= 0 && !exitKind(q.x, q.y)) w.__maxd = Math.max(w.__maxd ?? 0, Math.hypot(q.x, q.y)); } // 動作確認用：出口以外で壁の外に出た最大距離
+      { const w = window as unknown as { __maxd?: number }; for (const q of beys) { if (!Number.isFinite(q.x + q.y + q.spin)) (w as { __nan?: boolean }).__nan = true; } for (const q of beys) if (!q.out && q.outT <= 0 && !exitKind(q.x, q.y)) w.__maxd = Math.max(w.__maxd ?? 0, sqn(q.x, q.y)); } // 動作確認用：出口以外で壁の外に出た最大距離
       if (endedRef.current) return;
 
       // ベイ同士の衝突
@@ -1848,7 +1866,7 @@ export function Beyblade() {
         if (bey.outT > 0) continue;
         if (bey.retPlan && bey.spin > 0) {
           // 回転が残っていた：スタジアムに戻ってくる（持久はだいぶ減る）
-          const th = Math.atan2(bey.x, bey.y), rr = R - BEY_R * 1.3;
+          const th = Math.atan2(bey.x, bey.y), rr = wallAt(th, R - BEY_R * 1.3);
           bey.x = Math.sin(th) * rr; bey.y = Math.cos(th) * rr;
           const ix = -Math.sin(th), iy = -Math.cos(th), lat = (Math.random() - 0.5) * 0.9;
           const sp2 = 650 + Math.random() * 250;
@@ -1866,7 +1884,7 @@ export function Beyblade() {
         const other = names[1 - i];
         // 回転が5分の1以下になったベイはバーストしない
         if (bey.burst >= 100 && bey.spin / bey.spinMax > 0.2) { endRound(other, 'burst'); return; }
-        if (Math.hypot(bey.x, bey.y) > R && bey.grace <= 0) {
+        if (sqn(bey.x, bey.y) > R && bey.grace <= 0) {
           const k = exitKind(bey.x, bey.y);
           if (k) {
             // 出口に入った。回転が強いほど（特に1-60・1-70・グローリーワルキューレ）戻ってきやすい。戻れるのは1回まで
@@ -1901,7 +1919,7 @@ export function Beyblade() {
           ctx.fillStyle = 'rgba(90,171,255,0.16)';
           ctx.fillRect(sx < 0 ? -R : 0, -R, R, R * 2);
         }
-        ctx.setLineDash([8, 8]); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(40,90,170,0.55)';
+        ctx.setLineDash([8, 8]); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(120,170,255,0.7)';
         ctx.beginPath(); ctx.moveTo(0, -R); ctx.lineTo(0, R); ctx.stroke();
         ctx.setLineDash([]);
         ctx.restore();
@@ -1913,7 +1931,7 @@ export function Beyblade() {
           if (b.dead) return;
           const t = TYPES[b.type];
           if (b.trail.length > 1) {
-            ctx.strokeStyle = b.dashT > 0 || b.riding ? 'rgba(255,140,0,0.75)' : 'rgba(80,100,140,0.25)';
+            ctx.strokeStyle = b.dashT > 0 || b.riding ? 'rgba(255,140,0,0.75)' : 'rgba(200,215,240,0.32)';
             ctx.lineWidth = b.dashT > 0 || b.riding ? 9 : 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             ctx.beginPath(); ctx.moveTo(b.trail[0].x, b.trail[0].y);
             for (const q of b.trail) ctx.lineTo(q.x, q.y);
