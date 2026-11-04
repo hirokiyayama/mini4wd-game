@@ -1632,7 +1632,7 @@ export function Beyblade() {
           b.trail.push({ x: b.x, y: b.y });
           if (b.trail.length > 14) b.trail.shift();
           b.spin = Math.max(0, b.spin - (4.5 + rs * 0.0145) * t.decay * DT * 6);
-          const atTop = Math.abs(Math.atan2(b.y, b.x) + Math.PI / 2) < 0.2;
+          const atTop = Math.abs(Math.atan2(b.y, b.x) + Math.PI / 2) < 0.12; // 凹みの底（平らなところ）から発射する
           if (false as boolean && atTop && b.rideT > 0.05 && ratio > 0.22 && b.diagShot && !b.notched) { // 凹みでは止まらない：ラインに乗ってスピードがついたら、そのまま真ん中へ発射
             // 斜めシュート：凹みに少し滞在して、ゆっくり中央に向かって降りてくる
             b.notched = true; b.riding = false; b.rideChance = 1;
@@ -1642,7 +1642,8 @@ export function Beyblade() {
             // 上側から中央へ発射
             const nx = -b.x / d, ny = -b.y / d;
             // ダッシュの向き：真ん中に向かうか、回転が強いときは、真ん中より少し左へ向かう（右のオーバーゾーン側へは向かわない。左回転のベイは左右が逆）
-            const lean = Math.random() < 0.4 ? 0.2 * Math.pow(ratio, 1.2) * (0.3 + 0.9 * Math.random()) : 0, jit = (Math.random() + Math.random() - 1) * 0.14;
+            const wide = ratio > 0.55 && Math.random() < 0.45; // 回転が強いときは、ときどき広い角度で飛ぶ（凹みの向き＝真ん中が基本。広いときは左寄り）
+            const lean = wide ? (0.35 + 0.85 * Math.random()) * ratio : 0, jit = (Math.random() + Math.random() - 1) * (wide ? 0.3 : 0.1);
             let dx = nx * 0.85 + tx * lean, dy = ny * 0.85 + ty * lean;
             { const cj = Math.cos(jit), sj = Math.sin(jit), ndx = dx * cj - dy * sj, ndy = dx * sj + dy * cj; dx = ndx; dy = ndy; }
             const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
