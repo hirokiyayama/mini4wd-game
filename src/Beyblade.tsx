@@ -1656,7 +1656,7 @@ export function Beyblade() {
                 dx = nx * cj - ny * sj; dy = nx * sj + ny * cj; // 真ん中へ向かう向きに、少しだけ揺らして、選び直す
               } else break;
             }
-            const dashSpeed = 0.62 * (1500 + 200 * ratio) * t.dash * (0.4 + 0.6 * Math.pow(ratio, 1.4)); // 回転が落ちるとダッシュも弱くなる。凹みから中央へ戻るときは、勢いをつけすぎない
+            const dashSpeed = (1500 + 200 * ratio) * t.dash * (0.4 + 0.6 * Math.pow(ratio, 1.4)); // 回転が落ちるとダッシュも弱くなる。凹みから中央へ戻るときは、勢いをつけすぎない
             b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
             b.riding = false;
             b.dashT = 0.4; b.coast = 1.0; b.calmT = 2.2; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
@@ -1674,10 +1674,19 @@ export function Beyblade() {
         b.vx *= damp; b.vy *= damp;
         speed = Math.hypot(b.vx, b.vy);
         // 巡航：回転が残っている間は、止まらずに動き続ける（今の向きに沿って、目標の速さまで加速する）。回転が落ちるほど遅くなる
+        { // 右回転は時計回り、左回転は反時計回りでは、リングのギアとビットのギアがかみ合わない：リングに当たると、こすれて、ゆっくりした動きになる（加速して真ん中へ戻ることはない）
+          const rr1 = Math.hypot(b.x, b.y), wrong = (b.x * b.vy - b.y * b.vx) * b.dir > 0;
+          if (wrong && b.dashT <= 0 && rr1 > ringRadiusAt(b.x, b.y) - 16 && speed > 40) {
+            const k = 1 - 4.2 * DT; b.vx *= k; b.vy *= k;
+            b.vx -= (b.x / (rr1 || 1)) * 90 * DT; b.vy -= (b.y / (rr1 || 1)) * 90 * DT; // ゆっくり内側へ
+            b.calmT = Math.max(b.calmT, 2.5);
+            speed = Math.hypot(b.vx, b.vy);
+          }
+        }
         if (b.dashT <= 0 && b.knockT <= 0) {
           // 回転が強いうちは動き回り、回転が弱まるにつれて、中央に寄り添ってゆっくり動く（回転が強いうちにぶつかると、弾ける向きがばらばらで、何度も続けて真ん中でぶつからない）
           const ageT = Math.max(0, Math.min(1, (0.68 - ratio) / 0.38)), ageF = 1 - 0.65 * ageT * ageT * (3 - 2 * ageT);
-          const vt = t.cruise * ageF * (b.calmT > 0 ? 0.35 + 0.65 * (1 - b.calmT / 3) : 1) * (1 - (1 - (b.mode === 2 ? 0.2 : b.mode === 1 ? 0.5 : 1)) * wMode) * (0.2 + 0.8 * Math.sqrt(ratio));
+          const vt = t.cruise * ageF * (1 - 0.85 * Math.min(1, b.calmT / 2.5)) * (1 - (1 - (b.mode === 2 ? 0.2 : b.mode === 1 ? 0.5 : 1)) * wMode) * (0.2 + 0.8 * Math.sqrt(ratio));
           if (speed < vt) {
             const dx = speed > 15 ? b.vx / speed : Math.cos(b.angle), dy = speed > 15 ? b.vy / speed : Math.sin(b.angle);
             const acc = (vt - speed) * 2.5 * DT;
@@ -1706,9 +1715,9 @@ export function Beyblade() {
             const nx0 = -b.x / dd0, ny0 = -b.y / dd0;
             // 右回転のベイは時計回りで、左回転のベイは反時計回りでは、エクストリームダッシュしない（回る向きと逆に動いているとき）
             const against = (b.x * b.vy - b.y * b.vx) * b.dir > 0;
-            const rr = against ? 0.5 + Math.random() * 0.5 : Math.random();
+            const rr = against ? (Math.random() < 0.7 ? 0.9 : 0.6) : Math.random();
             const dsp = (1500 + 200 * ratio) * t.dash * (0.4 + 0.6 * Math.pow(ratio, 1.4));
-            let ax = nx0, ay = ny0, sp2 = against ? 1000 : dsp;
+            let ax = nx0, ay = ny0, sp2 = against ? 520 : dsp;
             if (rr < 0.5) { // 真ん中へダッシュ
               const j0 = (Math.random() + Math.random() - 1) * 0.3; ax = nx0 * Math.cos(j0) - ny0 * Math.sin(j0); ay = nx0 * Math.sin(j0) + ny0 * Math.cos(j0);
             } else if (rr < 0.75) { // 下のオーバー／エクストリームゾーンへ
@@ -1716,7 +1725,7 @@ export function Beyblade() {
               ax = qx / ql; ay = qy / ql;
             } else { // スタジアム内へ戻る
               const tx2 = (Math.random() - 0.5) * R * 0.9, ty2 = (Math.random() - 0.5) * R * 0.9, ql = Math.hypot(tx2 - b.x, ty2 - b.y) || 1;
-              ax = (tx2 - b.x) / ql; ay = (ty2 - b.y) / ql; sp2 = 650 + 250 * Math.random();
+              ax = (tx2 - b.x) / ql; ay = (ty2 - b.y) / ql; sp2 = against ? 170 + 90 * Math.random() : 650 + 250 * Math.random(); b.calmT = 3;
             }
             b.vx = ax * sp2; b.vy = ay * sp2;
             if (rr < 0.75 && !against) { b.dashT = 0.4; b.coast = 1.0; b.dashFx = 0.7; b.spin = Math.max(0, b.spin - b.spinMax * 0.05 * t.dashCost); spark(b.x, b.y, 22); }
@@ -1751,7 +1760,7 @@ export function Beyblade() {
         const outSpeed = b.vx * wnx + b.vy * wny;
         const ek = exitKind(b.x, b.y);
         // 出口の手前には段があり、それを越える勢いがないと入れない（エクストリームは特に高い）
-        const needOut = (ek === 'extreme' ? 470 : ek === 'over' ? 350 : 0) * TYPES[b.type].exitResist * (b.grace > 0 ? 9 : 1) * (endedRef.current ? 1e9 : 1); // 決着したあと、勝ったほうのベイは、場外へ出ない
+        const needOut = (ek === 'extreme' ? 440 : ek === 'over' ? 320 : 0) * TYPES[b.type].exitResist * (b.grace > 0 ? 9 : 1) * (endedRef.current ? 1e9 : 1); // 決着したあと、勝ったほうのベイは、場外へ出ない
         if (s2 > lim && (!ek || outSpeed < needOut)) {
           const nx = wnx, ny = wny;
           const outv = b.vx * nx + b.vy * ny;
@@ -1811,7 +1820,7 @@ export function Beyblade() {
           if (Math.hypot(a.vx, a.vy) > Math.max(250, sa0 * 1.15)) a.knockT = 1.2;
           if (Math.hypot(b.vx, b.vy) > Math.max(250, sb0 * 1.15)) b.knockT = 1.2;
           // ぶつかったあとは、ビットごとの円・楕円には戻らず、惰性で動く（しばらく、円や楕円の力を切る）
-          a.postT = 4; b.postT = 4;
+          a.postT = 4; b.postT = 4; a.calmT = Math.max(a.calmT, 2.5); b.calmT = Math.max(b.calmT, 2.5); // ぶつかったあと、真ん中へ戻るときも、勢いをつけない
           // Xダッシュ中の打撃は強い（Eビットはスマッシュ攻撃でさらに強い）
           const impact = Math.min(1, rel / 120) * rel * Math.max(a.dashT > 0 ? 1.5 * ta.smash : 1, b.dashT > 0 ? 1.5 * tb.smash : 1) * (0.45 + 0.55 * spinPow);
           // 反対回転どうしが当たると、接触面の動きが揃ってスピンの削れが少し減る
@@ -2473,7 +2482,9 @@ export function Beyblade() {
             </div>
             <div style={{ fontSize: 12, opacity: 0.85, textAlign: 'center' }}>出したい順に、ベイをタップ（1番手 → 3番手）。{WIN_POINTS}ポイント先取。点数は引き継ぎます。{vs === '2p' && !online && '相手に見えないように決めてね。'}</div>
             <div style={{ fontSize: 26, fontWeight: 900, lineHeight: 1 }}>
-              <span style={{ color: '#5aabff' }}>{score.me}</span><span style={{ opacity: 0.6 }}> - </span><span style={{ color: '#ef4444' }}>{score.cpu}</span>
+              {(online ? selfIdx === 1 : vs === 'cpu' && mySide === 'right')
+                ? <><span style={{ color: '#ff3ea5' }}>{score.cpu}</span><span style={{ opacity: 0.6 }}> - </span><span style={{ color: '#38b6ff' }}>{score.me}</span></>
+                : <><span style={{ color: '#38b6ff' }}>{score.me}</span><span style={{ opacity: 0.6 }}> - </span><span style={{ color: '#ff3ea5' }}>{score.cpu}</span></>}
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
               {(online ? (selfIdx === 0 ? deck.me : deck.cpu) : vs === '2p' && orderWho === 1 ? deck.cpu : deck.me).map((c, i) => {
