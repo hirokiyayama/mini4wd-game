@@ -23,7 +23,7 @@ const EXIT_HALF = 0.25; // 出口の幅（rad）
 const WALL_N = 4;
 const sqn = (x: number, y: number) => Math.pow(Math.pow(Math.abs(x), WALL_N) + Math.pow(Math.abs(y), WALL_N), 1 / WALL_N); // 四角い壁での「距離」（壁にぶつかるとき1に近づく）
 const wallAt = (phi: number, H: number) => H / Math.pow(Math.pow(Math.abs(Math.sin(phi)), WALL_N) + Math.pow(Math.abs(Math.cos(phi)), WALL_N), 1 / WALL_N); // 真下を0とした向きphiでの、四角い壁までの距離
-const RING_R = 238.5, NOTCH_DEPTH = 52, NOTCH_A1 = 0.2, NOTCH_A2 = 0.33;
+const RING_R = 238.5, NOTCH_DEPTH = 52, NOTCH_A1 = 0.1, NOTCH_A2 = 0.44;
 function ringRadiusAtAngle(th: number) { // 画面の角度 th（右が0、下が+π/2）でのリングの半径。真上（-π/2）に凹みがある
   const a = Math.abs(Math.atan2(Math.sin(th + Math.PI / 2), Math.cos(th + Math.PI / 2)));
   if (a >= NOTCH_A2) return RING_R;
@@ -1633,7 +1633,7 @@ export function Beyblade() {
           if (b.trail.length > 14) b.trail.shift();
           b.spin = Math.max(0, b.spin - (4.5 + rs * 0.0145) * t.decay * DT * 6);
           const atTop = Math.abs(Math.atan2(b.y, b.x) + Math.PI / 2) < 0.2;
-          if (atTop && b.rideT > 0.05 && ratio > 0.22 && b.diagShot && !b.notched) {
+          if (false as boolean && atTop && b.rideT > 0.05 && ratio > 0.22 && b.diagShot && !b.notched) { // 凹みでは止まらない：ラインに乗ってスピードがついたら、そのまま真ん中へ発射
             // 斜めシュート：凹みに少し滞在して、ゆっくり中央に向かって降りてくる
             b.notched = true; b.riding = false; b.rideChance = 1;
             const dn = d || 1; b.ax = -b.x / dn; b.ay = -b.y / dn; b.push = 150;
@@ -1805,7 +1805,12 @@ export function Beyblade() {
         // 斜めシュートで固定されている間は飛ばされにくい
         const ma = ta.mass * (a.holdT > 0 ? 2.2 : 1), mb = tb.mass * (b.holdT > 0 ? 2.2 : 1);
         if (rel > 0) {
-          for (const x of [a, b]) if (x.riding) { x.riding = false; x.dashCd = Math.max(x.dashCd, 0.6); }
+          for (const x of [a, b]) if (x.riding) {
+            // エクストリームラインを駆け上がっているベイは勢いがあるので、止まっている相手に当たっても止まらない（そのままダッシュまで行く）。走っている同士の正面衝突だけは止まる
+            const o = x === a ? b : a;
+            if (!o.riding && x.spin / x.spinMax > 0.25 && Math.random() < 0.7) continue;
+            x.riding = false; x.dashCd = Math.max(x.dashCd, 0.6);
+          }
           // 回転しているベイは、ダッシュしていなくても当たれば相手を弾き飛ばせる
           const spinKick = 150 * ((a.spin / a.spinMax) * ta.atk + (b.spin / b.spinMax) * tb.atk) / 2;
           // 弾く力は、ぶつかった2つのベイの回転の強さで決まる。回転が落ちるほど、反発が小さくなる
