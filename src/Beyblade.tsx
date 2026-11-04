@@ -64,6 +64,7 @@ interface PartDef {
   syn?: { blades: string[]; good?: Partial<Stats>; bad?: Partial<Stats> }; // 相性のよいブレードに付けたときの隠れ補正 / それ以外に付けたときの隠れ補正（バトルの計算だけ）
   dashCost?: number; // Xダッシュで失う持久の倍率（Nrビット：スタミナロスを軽減）
   kick?: number; // 当たったとき、相手を弾く力の倍率（グローリーワルキューレ：スプリング内蔵の可動刃）
+  burstTough?: number; // ブレード自体のバーストしにくさ（ビットに関係なく掛かる倍率）
   burstFloor?: number; // ラチェット/ブレードがビットのバースト耐性を一定以上にそろえる（バトルの計算だけ）
   comeback?: number; // 場外ポケットに入りかけても、回転が強いとスタジアムに戻ってきやすい倍率
   dashLimit?: [number, number]; // 1ラウンドでXダッシュできる回数の上限（最小〜最大からランダム）。Eビットは2〜3回
@@ -74,7 +75,7 @@ const BLADES: PartDef[] = [
   { id: 'wizard', name: 'ウィザードロッド', desc: '外重心かつ径の大きい5枚刃形状で、遠心力を生み出すことに特化した設計。', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5, img: wizardImg },
   { id: 'aero', name: 'エアロペガサス', desc: '大型の3枚刃が高い打撃力を生む設計。メタルが二重に塗装され性能がアップしている。', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3, img: aeroImg },
   { id: 'shark', name: 'シャークスケイル', desc: '打撃部位を複数備えた大型2枚刃で、低い位置からの強烈なアッパー攻撃に特化した設計。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2, img: sharkImg },
-  { id: 'glory', comeback: 2.2, name: 'グローリーワルキューレ', desc: 'ラチェット一体型のブレード。スプリング内蔵の可動刃が攻撃時にバウンドし、反発力による強烈な弾き性能に特化。メタルが塗装され性能がアップしている。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, img: gloryImg, integrated: true, kick: 1.25, burstFloor: 80 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
+  { id: 'glory', comeback: 2.2, name: 'グローリーワルキューレ', desc: 'ラチェット一体型のブレード。スプリング内蔵の可動刃が攻撃時にバウンドし、反発力による強烈な弾き性能に特化。メタルが塗装され性能がアップしている。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, img: gloryImg, integrated: true, kick: 1.25, burstFloor: 80, burstTough: 2.3 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
   { id: 'knight2', name: 'ナイトシールドV2', desc: '6枚の防御刃で衝撃を吸収しやすいダンパー構造を採用。', s: { atk: 22, def: 60, sta: 28 }, hid: { sta: 55 }, weight: 36.5, color: '#4ade80', blades: 6, img: knight2Img },
 ];
 const RATCHETS: PartDef[] = [
@@ -232,7 +233,7 @@ function buildBey(c: Custom) {
     def: norm(ef.def, 55, 0.45), // 被スピンダメージの軽減
     decay: 0.85 / norm(ef.sta, 90, 0.6), // 持久が高いほど回転が減りにくい
     mass: (weight / 45) ** 2 * (60 / height), // 重いほど、ラチェットが低いほど、飛ばされにくい
-    burstRes: norm(ef.burst, 55, 0.35) * (1 + ((bl.burstMod ?? 1) - 1) * (bit.id === 'E' ? 1 : 0.3)), // ブレードの形状による差は、Eビットのときに大きく出る // バースト耐性（ビットの値）
+    burstRes: norm(ef.burst, 55, 0.35) * (1 + ((bl.burstMod ?? 1) - 1) * (bit.id === 'E' ? 1 : 0.3)) * (bl.burstTough ?? 1), // ブレードの形状による差は、Eビットのときに大きく出る // バースト耐性（ビットの値）
     dash: bit.dashSpeed ?? 1, // Xダッシュの速さ
     dashCost: bit.dashCost ?? 1, // Xダッシュで失う持久の倍率
     kick: bl.kick ?? 1, // 相手を弾く力の倍率
@@ -512,7 +513,7 @@ interface Bey {
   ph0: number; // 進路のゆれの位相
   dAt: number; // （未使用）
   calmT: number; // 凹みから戻ったあと、しばらくは、勢いをつけない時間
-  diagShot: boolean; notched: boolean; prevD: number; // 斜めシュートか／上の凹みで一度とどまったか／前の位置のリングからの距離
+  softDone: boolean; spiralT: number; diagShot: boolean; notched: boolean; prevD: number; // 斜めシュートか／上の凹みで一度とどまったか／前の位置のリングからの距離
   outAng: number; prevTh: number; // リングの外側を回った角度（1周回ったら、次の動きに移る）
   postT: number; // ぶつかってからの、惰性で動く時間（この間は、ビットごとの円・楕円の動きを切る）
   eAng: number; er: number; // 平らな底のビットの楕円の向き・ひらべったさ
@@ -570,7 +571,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
+    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, softDone: false, spiralT: 0, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -1610,7 +1611,8 @@ export function Beyblade() {
         // 逆走しているとき（リングをたどる向きと逆に動いているとき）は、無理にリングに乗ってダッシュしない
         const ringTx = (b.dir * b.y) / (dist || 1), ringTy = (-b.dir * b.x) / (dist || 1);
         const alongRing = b.vx * ringTx + b.vy * ringTy; // リングをたどる向きの速さ（負なら逆走）
-        if (!b.riding && b.dashesLeft > 0 && b.dashCd <= 0 && ratio > 0.15 && speed > 120 && dist > R * 0.8 && alongRing > 0.2 * speed) {
+        const rem = ((((Math.atan2(b.y, b.x) + Math.PI / 2) * b.dir) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI); // ラインに乗ってから凹みまでの、走る向きの残りの角度（ぐるっと1周近く走らせない）
+        if (!b.riding && b.dashesLeft > 0 && b.dashCd <= 0 && ratio > 0.25 && rem < 3.6 && speed > 120 && dist > R * 0.8 && alongRing > 0.2 * speed) {
           if (b.rideChance >= 1) { b.riding = true; b.rideT = 0; b.dAt = Math.max(-1, Math.min(1, (Math.random() + Math.random() - 1) * 1.5)); }
           else if (!b.onRing) {
             // 斜めシュートはリングに乗りにくい（乗れないぶん、自爆しにくい）
@@ -1666,10 +1668,21 @@ export function Beyblade() {
             b.spin = Math.max(0, b.spin - b.spinMax * 0.05 * t.dashCost); // Xダッシュでも持久が削られる（回数が多いR/LRほど消耗する）
             { const w = window as unknown as { __dashes?: number[] }; (w.__dashes ??= [0, 0])[beys.indexOf(b)]++; } // 動作確認用のダッシュ回数カウンタ
             spark(b.x, b.y, 22);
-          } else if (b.rideT > 3.2) {
+          } else if (atTop && b.rideT > 0.05) { b.riding = false; b.dashCd = 1.2; // 回転が弱いときは、乗ってもダッシュできない：ぐるぐる回らずライン上でおりる
+          } else if (b.rideT > 1.4) {
             b.riding = false; b.dashCd = 0.6;
           }
           continue;
+        }
+        if (b.spiralT > 0) { // 斜めシュートで壁に当たったあと：勢いよく戻らず、回りながらゆっくり真ん中へ寄っていく
+          b.spiralT -= DT;
+          const sd = Math.hypot(b.x, b.y) || 1;
+          if (b.dashT > 0 || b.knockT > 0 || sd < 110) b.spiralT = 0;
+          else {
+            const tgx = (b.dir * b.y) / sd * 170 - (b.x / sd) * 48, tgy = (-b.dir * b.x) / sd * 170 - (b.y / sd) * 48;
+            b.vx += (tgx - b.vx) * 3 * DT; b.vy += (tgy - b.vy) * 3 * DT;
+            b.calmT = Math.max(b.calmT, 1);
+          }
         }
         const damp = 1 - (0.08 + (1 - ratio) * 0.7 + (b.dashT > 0 ? 2.0 : 0) + (b.coast > 0 && b.dashT <= 0 ? 0.6 : 0) + 0) * DT; // ぶつかったあとも、急には減速しない（飛ぶ向き・量・角度は当たり所で変わる） // ダッシュ中は失速し、反対側のライン付近まで届く
         b.vx *= damp; b.vy *= damp;
@@ -1704,14 +1717,14 @@ export function Beyblade() {
         if (b.trail.length > 14) b.trail.shift();
         b.spin = Math.max(0, b.spin - (4.5 + speed * 0.005) * t.decay * DT * 6);
         { // リングの外側を、時計回りなどで1周したら：上まで来たところで、真ん中へダッシュする／下のオーバー・エクストリームゾーンへ向かう／スタジアム内へ戻る、のどれかになる（ずっと回り続けない）
-          const dd0 = Math.hypot(b.x, b.y), th0 = Math.atan2(b.y, b.x);
-          if (dd0 > R * 0.86 && !b.riding && b.dashT <= 0) {
+          const dd0 = Math.hypot(b.x, b.y), th0 = Math.atan2(b.y, b.x), rg0 = ringRadiusAt(b.x, b.y); // 凹みのところでは、リングの半径が小さくなるので、リングを基準に「ライン上にいるか」を決める
+          if (dd0 > rg0 - 12 && !b.riding && b.dashT <= 0) {
             let dth = th0 - b.prevTh; dth = Math.atan2(Math.sin(dth), Math.cos(dth));
             b.outAng += Math.abs(dth);
-          } else if (dd0 < R * 0.75) b.outAng = 0;
+          } else if (dd0 < rg0 - 55) b.outAng = 0;
           b.prevTh = th0;
           const nearTop = Math.abs(Math.atan2(Math.sin(th0 + Math.PI / 2), Math.cos(th0 + Math.PI / 2))) < 0.4;
-          if (b.outAng > Math.PI * 1.3 && (nearTop || b.outAng > Math.PI * 2.6) && dd0 > R * 0.8) {
+          if (b.outAng > Math.PI * 1.1 && (nearTop || b.outAng > Math.PI * 2.2) && dd0 > rg0 - 20) {
             b.outAng = 0;
             const nx0 = -b.x / dd0, ny0 = -b.y / dd0;
             // 右回転のベイは時計回りで、左回転のベイは反時計回りでは、エクストリームダッシュしない（回る向きと逆に動いているとき）
@@ -1746,7 +1759,7 @@ export function Beyblade() {
         }
         { // リングよりも外側（壁との間）には、とどまれない：内側へ押し戻される（出口の手前は除く）
           const dd = Math.hypot(b.x, b.y);
-          if (dd > ringRadiusAt(b.x, b.y) + 3 && !exitKind(b.x, b.y) && (b.vx * b.x + b.vy * b.y) / dd < 120) { // 壁へ向かって勢いよく飛んでいるあいだは押し戻さない（途中でふわっと減速せず、壁にガツンと当たって跳ね返る）
+          if (dd > ringRadiusAt(b.x, b.y) + 3 && !exitKind(b.x, b.y) && (b.vx * b.x + b.vy * b.y) / dd < 120 && b.spiralT <= 0) { // 壁へ向かって勢いよく飛んでいるあいだは押し戻さない（途中でふわっと減速せず、壁にガツンと当たって跳ね返る）
             // 時計回りなど、壁に沿って回り続けようとしても、強く内側へ押し戻される（リングの外側では、円を描いて回り続けられない）
             const f = Math.min(2, (dd - (ringRadiusAt(b.x, b.y) + 3)) / 5) * 3200 * DT;
             b.vx -= (b.x / dd) * f; b.vy -= (b.y / dd) * f;
@@ -1765,7 +1778,12 @@ export function Beyblade() {
         if (s2 > lim && (!ek || outSpeed < needOut)) {
           const nx = wnx, ny = wny;
           const outv = b.vx * nx + b.vy * ny;
-          if (outv > 0) {
+          if (outv > 0 && b.diagShot && !b.softDone && b.knockT <= 0 && b.dashT <= 0 && outv < 600) {
+            // 斜めシュートが自分で壁に当たったときは、勢いよく跳ね返らず、壁に沿って旋回しながらゆっくり真ん中へ戻る
+            b.softDone = true; b.spiralT = 3.6; b.postT = 0;
+            b.vx -= 1.05 * outv * nx; b.vy -= 1.05 * outv * ny;
+            b.calmT = Math.max(b.calmT, 3.6);
+          } else if (outv > 0) {
             b.vx -= 1.55 * outv * nx; b.vy -= 1.55 * outv * ny;
             { const inn = -(b.vx * nx + b.vy * ny); if (inn < 160) { b.vx -= nx * (160 - inn); b.vy -= ny * (160 - inn); } } // 壁に当たったら、必ずリング内へ戻る向きの速さが残る
             if (t.flat) { b.eAng = Math.random() * Math.PI; b.er = 0.35 + Math.random() * 0.25; } // 壁に当たると、楕円の向きが変わる（軌道が変わる）
@@ -1864,7 +1882,7 @@ export function Beyblade() {
           for (const x of [a, b]) {
             x.hit = true;
             x.rideChance = 1; // 当たったあとは水平シュートと同じ（リングに乗れる）
-            if (x.holdT > 0) { x.holdT = 0; x.dashCd = Math.max(x.dashCd, 0.8); }
+            if (x.holdT > 0) { x.holdT = 0; x.dashCd = Math.max(x.dashCd, 0.8); } x.spiralT = 0;
           }
         }
         const overlap = ra + rb - d;
