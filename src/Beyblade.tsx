@@ -23,7 +23,7 @@ const EXIT_HALF = 0.25; // 出口の幅（rad）
 const WALL_N = 4;
 const sqn = (x: number, y: number) => Math.pow(Math.pow(Math.abs(x), WALL_N) + Math.pow(Math.abs(y), WALL_N), 1 / WALL_N); // 四角い壁での「距離」（壁にぶつかるとき1に近づく）
 const wallAt = (phi: number, H: number) => H / Math.pow(Math.pow(Math.abs(Math.sin(phi)), WALL_N) + Math.pow(Math.abs(Math.cos(phi)), WALL_N), 1 / WALL_N); // 真下を0とした向きphiでの、四角い壁までの距離
-const RING_R = 238.5, NOTCH_DEPTH = 44, NOTCH_A1 = 0.2, NOTCH_A2 = 0.33;
+const RING_R = 238.5, NOTCH_DEPTH = 52, NOTCH_A1 = 0.2, NOTCH_A2 = 0.33;
 function ringRadiusAtAngle(th: number) { // 画面の角度 th（右が0、下が+π/2）でのリングの半径。真上（-π/2）に凹みがある
   const a = Math.abs(Math.atan2(Math.sin(th + Math.PI / 2), Math.cos(th + Math.PI / 2)));
   if (a >= NOTCH_A2) return RING_R;
@@ -511,6 +511,7 @@ interface Bey {
   coast: number; // ダッシュのあと、すぐに失速する時間
   ph0: number; // 進路のゆれの位相
   dAt: number; // （未使用）
+  calmT: number; // 凹みから戻ったあと、しばらくは、勢いをつけない時間
   diagShot: boolean; notched: boolean; prevD: number; // 斜めシュートか／上の凹みで一度とどまったか／前の位置のリングからの距離
   outAng: number; prevTh: number; // リングの外側を回った角度（1周回ったら、次の動きに移る）
   postT: number; // ぶつかってからの、惰性で動く時間（この間は、ビットごとの円・楕円の動きを切る）
@@ -569,7 +570,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, diagShot: diag, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
+    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -655,7 +656,7 @@ function drawStadium(ctx: CanvasRenderingContext2D) {
   dish.addColorStop(0, '#2b313b'); dish.addColorStop(0.7, '#1a1e25'); dish.addColorStop(1, '#101318');
   ctx.beginPath(); ctx.arc(0, 0, RING_R + 6, 0, Math.PI * 2); ctx.fillStyle = dish; ctx.fill();
   ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(180,195,215,0.28)';
-  for (const f of [0.78, 0.5, 0.26]) { ctx.beginPath(); ctx.arc(0, 0, RING_R * f, 0, Math.PI * 2); ctx.stroke(); }
+  for (const f of [0.5]) { ctx.beginPath(); ctx.arc(0, 0, RING_R * f, 0, Math.PI * 2); ctx.stroke(); } // 一番小さい円と、リングのすぐ内側の円は、なし
   ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.08)';
   ctx.beginPath(); ctx.arc(-18, -22, RING_R * 0.62, 0.2, 1.6); ctx.stroke();
 
@@ -1504,6 +1505,7 @@ export function Beyblade() {
         b.grace = Math.max(0, b.grace - DT);
         b.age += DT;
         b.postT = Math.max(0, b.postT - DT);
+        b.calmT = Math.max(0, b.calmT - DT);
         if (b.outT > 0) {
           // 場外ポケットに入った：すぐには勝敗を決めず、少しその場で回る（回転が強ければスタジアムに戻ることがある）
           b.vx *= 1 - 4 * DT; b.vy *= 1 - 4 * DT;
@@ -1635,7 +1637,7 @@ export function Beyblade() {
             // 斜めシュート：凹みに少し滞在して、ゆっくり中央に向かって降りてくる
             b.notched = true; b.riding = false; b.rideChance = 1;
             const dn = d || 1; b.ax = -b.x / dn; b.ay = -b.y / dn; b.push = 150;
-            b.holdT = 0.7 + Math.random() * 0.6; b.vx = b.ax * 40; b.vy = b.ay * 40; b.dashCd = Math.max(b.dashCd, 0.8);
+            b.holdT = 0.7 + Math.random() * 0.6; b.calmT = 3.0; b.vx = b.ax * 40; b.vy = b.ay * 40; b.dashCd = Math.max(b.dashCd, 0.8);
           } else if (atTop && b.rideT > 0.05 && ratio > 0.22) {
             // 上側から中央へ発射
             const nx = -b.x / d, ny = -b.y / d;
@@ -1654,10 +1656,10 @@ export function Beyblade() {
                 dx = nx * cj - ny * sj; dy = nx * sj + ny * cj; // 真ん中へ向かう向きに、少しだけ揺らして、選び直す
               } else break;
             }
-            const dashSpeed = (1500 + 200 * ratio) * t.dash * (0.4 + 0.6 * Math.pow(ratio, 1.4)); // 回転が落ちるとダッシュも弱くなる
+            const dashSpeed = 0.62 * (1500 + 200 * ratio) * t.dash * (0.4 + 0.6 * Math.pow(ratio, 1.4)); // 回転が落ちるとダッシュも弱くなる。凹みから中央へ戻るときは、勢いをつけすぎない
             b.vx = dx * dashSpeed; b.vy = dy * dashSpeed;
             b.riding = false;
-            b.dashT = 0.4; b.coast = 1.0; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
+            b.dashT = 0.4; b.coast = 1.0; b.calmT = 2.2; b.dashCd = (2 + Math.random() * 1.5) * t.dashCd; b.dashFx = 0.7;
             b.rideChance = 1; // 1回ダッシュしたら、斜めシュートでも水平と同じ（R/LRはここから何度もダッシュ）
             b.dashesLeft--;
             b.spin = Math.max(0, b.spin - b.spinMax * 0.05 * t.dashCost); // Xダッシュでも持久が削られる（回数が多いR/LRほど消耗する）
@@ -1675,7 +1677,7 @@ export function Beyblade() {
         if (b.dashT <= 0 && b.knockT <= 0) {
           // 回転が強いうちは動き回り、回転が弱まるにつれて、中央に寄り添ってゆっくり動く（回転が強いうちにぶつかると、弾ける向きがばらばらで、何度も続けて真ん中でぶつからない）
           const ageT = Math.max(0, Math.min(1, (0.68 - ratio) / 0.38)), ageF = 1 - 0.65 * ageT * ageT * (3 - 2 * ageT);
-          const vt = t.cruise * ageF * (1 - (1 - (b.mode === 2 ? 0.2 : b.mode === 1 ? 0.5 : 1)) * wMode) * (0.2 + 0.8 * Math.sqrt(ratio));
+          const vt = t.cruise * ageF * (b.calmT > 0 ? 0.35 + 0.65 * (1 - b.calmT / 3) : 1) * (1 - (1 - (b.mode === 2 ? 0.2 : b.mode === 1 ? 0.5 : 1)) * wMode) * (0.2 + 0.8 * Math.sqrt(ratio));
           if (speed < vt) {
             const dx = speed > 15 ? b.vx / speed : Math.cos(b.angle), dy = speed > 15 ? b.vy / speed : Math.sin(b.angle);
             const acc = (vt - speed) * 2.5 * DT;
@@ -1749,7 +1751,7 @@ export function Beyblade() {
         const outSpeed = b.vx * wnx + b.vy * wny;
         const ek = exitKind(b.x, b.y);
         // 出口の手前には段があり、それを越える勢いがないと入れない（エクストリームは特に高い）
-        const needOut = (ek === 'extreme' ? 620 : ek === 'over' ? 470 : 0) * TYPES[b.type].exitResist * (b.grace > 0 ? 9 : 1) * (endedRef.current ? 1e9 : 1); // 決着したあと、勝ったほうのベイは、場外へ出ない
+        const needOut = (ek === 'extreme' ? 470 : ek === 'over' ? 350 : 0) * TYPES[b.type].exitResist * (b.grace > 0 ? 9 : 1) * (endedRef.current ? 1e9 : 1); // 決着したあと、勝ったほうのベイは、場外へ出ない
         if (s2 > lim && (!ek || outSpeed < needOut)) {
           const nx = wnx, ny = wny;
           const outv = b.vx * nx + b.vy * ny;
