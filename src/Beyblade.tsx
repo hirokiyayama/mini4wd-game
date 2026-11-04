@@ -106,7 +106,7 @@ const SPRITES: Record<string, HTMLImageElement> = {};
 
 // ---- ブレードの形：写真の輪郭から、角度ごとの半径を作る（丸くない・凹凸がある）。当たる場所によって、弾く向き・飛ぶ量が変わり、形がいびつなほど動きが不規則になる
 const SHAPE_N = 72;
-const SHAPES: Record<string, { r: Float32Array; mean: number; nr: number; mx: number }> = {};
+const SHAPES: Record<string, { r: Float32Array; mean: number; nr: number; mx: number; cx: number; cy: number; ecc: number }> = {};
 function computeShape(id: string, im: HTMLImageElement) {
   const S = im.naturalWidth || 256;
   const cv = document.createElement('canvas'); cv.width = cv.height = S;
@@ -114,8 +114,10 @@ function computeShape(id: string, im: HTMLImageElement) {
   c2.drawImage(im, 0, 0, S, S);
   const data = c2.getImageData(0, 0, S, S).data;
   const r = new Float32Array(SHAPE_N), c0 = S / 2;
+  let sx0 = 0, sy0 = 0, cnt0 = 0; // 重さの中心（写真の形の重心）：回転の軸（画像の真ん中）からのずれ
   for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
     if (data[(y * S + x) * 4 + 3] < 128) continue;
+    sx0 += x + 0.5 - c0; sy0 += y + 0.5 - c0; cnt0++;
     const dx = x + 0.5 - c0, dy = y + 0.5 - c0, rr = Math.hypot(dx, dy);
     const k = Math.floor(((Math.atan2(dy, dx) + Math.PI) / (2 * Math.PI)) * SHAPE_N) % SHAPE_N;
     if (rr > r[k]) r[k] = rr;
@@ -126,10 +128,18 @@ function computeShape(id: string, im: HTMLImageElement) {
   for (let k = 0; k < SHAPE_N; k++) sm[k] = ((r[(k + SHAPE_N - 1) % SHAPE_N] + 2 * r[k] + r[(k + 1) % SHAPE_N]) / 4) * sc;
   let mean = 0; for (const v of sm) mean += v; mean /= SHAPE_N;
   let sd = 0; for (const v of sm) sd += (v - mean) ** 2; sd = Math.sqrt(sd / SHAPE_N) / mean;
-  SHAPES[id] = { r: sm, mean, mx: Math.max(...sm), nr: Math.max(0, Math.min(1, (sd - 0.015) / 0.035)) }; // nr：0＝まん丸 … 1＝いびつ
+  const cmx = (sx0 / (cnt0 || 1)) * sc, cmy = (sy0 / (cnt0 || 1)) * sc;
+  SHAPES[id] = { r: sm, mean, mx: Math.max(...sm), cx: cmx, cy: cmy, ecc: Math.hypot(cmx, cmy) / mean, nr: Math.max(0, Math.min(1, (sd - 0.015) / 0.035)) }; // nr：0＝まん丸 … 1＝いびつ
   (window as unknown as { __shapes?: typeof SHAPES }).__shapes = SHAPES; // 動作確認用
 }
 const nrOf = (id: string) => SHAPES[id]?.nr ?? 0.5;
+// 変重心：ブレードの重い側が、いま向いている方向（-1〜1。相手の側に重い側が向いているほどプラス）
+function heavySide(id: string, angle: number, nx: number, ny: number) {
+  const sh = SHAPES[id]; if (!sh) return 0;
+  const c = Math.cos(angle), sn = Math.sin(angle), wx = sh.cx * c - sh.cy * sn, wy = sh.cx * sn + sh.cy * c, m = Math.hypot(wx, wy);
+  if (m < 1e-6) return 0;
+  return Math.max(-1, Math.min(1, (wx * nx + wy * ny) / m)) * Math.min(1, sh.ecc * 12);
+}
 function shapeR(id: string, th: number) { // 角度 th（ベイから見た向き）での半径
   const sh = SHAPES[id];
   if (!sh) return BEY_R;
@@ -142,20 +152,20 @@ function shapeNormal(id: string, th: number) { // その点の外向きの法線
 }
 // 外形どうしの重なり：片方の外形の点が、もう片方の外形の内側に入っているかを調べる。いちばん深く食い込んだ点が「当たった点」で、
 // そのときの相手の外形の向き（法線）が、弾く向きになる。ギザギザのブレードは、刃の先で当たるのか、刃の間に入るのかで、向きも深さも変わる
-function polyContact(ida: string, xa: number, ya: number, aa: number, idb: string, xb: number, yb: number, ab: number): { nx: number; ny: number; pen: number } | null {
-  let pen = 0, nx = 0, ny = 0;
+function polyContact(ida: string, xa: number, ya: number, aa: number, idb: string, xb: number, yb: number, ab: number): { nx: number; ny: number; pen: number; cx: number; cy: number } | null {
+  let pen = 0, nx = 0, ny = 0, qx = 0, qy = 0;
   const step = (2 * Math.PI) / SHAPE_N;
   const test = (idv: string, xv: number, yv: number, av: number, ido: string, xo: number, yo: number, ao: number, sign: number) => {
     for (let k = 0; k < SHAPE_N; k++) {
       const th = -Math.PI + (k + 0.5) * step, rv = shapeR(idv, th), wa = th + av;
       const px = xv + rv * Math.cos(wa) - xo, py = yv + rv * Math.sin(wa) - yo, dist = Math.hypot(px, py);
       const thp = Math.atan2(py, px) - ao, pn = shapeR(ido, thp) - dist;
-      if (pn > pen) { pen = pn; const Nw = shapeNormal(ido, thp) + ao; nx = Math.cos(Nw) * sign; ny = Math.sin(Nw) * sign; }
+      if (pn > pen) { pen = pn; qx = px + xo; qy = py + yo; const Nw = shapeNormal(ido, thp) + ao; nx = Math.cos(Nw) * sign; ny = Math.sin(Nw) * sign; }
     }
   };
   test(ida, xa, ya, aa, idb, xb, yb, ab, -1); // aの点がbの中へ：b→aの外向き法線の逆（a→b向き）
   test(idb, xb, yb, ab, ida, xa, ya, aa, 1);  // bの点がaの中へ：aの外向き法線（a→b向き）
-  return pen > 0 ? { nx, ny, pen } : null;
+  return pen > 0 ? { nx, ny, pen, cx: qx, cy: qy } : null;
 }
 for (const bl of BLADES) {
   if (!bl.img) continue;
@@ -1838,7 +1848,11 @@ export function Beyblade() {
         const lobe = Math.pow(Math.min(1.25, Math.max(0.8, (ra / ma0 + rb / mb0) / 2)), 2) * (1 + 0.3 * (nrOf(ta.bid) + nrOf(tb.bid)) / 2);
         const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
         // 斜めシュートで固定されている間は飛ばされにくい
-        const ma = ta.mass * (a.holdT > 0 ? 2.2 : 1), mb = tb.mass * (b.holdT > 0 ? 2.2 : 1);
+        const hsA = heavySide(ta.bid, a.angle, nx, ny), hsB = heavySide(tb.bid, b.angle, -nx, -ny); // 重い側が相手に向いているか
+        const ma = ta.mass * (a.holdT > 0 ? 2.2 : 1) * (1 + 0.35 * hsA), mb = tb.mass * (b.holdT > 0 ? 2.2 : 1) * (1 + 0.35 * hsB);
+        // 当たった点が、中心（回転の軸）からどれだけ横にずれているか：0＝まっすぐ中心へ向かって当たる、1＝かすめるように当たる
+        const rax = pc.cx - a.x, ray = pc.cy - a.y, rbx = pc.cx - b.x, rby = pc.cy - b.y, rla = Math.hypot(rax, ray) || 1, rlb = Math.hypot(rbx, rby) || 1;
+        const levA = Math.min(1, Math.abs(rax * ny - ray * nx) / rla), levB = Math.min(1, Math.abs(rbx * ny - rby * nx) / rlb), scrape = 1 + 0.4 * (levA + levB) / 2;
         if (rel > 0) {
           for (const x of [a, b]) if (x.riding) {
             // エクストリームラインを駆け上がっているベイは勢いがあるので、止まっている相手に当たっても止まらない（そのままダッシュまで行く）。走っている同士の正面衝突だけは止まる
@@ -1854,6 +1868,14 @@ export function Beyblade() {
           const avgR = (a.spin / a.spinMax + b.spin / b.spinMax) / 2, hitVar = (0.6 + 0.95 * Math.random()) * (0.5 + 0.9 * Math.pow(avgR, 1.2)); // 回転が少ないと、あまり弾かない； // 当たり所（凹凸）によって、はじける距離が毎回ちがう
           const j = (hitVar * lobe * (1.1 + 3.5 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
           const sa0 = Math.hypot(a.vx, a.vy), sb0 = Math.hypot(b.vx, b.vy);
+          { // 当たった点での、回っているブレードの表面の動き：相手を横に引きずり、自分は反対向きに引かれる（かすめるほど、横に飛ぶ）
+            const tnx = -ny, tny = nx;
+            const sa = a.dir * (-ray * tnx + rax * tny) / rla, sb = b.dir * (-rby * tnx + rbx * tny) / rlb;
+            const vA = 0.16 * j * (a.spin / a.spinMax) * sa, vB = 0.16 * j * (b.spin / b.spinMax) * sb;
+            b.vx += tnx * vA / mb; b.vy += tny * vA / mb; a.vx -= tnx * vA / ma; a.vy -= tny * vA / ma;
+            a.vx += tnx * vB / ma; a.vy += tny * vB / ma; b.vx -= tnx * vB / mb; b.vy -= tny * vB / mb;
+            a.angle += (Math.random() - 0.5) * levA * 1.2; b.angle += (Math.random() - 0.5) * levB * 1.2; // 当たった点がずれるほど、ブレードの向きが変わる（次に当たる所が変わる）
+          }
           a.vx -= (j / ma) * nx * ta.steady * tb.kick; a.vy -= (j / ma) * ny * ta.steady * tb.kick;
           b.vx += (j / mb) * nx * tb.steady * ta.kick; b.vy += (j / mb) * ny * tb.steady * ta.kick;
           // 当てられて速度が増したほう＝飛ばされたほう
@@ -1871,12 +1893,12 @@ export function Beyblade() {
             const sf = Math.max(0, (v.spin / v.spinMax - 0.2) / 0.8);
             const hardness = Math.min(1.5, Math.max(0, (impact - 300) / 450));
             const attSpin = Math.max(0.3, att.spin / att.spinMax);
-            if (Math.random() < (0.13 * hardness * tAtt.atk * attSpin * sf) / tv.burstRes) v.burst = 100;
+            if (Math.random() < (0.13 * hardness * tAtt.atk * attSpin * sf * (1 + 0.3 * (att === a ? hsA : hsB))) / (tv.burstRes * (1 + 0.15 * (v === a ? hsA : hsB)))) v.burst = 100;
           };
           tryBurst(a, ta, b, tb);
           tryBurst(b, tb, a, ta);
-          a.spin = Math.max(0, a.spin - (impact * tb.atk * 0.28 * oppo) / ta.def);
-          b.spin = Math.max(0, b.spin - (impact * ta.atk * 0.28 * oppo) / tb.def);
+          a.spin = Math.max(0, a.spin - (impact * tb.atk * 0.28 * oppo * scrape) / ta.def);
+          b.spin = Math.max(0, b.spin - (impact * ta.atk * 0.28 * oppo * scrape) / tb.def);
           if (a.dir !== b.dir) {
             // 回転吸収：左回転ベイは、右回転ベイの回転を奪える（Eビットのコバルトドラグーンが最も得意）。
             // 吸収力が足りない組み合わせでは、逆に左回転ベイのほうが回転を奪われる
