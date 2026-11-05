@@ -686,7 +686,7 @@ function drawStadium(ctx: CanvasRenderingContext2D) {
   dish.addColorStop(0, '#2b313b'); dish.addColorStop(0.7, '#1a1e25'); dish.addColorStop(1, '#101318');
   ctx.beginPath(); ctx.arc(0, 0, RING_R + 6, 0, Math.PI * 2); ctx.fillStyle = dish; ctx.fill();
   ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(180,195,215,0.28)';
-  for (const f of [0.5]) { ctx.beginPath(); ctx.arc(0, 0, RING_R * f, 0, Math.PI * 2); ctx.stroke(); } // 一番小さい円と、リングのすぐ内側の円は、なし
+  for (const f of [0.5]) { ctx.beginPath(); ctx.arc(0, 0, RING_R * f, 0, Math.PI * 2); ctx.stroke(); ctx.save(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.arc(0, 0, RING_R * f - 3, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); } // 段（外側に明るい縁、内側に影） // 一番小さい円と、リングのすぐ内側の円は、なし
   ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.08)';
   ctx.beginPath(); ctx.arc(-18, -22, RING_R * 0.62, 0.2, 1.6); ctx.stroke();
 
@@ -697,6 +697,7 @@ function drawStadium(ctx: CanvasRenderingContext2D) {
     const p3 = px(phi + EXIT_HALF, wallAt(phi + EXIT_HALF, H + 44)), p4 = px(phi + EXIT_HALF, wallAt(phi + EXIT_HALF, H));
     ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.lineTo(p3[0], p3[1]); ctx.lineTo(p4[0], p4[1]); ctx.closePath();
     ctx.fillStyle = color; ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p4[0], p4[1]); ctx.stroke(); // 出口の手前の段
   };
   drawExit(0, '#f5b800'); drawExit(OVER_PHI, '#d63a2f'); drawExit(-OVER_PHI, '#d63a2f');
   ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#7a5a00';
@@ -1785,9 +1786,19 @@ export function Beyblade() {
           const dn = Math.hypot(b.x, b.y), rr0 = ringRadiusAt(b.x, b.y);
           if (!b.riding && b.prevD > 0 && b.prevD <= rr0 && dn > rr0) {
             const ov = (b.vx * b.x + b.vy * b.y) / (dn || 1);
-            if (ov < 440 * TYPES[b.type].exitResist && !endedRef.current === true) {
+            const wrongL = (b.x * b.vy - b.y * b.vx) * b.dir > 0; // ギアがかみ合わない向き（右回転の時計回りなど）は、段を乗り越えにくい
+            if (ov < 440 * TYPES[b.type].exitResist * (wrongL ? 1.4 : 1) && !endedRef.current === true) {
               b.vx -= 1.4 * ov * (b.x / dn); b.vy -= 1.4 * ov * (b.y / dn);
               b.x *= (rr0 - 0.5) / dn; b.y *= (rr0 - 0.5) / dn;
+            }
+          }
+          // 中心の円の模様にも、少し段がある：外へ出るときは少し勢いをとられ、内へ入るときは少し落ちる
+          if (!b.riding && b.prevD > 0 && b.dashT <= 0) {
+            const cR = RING_R * 0.5, dn2 = Math.hypot(b.x, b.y);
+            if ((b.prevD <= cR) !== (dn2 <= cR)) {
+              const vr = (b.vx * b.x + b.vy * b.y) / (dn2 || 1), ux2 = b.x / (dn2 || 1), uy2 = b.y / (dn2 || 1);
+              const dv = vr > 0 ? -Math.min(vr, 70) : 30; // 外向きなら減速、内向きなら少し加速
+              b.vx += ux2 * dv; b.vy += uy2 * dv;
             }
           }
           b.prevD = Math.hypot(b.x, b.y);
