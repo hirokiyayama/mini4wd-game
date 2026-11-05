@@ -32,6 +32,7 @@ function ringRadiusAtAngle(th: number) { // 画面の角度 th（右が0、下�
   return RING_R - NOTCH_DEPTH * u * u * (3 - 2 * u);
 }
 const ringRadiusAt = (x: number, y: number) => ringRadiusAtAngle(Math.atan2(y, x));
+const BOWL_TILT = 200; // すり鉢の傾き（px/s²）。外周でも、ほんの少し中心へ寄る程度
 const OVER_PHI = 0.64; // 下方向から左右ポケットまでの角度（rad）
 
 // 'me' = 自分のベイ, 'cpu' = 相手のベイ（ブレード・ラチェット・ビットの組み合わせから作る）
@@ -1623,6 +1624,10 @@ export function Beyblade() {
           b.vx += ux * pull * DT; b.vy += uy * pull * DT;
           const vtan = b.vx * tx + b.vy * ty, tgt = t.cruise * 0.95 * wMode;
           if (vtan < tgt) { b.vx += tx * (tgt - vtan) * 3 * DT; b.vy += ty * (tgt - vtan) * 3 * DT; }
+        }
+        { // すり鉢の傾き：外周と中心付近の高さの差は2cmほどしかないので、ほんの少しだけ、中心へ向かって下る（外へ行くほど傾きが大きく、中心付近はほぼ平ら）
+          const gd = Math.hypot(b.x, b.y) || 1, g = BOWL_TILT * Math.min(1.1, gd / RING_R);
+          b.vx -= (b.x / gd) * g * DT; b.vy -= (b.y / gd) * g * DT;
         }
         // ジャイロ効果で軌道が緩やかにカーブする
         const c = b.curl * 0.35 * (0.3 + ratio) * DT; // ゆるやかなカーブ（外周をぐるぐる回り続けないように）
