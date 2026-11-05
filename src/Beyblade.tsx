@@ -587,9 +587,9 @@ function defaultAim(x: number, y: number, dir: 1 | -1 = 1) {
 // power(0〜1)：発射時のゲージで決まる。回転数と飛び出しの勢いに効く
 function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: number; y: number } | null, power: number): Bey {
   const spinMax = 3350 * (0.6 + 0.4 * power);
-  const a = aim ?? defaultAim(x, y, TYPES[type].spinDir);
+  const a = diag ? (aim ?? defaultAim(x, y, TYPES[type].spinDir)) : defaultAim(x, y, TYPES[type].spinDir); // 水平シュートは矢印なし：決めた向きには飛ばさず、そのまま回り始める（斜めだけ向きを決められる）
   const mob = TYPES[type].mobility;
-  const sp = (700 + 500 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない
+  const sp = (260 + 140 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない
   return {
     type, x, y, vx: diag ? a.x * (75 + 0.16 * (130 + 140 * power) * (mob > 1 ? 1.3 : 1)) * (mob > 1 ? mob * mob : 1) : a.x * sp, vy: diag ? a.y * (75 + 0.16 * (130 + 140 * power) * (mob > 1 ? 1.3 : 1)) * (mob > 1 ? mob * mob : 1) : a.y * sp,
     spin: spinMax, spinMax, burst: 0, angle: 0,
@@ -1237,7 +1237,7 @@ export function Beyblade() {
     if (!dropRef.current) return;
     const dx = p.x - dropRef.current.x, dy = p.y - dropRef.current.y;
     const l = Math.hypot(dx, dy);
-    aimRef.current = l > 24 ? { x: dx / l, y: dy / l } : null;
+    aimRef.current = l > 24 && modeRef.current === 'diag' ? { x: dx / l, y: dy / l } : null; // 向きを決められるのは斜めシュートだけ
     if (onlineRef.current === 'guest' && Date.now() - placeSentRef.current > 70) sendPlace(false);
   };
 
@@ -2038,11 +2038,12 @@ export function Beyblade() {
           ctx.beginPath(); ctx.arc(0, 0, BEY_R + 12, 0, Math.PI * 2); ctx.stroke();
           ctx.setLineDash([]);
         }
+        if (diag) { // 矢印は斜めシュートだけ
         const ex = aim.x * (BEY_R + len), ey = aim.y * (BEY_R + len);
         ctx.beginPath(); ctx.moveTo(aim.x * BEY_R, aim.y * BEY_R); ctx.lineTo(ex, ey); ctx.stroke();
         ctx.save(); ctx.translate(ex, ey); ctx.rotate(Math.atan2(aim.y, aim.x));
         ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-14, -9); ctx.lineTo(-14, 9); ctx.closePath(); ctx.fill();
-        ctx.restore();
+        ctx.restore(); }
         ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
         ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.strokeText(label, 0, -BEY_R - 18);
         ctx.fillStyle = arrow; ctx.fillText(label, 0, -BEY_R - 18);
@@ -2266,7 +2267,7 @@ export function Beyblade() {
         const placed = selfIdx === 0 ? hasDrop : hasDrop2;
         controls = isSelf ? (
           <>
-            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{selfReady ? '相手を待っています…' : placed ? 'ドラッグで向き → 「決定」' : `${selfIdx === 0 ? '左' : '右'}半分をタップ`}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{selfReady ? '相手を待っています…' : placed ? (shotMode === 'diag' ? 'ドラッグで向き → 「決定」' : '「決定」') : `${selfIdx === 0 ? '左' : '右'}半分をタップ`}</div>
             {!selfReady && (selfIdx === 0 ? modeBtns(shotMode, k => { setShotMode(k); modeRef.current = k; sendPlace(false); }, '#38b6ff') : modeBtns(shotMode2, k => { setMode2(k); sendPlace(false); }, '#ff3ea5'))}
             <button style={{ ...yb, opacity: placed && !selfReady ? 1 : 0.4 }} disabled={!placed || selfReady} onClick={decide}>決定</button>
           </>
@@ -2274,7 +2275,7 @@ export function Beyblade() {
       } else if (vs === 'cpu' && key === 'me') {
         controls = (
           <>
-            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{hasDrop ? 'ドラッグで向きを決めて、スタート' : `${side === 'left' ? '左' : '右'}半分をタップ${compact ? '' : 'して、落とす場所を決める'}`}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{hasDrop ? (shotMode === 'diag' ? 'ドラッグで向きを決めて、スタート' : 'スタート') : `${side === 'left' ? '左' : '右'}半分をタップ${compact ? '' : 'して、落とす場所を決める'}`}</div>
             {modeBtns(shotMode, setShotMode, '#ffd740')}
             <button style={{ ...yb, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={shoot}>スタート</button>
           </>
@@ -2282,7 +2283,7 @@ export function Beyblade() {
       } else if (vs === '2p' && !seq) {
         controls = (
           <>
-            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{(key === 'me' ? hasDrop : hasDrop2) ? 'ドラッグで向き' : `${key === 'me' ? '左' : '右'}半分をタップ`}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{(key === 'me' ? hasDrop : hasDrop2) ? ((key === 'me' ? shotMode : shotMode2) === 'diag' ? 'ドラッグで向き' : '向きはなし') : `${key === 'me' ? '左' : '右'}半分をタップ`}</div>
             {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ff3ea5')}
           </>
         );
@@ -2290,7 +2291,7 @@ export function Beyblade() {
         controls = (
           <>
             <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>
-              {key === 'me' ? (hasDrop ? 'ドラッグで向き → 「決定」' : '左半分をタップ（相手は見ないでね）') : (hasDrop2 ? 'ドラッグで向き → 「スタート」' : '右半分をタップ')}
+              {key === 'me' ? (hasDrop ? (shotMode === 'diag' ? 'ドラッグで向き → 「決定」' : '「決定」') : '左半分をタップ（相手は見ないでね）') : (hasDrop2 ? (shotMode2 === 'diag' ? 'ドラッグで向き → 「スタート」' : '「スタート」') : '右半分をタップ')}
             </div>
             {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ff3ea5')}
             {key === 'me'
