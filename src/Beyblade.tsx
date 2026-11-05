@@ -271,6 +271,7 @@ function buildBey(c: Custom) {
     mobility: bit.mobility ?? 1,
     bid: bl.id, // ブレードの種類（形の計算に使う）
     flat: ['K', 'L', 'R', 'LR'].includes(bit.id), // 底が平ら：きれいな円を描かず、楕円で回り、そのうちリングや壁に当たって軌道が変わる
+    noRideInner: ['E', 'B', 'FB', 'H', 'Nr'].includes(bit.id), // 水平シュートで真ん中の円の中に落とすと、その円より少し大きいくらいの小さな円を描いて回る（ぶつかるまで）
     tip: bit.id === 'H', // 底がとがっている：B・FB・Nrより小さな円できれいに回る
     cruise: 360 * Math.sqrt(bit.mobility ?? 1), // 実際の動画：ベイは中央に落ち着いても止まらず、一定の速さで動き回り続ける（Rなど動き回るビットは速く、Hは遅い）
     steady: bit.steady ?? 1,
@@ -540,7 +541,7 @@ interface Bey {
   ph0: number; // 進路のゆれの位相
   dAt: number; // （未使用）
   calmT: number; // 凹みから戻ったあと、しばらくは、勢いをつけない時間
-  softDone: boolean; spiralT: number; diagShot: boolean; notched: boolean; prevD: number; // 斜めシュートか／上の凹みで一度とどまったか／前の位置のリングからの距離
+  softDone: boolean; spiralT: number; orbR: number; diagShot: boolean; notched: boolean; prevD: number; // 斜めシュートか／上の凹みで一度とどまったか／前の位置のリングからの距離
   outAng: number; prevTh: number; // リングの外側を回った角度（1周回ったら、次の動きに移る）
   postT: number; // ぶつかってからの、惰性で動く時間（この間は、ビットごとの円・楕円の動きを切る）
   eAng: number; er: number; // 平らな底のビットの楕円の向き・ひらべったさ
@@ -587,7 +588,8 @@ function defaultAim(x: number, y: number, dir: 1 | -1 = 1) {
 // power(0〜1)：発射時のゲージで決まる。回転数と飛び出しの勢いに効く
 function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: number; y: number } | null, power: number): Bey {
   const spinMax = 3350 * (0.6 + 0.4 * power);
-  const a = diag ? (aim ?? defaultAim(x, y, TYPES[type].spinDir)) : defaultAim(x, y, TYPES[type].spinDir); // 水平シュートは矢印なし：決めた向きには飛ばさず、そのまま回り始める（斜めだけ向きを決められる）
+  const smallCircle = !diag && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5; // 小さな円で回るビットは、最初から円に沿う向きで動き出す
+  const tdn = Math.hypot(x, y) || 1, a = diag ? (aim ?? defaultAim(x, y, TYPES[type].spinDir)) : smallCircle ? { x: (y / tdn) * TYPES[type].spinDir, y: (-x / tdn) * TYPES[type].spinDir } : defaultAim(x, y, TYPES[type].spinDir); // 水平シュートは矢印なし：決めた向きには飛ばさず、そのまま回り始める（斜めだけ向きを決められる）
   const mob = TYPES[type].mobility;
   const sp = (260 + 140 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない
   return {
@@ -598,7 +600,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, softDone: false, spiralT: 0, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
+    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, orbR: !diag && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5 ? RING_R * 0.5 * 1.02 : 0, softDone: false, spiralT: 0, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -1607,6 +1609,12 @@ export function Beyblade() {
           const kk = t.tip ? kPull * (1 + 0.9 * shp) : kPull; // Hは、小さな円
           b.vx += -b.x * kk * DT;
           b.vy += -b.y * kk * DT;
+        }
+        if (b.orbR > 0 && !b.hit && b.dashT <= 0 && !b.riding) { // ぶつかるまでは、真ん中の円より少し大きい円を、なめらかに描いて回る
+          const w = Math.max(wMode, 0.4), rr = Math.hypot(b.x, b.y) || 1, ux = b.x / rr, uy = b.y / rr, tx = (b.dir * b.y) / rr, ty = (-b.dir * b.x) / rr;
+          const tgt = t.cruise * 0.95, rv = Math.max(-260, Math.min(260, -(rr - b.orbR) * 4)); // 円の半径に近づくように、少しずつ内外へ寄る
+          const k = Math.min(1, 7 * w * DT);
+          b.vx += (tx * tgt + ux * rv - b.vx) * k; b.vy += (ty * tgt + uy * rv - b.vy) * k;
         }
         if (b.mode === 2 && !t.flat && wMode > 0.02 && b.dashT <= 0) { // 一方のベイは、真ん中の周りを回り続ける
           const rr = Math.hypot(b.x, b.y) || 1, ux = b.x / rr, uy = b.y / rr, tx = -uy * b.osgn, ty = ux * b.osgn;
