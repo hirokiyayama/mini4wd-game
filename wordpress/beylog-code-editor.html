@@ -1,0 +1,403 @@
+<!-- wp:html -->
+<!-- ベイろぐ トップページ（WordPress カスタムHTMLブロック用） -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+JP:wght@400;500;700;900&display=swap">
+<style>
+html{scroll-behavior:smooth}
+.beylog{container-type:inline-size;font-family:"Noto Sans JP",system-ui,sans-serif;font-size:16px;line-height:1.9;color:#1a1c20;background:#fff;-webkit-font-smoothing:antialiased}
+.beylog *{box-sizing:border-box}
+.beylog a{color:#c2410c}
+.beylog h1,.beylog h2,.beylog h3{background:none!important;border:none!important;padding:0!important;box-shadow:none!important;border-radius:0!important}
+.beylog h1::before,.beylog h1::after,.beylog h2::before,.beylog h2::after,.beylog h3::before,.beylog h3::after{content:none!important;display:none!important}
+.beylog img{max-width:100%}
+.beylog summary::-webkit-details-marker{display:none}
+.beylog nav::-webkit-scrollbar{display:none}
+.beylog [id]{scroll-margin-top:72px}
+.beylog .bl-burger,.beylog .bl-panel{display:none!important}
+.beylog .bl-burger span{transition:transform .2s,opacity .2s}
+.beylog.is-open .bl-burger span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.beylog.is-open .bl-burger span:nth-child(2){opacity:0}
+.beylog.is-open .bl-burger span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+@media (max-width:759px){
+  .beylog .bl-nav{display:none!important}
+  .beylog .bl-burger{display:flex!important}
+  .beylog.is-open .bl-panel{display:flex!important}
+}
+.beylog .bl-h1:hover{color:#c2410c!important}
+.beylog .bl-h2:hover{background:#c2410c!important;color:#ffffff!important}
+.beylog .bl-h3:hover{border-color:#111214!important;color:#111214!important}
+.beylog .bl-h4:hover{background:#9a3412!important;color:#ffffff!important}
+.beylog .bl-h5:hover{background:#ff8a4c!important;color:#111214!important}
+</style>
+<div class="beylog" id="beylog">
+<header style="position:sticky;top:0;z-index:10;background:rgba(255,255,255,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid #e6e6e3">
+  <div style="max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:16px 32px;flex-wrap:wrap">
+    <a href="#top" aria-label="ベイろぐ トップ" style="display:flex;align-items:center;gap:10px;font-family:'Dela Gothic One',sans-serif;font-size:22px;color:#1a1c20;text-decoration:none;letter-spacing:.02em">
+      <span style="width:12px;height:12px;border-radius:50%;background:#e8590c"></span>ベイろぐ
+    </a>
+      <button type="button" class="bl-burger" aria-label="メニュー" aria-expanded="false" style="margin-left:auto;width:44px;height:44px;border:1px solid #e6e6e3;border-radius:12px;background:#ffffff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:0">
+        <span style="display:block;width:20px;height:2px;border-radius:2px;background:#111214;transition:transform .2s"></span>
+        <span style="display:block;width:20px;height:2px;border-radius:2px;background:#111214;transition:opacity .2s"></span>
+        <span style="display:block;width:20px;height:2px;border-radius:2px;background:#111214;transition:transform .2s"></span>
+      </button>
+    <nav class="bl-nav" aria-label="サイト内ナビ" style="display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;font-size:14.5px;margin-left:auto;max-width:100%">
+      <a class="bl-h1" href="#about" style="color:#2b2e34;text-decoration:none;padding:6px 12px;white-space:nowrap;font-weight:500">サイトについて</a>
+      <a class="bl-h1" href="#rules" style="color:#2b2e34;text-decoration:none;padding:6px 12px;white-space:nowrap;font-weight:500">ルール</a>
+      <a class="bl-h1" href="#tips" style="color:#2b2e34;text-decoration:none;padding:6px 12px;white-space:nowrap;font-weight:500">勝つコツ</a>
+      <a class="bl-h1" href="#sim" style="color:#2b2e34;text-decoration:none;padding:6px 12px;white-space:nowrap;font-weight:500">シミュレーター</a>
+      <a class="bl-h1" href="#howto" style="color:#2b2e34;text-decoration:none;padding:6px 12px;white-space:nowrap;font-weight:500">使い方</a>
+      <a class="bl-h1" href="#contact" style="color:#2b2e34;text-decoration:none;padding:6px 12px;white-space:nowrap;font-weight:500">お問い合わせ</a>
+    </nav>
+  </div>
+    <nav class="bl-panel" aria-label="サイト内ナビ（スマホ）" style="display:flex;flex-direction:column;padding:8px 24px 20px;border-top:1px solid #e6e6e3;background:#ffffff">
+      <a href="#about" style="color:#111214;text-decoration:none;padding:14px 0;border-bottom:1px solid #f0f0ed;font-weight:700;font-size:16px;display:flex;justify-content:space-between">サイトについて<span style="color:#c2410c">→</span></a>
+      <a href="#rules" style="color:#111214;text-decoration:none;padding:14px 0;border-bottom:1px solid #f0f0ed;font-weight:700;font-size:16px;display:flex;justify-content:space-between">ルール<span style="color:#c2410c">→</span></a>
+      <a href="#tips" style="color:#111214;text-decoration:none;padding:14px 0;border-bottom:1px solid #f0f0ed;font-weight:700;font-size:16px;display:flex;justify-content:space-between">勝つコツ<span style="color:#c2410c">→</span></a>
+      <a href="#sim" style="color:#111214;text-decoration:none;padding:14px 0;border-bottom:1px solid #f0f0ed;font-weight:700;font-size:16px;display:flex;justify-content:space-between">シミュレーター<span style="color:#c2410c">→</span></a>
+      <a href="#howto" style="color:#111214;text-decoration:none;padding:14px 0;border-bottom:1px solid #f0f0ed;font-weight:700;font-size:16px;display:flex;justify-content:space-between">使い方<span style="color:#c2410c">→</span></a>
+      <a href="#contact" style="color:#111214;text-decoration:none;padding:14px 0;font-weight:700;font-size:16px;display:flex;justify-content:space-between">お問い合わせ<span style="color:#c2410c">→</span></a>
+    </nav>
+</header>
+<main id="top">
+<div style="border-bottom:1px solid #e6e6e3">
+  <div style="max-width:1200px;margin:0 auto;padding:64px 24px;display:flex;flex-wrap:wrap;gap:48px;align-items:center">
+    <div style="flex:1 1 440px;min-width:0">
+      <p style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;color:#c2410c;text-transform:uppercase;margin:0 0 22px;font-weight:600">Browser Battle Simulator</p>
+      <h1 style="font-family:'Dela Gothic One',sans-serif;font-weight:400;font-size:clamp(40px,7cqi,80px);line-height:1.15;letter-spacing:.01em;margin:0 0 18px;color:#111214;display:flex;flex-direction:column"><span>ベイブレードX</span><span style="color:#d9480f">シミュレーター</span></h1>
+      <p style="font-size:clamp(17px,2.2cqi,22px);font-weight:900;color:#111214;margin:0 0 16px;line-height:1.6">組んで、打って、勝ち方を見つけよう。</p>
+      <p style="font-size:17px;line-height:2;color:#2b2e34;margin:0 0 20px;max-width:32em;text-wrap:pretty">ベイろぐは、ベイブレードXのルール、パーツの選び方、スタジアムでの動きを、シミュレーターで試せるサイトです。</p>
+      <ul style="list-style:none;margin:0 0 34px;padding:0;display:flex;flex-wrap:wrap;gap:8px">
+        <li style="font-size:13.5px;font-weight:700;color:#111214;background:#f6f6f4;border:1px solid #e6e6e3;border-radius:999px;padding:6px 14px;white-space:nowrap">インストール不要・無料</li>
+        <li style="font-size:13.5px;font-weight:700;color:#111214;background:#f6f6f4;border:1px solid #e6e6e3;border-radius:999px;padding:6px 14px;white-space:nowrap">好きなパーツでカスタマイズ</li>
+        <li style="font-size:13.5px;font-weight:700;color:#111214;background:#f6f6f4;border:1px solid #e6e6e3;border-radius:999px;padding:6px 14px;white-space:nowrap">CPU・友だちと対戦</li>
+        <li style="font-size:13.5px;font-weight:700;color:#111214;background:#f6f6f4;border:1px solid #e6e6e3;border-radius:999px;padding:6px 14px;white-space:nowrap">3on3・最大32人のトーナメント</li>
+      </ul>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <a class="bl-h2" href="#sim" style="display:inline-flex;align-items:center;gap:12px;background:#111214;color:#ffffff;text-decoration:none;font-weight:700;padding:16px 28px;border-radius:999px;font-size:15px;white-space:nowrap">シミュレーターを見る <span aria-hidden="true">→</span></a>
+        <a class="bl-h3" href="#rules" style="display:inline-flex;align-items:center;gap:12px;background:#ffffff;color:#111214;text-decoration:none;font-weight:700;padding:15px 26px;border-radius:999px;font-size:15px;white-space:nowrap;border:1px solid #cfcfcb">ルールを見る</a>
+      </div>
+    </div>
+    <div style="flex:1 1 480px;min-width:0;border-radius:24px;overflow:hidden;background:#0b0d1a;box-shadow:0 30px 60px -30px rgba(17,18,20,.5)">
+      <img src="https://beylog.com/wp-content/uploads/sim-battle.png" alt="シミュレーターのバトル画面" style="display:block;width:100%;height:auto">
+    </div>
+  </div>
+</div>
+<section id="about" style="scroll-margin-top:72px">
+  <div style="max-width:1200px;margin:0 auto;padding:88px 24px;display:flex;flex-wrap:wrap-reverse;gap:32px 64px;align-items:center">
+    <div style="flex:1 1 420px;min-width:0;border-radius:20px;overflow:hidden;background:#0b0d1a">
+      <img src="https://beylog.com/wp-content/uploads/sim-custom.png" alt="シミュレーターのカスタマイズ画面" style="display:block;width:100%;height:auto">
+    </div>
+    <div style="flex:1 1 400px;min-width:0">
+      <p style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;color:#c2410c;text-transform:uppercase;margin:0 0 14px;font-weight:600">01 / About</p>
+      <h2 style="font-family:'Dela Gothic One',sans-serif;font-weight:400;font-size:clamp(28px,4cqi,42px);line-height:1.3;margin:0 0 24px;color:#111214">サイトについて</h2>
+      <p style="margin:0 0 1em;font-size:17px;line-height:2;color:#2b2e34;max-width:30em;text-wrap:pretty">ベイろぐは、ベイブレードXのルールや勝つためのコツを発信し、ブラウザで遊べるシミュレーターを提供しています。</p>
+      <p style="margin:0;font-size:17px;line-height:2;color:#2b2e34;max-width:30em;text-wrap:pretty">「なぜあのパーツの組み合わせは長く回るのか」「どこから打つとダッシュしやすいのか」といった疑問を、調べて、動かして、シミュレーターとして活用しています。</p>
+    </div>
+  </div>
+</section>
+<section id="rules" style="scroll-margin-top:72px;background:#f6f6f4">
+  <div style="max-width:1200px;margin:0 auto;padding:88px 24px">
+    <p style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;color:#c2410c;text-transform:uppercase;margin:0 0 14px;font-weight:600">02 / Rules</p>
+    <h2 style="font-family:'Dela Gothic One',sans-serif;font-weight:400;font-size:clamp(28px,4cqi,42px);line-height:1.3;margin:0 0 40px;color:#111214">ベイブレードXのルール</h2>
+    <div style="background:#ffffff;border:1px solid #e6e6e3;border-radius:24px;padding:32px;margin-bottom:16px">
+      <h3 style="font-size:20px;font-weight:900;margin:0 0 6px;color:#111214">決まり手とポイント</h3>
+      <p style="margin:0 0 24px;color:#2b2e34;max-width:44em;text-wrap:pretty">バトル中の状況に応じてポイントが加算されます。先に規定ポイントに到達したプレイヤーが勝利します。</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px">
+        <div style="background:#f6f6f4;border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:8px">
+          <span style="font-family:'Dela Gothic One',sans-serif;font-size:44px;line-height:1;color:#111214">1<span style="font-family:'JetBrains Mono',monospace;font-size:15px;margin-left:4px">pt</span></span>
+          <span style="font-weight:900;font-size:16px;color:#111214">スピンフィニッシュ</span>
+          <span style="font-size:14.5px;line-height:1.8;color:#2b2e34">相手のベイよりも長く回り続けた場合。</span>
+        </div>
+        <div style="background:#f6f6f4;border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:8px">
+          <span style="font-family:'Dela Gothic One',sans-serif;font-size:44px;line-height:1;color:#111214">2<span style="font-family:'JetBrains Mono',monospace;font-size:15px;margin-left:4px">pt</span></span>
+          <span style="font-weight:900;font-size:16px;color:#111214">バーストフィニッシュ</span>
+          <span style="font-size:14.5px;line-height:1.8;color:#2b2e34">相手のベイのパーツが外れて分離した場合。</span>
+        </div>
+        <div style="background:#f6f6f4;border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:8px">
+          <span style="font-family:'Dela Gothic One',sans-serif;font-size:44px;line-height:1;color:#111214">2<span style="font-family:'JetBrains Mono',monospace;font-size:15px;margin-left:4px">pt</span></span>
+          <span style="font-weight:900;font-size:16px;color:#111214">オーバーフィニッシュ</span>
+          <span style="font-size:14.5px;line-height:1.8;color:#2b2e34">相手のベイがスタジアム外周のオーバーゾーン（ポケット）に弾き出された場合。</span>
+        </div>
+        <div style="background:#fff1e8;border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:8px">
+          <span style="font-family:'Dela Gothic One',sans-serif;font-size:44px;line-height:1;color:#c2410c">3<span style="font-family:'JetBrains Mono',monospace;font-size:15px;margin-left:4px">pt</span></span>
+          <span style="font-weight:900;font-size:16px;color:#111214">エクストリームフィニッシュ</span>
+          <span style="font-size:14.5px;line-height:1.8;color:#2b2e34">相手のベイを中央のエクストリームゾーンに弾き飛ばした場合。</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px">
+      <div style="background:#ffffff;border:1px solid #e6e6e3;border-radius:24px;padding:28px">
+        <h3 style="font-size:18px;font-weight:900;margin:0 0 14px;color:#111214">対戦の形式と勝利条件</h3>
+        <ul style="margin:0;padding:0;list-style:none;display:grid;gap:12px;font-size:15px;color:#2b2e34">
+          <li style="display:flex;flex-direction:column"><b style="color:#111214">個人戦（ワンベイ）</b>基本は4ポイント先取。</li>
+          <li style="display:flex;flex-direction:column"><b style="color:#111214">3on3バトル</b>3つのベイをデッキのように組み合わせて戦う形式で、4ポイント先取。同じパーツを重複して使うことはできません</li>
+        </ul>
+      </div>
+      <div style="background:#ffffff;border:1px solid #e6e6e3;border-radius:24px;padding:28px">
+        <h3 style="font-size:18px;font-weight:900;margin:0 0 10px;color:#111214">4つのタイプ</h3>
+        <p style="margin:0;color:#2b2e34;font-size:15px;text-wrap:pretty">ベイは、アタック、ディフェンス、スタミナ、バランスの4つの考え方で分けられます。アタックは強く当てて飛ばす、ディフェンスは当たりに耐える、スタミナは長く回る、バランスはその中間です。</p>
+      </div>
+      <div style="background:#ffffff;border:1px solid #e6e6e3;border-radius:24px;padding:28px">
+        <h3 style="font-size:18px;font-weight:900;margin:0 0 10px;color:#111214">エクストリームライン</h3>
+        <p style="margin:0;color:#2b2e34;font-size:15px;text-wrap:pretty">エクストリームラインは、スタジアムの外周にある、ギアがかみ合うラインです。ここに乗ったベイは、勢いをつけて中心へ向かってダッシュします。</p>
+      </div>
+    </div>
+    <p style="margin:20px 0 0;font-size:13.5px;color:#55585f;line-height:1.75">実際の大会やルールが変わることがあるので、遊ぶときは必ず最新の公式ルールを確認してください。</p>
+  </div>
+</section>
+<section id="tips" style="scroll-margin-top:72px">
+  <div style="max-width:1200px;margin:0 auto;padding:88px 24px">
+    <p style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;color:#c2410c;text-transform:uppercase;margin:0 0 14px;font-weight:600">03 / Tips</p>
+    <h2 style="font-family:'Dela Gothic One',sans-serif;font-weight:400;font-size:clamp(28px,4cqi,42px);line-height:1.3;margin:0 0 40px;color:#111214">ベイブレードXで勝つためのコツ</h2>
+    <div style="display:flex;flex-direction:column;border-top:2px solid #111214">
+      <article style="display:flex;flex-wrap:wrap;gap:12px 48px;padding:36px 0;border-bottom:1px solid #e6e6e3">
+        <div style="flex:1 1 280px;min-width:0;display:flex;gap:18px;align-items:baseline">
+          <span style="font-family:'Dela Gothic One',sans-serif;font-size:30px;line-height:1;color:#d9480f">01</span>
+          <h3 style="font-weight:900;font-size:21px;line-height:1.5;margin:0;color:#111214;text-wrap:balance;word-break:auto-phrase">まずはシュートを練習する</h3>
+        </div>
+        <div style="flex:2 1 460px;min-width:0;color:#2b2e34">
+          <p style="margin:0 0 16px;text-wrap:pretty">どんなに強いカスタムでも、シュートが安定しないと力を出し切れません。いちばんの基本は、シュートの練習です。</p>
+          <ul style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px">
+            <li style="background:#f6f6f4;border-radius:14px;padding:16px 18px;font-size:15px;line-height:1.8"><b style="display:block;color:#111214;margin-bottom:4px">まっすぐ素早く引く</b>ランチャーの紐は、斜めにならないよう真後ろへ素早く引く。</li>
+            <li style="background:#f6f6f4;border-radius:14px;padding:16px 18px;font-size:15px;line-height:1.8"><b style="display:block;color:#111214;margin-bottom:4px">軸をぶらさない</b>ランチャーを持つ手を動かさないと、回転が安定して長く回る。</li>
+            <li style="background:#f6f6f4;border-radius:14px;padding:16px 18px;font-size:15px;line-height:1.8"><b style="display:block;color:#111214;margin-bottom:4px">高さに気をつける</b>高い位置から落とすと、自分でスタジアムの外へ飛び出すミスにつながる。</li>
+          </ul>
+        </div>
+      </article>
+      <article style="display:flex;flex-wrap:wrap;gap:12px 48px;padding:36px 0;border-bottom:1px solid #e6e6e3">
+        <div style="flex:1 1 280px;min-width:0;display:flex;gap:18px;align-items:baseline">
+          <span style="font-family:'Dela Gothic One',sans-serif;font-size:30px;line-height:1;color:#d9480f">02</span>
+          <h3 style="font-weight:900;font-size:21px;line-height:1.5;margin:0;color:#111214;text-wrap:balance;word-break:auto-phrase">ポイントから戦い方を決める</h3>
+        </div>
+        <div style="flex:2 1 460px;min-width:0;color:#2b2e34">
+          <p style="margin:0 0 16px;text-wrap:pretty">エクストリームフィニッシュ（3pt）が1回決まれば、あと1ポイントで勝利です。スピンフィニッシュ（1pt）だけで勝つには4回必要です。1ベイの対戦では、スタミナ型で4回勝つより、アタック型でオーバーやエクストリームを2回決めるほうが早く届くこともあります。</p>
+          <ul style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px">
+            <li style="background:#f6f6f4;border-radius:14px;padding:16px 18px;font-size:15px;line-height:1.8"><b style="display:block;color:#111214;margin-bottom:4px">早く勝ちたい</b>Xダッシュしやすい組み合わせで、エクストリームとオーバーを狙う。</li>
+            <li style="background:#f6f6f4;border-radius:14px;padding:16px 18px;font-size:15px;line-height:1.8"><b style="display:block;color:#111214;margin-bottom:4px">じっくり戦いたい</b>長く回る組み合わせで、スピンフィニッシュや相手のバーストを待つ。</li>
+            <li style="background:#f6f6f4;border-radius:14px;padding:16px 18px;font-size:15px;line-height:1.8"><b style="display:block;color:#111214;margin-bottom:4px">迷ったら</b>一度に3ポイント取れる攻め方があるかどうかで選ぶ。</li>
+          </ul>
+        </div>
+      </article>
+      <article style="display:flex;flex-wrap:wrap;gap:12px 48px;padding:36px 0;border-bottom:1px solid #e6e6e3">
+        <div style="flex:1 1 280px;min-width:0;display:flex;gap:18px;align-items:baseline">
+          <span style="font-family:'Dela Gothic One',sans-serif;font-size:30px;line-height:1;color:#d9480f">03</span>
+          <h3 style="font-weight:900;font-size:21px;line-height:1.5;margin:0;color:#111214;text-wrap:balance;word-break:auto-phrase">タイプの相性を知る</h3>
+        </div>
+        <div style="flex:2 1 460px;min-width:0;color:#2b2e34">
+          <p style="margin:0;text-wrap:pretty">アタックはスタミナに強く、スタミナはディフェンスに強く、ディフェンスはアタックに強い、というじゃんけんのような関係があります。ただし目安なので、パーツの組み合わせや当たり方で結果は変わります。</p>
+          <p style="margin:14px 0 0;text-wrap:pretty">スタミナ型でアタック型に挑むなら、重めのブレードを選ぶと、一撃で飛ばされたりバーストしたりしにくくなります。</p>
+        </div>
+      </article>
+      <article style="display:flex;flex-wrap:wrap;gap:12px 48px;padding:36px 0;border-bottom:1px solid #e6e6e3">
+        <div style="flex:1 1 280px;min-width:0;display:flex;gap:18px;align-items:baseline">
+          <span style="font-family:'Dela Gothic One',sans-serif;font-size:30px;line-height:1;color:#d9480f">04</span>
+          <h3 style="font-weight:900;font-size:21px;line-height:1.5;margin:0;color:#111214;text-wrap:balance;word-break:auto-phrase">ビットで動き方を選ぶ</h3>
+        </div>
+        <div style="flex:2 1 460px;min-width:0;color:#2b2e34">
+          <p style="margin:0 0 16px;text-wrap:pretty">ビットはスタジアムに接する先端のパーツで、ベイの動き方を大きく左右します。先端の形で3つに分けると覚えやすくなります。</p>
+          <ul style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px">
+            <li style="background:#f6f6f4;border-radius:14px;padding:16px 18px;font-size:15px;line-height:1.8"><b style="display:block;color:#111214;margin-bottom:4px">丸い先端（B、FB、Nrなど）</b>摩擦が少なく、長く回る。中央付近で小さく回りやすい。</li>
+            <li style="background:#f6f6f4;border-radius:14px;padding:16px 18px;font-size:15px;line-height:1.8"><b style="display:block;color:#111214;margin-bottom:4px">平らな先端（R、LR、K、Lなど）</b>よく走り回る。Xダッシュや攻撃に向く。</li>
+            <li style="background:#f6f6f4;border-radius:14px;padding:16px 18px;font-size:15px;line-height:1.8"><b style="display:block;color:#111214;margin-bottom:4px">安定型（Hなど）</b>姿勢が崩れにくく、同じ場所で回り続ける。</li>
+          </ul>
+        </div>
+      </article>
+      <article style="display:flex;flex-wrap:wrap;gap:12px 48px;padding:36px 0;border-bottom:1px solid #e6e6e3">
+        <div style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:20px">
+          <div style="display:flex;gap:18px;align-items:baseline">
+            <span style="font-family:'Dela Gothic One',sans-serif;font-size:30px;line-height:1;color:#d9480f">05</span>
+            <h3 style="font-weight:900;font-size:21px;line-height:1.5;margin:0;color:#111214;text-wrap:balance;word-break:auto-phrase">Xダッシュを使いこなす</h3>
+          </div>
+        </div>
+        <div style="flex:2 1 460px;min-width:0;color:#2b2e34">
+          <ul style="margin:0;padding:0;list-style:none;display:grid;gap:10px">
+            <li style="background:#f6f6f4;border-radius:14px;padding:14px 18px;font-size:15px;line-height:1.8">外周のエクストリームラインにギアがかみ合うと、ベイが一気に加速する。これがXダッシュ。</li>
+            <li style="background:#f6f6f4;border-radius:14px;padding:14px 18px;font-size:15px;line-height:1.8">アタック型は、ブレードの外側が重いほど、ダッシュしてぶつかったときの威力が大きくなる。</li>
+            <li style="background:#f6f6f4;border-radius:14px;padding:14px 18px;font-size:15px;line-height:1.8">スタミナ型は、相手のダッシュ攻撃をうまくかわして、相手に回転を使わせるのが勝ち筋。</li>
+          </ul>
+        </div>
+      </article>
+      <article style="display:flex;flex-wrap:wrap;gap:12px 48px;padding:36px 0;border-bottom:1px solid #e6e6e3">
+        <div style="flex:1 1 280px;min-width:0;display:flex;gap:18px;align-items:baseline">
+          <span style="font-family:'Dela Gothic One',sans-serif;font-size:30px;line-height:1;color:#d9480f">06</span>
+          <h3 style="font-weight:900;font-size:21px;line-height:1.5;margin:0;color:#111214;text-wrap:balance;word-break:auto-phrase">3on3は3体で役割を分ける</h3>
+        </div>
+        <div style="flex:2 1 460px;min-width:0;color:#2b2e34">
+          <ul style="margin:0 0 16px;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:10px">
+            <li style="background:#f6f6f4;border-radius:14px;padding:16px 18px;font-size:15px;line-height:1.8"><b style="display:block;font-family:'JetBrains Mono',monospace;color:#c2410c;font-size:12px;margin-bottom:4px">1ST</b>攻撃型で、先にポイントを取りに行く。</li>
+            <li style="background:#f6f6f4;border-radius:14px;padding:16px 18px;font-size:15px;line-height:1.8"><b style="display:block;font-family:'JetBrains Mono',monospace;color:#c2410c;font-size:12px;margin-bottom:4px">2ND</b>相手のタイプに合わせて、守り型かバランス型を出す。</li>
+            <li style="background:#f6f6f4;border-radius:14px;padding:16px 18px;font-size:15px;line-height:1.8"><b style="display:block;font-family:'JetBrains Mono',monospace;color:#c2410c;font-size:12px;margin-bottom:4px">3RD</b>長期戦に強い持久型で締める。</li>
+          </ul>
+          <p style="margin:0 0 12px;text-wrap:pretty">3on3では同じパーツを使えないので、同じタイプばかり集めるとパーツの取り合いになり、1体ずつが弱くなりがちです。違うタイプを混ぜたほうが、デッキ全体は強くなりやすくなります。</p>
+          <p style="margin:0;text-wrap:pretty">相手が出してきそうなベイを予想して、「防御型が来たらどれをぶつけるか」まで考えておくと、勝率が上がります。</p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+<section id="sim" style="scroll-margin-top:72px;background:#f6f6f4">
+  <div style="max-width:1200px;margin:0 auto;padding:88px 24px;display:flex;flex-wrap:wrap;gap:48px;align-items:center">
+    <div style="flex:1 1 420px;min-width:0">
+      <p style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;color:#c2410c;text-transform:uppercase;margin:0 0 14px;font-weight:600">04 / Simulator</p>
+      <h2 style="font-family:'Dela Gothic One',sans-serif;font-weight:400;font-size:clamp(28px,4.4cqi,48px);line-height:1.28;margin:0 0 16px;color:#111214;text-wrap:balance">ベイブレードX シミュレーター</h2>
+      <p style="margin:0 0 18px;font-weight:700;color:#111214">ブラウザで動かせる、自作の非公式シミュレーターです。インストールは要りません。</p>
+      <p style="margin:0 0 28px;max-width:36em;color:#2b2e34;text-wrap:pretty">ブレード、ラチェット、ビットを選んで、スタジアムの中の動きを試せます。パーツの数値と、ぶつかったときの動き、エクストリームダッシュなどを、実際の動きに近づけています。</p>
+      <dl style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px;margin:0 0 32px">
+        <div style="background:#ffffff;border:1px solid #e6e6e3;border-radius:14px;padding:14px 18px"><dt style="font-size:12.5px;font-weight:700;color:#c2410c">モード</dt><dd style="margin:2px 0 0;font-size:14.5px;line-height:1.7;color:#111214">シミュレーション（CPU／2人）、トーナメント、プライベートシミュレーション</dd></div>
+        <div style="background:#ffffff;border:1px solid #e6e6e3;border-radius:14px;padding:14px 18px"><dt style="font-size:12.5px;font-weight:700;color:#c2410c">形式</dt><dd style="margin:2px 0 0;font-size:14.5px;line-height:1.7;color:#111214">1on1、3on3</dd></div>
+        <div style="background:#ffffff;border:1px solid #e6e6e3;border-radius:14px;padding:14px 18px"><dt style="font-size:12.5px;font-weight:700;color:#c2410c">シュート</dt><dd style="margin:2px 0 0;font-size:14.5px;line-height:1.7;color:#111214">水平／斜め</dd></div>
+        <div style="background:#ffffff;border:1px solid #e6e6e3;border-radius:14px;padding:14px 18px"><dt style="font-size:12.5px;font-weight:700;color:#c2410c">得点</dt><dd style="margin:2px 0 0;font-size:14.5px;line-height:1.7;color:#111214">4ポイント先取</dd></div>
+      </dl>
+      <a class="bl-h4" id="sim-link" href="https://beylog.com/simulator/" style="display:inline-flex;align-items:center;gap:12px;background:#c2410c;color:#ffffff;text-decoration:none;font-weight:700;padding:18px 32px;border-radius:999px;font-size:16px;white-space:nowrap">シミュレーターを開く <span aria-hidden="true">↗</span></a>
+      <p style="margin:22px 0 0;font-size:13.5px;line-height:1.75;color:#55585f;max-width:38em">シミュレーターは非公式のファン制作で、実機の性能を保証するものではありません。</p>
+    </div>
+    <div style="flex:1 1 460px;min-width:0;border-radius:20px;overflow:hidden;background:#0b0d1a">
+      <img src="https://beylog.com/wp-content/uploads/sim-mode.png" alt="シミュレーターのモード選択画面" style="display:block;width:100%;height:auto">
+    </div>
+  </div>
+</section>
+<section id="howto" style="scroll-margin-top:72px">
+  <div style="max-width:1200px;margin:0 auto;padding:88px 24px">
+    <p style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;color:#c2410c;text-transform:uppercase;margin:0 0 14px;font-weight:600">05 / How to use</p>
+    <h2 style="font-family:'Dela Gothic One',sans-serif;font-weight:400;font-size:clamp(28px,4cqi,42px);line-height:1.3;margin:0 0 12px;color:#111214">シミュレーターの使い方</h2>
+    <p style="color:#2b2e34;margin:0 0 40px">はじめてでも、下記の通りに進めれば動かせます。</p>
+    <ol style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:16px">
+      <li style="background:#ffffff;border:1px solid #e6e6e3;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:'Dela Gothic One',sans-serif;font-size:15px;color:#ffffff;background:#111214;width:36px;height:36px;border-radius:50%;display:grid;place-items:center">1</span>
+        <b style="font-size:18px;font-weight:900;color:#111214">モードを選ぶ</b>
+        <span style="font-size:15px;line-height:1.9;color:#2b2e34">トップで「シミュレーション」「トーナメント」「プライベートシミュレーション」のどれかを選びます。シミュレーションでは、相手をCPUか2人から選び、CPUの強さ（やさしい／ふつう／つよい）と、1on1か3on3を決めます。</span>
+      </li>
+      <li style="background:#ffffff;border:1px solid #e6e6e3;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:'Dela Gothic One',sans-serif;font-size:15px;color:#ffffff;background:#111214;width:36px;height:36px;border-radius:50%;display:grid;place-items:center">2</span>
+        <b style="font-size:18px;font-weight:900;color:#111214">ベイを組む</b>
+        <span style="font-size:15px;line-height:1.9;color:#2b2e34">「次へ（カスタマイズ）」で、ブレード、ラチェット、ビットを1つずつ選びます。左のパネルに、攻撃・防御・持久・ダッシュ・バースト耐性の数字が出ます。3on3では、同じパーツを重ねて選べません。</span>
+      </li>
+      <li style="background:#ffffff;border:1px solid #e6e6e3;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:'Dela Gothic One',sans-serif;font-size:15px;color:#ffffff;background:#111214;width:36px;height:36px;border-radius:50%;display:grid;place-items:center">3</span>
+        <b style="font-size:18px;font-weight:900;color:#111214">シュートを選ぶ</b>
+        <span style="font-size:15px;line-height:1.9;color:#2b2e34">「水平」と「斜め」から選びます。水平は、向きを決めず、そのまま回り始めます。斜めは、ドラッグで動き出す向きを決めます。</span>
+      </li>
+      <li style="background:#ffffff;border:1px solid #e6e6e3;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:'Dela Gothic One',sans-serif;font-size:15px;color:#ffffff;background:#111214;width:36px;height:36px;border-radius:50%;display:grid;place-items:center">4</span>
+        <b style="font-size:18px;font-weight:900;color:#111214">落とす場所を決める</b>
+        <span style="font-size:15px;line-height:1.9;color:#2b2e34">自分の側（左半分）をタップして、ベイを落とす場所を決めます。相手の落とす位置は、始めるまで分かりません。</span>
+      </li>
+      <li style="background:#ffffff;border:1px solid #e6e6e3;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:'Dela Gothic One',sans-serif;font-size:15px;color:#ffffff;background:#111214;width:36px;height:36px;border-radius:50%;display:grid;place-items:center">5</span>
+        <b style="font-size:18px;font-weight:900;color:#111214">スタートする</b>
+        <span style="font-size:15px;line-height:1.9;color:#2b2e34">「スタート」を押すと、カウントのあとにシミュレーションが始まります。決まるごとにポイントが入り、4ポイントを先に取った側が先取です。</span>
+      </li>
+      <li style="background:#ffffff;border:1px solid #e6e6e3;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:'Dela Gothic One',sans-serif;font-size:15px;color:#ffffff;background:#111214;width:36px;height:36px;border-radius:50%;display:grid;place-items:center">6</span>
+        <b style="font-size:18px;font-weight:900;color:#111214">プライベートシミュレーション</b>
+        <span style="font-size:15px;line-height:1.9;color:#2b2e34">部屋を作った人が出す4桁の番号を、もう1人が入力すると、2人でつながります。ブラウザどうしが直接つながるので、アカウントは要りません。</span>
+      </li>
+    </ol>
+  </div>
+</section>
+<section id="battle" style="scroll-margin-top:72px;background:#111214;color:#ffffff">
+  <div style="max-width:1200px;margin:0 auto;padding:96px 24px">
+    <p style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;color:#ffa36b;text-transform:uppercase;margin:0 0 14px;font-weight:600">Next Stage</p>
+    <h2 style="font-family:'Dela Gothic One',sans-serif;font-weight:400;font-size:clamp(30px,5cqi,56px);line-height:1.25;margin:0 0 20px;text-wrap:balance">シミュレーターで研究して、<span style="color:#ff8a4c">大会で勝とう</span></h2>
+    <p style="margin:0 0 48px;font-size:17px;line-height:2;color:#e2e3e6;max-width:36em;text-wrap:pretty">組み合わせや戦い方をシミュレーターで試したら、次は実際のバトルで確かめてみましょう。公式の大会やイベントに出れば、たくさんのブレーダーと戦えます。</p>
+    <ol style="list-style:none;margin:0 0 48px;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px">
+      <li style="border:1px solid #33363d;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:#ffa36b;letter-spacing:.1em">STEP 1</span>
+        <b style="font-size:19px;font-weight:900">シミュレーターで試す</b>
+        <span style="font-size:15px;line-height:1.85;color:#d4d5d8">気になるパーツの組み合わせを、いろいろな相手と戦わせてみる。</span>
+      </li>
+      <li style="border:1px solid #33363d;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:#ffa36b;letter-spacing:.1em">STEP 2</span>
+        <b style="font-size:19px;font-weight:900">実機で練習する</b>
+        <span style="font-size:15px;line-height:1.85;color:#d4d5d8">良さそうな組み合わせを実際に組んで、シュートの練習をする。</span>
+      </li>
+      <li style="border:1px solid #33363d;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:#ffa36b;letter-spacing:.1em">STEP 3</span>
+        <b style="font-size:19px;font-weight:900">公式大会に出る</b>
+        <span style="font-size:15px;line-height:1.85;color:#d4d5d8">大会やイベントの日程、ルールは、公式サイトで確認しよう。</span>
+      </li>
+    </ol>
+    <a class="bl-h5" href="https://beyblade.takaratomy.co.jp/beyblade-x/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:12px;background:#ffffff;color:#111214;text-decoration:none;font-weight:700;padding:18px 32px;border-radius:999px;font-size:16px;white-space:nowrap">公式サイトで大会情報を見る <span aria-hidden="true">↗</span></a>
+  </div>
+</section>
+<section id="disclaimer" style="scroll-margin-top:72px;background:#f6f6f4">
+  <div style="max-width:1200px;margin:0 auto;padding:80px 24px;display:flex;flex-wrap:wrap;gap:24px 64px">
+    <div style="flex:1 1 300px">
+      <p style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;color:#c2410c;text-transform:uppercase;margin:0 0 14px;font-weight:600">Notice</p>
+      <h2 style="font-family:'Dela Gothic One',sans-serif;font-weight:400;font-size:clamp(24px,3.2cqi,34px);line-height:1.35;margin:0;color:#111214">非公式・非公認について</h2>
+    </div>
+    <div style="flex:1.5 1 440px;min-width:0;max-width:44em;font-size:15.5px;color:#2b2e34">
+      <p style="margin:0 0 1.1em;font-size:16.5px;color:#111214;line-height:1.85"><b>ベイろぐおよびシミュレーターは、非公式・非公認のファンサービスです。</b>ベイブレードの権利者、製造・販売元、およびその関連会社とは、いかなる関係もありません。公式のサイト、サービス、商品ではありません。</p>
+      <p style="margin:0 0 1.1em;text-wrap:pretty">「ベイブレード」「BEYBLADE」、ブレード・ラチェット・ビットなどの商品名・パーツ名・関連する名称は、それぞれの権利者の商標または登録商標です。当サイトでは、パーツを識別するための名称として使っています。</p>
+      <p style="margin:0;text-wrap:pretty">数値や動きは、公開情報と観察をもとにした推定を含みます。実機の性能や大会のルールとは異なることがあります。遊ぶときや大会に出るときは、公式の情報を必ず確認してください。</p>
+    </div>
+  </div>
+</section>
+<section id="contact" style="scroll-margin-top:72px">
+  <div style="max-width:1200px;margin:0 auto;padding:80px 24px;display:flex;flex-wrap:wrap;gap:24px 64px">
+    <div style="flex:1 1 300px">
+      <p style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;color:#c2410c;text-transform:uppercase;margin:0 0 14px;font-weight:600">06 / Contact</p>
+      <h2 style="font-family:'Dela Gothic One',sans-serif;font-weight:400;font-size:clamp(24px,3.2cqi,34px);line-height:1.35;margin:0;color:#111214">お問い合わせ</h2>
+    </div>
+    <div style="flex:1.5 1 440px;min-width:0;max-width:44em">
+      <!-- ↓ Contact Form 7 で作ったフォームのショートコードに置き換えてください -->
+        [contact-form-7 id="0000" title="お問い合わせ"]
+    </div>
+  </div>
+</section>
+<section id="privacy" style="scroll-margin-top:72px;border-top:1px solid #e6e6e3">
+  <div style="max-width:1200px;margin:0 auto;padding:80px 24px;display:flex;flex-wrap:wrap;gap:24px 64px">
+    <div style="flex:1 1 300px">
+      <p style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;color:#c2410c;text-transform:uppercase;margin:0 0 14px;font-weight:600">Privacy Policy</p>
+      <h2 style="font-family:'Dela Gothic One',sans-serif;font-weight:400;font-size:clamp(24px,3.2cqi,34px);line-height:1.35;margin:0;color:#111214">プライバシーポリシー</h2>
+    </div>
+    <div style="flex:1.5 1 440px;min-width:0;max-width:44em;font-size:15px;color:#2b2e34">
+      <p style="margin:0 0 20px">ベイろぐ（以下「当サイト」）は、ご利用の方の個人情報の扱いについて、次のとおり定めます。</p>
+      <details style="border-top:2px solid #111214;border-bottom:1px solid #e6e6e3">
+        <summary style="cursor:pointer;list-style:none;padding:16px 0;display:flex;justify-content:space-between;align-items:center;font-weight:900;font-size:14.5px;color:#111214">全文を読む<span style="font-family:'JetBrains Mono',monospace;font-weight:400;color:#c2410c">＋ / −</span></summary>
+        <div style="padding:0 0 28px">
+          <h3 style="font-size:16px;font-weight:900;margin:20px 0 6px;color:#111214">1. 運営者</h3>
+          <p style="margin:0">当サイトは、個人が運営しています。運営者の情報は、お問い合わせの際にお尋ねください。</p>
+          <h3 style="font-size:16px;font-weight:900;margin:24px 0 6px;color:#111214">2. 取得する情報</h3>
+          <p style="margin:0 0 .8em">当サイトは、会員登録やログインの機能を持たず、ご利用の方の氏名、住所、メールアドレスなどを、こちらから集めることはありません。お問い合わせをいただいた場合に限り、いただいたお名前、メールアドレス、内容を受け取ります。</p>
+          <p style="margin:0 0 .8em">当サイトを置いているサーバー（ホスティングサービス）では、アクセスした日時、IPアドレス、ブラウザの種類などの記録（アクセスログ）が、運営のために自動的に残されることがあります。</p>
+          <p style="margin:0">現在、当サイトでは、アクセス解析のツールや広告は使っていません。今後使うことになった場合は、このページで内容をお知らせします。</p>
+          <h3 style="font-size:16px;font-weight:900;margin:24px 0 6px;color:#111214">3. シミュレーターについて</h3>
+          <ul style="margin:0;padding-left:1.3em">
+            <li style="margin-bottom:.4em">シミュレーターは、お使いのブラウザの中で動きます。入力したプレイヤー名や、選んだパーツの内容を、当サイトのサーバーに送ったり、保存したりすることはありません。</li>
+            <li><b>プライベートシミュレーション</b>では、2人のブラウザどうしが直接つながります（WebRTCという仕組みを使います）。つなぐための仲介に、外部の公開サーバー（PeerJSなど）と接続補助のサーバーを使うため、これらのサーバーと、接続した相手のブラウザに、IPアドレスなどの通信に必要な情報が伝わることがあります。知らない人とは部屋番号を共有しないでください。</li>
+          </ul>
+          <h3 style="font-size:16px;font-weight:900;margin:24px 0 6px;color:#111214">4. 情報の利用目的</h3>
+          <p style="margin:0">お問い合わせにいただいた情報は、ご返信と、内容の確認、サイトの改善のためだけに使います。法令にもとづく場合を除き、本人の同意なく、第三者に渡すことはありません。</p>
+          <h3 style="font-size:16px;font-weight:900;margin:24px 0 6px;color:#111214">5. 外部サイトへのリンク</h3>
+          <p style="margin:0">当サイトから、ほかのサイトへのリンクがあります。リンク先での情報の扱いについては、当サイトは責任を負いません。</p>
+          <h3 style="font-size:16px;font-weight:900;margin:24px 0 6px;color:#111214">6. 免責</h3>
+          <p style="margin:0">当サイトの内容は、できるだけ正確にするように努めていますが、正確さや、最新であることを保証するものではありません。ご利用によって生じた損害について、責任を負いません。</p>
+          <h3 style="font-size:16px;font-weight:900;margin:24px 0 6px;color:#111214">7. 改定</h3>
+          <p style="margin:0">このポリシーは、必要に応じて、予告なく見直すことがあります。改定した場合は、このページに掲載します。</p>
+          <p style="color:#55585f;font-size:13px;margin:24px 0 0;font-family:'JetBrains Mono',monospace">制定日：2026年11月11日</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+</main>
+<footer style="background:#111214;color:#d4d5d8;font-size:13.5px;line-height:1.8">
+  <div style="max-width:1200px;margin:0 auto;padding:56px 24px;display:flex;flex-wrap:wrap;gap:16px 64px;align-items:flex-start">
+    <b style="font-family:'Dela Gothic One',sans-serif;font-weight:400;font-size:26px;color:#ffffff;flex:1 1 300px;display:flex;align-items:center;gap:10px"><span style="width:12px;height:12px;border-radius:50%;background:#e8590c"></span>ベイろぐ</b>
+    <div style="flex:1.5 1 440px;min-width:0">
+      <p style="margin:0 0 .6em">非公式・非公認のファンサイトです。ベイブレードの権利者、製造・販売元とは関係ありません。</p>
+      <p style="margin:0 0 .6em">「ベイブレード」「BEYBLADE」などの名称は、それぞれの権利者の商標または登録商標です。</p>
+      <p style="margin:0 0 .6em"><a href="#disclaimer" style="color:#d4d5d8">非公式・非公認について</a>　<a href="#privacy" style="color:#d4d5d8">プライバシーポリシー</a></p>
+      <p style="margin:0;font-family:'JetBrains Mono',monospace;color:#9a9ca1">© 2026 ベイろぐ</p>
+    </div>
+  </div>
+</footer>
+</div>
+<script>
+(function(){var r=document.getElementById('beylog');if(!r)return;var b=r.querySelector('.bl-burger');
+b&&b.addEventListener('click',function(){var o=r.classList.toggle('is-open');b.setAttribute('aria-expanded',o)});
+r.querySelectorAll('.bl-panel a').forEach(function(a){a.addEventListener('click',function(){r.classList.remove('is-open');b.setAttribute('aria-expanded','false')})});})();
+</script>
+<!-- /wp:html -->
