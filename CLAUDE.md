@@ -172,3 +172,17 @@ npm run dev
 - **マシン写真（magnum.jpg / sonic.jpg / tridagger.jpg）はユーザーが実際に撮影・用意したもの。これを最大限活かして欲しい**
 - コースの拡張（立体コース）は後回しでOK
 - UIは参考画像（青・ネイビー基調のアーケードゲーム風）に沿って作られている
+
+---
+
+## ベイろぐ トップページ（WordPress）設定メモ
+
+- 対象: https://beylog.com/ （別プロジェクト。ファイルは `wordpress/beylog-code-editor.html`）
+- テーマ: Twenty Twenty-Five（ブロックテーマ）。Cocoon ではない。Cocoon 向け CSS も念のため残している
+- 貼り方: 固定ページ（ホーム）の「コードエディター」に全文貼り付け。先頭 `<!-- wp:html -->` / 末尾 `<!-- /wp:html -->` で囲む。管理者権限で保存（style/script が消えるため）
+- 空行は入れない（wpautop が `<p>` を挿入して崩れる）
+- 画像は base64(WebP) で HTML に埋め込み済み。アップロード・URL差し替え不要
+- テーマの見出し・ナビ・余白は `<style>` 先頭の `body:has(#beylog) ...` で非表示。ページ全体は `.beylog` で100vw幅
+- 注意: `:has(>.wp-block-post-title)` のようにタイトルを含む親グループを隠すルールは禁止（本文ごと消える。過去に白画面になった）
+- 未置換: お問い合わせの `[contact-form-7 id="0000" ...]`
+- 変更したら編集 → コミット → `claude/pensive-hopper-obhzvr` にプッシュ → ユーザーが再貼り付け
