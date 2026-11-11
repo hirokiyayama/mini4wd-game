@@ -801,7 +801,7 @@ export function Beyblade() {
   selfReadyRef.current = selfReady;
   const placeSentRef = useRef(0);
   const tickRef = useRef(0);
-  const onlineLabelRef = useRef('プライベート対戦');
+  const onlineLabelRef = useRef('プライベートシミュレーション');
   const ghostDispRef = useRef<{ x: number; y: number } | null>(null); // 相手のランチャーの表示位置（なめらかに動かす）
   const readyRef = useRef({ host: false, guest: false });
   const snapsRef = useRef<{ t: number; b: number[][] }[]>([]);
@@ -2289,7 +2289,7 @@ export function Beyblade() {
     }
     // 試合の表示（ラベル）：トーナメントなら回戦、対戦なら 1on1 / 3on3
     const tm = tourMatchRef.current, tt = tourRef.current;
-    const matchLabel = online ? onlineLabel || 'プライベート対戦' : gameMode === 'tournament' && tm && tt ? roundLabel(tt.rounds[tm.r].length, tm.r) : `${mode === '3v3' ? `3on3・第${roundIdx + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : '1on1'}`;
+    const matchLabel = online ? onlineLabel || 'プライベートシミュレーション' : gameMode === 'tournament' && tm && tt ? roundLabel(tt.rounds[tm.r].length, tm.r) : `${mode === '3v3' ? `3on3・第${roundIdx + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : '1on1'}`;
     return (
       // 中継画面のような表示：枠は自分が青、相手がピンク。大きな得点、ブレーダー名、下にベイの名前
       <div style={{
@@ -2327,13 +2327,13 @@ export function Beyblade() {
           <div style={{ position: 'absolute', inset: 0, padding: '6px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
             <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: 2 }}>ベイブレードX シミュレーター</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              {([['versus', '対戦', '相手と戦う（CPU / 2人）'], ['tournament', 'トーナメント', '最大32人で勝ち抜き戦']] as const).map(([k, label, sub]) => (
+              {([['versus', 'シミュレーション', 'CPUや2人でシミュレーション'], ['tournament', 'トーナメント', '最大32人で勝ち抜き戦']] as const).map(([k, label, sub]) => (
                 <button key={k} onClick={() => { setGameMode(k); setTopOnline(false); setLobbyMsg(''); }} style={{ ...sb(gameMode === k && !topOnline), padding: '5px 18px', textAlign: 'center' }}>
                   <div style={{ fontWeight: 900, fontSize: 15 }}>{label}</div><div style={{ fontSize: 11.5, opacity: 0.85 }}>{sub}</div>
                 </button>
               ))}
               <button onClick={() => { setTopOnline(true); setLobbyMsg(''); }} style={{ ...sb(topOnline), padding: '5px 18px', textAlign: 'center' }}>
-                <div style={{ fontWeight: 900, fontSize: 15 }}>プライベート対戦</div><div style={{ fontSize: 11.5, opacity: 0.85 }}>部屋番号で友だちと対戦</div>
+                <div style={{ fontWeight: 900, fontSize: 15 }}>プライベートシミュレーション</div><div style={{ fontSize: 11.5, opacity: 0.85 }}>部屋番号で友だちとシミュレーション</div>
               </button>
             </div>
             {topOnline ? (
@@ -2350,10 +2350,10 @@ export function Beyblade() {
             ) : gameMode === 'versus' ? (
               <div style={{ display: 'flex', gap: 26, alignItems: 'flex-start' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  {row('相手', ([['cpu', 'CPU'], ['2p', '2人対戦']] as const).map(([k, l]) => (
+                  {row('相手', ([['cpu', 'CPU'], ['2p', '2人でシミュレーション']] as const).map(([k, l]) => (
                     <button key={k} onClick={() => { setVs(k); if (k === '2p') setMySide('left'); }} style={sb(vs === k)}>{l}</button>
                   )))}
-                  {row('対戦', ([['1v1', '1on1'], ['3v3', '3on3']] as const).map(([k, l]) => (
+                  {row('形式', ([['1v1', '1on1'], ['3v3', '3on3']] as const).map(([k, l]) => (
                     <button key={k} onClick={() => { setMode(k); if (k === '3v3') setDecks(ds => ds.map(d => dedupeDeck(d))); }} style={sb(mode === k)}>{l}</button>
                   )))}
                 </div>
@@ -2366,7 +2366,7 @@ export function Beyblade() {
             ) : (
               <div style={{ display: 'flex', gap: 22, alignItems: 'flex-start' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  {row('対戦', ([['1v1', '1on1'], ['3v3', '3on3']] as const).map(([k, l]) => (
+                  {row('形式', ([['1v1', '1on1'], ['3v3', '3on3']] as const).map(([k, l]) => (
                     <button key={k} onClick={() => { setMode(k); if (k === '3v3') setDecks(ds => ds.map(d => dedupeDeck(d))); }} style={sb(mode === k)}>{l}</button>
                   )))}
                   {([['CPUの数', tCpu, (v: number) => setTCpu(Math.max(0, Math.min(32 - tHumans, v))), '#ef4444'], ['プレイヤーの数', tHumans, (v: number) => setTHumans(Math.max(0, Math.min(32 - tCpu, v))), '#5aabff']] as const).map(([label, val, set, color]) => (
@@ -2410,7 +2410,7 @@ export function Beyblade() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, minHeight: 26 }}>
               <button onClick={() => (online ? leaveOnline() : setPhase('top'))} style={sb(false)}>← トップ</button>
               <span style={{ fontSize: 12.5, opacity: 0.85, whiteSpace: 'nowrap' }}>
-                {online ? `プライベート対戦（${online === 'host' ? 'ホスト・部屋' + roomCode : 'ゲスト'}）` : <>{gameMode === 'tournament' ? `トーナメント（CPU ${tCpu}・プレイヤー ${tHumans}）` : vs === 'cpu' ? 'CPU対戦' : '2人対戦'}・{mode === '3v3' ? '3on3' : '1on1'}</>}
+                {online ? `プライベートシミュレーション（${online === 'host' ? 'ホスト・部屋' + roomCode : 'ゲスト'}）` : <>{gameMode === 'tournament' ? `トーナメント（CPU ${tCpu}・プレイヤー ${tHumans}）` : vs === 'cpu' ? 'CPUとシミュレーション' : '2人でシミュレーション'}・{mode === '3v3' ? '3on3' : '1on1'}</>}
               </span>
               {online === 'host' && (['1v1', '3v3'] as const).map(k => (
                 <button key={k} onClick={() => { setMode(k); if (k === '3v3') setDecks(ds => ds.map(d => dedupeDeck(d))); }} style={sb(mode === k)}>{k === '1v1' ? '1on1' : '3on3'}</button>
@@ -2470,11 +2470,11 @@ export function Beyblade() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-start', minHeight: 30 }}>
               {/* 右下はNetlifyなどの表示とかぶるので、ボタンは左に寄せる */}
               {online === 'host' ? (
-                <button style={{ ...yb, opacity: guestInfo ? 1 : 0.4 }} disabled={!guestInfo} onClick={startOnlineMatch}>バトル開始</button>
+                <button style={{ ...yb, opacity: guestInfo ? 1 : 0.4 }} disabled={!guestInfo} onClick={startOnlineMatch}>シミュレーション開始</button>
               ) : online === 'guest' ? (
                 <button style={selfReady ? sb(true, '#4ade80') : yb} onClick={guestReady}>{selfReady ? '準備OK（解除）' : '準備OK'}</button>
               ) : (
-                <button style={yb} onClick={gameMode === 'versus' ? startMatch : startTournament}>{gameMode === 'versus' ? 'バトル開始' : 'トーナメント開始'}</button>
+                <button style={yb} onClick={gameMode === 'versus' ? startMatch : startTournament}>{gameMode === 'versus' ? 'シミュレーション開始' : 'トーナメント開始'}</button>
               )}
               {online === 'host' && (
                 <>
