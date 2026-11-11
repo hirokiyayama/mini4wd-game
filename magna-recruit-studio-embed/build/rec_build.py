@@ -108,7 +108,9 @@ for fname, mg, title, parts, anch, hkey in SPEC:
    ================================================================ */
 var MG_NAME = "%s";
 var ASSET_BASE = "%s";   /* ★ 画像を置いたフォルダのURL（末尾は / ） */
-var PAGE_PATH = "";   /* ★必須：このLPを置いたSTUDIOページのパス。ページのアドレスが https://mintflag.com/○○ なら "/○○" と入力（プレビューでも本番でも、いま表示しているドメインに自動で合わせます） */
+var PAGE_PATH = "/recruit";   /* ★本番：このLPを置いたSTUDIOページのパス（公開URLが https://mintflag.com/recruit なら "/recruit"） */
+var PREVIEW_HOST = "preview.studio.site";   /* STUDIOのプレビューのドメイン */
+var PREVIEW_PATH = "/live/tYv-YLP3QxbFxeXGEmXAOqKibHGajkVCuTF6QhIzY5M/Recruit";   /* ★プレビュー：プレビューのURLのドメインより後ろの部分 */
 var PAGE_URL = "";   /* 通常は空欄。ドメインごと固定したい場合だけ、ページのURL（https://…）を入力 */
 var ANCHORS = %s;
 var EXTERNAL_TARGET = "_top";   /* 外部サイトへのリンクの開き方："_top"=同じタブ / "_blank"=新しいタブ */

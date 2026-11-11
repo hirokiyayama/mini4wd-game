@@ -107,7 +107,9 @@ html,body{margin:0;padding:0}
    ================================================================ */
 var MG_NAME = "workstyleB";
 var ASSET_BASE = "https://cdn.jsdelivr.net/gh/hirokiyayama/mini4wd-game@claude/affectionate-darwin-300fus/magna-recruit-studio-embed/assets/";   /* ★ 画像を置いたフォルダのURL（末尾は / ） */
-var PAGE_PATH = "";   /* ★必須：このLPを置いたSTUDIOページのパス。ページのアドレスが https://mintflag.com/○○ なら "/○○" と入力（プレビューでも本番でも、いま表示しているドメインに自動で合わせます） */
+var PAGE_PATH = "/recruit";   /* ★本番：このLPを置いたSTUDIOページのパス（公開URLが https://mintflag.com/recruit なら "/recruit"） */
+var PREVIEW_HOST = "preview.studio.site";   /* STUDIOのプレビューのドメイン */
+var PREVIEW_PATH = "/live/tYv-YLP3QxbFxeXGEmXAOqKibHGajkVCuTF6QhIzY5M/Recruit";   /* ★プレビュー：プレビューのURLのドメインより後ろの部分 */
 var PAGE_URL = "";   /* 通常は空欄。ドメインごと固定したい場合だけ、ページのURL（https://…）を入力 */
 var ANCHORS = {
   "mission": "mission",   /* MISSION → STUDIOで「MISSION」を含むブロックに付けるID */
@@ -198,9 +200,11 @@ var LINKS = {
     var ref = ''; try{ ref = document.referrer || ''; }catch(e){}
     var ru = null; try{ ru = new URL(ref); }catch(e){}
     if(ru && ru.pathname.length > 1){ page = ru.origin + ru.pathname + ru.search; }
-    else if(typeof PAGE_PATH!=='undefined' && PAGE_PATH){
+    else {
       var og = ''; try{ og = location.ancestorOrigins[0] || ''; }catch(e){} if(!og && ru) og = ru.origin;
-      if(og) page = og + PAGE_PATH;
+      var isPrev = og && (typeof PREVIEW_HOST!=='undefined') && PREVIEW_HOST && og.indexOf(PREVIEW_HOST) > -1;   /* STUDIOのプレビュー表示か */
+      var path = isPrev ? (typeof PREVIEW_PATH!=='undefined' ? PREVIEW_PATH : '') : (typeof PAGE_PATH!=='undefined' ? PAGE_PATH : '');
+      if(og && path) page = og + path;
     }
   }
   page = page.replace(/#.*$/, '');

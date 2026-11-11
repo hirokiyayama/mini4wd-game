@@ -35,9 +35,11 @@
     var ref = ''; try{ ref = document.referrer || ''; }catch(e){}
     var ru = null; try{ ru = new URL(ref); }catch(e){}
     if(ru && ru.pathname.length > 1){ page = ru.origin + ru.pathname + ru.search; }
-    else if(typeof PAGE_PATH!=='undefined' && PAGE_PATH){
+    else {
       var og = ''; try{ og = location.ancestorOrigins[0] || ''; }catch(e){} if(!og && ru) og = ru.origin;
-      if(og) page = og + PAGE_PATH;
+      var isPrev = og && (typeof PREVIEW_HOST!=='undefined') && PREVIEW_HOST && og.indexOf(PREVIEW_HOST) > -1;   /* STUDIOのプレビュー表示か */
+      var path = isPrev ? (typeof PREVIEW_PATH!=='undefined' ? PREVIEW_PATH : '') : (typeof PAGE_PATH!=='undefined' ? PAGE_PATH : '');
+      if(og && path) page = og + path;
     }
   }
   page = page.replace(/#.*$/, '');
