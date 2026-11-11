@@ -364,7 +364,7 @@ function settleTour(t: Tour) {
     t.rounds.push(next);
   }
 }
-const roundLabel = (len: number, r: number) => (len === 1 ? '決勝' : len === 2 ? '準決勝' : `${r + 1}回戦`);
+const roundLabel = (len: number, r: number) => (len === 1 ? 'ファイナル' : len === 2 ? 'セミファイナル' : `ラウンド${r + 1}`);
 
 // トーナメント表：左右から勝ち上がって、中央が優勝（人数は2〜32人。足りない席は不戦勝）
 function BracketView({ t, availW, availH }: { t: Tour; availW: number; availH: number }) {
@@ -461,7 +461,7 @@ function BracketView({ t, availW, availH }: { t: Tour; availW: number; availH: n
           </g>
         </svg>
         <div style={{ position: 'absolute', left: cx - 80, top: yF + 14, width: 160, textAlign: 'center' }}>
-          <div style={{ fontWeight: 900, fontSize: 12, letterSpacing: 2, color: '#7a5a00' }}>WINNER</div>
+          <div style={{ fontWeight: 900, fontSize: 12, letterSpacing: 2, color: '#7a5a00' }}>RESULT</div>
           <div style={{
             marginTop: 2, height: 32, border: '3px solid #d4a300', background: '#fffbe0', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontWeight: 900, fontSize: 15, color: t.champion !== null && t.entrants[t.champion].human ? '#1d4ed8' : '#111',
@@ -1096,7 +1096,7 @@ export function Beyblade() {
         return;
       }
       setRoundIdx(ni);
-      onlineLabelRef.current = `3on3・第${ni + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}`; setOnlineLabel(onlineLabelRef.current);
+      onlineLabelRef.current = `3on3・第${ni + 1}ラウンド${cycle > 0 ? `(${cycle + 1}周目)` : ''}`; setOnlineLabel(onlineLabelRef.current);
       setupRound(deck.me[order[ni]], deck.cpu[cpuOrderRef.current[ni]]);
       return;
     }
@@ -1293,7 +1293,7 @@ export function Beyblade() {
     setDeck(dk); setRoundIdx(0); setCycle(0);
     if (n === 3) { // 3on3：まず、それぞれが自分のベイの出す順番を決める（相手には見えない）
       ordersRef.current = [null, null]; setSelfReady(false); setOrderPick([]); setOrder([]); setOrderWho(0);
-      setOnlineLabel('3on3・第1戦');
+      setOnlineLabel('3on3・第1ラウンド');
       linkRef.current?.send({ t: 'toOrder', deck: dk, names: nn, score: { me: 0, cpu: 0 }, hostLeft, cycle: 0 });
       beysRef.current = null;
       setPhase('order');
@@ -1313,7 +1313,7 @@ export function Beyblade() {
     if (!o0 || !o1 || onlineRef.current !== 'host') return;
     ordersRef.current = [null, null];
     setOrder(o0); cpuOrderRef.current = o1; setRoundIdx(0);
-    onlineLabelRef.current = `3on3・第1戦${cycleRef.current > 0 ? `(${cycleRef.current + 1}周目)` : ''}`; setOnlineLabel(onlineLabelRef.current);
+    onlineLabelRef.current = `3on3・第1ラウンド${cycleRef.current > 0 ? `(${cycleRef.current + 1}周目)` : ''}`; setOnlineLabel(onlineLabelRef.current);
     setupRound(deckRef.current.me[o0[0]], deckRef.current.cpu[o1[0]]);
   };
   // ホスト：ゲストに設定（1on1/3on3・左右）を知らせる
@@ -1400,7 +1400,7 @@ export function Beyblade() {
         setDeck(dk); setHostLeft(!!m.hostLeft); selfIdxRef.current = m.hostLeft ? 1 : 0;
         const nn = m.names as { me: string; cpu: string }; namesNowRef.current = nn; setNames(nn);
         scoreRef.current = m.score as { me: number; cpu: number }; setScore(scoreRef.current);
-        setCycle(Number(m.cycle) || 0); setOnlineLabel(`3on3・第1戦`);
+        setCycle(Number(m.cycle) || 0); setOnlineLabel(`3on3・第1ラウンド`);
         countTimers.current.forEach(window.clearTimeout); window.clearTimeout(timerRef.current);
         beysRef.current = null; partsRef.current = []; snapsRef.current = []; setMessage(null); setCount(null);
         setOrderPick([]); setOrder([]); setSelfReady(false);
@@ -2289,7 +2289,7 @@ export function Beyblade() {
     }
     // 試合の表示（ラベル）：トーナメントなら回戦、対戦なら 1on1 / 3on3
     const tm = tourMatchRef.current, tt = tourRef.current;
-    const matchLabel = online ? onlineLabel || 'プライベートシミュレーション' : gameMode === 'tournament' && tm && tt ? roundLabel(tt.rounds[tm.r].length, tm.r) : `${mode === '3v3' ? `3on3・第${roundIdx + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : '1on1'}`;
+    const matchLabel = online ? onlineLabel || 'プライベートシミュレーション' : gameMode === 'tournament' && tm && tt ? roundLabel(tt.rounds[tm.r].length, tm.r) : `${mode === '3v3' ? `3on3・第${roundIdx + 1}ラウンド${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : '1on1'}`;
     return (
       // 中継画面のような表示：枠は自分が青、相手がピンク。大きな得点、ブレーダー名、下にベイの名前
       <div style={{
@@ -2327,7 +2327,7 @@ export function Beyblade() {
           <div style={{ position: 'absolute', inset: 0, padding: '6px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
             <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: 2 }}>ベイブレードX シミュレーター</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              {([['versus', 'シミュレーション', 'CPUや2人でシミュレーション'], ['tournament', 'トーナメント', '最大32人で勝ち抜き戦']] as const).map(([k, label, sub]) => (
+              {([['versus', 'シミュレーション', 'CPUや2人でシミュレーション'], ['tournament', 'トーナメント', '最大32人でシミュレーション']] as const).map(([k, label, sub]) => (
                 <button key={k} onClick={() => { setGameMode(k); setTopOnline(false); setLobbyMsg(''); }} style={{ ...sb(gameMode === k && !topOnline), padding: '5px 18px', textAlign: 'center' }}>
                   <div style={{ fontWeight: 900, fontSize: 15 }}>{label}</div><div style={{ fontSize: 11.5, opacity: 0.85 }}>{sub}</div>
                 </button>
@@ -2382,7 +2382,7 @@ export function Beyblade() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxWidth: 230 }}>
                   {row('CPUの強さ', (['easy', 'normal', 'hard'] as const).map(k => <button key={k} onClick={() => setDiff(k)} style={sb(diff === k)}>{DIFF_INFO[k].label}</button>))}
                   <div style={{ fontSize: 12, opacity: 0.85, lineHeight: 1.4 }}>
-                    参加：合計 <b>{tCpu + tHumans}</b> 人（最大32人）。立ち位置は試合ごとにランダム、試合前に相手の落とす位置は見えません。
+                    参加：合計 <b>{tCpu + tHumans}</b> 人（最大32人）。立ち位置は1回ごとにランダム、始める前に相手の落とす位置は見えません。
                     {tCpu + tHumans < 2 && <div style={{ color: '#ff8b8b' }}>2人以上にしてください</div>}
                   </div>
                 </div>
@@ -2443,7 +2443,7 @@ export function Beyblade() {
               </div>
             )}
             {humanCount === 0 ? (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>プレイヤーがいないので、CPU同士のトーナメントを観戦します。</div>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>プレイヤーがいないので、CPU同士のトーナメントをシミュレーションします。</div>
             ) : (
               <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 8 }}>
                 <div style={{ flex: '0 0 150px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: 6, borderRadius: 10, background: '#0a1030', border: '2px solid #2a3566', overflow: 'hidden' }}>
@@ -2474,7 +2474,7 @@ export function Beyblade() {
               ) : online === 'guest' ? (
                 <button style={selfReady ? sb(true, '#4ade80') : yb} onClick={guestReady}>{selfReady ? '準備OK（解除）' : '準備OK'}</button>
               ) : (
-                <button style={yb} onClick={gameMode === 'versus' ? startMatch : startTournament}>{gameMode === 'versus' ? 'シミュレーション開始' : 'トーナメント開始'}</button>
+                <button style={yb} onClick={gameMode === 'versus' ? startMatch : startTournament}>{gameMode === 'versus' ? 'シミュレーション開始' : 'トーナメントをシミュレーション'}</button>
               )}
               {online === 'host' && (
                 <>
@@ -2572,17 +2572,17 @@ export function Beyblade() {
               </div>
               {phase === 'tchamp' && t.champion !== null ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: headH - 8 }}>
-                  <span style={{ fontSize: 13, opacity: 0.85 }}>優勝</span>
+                  <span style={{ fontSize: 13, opacity: 0.85 }}>1位</span>
                   <div style={{ color: '#ffd740', textShadow: '0 2px 10px #000' }}><NameBlock e={t.entrants[t.champion]} nameSize={24} catchSize={11} /></div>
-                  <span style={{ fontSize: 12.5, opacity: 0.75 }}>{t.entrants.some(e => e.human) && (t.entrants[t.champion].human ? 'おめでとう！' : 'プレイヤーは敗退しました')}</span>
+                  <span style={{ fontSize: 12.5, opacity: 0.75 }}>{t.entrants.some(e => e.human) && (t.entrants[t.champion].human ? 'おめでとう！' : 'プレイヤーは途中で終了しました')}</span>
                 </div>
               ) : cur ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, padding: '3px 10px', borderRadius: 10, border: '2px solid #ffd740', background: '#14204f', minHeight: headH - 12 }}>
-                  <span style={{ fontSize: 12.5, opacity: 0.85 }}>次の試合：{curLabel}</span>
+                  <span style={{ fontSize: 12.5, opacity: 0.85 }}>次のシミュレーション：{curLabel}</span>
                   <NameBlock e={t.entrants[cur.a!]} nameSize={17} catchSize={9.5} color={t.entrants[cur.a!].human ? '#5aabff' : '#fff'} />
                   <span style={{ opacity: 0.6, fontWeight: 900 }}>vs</span>
                   <NameBlock e={t.entrants[cur.b!]} nameSize={17} catchSize={9.5} color={t.entrants[cur.b!].human ? '#5aabff' : '#fff'} />
-                  <button style={yb} onClick={startTourMatch}>試合開始</button>
+                  <button style={yb} onClick={startTourMatch}>シミュレーション開始</button>
                 </div>
               ) : null}
               <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex' }}>
@@ -2627,7 +2627,7 @@ export function Beyblade() {
                   {phase === 'over' ? (
                     <>
                       <div style={{ fontSize: 36 * cs, fontWeight: 900, color: message.winner === 'me' ? '#5aabff' : '#ef4444' }}>
-                        {vs === '2p' || gameMode === 'tournament' ? `${message.winner === 'me' ? nameMe : nameCpu} の勝ち！` : message.winner === 'me' ? 'YOU WIN!' : 'YOU LOSE...'}
+                        {vs === '2p' || gameMode === 'tournament' ? `${message.winner === 'me' ? nameMe : nameCpu} の先取！` : message.winner === 'me' ? 'あなたの先取！' : 'CPUの先取！'}
                       </div>
                       {online === 'guest' ? <div style={{ fontSize: 14 * cs + 4 }}>ホストの操作を待っています…</div>
                         : gameMode === 'tournament'
