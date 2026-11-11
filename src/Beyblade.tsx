@@ -654,9 +654,9 @@ function drawStadium(ctx: CanvasRenderingContext2D) {
   };
   drawExit(0, '#f5b800'); drawExit(OVER_PHI, '#d63a2f'); drawExit(-OVER_PHI, '#d63a2f');
   ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#7a5a00';
-  ctx.fillText('EXTREME 3pt', 0, wallAt(0, H) + 60);
+  ctx.fillText('3pt', 0, wallAt(0, H) + 60);
   ctx.fillStyle = '#9b2a20';
-  for (const sx of [-1, 1]) { const q = px(OVER_PHI * sx, wallAt(OVER_PHI, H) + 40); ctx.fillText('OVER 2pt', q[0], q[1] + 26); }
+  for (const sx of [-1, 1]) { const q = px(OVER_PHI * sx, wallAt(OVER_PHI, H) + 40); ctx.fillText('2pt', q[0], q[1] + 26); }
   ctx.textAlign = 'start';
   // 出口の手前の段と、仕切り壁
   for (const phi of [0, OVER_PHI, -OVER_PHI]) {
