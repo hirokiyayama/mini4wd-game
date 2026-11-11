@@ -104,14 +104,12 @@ for fname, mg, title, parts, anch, hkey in SPEC:
    ・IMAGES    : 画像ファイル名 or URL（https:// から始まるURLならそのURLを使用。ファイル名だけなら ASSET_BASE が前に付きます）
    ・ALT       : 画像の代替テキスト（IMAGES と同じキー）
    ・LINKS     : ボタン・メニューのリンク先
-%s   ・PAGE_URL / ANCHORS : 他のブロックへ移動するときの、STUDIOページのURLと移動先ID
+%s   ・PAGE_PATH / ANCHORS : 他のブロックへ移動するときの、LPを置いたページのパスと、移動先のブロックID
    ================================================================ */
 var MG_NAME = "%s";
 var ASSET_BASE = "%s";   /* ★ 画像を置いたフォルダのURL（末尾は / ） */
-var PAGE_URL = "";   /* 空欄＝自動（いま表示しているドメイン＋PAGE_PATH。プレビューでも本番でも動きます）。固定したい場合だけ https://… を入力 */
-var PROD_HOST = "mintflag.com";   /* 本番サイトのドメイン */
-var PAGE_PATH = "/recruit";   /* 本番ページのパス（公開URLが https://mintflag.com/recruit なら /recruit） */
-var PREVIEW_PATH = "/";   /* ★ プレビュー（本番ドメイン以外）で開いているときのパス。プレビューのアドレス欄が https://〇〇/xxxx なら /xxxx を入力 */
+var PAGE_PATH = "";   /* ★必須：このLPを置いたSTUDIOページのパス。ページのアドレスが https://mintflag.com/○○ なら "/○○" と入力（プレビューでも本番でも、いま表示しているドメインに自動で合わせます） */
+var PAGE_URL = "";   /* 通常は空欄。ドメインごと固定したい場合だけ、ページのURL（https://…）を入力 */
 var ANCHORS = %s;
 var EXTERNAL_TARGET = "_top";   /* 外部サイトへのリンクの開き方："_top"=同じタブ / "_blank"=新しいタブ */
 %s%svar TEXT = %s;

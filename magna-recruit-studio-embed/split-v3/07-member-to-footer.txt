@@ -110,14 +110,12 @@ html,body{margin:0;padding:0}
    ・ALT       : 画像の代替テキスト（IMAGES と同じキー）
    ・LINKS     : ボタン・メニューのリンク先
    ・POSITIONS : 募集職種のリスト（ここを増減すると、ファーストビューの早見と一覧の両方に反映されます）
-   ・PAGE_URL / ANCHORS : 他のブロックへ移動するときの、STUDIOページのURLと移動先ID
+   ・PAGE_PATH / ANCHORS : 他のブロックへ移動するときの、LPを置いたページのパスと、移動先のブロックID
    ================================================================ */
 var MG_NAME = "voicesF";
 var ASSET_BASE = "https://cdn.jsdelivr.net/gh/hirokiyayama/mini4wd-game@claude/affectionate-darwin-300fus/magna-recruit-studio-embed/assets/";   /* ★ 画像を置いたフォルダのURL（末尾は / ） */
-var PAGE_URL = "";   /* 空欄＝自動（いま表示しているドメイン＋PAGE_PATH。プレビューでも本番でも動きます）。固定したい場合だけ https://… を入力 */
-var PROD_HOST = "mintflag.com";   /* 本番サイトのドメイン */
-var PAGE_PATH = "/recruit";   /* 本番ページのパス（公開URLが https://mintflag.com/recruit なら /recruit） */
-var PREVIEW_PATH = "/";   /* ★ プレビュー（本番ドメイン以外）で開いているときのパス。プレビューのアドレス欄が https://〇〇/xxxx なら /xxxx を入力 */
+var PAGE_PATH = "";   /* ★必須：このLPを置いたSTUDIOページのパス。ページのアドレスが https://mintflag.com/○○ なら "/○○" と入力（プレビューでも本番でも、いま表示しているドメインに自動で合わせます） */
+var PAGE_URL = "";   /* 通常は空欄。ドメインごと固定したい場合だけ、ページのURL（https://…）を入力 */
 var ANCHORS = {
   "mission": "mission",   /* MISSION → STUDIOで「MISSION」を含むブロックに付けるID */
   "concept": "concept",   /* FUN LEARNING → 「FUN LEARNING」ブロックのID */
@@ -208,21 +206,27 @@ var APPLY_NOTE = "まずはカジュアルな面談から";
   $all('[data-pos-count]').forEach(function(e){ e.textContent = list.length; });
   $all('[data-link]').forEach(function(e){ var k=e.getAttribute('data-link'); if(LINKS[k]) e.href = u(LINKS[k]); });
   /* ---- 他のブロックへのリンク（STUDIOページ内の別Embedへ移動） ---- */
-  /* 移動先のページURL：PAGE_URL が空欄なら、いま表示しているサイトのドメイン（プレビューでも本番でも自動）＋ PAGE_PATH を使う */
+  /* 移動先のページURL：PAGE_URL があればそれ。空欄なら「いま表示しているドメイン」＋ PAGE_PATH（プレビューでも本番でも自動で合う）。どちらも空なら移動せず案内を表示 */
   var page = PAGE_URL || '';
   if(!page){
     var ref = ''; try{ ref = document.referrer || ''; }catch(e){}
     var ru = null; try{ ru = new URL(ref); }catch(e){}
     if(ru && ru.pathname.length > 1){ page = ru.origin + ru.pathname + ru.search; }
-    else { var og = ''; try{ og = location.ancestorOrigins[0] || ''; }catch(e){} if(!og && ru) og = ru.origin;
-      if(og){ var isProd = (typeof PROD_HOST!=='undefined') && og.indexOf(PROD_HOST) > -1;   /* 本番ドメインなら PAGE_PATH、プレビュー等なら PREVIEW_PATH */
-        page = og + (isProd ? (typeof PAGE_PATH!=='undefined' ? PAGE_PATH : '/') : (typeof PREVIEW_PATH!=='undefined' ? PREVIEW_PATH : '/')); } }
+    else if(typeof PAGE_PATH!=='undefined' && PAGE_PATH){
+      var og = ''; try{ og = location.ancestorOrigins[0] || ''; }catch(e){} if(!og && ru) og = ru.origin;
+      if(og) page = og + PAGE_PATH;
+    }
   }
   page = page.replace(/#.*$/, '');
+  function toast(msg){
+    var d = document.getElementById('mg-toast'); if(!d){ d = document.createElement('div'); d.id='mg-toast'; d.style.cssText='position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:9999;max-width:92%;background:#021C1E;color:#fff;font:700 13px/1.6 sans-serif;padding:10px 16px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.25)'; document.body.appendChild(d); }
+    d.textContent = msg; d.style.display='block'; clearTimeout(d._t); d._t = setTimeout(function(){ d.style.display='none'; }, 6000);
+  }
   $all('a[href^="#"]').forEach(function(a){
     var id = a.getAttribute('href').slice(1); if(!id) return;
     var t = (ANCHORS && ANCHORS[id]) || id;
-    a.setAttribute('href', page ? page + '#' + t : '#' + t); a.setAttribute('target','_top'); a.setAttribute('rel','noopener');
+    if(page){ a.setAttribute('href', page + '#' + t); a.setAttribute('target','_top'); a.setAttribute('rel','noopener'); }
+    else { a.addEventListener('click', function(ev){ ev.preventDefault(); toast('【設定が必要です】このファイルの設定エリアの PAGE_PATH に、LPを置いたページのパス（例: /lp）を入力してください'); }); }
   });
   /* ---- 外部サイトへのリンク（target指定がないものは EXTERNAL_TARGET で開く） ---- */
   $all('a[href^="http"]').forEach(function(a){
