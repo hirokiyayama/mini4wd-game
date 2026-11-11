@@ -54,7 +54,20 @@ FINE = [  # 見出しごとに正確に移動できる分け方（file, mg, titl
  ('09-open-positions-cta', 'positions', 'OPEN POSITIONS〜CTA', ['positions', 'cta'], True, '06-open-positions-to-footer'),
  ('10-footer', 'footer', 'フッターメニュー', ['band', 'flinks', 'footer'], False, '07-footer'),
 ]
-if MODE == 'fine': SPEC = FINE
+V3 = [
+ ('01-header', 'header', 'ヘッダーメニュー', ['header'], False, '01-header'),
+ ('02-first-view', 'hero', 'ファーストビュー〜代表メッセージ（手前）', ['hero'], True, '02-first-view'),
+ ('03-message-to-mission', 'messageA', '代表メッセージ〜MISSION（手前）', ['message'], True, 'alt-03a-message'),
+ ('04-mission-to-fun-learning', 'missionB', 'MISSION〜FUN LEARNING（手前）', ['mission'], True, 'alt-03b-mission'),
+ ('05-fun-learning-to-work-style', 'conceptW', 'FUN LEARNING〜WORK STYLE（手前）', ['concept', 'wanted'], True, 'v3-05'),
+ ('06-work-style-to-member', 'workstyleB', 'WORK STYLE〜MEMBER（手前）', ['workstyle', 'service'], True, 'alt-05b-workstyle-service'),
+ ('07-member-to-footer', 'voicesF', 'MEMBER〜フッター（手前）', ['voices', 'positions', 'cta'], True, 'v3-07'),
+ ('08-footer', 'footer', 'フッターメニュー', ['band', 'flinks', 'footer'], False, '07-footer'),
+ ('alt-07a-member', 'voicesC', 'MEMBER（OPEN POSITIONSを別ブロックにする場合）', ['voices'], True, 'alt-05c-voices'),
+ ('alt-07b-open-positions-to-footer', 'positions', 'OPEN POSITIONS〜CTA（別ブロックにする場合）', ['positions', 'cta'], True, '06-open-positions-to-footer'),
+]
+if MODE == 'v3': SPEC = V3
+elif MODE == 'fine': SPEC = FINE
 else: SPEC = [x + (x[0],) for x in SPEC]
 for fname, mg, title, parts, anch, hkey in SPEC:
     body = ''.join(part(p) for p in parts)
