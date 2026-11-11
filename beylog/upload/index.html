@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ベイろぐ</title>
+<meta name="description" content="ベイブレードXの研究・攻略メモと、非公式シミュレーターを紹介する個人のファンサイト。非公式・非公認です。">
+<link rel="canonical" href="https://beylog.com/">
+<meta property="og:title" content="ベイろぐ">
+<meta property="og:description" content="ベイブレードXを、数字と動きから調べる研究ノート。非公式・非公認のファンサイトです。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://beylog.com/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap">
+<style>:root{color-scheme:light}html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<style>
+/* Layout: 研究ノート風。左に細い目次、右に本文。上部に常時「非公式」の帯。色は落ち着いた青緑とインク色で、特定の公式サイトの配色は使わない */
+:root{
+  --bg:#edf1f4; --surface:#ffffff; --ink:#142033; --muted:#566377; --line:#d3dce5;
+  --accent:#0d7a85; --accent-soft:#d9eef0; --warn:#9a4b06; --warn-soft:#fbe9d5; --band:#142033; --band-ink:#eef3f8;
+  --f-display:"Zen Kaku Gothic New","Noto Sans JP",sans-serif;
+  --f-body:"Noto Sans JP",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1621; --surface:#162231; --ink:#e5ecf4; --muted:#9aa9bb; --line:#27364a;
+  --accent:#55c4cd; --accent-soft:#12343a; --warn:#f0b274; --warn-soft:#3a2a17; --band:#070c13; --band-ink:#dbe5ef; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1621; --surface:#162231; --ink:#e5ecf4; --muted:#9aa9bb; --line:#27364a;
+  --accent:#55c4cd; --accent-soft:#12343a; --warn:#f0b274; --warn-soft:#3a2a17; --band:#070c13; --band-ink:#dbe5ef; color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.85}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.band{background:var(--band);color:var(--band-ink);font-size:13px;line-height:1.6}
+.band .wrap{padding-block:8px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.band b{font-family:var(--f-mono);font-weight:500;letter-spacing:.04em;color:var(--accent)}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:900;font-size:22px;letter-spacing:.02em;color:var(--ink);text-decoration:none}
+.brand svg{width:28px;height:28px}
+nav.main{display:flex;gap:4px 16px;flex-wrap:wrap;font-size:14px}
+nav.main a{color:var(--muted);text-decoration:none;padding:4px 2px;border-bottom:2px solid transparent}
+nav.main a:hover{color:var(--ink);border-bottom-color:var(--accent)}
+.hero{padding-block:48px 32px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:32px;align-items:start}
+.hero h1{font-family:var(--f-display);font-weight:900;font-size:clamp(34px,6vw,56px);line-height:1.2;margin:0 0 14px;letter-spacing:.01em;text-wrap:balance}
+.hero p.lead{font-size:17px;margin:0 0 18px;max-width:34em}
+.pts{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px}
+.pts h2{font-family:var(--f-mono);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.pts table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.pts td{padding:7px 0;border-top:1px solid var(--line);font-size:15px}
+.pts tr:first-child td{border-top:0}
+.pts td:last-child{text-align:right;font-family:var(--f-mono);font-weight:500}
+.pts p{margin:10px 0 0;font-size:13px;color:var(--muted);line-height:1.6}
+section{padding-block:40px;border-top:1px solid var(--line)}
+section>.wrap>h2{font-family:var(--f-display);font-weight:900;font-size:clamp(24px,4vw,32px);margin:0 0 6px;text-wrap:balance}
+.kicker{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;color:var(--accent);text-transform:uppercase;margin:0 0 6px}
+.sub{color:var(--muted);margin:0 0 26px;max-width:40em}
+.prose{max-width:42em}
+.prose p{margin:0 0 1em}
+.log{display:grid;gap:16px}
+.entry{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:18px 20px;min-width:0}
+.entry header{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px}
+.entry h3{font-family:var(--f-display);font-weight:700;font-size:20px;margin:0;line-height:1.5;text-wrap:balance}
+.entry .no{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.entry p{margin:0 0 .8em;max-width:44em}
+.entry ul{margin:0 0 .8em;padding-left:1.3em;max-width:44em}
+.entry li{margin:0 0 .3em}
+.tag{display:inline-block;font-size:12px;line-height:1;padding:5px 8px;border-radius:3px;background:var(--accent-soft);color:var(--accent);font-weight:700;white-space:nowrap}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.legend{display:flex;gap:8px 18px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:0 0 20px;align-items:center}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}
+.btn{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;font-weight:700;padding:13px 22px;border-radius:4px;font-size:16px}
+:root[data-theme="dark"] .btn{color:#06222a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn{color:#06222a}}
+.btn:hover{filter:brightness(1.08)}
+.note{background:var(--warn-soft);border-left:4px solid var(--warn);padding:12px 16px;font-size:14px;line-height:1.75;margin:18px 0 0;max-width:44em;border-radius:0 4px 4px 0}
+figure{margin:0}
+figcaption{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6}
+.stadium{width:100%;max-width:340px;height:auto;display:block}
+ol.steps{list-style:none;counter-reset:s;margin:0;padding:0;display:grid;gap:14px;max-width:46em}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;align-items:start}
+ol.steps li::before{content:counter(s);font-family:var(--f-mono);font-weight:500;background:var(--accent);color:#fff;border-radius:50%;width:30px;height:30px;display:grid;place-items:center;font-size:14px;margin-top:2px}
+:root[data-theme="dark"] ol.steps li::before{color:#06222a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) ol.steps li::before{color:#06222a}}
+ol.steps b{display:block}
+dl.kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px 18px;margin:0;max-width:44em}
+dl.kv dt{font-weight:700}
+dl.kv dd{margin:0}
+.addr{font-family:var(--f-mono);background:var(--surface);border:1px dashed var(--muted);padding:10px 14px;border-radius:4px;display:inline-block;word-break:break-all}
+.policy h3{font-family:var(--f-display);font-size:18px;margin:26px 0 6px}
+.policy p,.policy li{max-width:44em}
+footer{background:var(--band);color:var(--band-ink);padding-block:30px;font-size:13px;line-height:1.8}
+footer p{margin:0 0 .6em;max-width:56em}
+@media (max-width:760px){
+  .hero,.grid2{grid-template-columns:minmax(0,1fr)}
+  .hero{padding-block:32px 24px}
+  dl.kv{grid-template-columns:minmax(0,1fr)}
+  dl.kv dd{margin-bottom:8px}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<div class="band"><div class="wrap"><b>非公式</b><span>このサイトは、ベイブレードの権利者とは関係のない、個人のファンサイトです。公式・公認のものではありません。</span></div></div>
+
+<header class="top"><div class="wrap">
+  <a class="brand" href="#top" aria-label="ベイろぐ トップ">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="16" cy="16" r="4.5" fill="var(--accent)"/><path d="M16 3v6M16 23v6M3 16h6M23 16h6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+    ベイろぐ</a>
+  <nav class="main" aria-label="サイト内ナビ">
+    <a href="#about">サイトについて</a><a href="#research">研究・攻略</a><a href="#sim">シミュレーター</a><a href="#howto">使い方</a><a href="#disclaimer">非公式について</a><a href="#contact">お問い合わせ</a><a href="#privacy">プライバシー</a>
+  </nav>
+</div></header>
+
+<main id="top">
+<div class="wrap hero">
+  <div>
+    <p class="kicker">Beyblade X Research Notes</p>
+    <h1>ベイブレードXを、数字と動きから調べる研究ノート</h1>
+    <p class="lead">ベイろぐは、ベイブレードXのルール、パーツの選び方、スタジアムでの動きを、自分で試しながらまとめていくサイトです。調べたことを書き留める「ログ」と、動きを試せるシミュレーターを置いています。</p>
+    <p><a class="btn" href="#sim">シミュレーターを見る</a></p>
+  </div>
+  <aside class="pts" aria-label="このサイトで前提にしている得点">
+    <h2>このサイトの前提：得点</h2>
+    <table>
+      <tr><td>エクストリームフィニッシュ</td><td>3pt</td></tr>
+      <tr><td>オーバーフィニッシュ</td><td>2pt</td></tr>
+      <tr><td>バーストフィニッシュ</td><td>2pt</td></tr>
+      <tr><td>スピンフィニッシュ</td><td>1pt</td></tr>
+    </table>
+    <p>4ポイントを先に取るルールで書いています。実際の大会やルールが変わることがあるので、遊ぶときは必ず最新の公式ルールを確認してください。</p>
+  </aside>
+</div>
+
+<section id="about"><div class="wrap">
+  <p class="kicker">About</p>
+  <h2>サイトについて</h2>
+  <div class="prose">
+    <p>ベイろぐは、ベイブレードXが好きな個人が運営しています。「なぜあのパーツの組み合わせは長く回るのか」「どこから打つとダッシュしやすいのか」といった疑問を、調べて、動かして、メモにしています。</p>
+    <p>書いている内容は、公開されている一般的なルールや知識と、自作のシミュレーターで試した結果です。実機の性能を保証するものではありません。公式の説明文や画像、ロゴは使っていません。</p>
+    <p>誤りに気づいたときは、お問い合わせからお知らせください。確認して直します。</p>
+  </div>
+</div></section>
+
+<section id="research"><div class="wrap">
+  <p class="kicker">Research Log</p>
+  <h2>研究・攻略メモ</h2>
+  <p class="sub">メモごとに、情報の確かさを示すタグを付けています。実機の話なのか、このサイトのシミュレーター内の設定なのかを区別して読んでください。</p>
+  <div class="legend" aria-label="タグの説明">
+    <span><span class="tag">ルール</span> 広く知られている得点やルール</span>
+    <span><span class="tag">一般的な傾向</span> よく言われる目安</span>
+    <span><span class="tag warn">シミュレーター内</span> このサイトの設定</span>
+  </div>
+  <div class="log">
+
+    <article class="entry">
+      <header><span class="no">MEMO 01</span><h3>得点から逆算する、勝ち筋の考え方</h3><span class="tag">ルール</span></header>
+      <p>4ポイント先取なので、エクストリームフィニッシュ（3pt）が1回決まると、残りは1ポイントで届きます。逆に、スピンフィニッシュ（1pt）だけで終わらせるには4回必要です。</p>
+      <ul>
+        <li><b>早く決めたい</b>：ダッシュ回数が多い組み合わせで、エクストリームとオーバーを狙う。</li>
+        <li><b>長く回したい</b>：持久に強い組み合わせで、スピンフィニッシュとバーストを待つ。</li>
+        <li><b>迷ったとき</b>：3ポイント以上が一度に入る形を持っているかを、組み合わせの基準にする。</li>
+      </ul>
+    </article>
+
+    <article class="entry">
+      <header><span class="no">MEMO 02</span><h3>タイプは「相性の目安」として使う</h3><span class="tag">一般的な傾向</span></header>
+      <p>ベイは、アタック、ディフェンス、スタミナ、バランスの4つの考え方で分けられます。アタックは強く当てて飛ばす、ディフェンスは当たりに耐える、スタミナは長く回る、バランスはその中間です。</p>
+      <p>アタックは持久型に対して先に決めやすく、持久型は守り型に対して最後まで回り切りやすい、というように、じゃんけんに近い関係が目安になります。ただし、これは傾向であって、パーツや当たり方で簡単にひっくり返ります。</p>
+    </article>
+
+    <article class="entry">
+      <header><span class="no">MEMO 03</span><h3>ビットの選び方：動き方で3つに分けて考える</h3><span class="tag">一般的な傾向</span><span class="tag warn">シミュレーター内</span></header>
+      <p>ビットは、スタジアムの底に触れる先端の部品で、動き方がいちばん変わります。ここでは、動き方で3つに分けて覚えています。</p>
+      <ul>
+        <li><b>丸い軸先（B、FB、Nr）</b>：摩擦が小さく、長く回る。中心の近くを小さな円で回りやすい。</li>
+        <li><b>平らな軸先（R、LR、K、L）</b>：地面をとらえやすく、動き回る。ダッシュや攻撃に向く。シミュレーターでは、円ではなく楕円に近い動きにしている。</li>
+        <li><b>安定型（H）</b>：姿勢が崩れにくく、小さな円で回り続ける。</li>
+      </ul>
+      <p>シミュレーターでは、丸い軸先のビットを中心の円の中に置いて打つと、ぶつかるまで中心の円のまわりで小さな円を描いて回ります。</p>
+    </article>
+
+    <article class="entry">
+      <header><span class="no">MEMO 04</span><h3>エクストリームダッシュを観察する</h3><span class="tag warn">シミュレーター内</span></header>
+      <p>エクストリームラインは、スタジアムの外周にある、ギアがかみ合うラインです。ここに乗ったベイは、勢いをつけて中心へ向かってダッシュします。シミュレーターでは、次のように動かしています。</p>
+      <ul>
+        <li>右回転のベイは、ラインに乗ると反時計回りに走り、上の凹みから中心へ向かって発射される。</li>
+        <li>左回転は、その鏡写し。回る向きとラインを走る向きが合わないと、ギアがかみ合わず、こすれてゆっくりになる。</li>
+        <li>ダッシュの向きは、基本は中心に向かう。回転が強いときは、ときどき広い角度で飛ぶ。</li>
+        <li>ラインの外側へ出るには、段を越える勢いが必要。かみ合う向きより、かみ合わない向きのほうが越えにくい。</li>
+      </ul>
+      <p>実機の動きを観察して近づけているものの、完全な再現ではありません。動画で確かめた結果と違う点があれば、ぜひ教えてください。</p>
+    </article>
+
+    <article class="entry">
+      <header><span class="no">MEMO 05</span><h3>左回転と右回転：当たったときに起こること</h3><span class="tag">一般的な傾向</span><span class="tag warn">シミュレーター内</span></header>
+      <p>回る向きが違うベイどうしが当たると、接触面の動きがそろって、お互いの回転があまり削られなくなる傾向があります。同じ向きどうしでは、表面がこすれ合うので、回転が削られやすくなります。</p>
+      <p>シミュレーターでは、逆回転どうしの当たりは削れを少なくし、さらに、左回転のベイが相手の回転を吸い取る効果を、ブレードとビットの組み合わせで変えています。</p>
+    </article>
+
+    <article class="entry">
+      <header><span class="no">MEMO 06</span><h3>3on3の組み方：重ならない3体で、役割を分ける</h3><span class="tag">ルール</span><span class="tag">一般的な傾向</span></header>
+      <p>3on3では、3体で同じパーツ（ブレード、ラチェット、ビット）を重ねて使えません。出す順番も勝敗に影響します。</p>
+      <ul>
+        <li>1体目は、先に1ポイントを取りに行く攻撃型にする。</li>
+        <li>2体目は、相手のタイプを見て、受けられる守り型かバランス型にする。</li>
+        <li>3体目は、長引いたときに強い持久型にする。</li>
+      </ul>
+      <p>これはあくまで一例です。相手に出す順番が見える場合と見えない場合で、考え方は変わります。</p>
+    </article>
+
+    <article class="entry">
+      <header><span class="no">MEMO 07</span><h3>シミュレーターで思うように決まらないとき</h3><span class="tag warn">シミュレーター内</span></header>
+      <ul>
+        <li><b>水平シュート</b>は、すぐリングへ向かい、エクストリームダッシュを狙いやすい。<b>斜めシュート</b>は、その場で少し回ってから動き出し、飛ばされにくい。</li>
+        <li>相手が持久型なら、早く決めるために攻撃型へ。相手が攻撃型なら、バースト耐性が高いビットを選ぶ。</li>
+        <li>CPUの強さを一段下げて、動き方を観察してから、組み合わせを変えていく。</li>
+      </ul>
+    </article>
+  </div>
+</div></section>
+
+<section id="sim"><div class="wrap">
+  <p class="kicker">Simulator</p>
+  <h2>ベイブレードX シミュレーター</h2>
+  <p class="sub">ブラウザで動かせる、自作の非公式シミュレーターです。インストールは要りません。</p>
+  <div class="grid2">
+    <div class="prose">
+      <p>ブレード、ラチェット、ビットを選んで、スタジアムの中の動きを試せます。パーツの数値と、ぶつかったときの動き、エクストリームダッシュ、段差やすり鉢の傾きなどを、動画の観察をもとに近づけています。</p>
+      <dl class="kv">
+        <dt>モード</dt><dd>シミュレーション（CPU／2人）、トーナメント、プライベートシミュレーション</dd>
+        <dt>形式</dt><dd>1on1、3on3</dd>
+        <dt>シュート</dt><dd>水平／斜め</dd>
+        <dt>得点</dt><dd>4ポイント先取</dd>
+      </dl>
+      <p style="margin-top:20px"><a class="btn" id="sim-link" href="https://claude.ai/artifact/DHMTwg1jDJvCHV9CtrAEdf" target="_blank" rel="noopener">シミュレーターを開く</a></p>
+      <p class="note">リンク先は仮のアドレスです。公開用のアドレスが決まったら、差し替えてください。シミュレーターは非公式のファン制作で、実機の性能を保証するものではありません。</p>
+    </div>
+    <figure>
+      <svg class="stadium" id="stadium-svg" viewBox="0 0 300 300" role="img" aria-labelledby="stadium-cap">
+        <rect x="8" y="8" width="284" height="284" rx="60" fill="none" stroke="var(--line)" stroke-width="3"/>
+        <path id="wall" fill="var(--surface)" stroke="var(--muted)" stroke-width="2"/>
+        <path id="ring" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linejoin="round"/>
+        <circle cx="150" cy="148" r="52" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <g font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--ink)" text-anchor="middle">
+          <rect x="124" y="262" width="52" height="22" fill="var(--accent-soft)" stroke="var(--accent)"/><text x="150" y="277">3pt</text>
+          <rect x="44" y="254" width="44" height="22" fill="var(--warn-soft)" stroke="var(--warn)" transform="rotate(14 66 265)"/><text x="64" y="270" transform="rotate(14 66 265)">2pt</text>
+          <rect x="212" y="254" width="44" height="22" fill="var(--warn-soft)" stroke="var(--warn)" transform="rotate(-14 234 265)"/><text x="236" y="270" transform="rotate(-14 234 265)">2pt</text>
+        </g>
+        <g font-size="10" fill="var(--muted)" text-anchor="middle" font-family="Noto Sans JP, sans-serif">
+          <text x="150" y="34">上の凹み（ダッシュの発射位置）</text>
+          <text x="150" y="152">中心の円</text>
+          <text x="150" y="94" fill="var(--accent)">エクストリームライン</text>
+        </g>
+      </svg>
+      <figcaption id="stadium-cap">シミュレーター内のスタジアムを簡略化した図です。実際のスタジアムの寸法や見た目とは異なります。</figcaption>
+    </figure>
+  </div>
+</div></section>
+
+<section id="howto"><div class="wrap">
+  <p class="kicker">How to use</p>
+  <h2>シミュレーターの使い方</h2>
+  <p class="sub">はじめてでも、上から順に進めれば動かせます。</p>
+  <ol class="steps">
+    <li><div><b>モードを選ぶ</b>トップで「シミュレーション」「トーナメント」「プライベートシミュレーション」のどれかを選びます。シミュレーションでは、相手をCPUか2人から選び、CPUの強さ（やさしい／ふつう／つよい）と、1on1か3on3を決めます。</div></li>
+    <li><div><b>ベイを組む</b>「次へ（カスタマイズ）」で、ブレード、ラチェット、ビットを1つずつ選びます。左のパネルに、攻撃・防御・持久・ダッシュ・バースト耐性の数字が出ます。3on3では、同じパーツを重ねて選べません。</div></li>
+    <li><div><b>シュートを選ぶ</b>「水平」と「斜め」から選びます。水平は、向きを決めず、そのまま回り始めます。斜めは、ドラッグで動き出す向きを決めます。</div></li>
+    <li><div><b>落とす場所を決める</b>自分の側（左半分）をタップして、ベイを落とす場所を決めます。相手の落とす位置は、始めるまで分かりません。</div></li>
+    <li><div><b>スタートする</b>「スタート」を押すと、カウントのあとにシミュレーションが始まります。決まるごとにポイントが入り、4ポイントを先に取った側が先取です。</div></li>
+    <li><div><b>プライベートシミュレーション</b>部屋を作った人が出す4桁の番号を、もう1人が入力すると、2人でつながります。ブラウザどうしが直接つながるので、アカウントは要りません。</div></li>
+  </ol>
+</div></section>
+
+<section id="disclaimer"><div class="wrap">
+  <p class="kicker">Notice</p>
+  <h2>非公式・非公認について</h2>
+  <div class="prose">
+    <p><b>ベイろぐおよびシミュレーターは、非公式・非公認のファンサービスです。</b>ベイブレードの権利者、製造・販売元、およびその関連会社とは、いかなる関係もありません。公式のサイト、サービス、商品ではありません。</p>
+    <p>「ベイブレード」「BEYBLADE」、ブレード・ラチェット・ビットなどの商品名・パーツ名・関連する名称は、それぞれの権利者の商標または登録商標です。当サイトでは、パーツを識別するための名称として使っています。</p>
+    <p>当サイトの文章、図、シミュレーターの絵は、すべて独自に作成したものです。公式の画像、ロゴ、説明文、効果音は使用していません。</p>
+    <p>数値や動きは、公開情報と観察をもとにした推定を含みます。実機の性能や大会のルールとは異なることがあります。遊ぶときや大会に出るときは、公式の情報を必ず確認してください。</p>
+    <p>権利者の方で、掲載内容に問題がある場合は、下のお問い合わせからご連絡ください。内容を確認して、速やかに対応します。</p>
+  </div>
+</div></section>
+
+<section id="contact"><div class="wrap">
+  <p class="kicker">Contact</p>
+  <h2>お問い合わせ</h2>
+  <div class="prose">
+    <p>次のような内容をお受けしています。</p>
+    <ul>
+      <li>記事やシミュレーターの誤りのご指摘</li>
+      <li>不具合のご報告、ご意見やご要望</li>
+      <li>権利者の方からの、掲載内容に関するご連絡</li>
+    </ul>
+    <p>お問い合わせは、次のメールアドレスにお送りください。</p>
+    <p><span class="addr" id="mail">（メールアドレスを設定してください）</span></p>
+    <p style="font-size:14px;color:var(--muted)">返信までに数日かかることがあります。内容によっては、お返事できない場合があります。お名前やメールアドレスなどは、ご返信のためだけに使います。</p>
+  </div>
+</div></section>
+
+<section id="privacy" class="policy"><div class="wrap">
+  <p class="kicker">Privacy Policy</p>
+  <h2>プライバシーポリシー</h2>
+  <div class="prose">
+    <p>ベイろぐ（以下「当サイト」）は、ご利用の方の個人情報の扱いについて、次のとおり定めます。</p>
+    <h3>1. 運営者</h3>
+    <p>当サイトは、個人が運営しています。運営者の情報は、お問い合わせの際にお尋ねください。</p>
+    <h3>2. 取得する情報</h3>
+    <p>当サイトは、会員登録やログインの機能を持たず、ご利用の方の氏名、住所、メールアドレスなどを、こちらから集めることはありません。お問い合わせをいただいた場合に限り、いただいたお名前、メールアドレス、内容を受け取ります。</p>
+    <p>当サイトを置いているサーバー（ホスティングサービス）では、アクセスした日時、IPアドレス、ブラウザの種類などの記録（アクセスログ）が、運営のために自動的に残されることがあります。</p>
+    <p>現在、当サイトでは、アクセス解析のツールや広告は使っていません。今後使うことになった場合は、このページで内容をお知らせします。</p>
+    <h3>3. シミュレーターについて</h3>
+    <ul>
+      <li>シミュレーターは、お使いのブラウザの中で動きます。入力したプレイヤー名や、選んだパーツの内容を、当サイトのサーバーに送ったり、保存したりすることはありません。</li>
+      <li><b>プライベートシミュレーション</b>では、2人のブラウザどうしが直接つながります（WebRTCという仕組みを使います）。つなぐための仲介に、外部の公開サーバー（PeerJSなど）と接続補助のサーバーを使うため、これらのサーバーと、接続した相手のブラウザに、IPアドレスなどの通信に必要な情報が伝わることがあります。知らない人とは部屋番号を共有しないでください。</li>
+    </ul>
+    <h3>4. 情報の利用目的</h3>
+    <p>お問い合わせにいただいた情報は、ご返信と、内容の確認、サイトの改善のためだけに使います。法令にもとづく場合を除き、本人の同意なく、第三者に渡すことはありません。</p>
+    <h3>5. 外部サイトへのリンク</h3>
+    <p>当サイトから、ほかのサイトへのリンクがあります。リンク先での情報の扱いについては、当サイトは責任を負いません。</p>
+    <h3>6. 免責</h3>
+    <p>当サイトの内容は、できるだけ正確にするように努めていますが、正確さや、最新であることを保証するものではありません。ご利用によって生じた損害について、責任を負いません。</p>
+    <h3>7. 改定</h3>
+    <p>このポリシーは、必要に応じて、予告なく見直すことがあります。改定した場合は、このページに掲載します。</p>
+    <p style="color:var(--muted);font-size:14px">制定日：2026年11月11日</p>
+  </div>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  <p><b>ベイろぐ</b>　非公式・非公認のファンサイトです。ベイブレードの権利者、製造・販売元とは関係ありません。</p>
+  <p>「ベイブレード」「BEYBLADE」などの名称は、それぞれの権利者の商標または登録商標です。</p>
+  <p>© 2026 ベイろぐ</p>
+</div></footer>
+
+<script>
+(function(){
+  // スタジアム図：四角い壁と、上に凹みのあるリング（シミュレーターの形を簡略化）
+  var N=4, cx=150, cy=148;
+  function wall(phi,H){return H/Math.pow(Math.pow(Math.abs(Math.sin(phi)),N)+Math.pow(Math.abs(Math.cos(phi)),N),1/N)}
+  function ringR(th){var a=Math.abs(Math.atan2(Math.sin(th+Math.PI/2),Math.cos(th+Math.PI/2)));var R=108,D=30,A1=0.1,A2=0.44;
+    if(a>=A2)return R; if(a<=A1)return R-D; var u=(A2-a)/(A2-A1); return R-D*u*u*(3-2*u)}
+  var w=[],r=[];
+  for(var i=0;i<=180;i++){var th=i/180*Math.PI*2, rr=wall(th,128); w.push((i?'L':'M')+(cx+Math.sin(th)*rr).toFixed(1)+' '+(cy+Math.cos(th)*rr).toFixed(1));
+    var rv=ringR(th-Math.PI/2); r.push((i?'L':'M')+(cx+Math.sin(th)*rv).toFixed(1)+' '+(cy+Math.cos(th)*rv).toFixed(1));}
+  // 凹みは画面の上（y が小さい側）に来るよう、角度を合わせる
+  r=[];for(var j=0;j<=240;j++){var t2=j/240*Math.PI*2; var rv2=ringR(t2); r.push((j?'L':'M')+(cx+Math.cos(t2)*rv2).toFixed(1)+' '+(cy+Math.sin(t2)*rv2).toFixed(1));}
+  document.getElementById('wall').setAttribute('d',w.join('')+'Z');
+  document.getElementById('ring').setAttribute('d',r.join('')+'Z');
+})();
+</script>
+</body>
+</html>
