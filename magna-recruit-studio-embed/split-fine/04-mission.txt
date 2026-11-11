@@ -1,0 +1,170 @@
+<!-- ===== ミントフラッグ 採用LP（PC） ／ STUDIO Embed（分割版）: MISSION ===== -->
+<!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100% -->
+<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) 690px ／ タブレット768〜1280px 1186px ／ スマホ〜430px 1177px 以上 -->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap');
+.mg-root{margin:0;background:#F4F4F4;word-break:auto-phrase;line-break:strict}
+.mg-root h1,.mg-root h2,.mg-root h3{text-wrap:balance}
+.mg-root .nw{display:inline-block}
+.mg-root a{color:#004445}
+.mg-root a:hover{color:#021C1E}
+.mg-root .mf-pill{transition:background-color .2s,color .2s}
+.mg-root .mf-pill:hover{background:#004445;color:#fff}
+.mg-root .mf-pill-w:hover{background:#fff;color:#004445}
+.mg-root .mf-card:hover img{transform:scale(1.04)}
+.mg-root .mf-card img{transition:transform .5s}
+.mg-root .mf-job{transition:background-color .2s}
+.mg-root .mf-job:hover{background:#06302F}
+.mg-root .mf-job-q{transition:background-color .2s}
+.mg-root .mf-job-q:hover{background:#E4F2EA}
+.mg-root .mf-outline{color:transparent;-webkit-text-stroke:1.5px #6FB98F}
+@media (max-width:900px){.mg-root .mf-hide-sp{display:none}
+.mg-root .mf-hero-band{display:none}}
+@media (max-width:640px){.mg-root .br-pc{display:none}}
+
+html,body{margin:0;padding:0}
+.mg-root [data-pos]{display:contents}
+.mg-root img{vertical-align:middle}
+.mg-root{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+
+
+
+</style>
+<div class="mg-root" data-mg="missionB" style="background: #F4F4F4; color: #1C201C; font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', sans-serif; font-weight: 500; overflow-x: hidden;">
+<div data-topspace aria-hidden="true" style="height:76px;background:#F4F4F4"></div>
+<section id="mission" style="padding: clamp(96px, 11vw, 160px) clamp(20px, 5vw, 80px) clamp(72px, 9vw, 140px); background: #F4F4F4;">
+<div style="max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: clamp(36px, 4vw, 56px);">
+<div style="display: flex; flex-wrap: wrap; gap: clamp(32px, 5vw, 80px); align-items: center;">
+<div style="flex: 999 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 24px;">
+<p style="margin: 0; font-family: Poppins, sans-serif; font-weight: 700; font-size: clamp(38px, 4.2vw, 56px); line-height: 1; color: #004445;" data-t="mission_01"></p>
+<h2 style="margin: 0; font-size: clamp(23px, 3.3vw, 44px); font-weight: 900; line-height: 1.5; letter-spacing: 0.05em; color: #1C201C;" data-t="mission_02"></h2>
+</div>
+<div style="flex: 1 1 320px; min-width: 0;">
+<img data-img="mission_img1" src="" style="width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: center 40%; display: block;">
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+<div style="padding: 28px; background: #fff; display: flex; flex-direction: column; gap: 10px;">
+<p style="margin: 0; font-size: 13px; font-weight: 700; color: #004445;" data-t="mission_03"></p>
+<h3 style="margin: 0; font-size: 21px; font-weight: 900;" data-t="mission_04"></h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.9;" data-t="mission_05"></p>
+</div>
+<div style="padding: 28px; background: #fff; display: flex; flex-direction: column; gap: 10px;">
+<p style="margin: 0; font-size: 13px; font-weight: 700; color: #004445;" data-t="mission_06"></p>
+<h3 style="margin: 0; font-size: 21px; font-weight: 900;" data-t="mission_07"></h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.9;" data-t="mission_08"></p>
+</div>
+<div style="padding: 28px; background: #fff; display: flex; flex-direction: column; gap: 10px;">
+<p style="margin: 0; font-size: 13px; font-weight: 700; color: #004445;" data-t="mission_09"></p>
+<h3 style="margin: 0; font-size: 21px; font-weight: 900;" data-t="mission_10"></h3>
+<p style="margin: 0; font-size: 15px; line-height: 1.9;" data-t="mission_11"></p>
+</div>
+</div>
+</div>
+</section>
+
+</div>
+<script>
+/* ================================================================
+   ★ ここだけ編集すればOK ★  文字・画像・リンクの設定エリア（MISSION）
+   ・TEXT      : 画面の文字（キーは「セクション名_番号」）。改行は <br> 、装飾のHTMLもそのまま書けます
+   ・IMAGES    : 画像ファイル名 or URL（https:// から始まるURLならそのURLを使用。ファイル名だけなら ASSET_BASE が前に付きます）
+   ・ALT       : 画像の代替テキスト（IMAGES と同じキー）
+   ・LINKS     : ボタン・メニューのリンク先
+   ・PAGE_URL / ANCHORS : 他のブロックへ移動するときの、STUDIOページのURLと移動先ID
+   ================================================================ */
+var MG_NAME = "missionB";
+var ASSET_BASE = "https://cdn.jsdelivr.net/gh/hirokiyayama/mini4wd-game@claude/affectionate-darwin-300fus/magna-recruit-studio-embed/assets/";   /* ★ 画像を置いたフォルダのURL（末尾は / ） */
+var PAGE_URL = "https://mintflag.com/recruit";   /* ★ 公開したSTUDIOページのURL */
+var ANCHORS = {
+  "mission": "mission",   /* MISSION → STUDIOで「MISSION」を含むブロックに付けるID */
+  "concept": "concept",   /* FUN LEARNING → 「FUN LEARNING」ブロックのID */
+  "workstyle": "workstyle",   /* WORK STYLE → 「WORK STYLE」を含むブロックのID */
+  "voices": "voices",   /* MEMBER → 「MEMBER VOICES」を含むブロックのID */
+  "positions": "positions"   /* 募集職種 → 「OPEN POSITIONS」ブロックのID */
+};
+var EXTERNAL_TARGET = "_top";   /* 外部サイトへのリンクの開き方："_top"=同じタブ / "_blank"=新しいタブ */
+var TOP_SPACE = { pc: 76, tablet: 76, phone: 76 };   /* ★ ヘッダーを固定にしている場合：ブロック先頭の余白(px)＝ヘッダーの高さ。メニューで飛んだとき見出しが隠れないため */
+var FILL_COLOR = "#F4F4F4";   /* ブロックの高さが余ったときの下側の色 */
+var TEXT = {
+  /* ── MISSION (mission) ── */
+  "mission_01": "MISSION",
+  "mission_02": "「自分ならできる」を、<br>育てる社会へ。",
+  "mission_03": "目的",
+  "mission_04": "自己効力感を育む",
+  "mission_05": "「自分ならできる」と期待する力を、子どもたちの中に育てること。",
+  "mission_06": "手段",
+  "mission_07": "Fun Learning",
+  "mission_08": "「楽しい」から始まり、成功体験を積み重ねていく学びのかたち。",
+  "mission_09": "入口",
+  "mission_10": "英語、そしてその先へ",
+  "mission_11": "英語は、「できた！」を実感するための入口のひとつです。",
+};
+var IMAGES = {
+  "mission_img1": "efca5d6a12ea5d7983fddaa7c23cb6b6.jpg"
+};
+var ALT = {
+  "mission_img1": "教室でマグナのキャラクターたちが英語を学ぶイラスト"
+};
+var LINKS = {
+
+};
+/* ============ ↑ 設定エリアここまで（以下は触らなくてOK） ============ */
+
+(function(){
+  var root = document.querySelector('.mg-root[data-mg="'+MG_NAME+'"]'); if(!root) return;
+  function u(p){ return /^(https?:)?\/\//.test(p) || p.charAt(0)==='/' || p.indexOf('data:')===0 ? p : ASSET_BASE + p; }
+  function $all(s){ return Array.prototype.slice.call(root.querySelectorAll(s)); }
+  var framed=false; try{ framed = window.self !== window.top; }catch(e){ framed = true; }
+  if(framed){ try{ document.body.style.margin='0'; document.documentElement.style.webkitTextSizeAdjust='100%'; document.documentElement.style.textSizeAdjust='100%'; if(typeof FILL_COLOR!=='undefined') document.documentElement.style.background = FILL_COLOR; }catch(e){} }
+  /* ---- 文字・画像・リンクの反映 ---- */
+  $all('[data-t]').forEach(function(e){ var k=e.getAttribute('data-t'); if(k in TEXT) e.innerHTML = TEXT[k]; });
+  $all('[data-img]').forEach(function(e){ var k=e.getAttribute('data-img'); if(IMAGES[k]) e.src = u(IMAGES[k]); if(ALT[k]) e.alt = ALT[k]; });
+  /* ---- 募集職種（POSITIONS から自動生成） ---- */
+  var list = (typeof POSITIONS!=='undefined' ? POSITIONS : []);
+  function pad2(n){ return (n<10?'0':'')+n; }
+  function heroHTML(){
+    if(!list.length) return '<a class="mf-job-q" data-link="apply_url" href="#" style="flex: 999 1 560px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px clamp(20px, 2.5vw, 28px); background: #fff; color: #1C201C; text-decoration: none;"><span style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 17px; font-weight: 900; color: #004445;">現在、公開中の募集はありません</span><span style="font-size: 14px; color: #4A524C;">ご興味のある方は、まずはお気軽にご連絡ください。</span></span><span aria-hidden="true" style="flex: none; color: #004445;">↗</span></a>';
+    var max = (typeof HERO_MAX!=='undefined'?HERO_MAX:3), shown = list.length>max ? list.slice(0,max-1) : list, more = list.length - shown.length;
+    var h = '<div style="flex: 999 1 560px; min-width: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1px; background: #E2E2E2;">';
+    shown.forEach(function(p){ h += '<a class="mf-job-q" href="#positions" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px clamp(18px, 2vw, 24px); background: #fff; color: #1C201C; text-decoration: none; min-height: 72px; box-sizing: border-box;"><span style="display: flex; flex-direction: column; gap: 4px; min-width: 0;"><span style="font-size: 18px; font-weight: 900; color: #004445; line-height: 1.4; word-break: keep-all;">'+p.title+'</span><span style="font-size: 13px; font-weight: 700; color: #4A524C; line-height: 1.5;"><span class="nw">'+p.tagA+'</span> ／ <span class="nw">'+p.tagB+'</span></span></span><span aria-hidden="true" style="flex: none; color: #004445;">→</span></a>'; });
+    if(more>0) h += '<a class="mf-job-q" href="#positions" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px clamp(18px, 2vw, 24px); background: #fff; color: #004445; text-decoration: none; font-size: 15px; font-weight: 900; min-height: 72px; box-sizing: border-box;">ほか'+more+'件を見る <span aria-hidden="true">→</span></a>';
+    return h + '</div>';
+  }
+  function listHTML(){
+    if(!list.length) return '<div style="padding: 28px clamp(20px, 2.5vw, 30px); background: #fff; display: flex; flex-direction: column; gap: 8px;"><p style="margin: 0; font-size: 20px; font-weight: 900;">現在、公開中の募集はありません。</p><p style="margin: 0; font-size: 15px; line-height: 1.8; color: #4A524C;">新しい募集はこのページでお知らせします。ご興味のある方は、下のフォームからお気軽にご連絡ください。</p></div>';
+    var h = '<div style="display: flex; flex-direction: column; gap: 20px;">';
+    list.forEach(function(p,i){ h += '<article style="display: flex; flex-wrap: wrap; background: #fff; color: #1C201C; box-shadow: 0 12px 32px rgba(0,68,69,0.10);"><div style="flex: 1 1 300px; min-width: 0; min-height: 220px; position: relative; overflow: hidden;"><img src="'+u(p.img)+'" alt="'+(p.alt||'')+'" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;"><span style="position: absolute; top: 16px; left: 16px; padding: 6px 12px; background: #004445; color: #fff; font-family: Poppins, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.12em;">POSITION '+pad2(i+1)+'</span></div><div style="flex: 999 1 460px; min-width: 0; padding: clamp(24px, 3vw, 40px); display: flex; flex-direction: column; gap: 18px; box-sizing: border-box;"><div style="display: flex; flex-direction: column; gap: 10px;"><h3 style="margin: 0; font-size: clamp(24px, 2.6vw, 34px); font-weight: 900; line-height: 1.35; color: #004445; word-break: keep-all;">'+p.title+'</h3><p style="margin: 0; display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; font-weight: 700; color: #004445;"><span style="padding: 6px 12px; border-radius: 64px; background: #E4F2EA;">'+p.tagA+'</span><span style="padding: 6px 12px; border-radius: 64px; background: #E4F2EA;">'+p.tagB+'</span></p></div><p style="margin: 0; font-size: 16px; line-height: 1.9;">'+p.summary+'</p><div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: auto;"><a class="mf-pill" href="'+p.url+'" style="display: inline-flex; align-items: center; justify-content: space-between; gap: 32px; min-height: 54px; box-sizing: border-box; padding: 0 26px; border-radius: 64px; background: #004445; color: #fff; text-decoration: none; font-size: 16px; font-weight: 900; border: 1px solid #004445;">'+(typeof APPLY_LABEL!=='undefined'?APPLY_LABEL:'この職種に応募する')+' <span aria-hidden="true">↗</span></a><span style="font-size: 13px; color: #4A524C;">'+(typeof APPLY_NOTE!=='undefined'?APPLY_NOTE:'まずはカジュアルな面談から')+'</span></div></div></article>'; });
+    return h + '</div>';
+  }
+  $all('[data-pos="hero"]').forEach(function(e){ e.innerHTML = heroHTML(); });
+  $all('[data-pos="list"]').forEach(function(e){ e.innerHTML = listHTML(); });
+  $all('[data-pos-count]').forEach(function(e){ e.textContent = list.length; });
+  $all('[data-link]').forEach(function(e){ var k=e.getAttribute('data-link'); if(LINKS[k]) e.href = u(LINKS[k]); });
+  /* ---- 他のブロックへのリンク（STUDIOページ内の別Embedへ移動） ---- */
+  var page = PAGE_URL || ''; if(!page){ try{ page = document.referrer || ''; }catch(e){} if(!page){ try{ page = location.ancestorOrigins[0] + '/'; }catch(e){} } }
+  page = page.replace(/#.*$/, '');
+  $all('a[href^="#"]').forEach(function(a){
+    var id = a.getAttribute('href').slice(1); if(!id) return;
+    var t = (ANCHORS && ANCHORS[id]) || id;
+    a.setAttribute('href', page ? page + '#' + t : '#' + t); a.setAttribute('target','_top'); a.setAttribute('rel','noopener');
+  });
+  /* ---- 外部サイトへのリンク（target指定がないものは EXTERNAL_TARGET で開く） ---- */
+  $all('a[href^="http"]').forEach(function(a){
+    if(a.hasAttribute('target')) return;
+    a.setAttribute('target', (typeof EXTERNAL_TARGET!=='undefined' && EXTERNAL_TARGET) || '_top'); a.setAttribute('rel','noopener');
+  });
+  /* ---- ヘッダー固定用の先頭余白（メニューで飛んだとき、固定ヘッダーに見出しが隠れないように） ---- */
+  (function(){
+    var sp = root.querySelector('[data-topspace]'); if(!sp || typeof TOP_SPACE==='undefined') return;
+    var first = sp.nextElementSibling;
+    function apply(){
+      var w = window.innerWidth || 1200, h = (w<=760 ? TOP_SPACE.phone : w<=1000 ? TOP_SPACE.tablet : TOP_SPACE.pc);
+      sp.style.height = h + 'px';
+      if(first){ first.style.removeProperty('padding-top'); var pad = parseFloat(getComputedStyle(first).paddingTop) || 0; first.style.setProperty('padding-top', Math.max(0, pad - h) + 'px', 'important'); }
+    }
+    apply(); window.addEventListener('resize', apply);
+  })();
+})();
+
+</script>

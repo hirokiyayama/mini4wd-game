@@ -1,5 +1,6 @@
 import json, re, sys, os
 B, OUT, BASE = sys.argv[1], sys.argv[2], sys.argv[3]
+MODE = sys.argv[4] if len(sys.argv) > 4 else 'main'
 HJ = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'heights.json')
 HEIGHTS = json.load(open(HJ)) if os.path.exists(HJ) else {}
 os.makedirs(OUT, exist_ok=True)
@@ -41,7 +42,21 @@ SPEC = [  # file, mg, title, parts, anchored(topspace)
  ('alt-05b-workstyle-service', 'workstyleB', 'WORK STYLE〜SERVICE（別ブロックにする場合）', ['workstyle', 'service'], True),
  ('alt-05c-voices', 'voicesC', 'MEMBER VOICES（別ブロックにする場合）', ['voices'], True),
 ]
-for fname, mg, title, parts, anch in SPEC:
+FINE = [  # 見出しごとに正確に移動できる分け方（file, mg, title, parts, anchored, 高さ計測キー）
+ ('01-header', 'header', 'ヘッダーメニュー', ['header'], False, '01-header'),
+ ('02-first-view', 'hero', 'ファーストビュー', ['hero'], True, '02-first-view'),
+ ('03-message', 'messageA', '代表メッセージ', ['message'], True, 'alt-03a-message'),
+ ('04-mission', 'missionB', 'MISSION', ['mission'], True, 'alt-03b-mission'),
+ ('05-fun-learning', 'concept', 'FUN LEARNING', ['concept'], True, '04-fun-learning-to-wanted'),
+ ('06-wanted', 'wantedA', 'WANTED', ['wanted'], True, 'alt-05a-wanted'),
+ ('07-work-style-service', 'workstyleB', 'WORK STYLE〜SERVICE', ['workstyle', 'service'], True, 'alt-05b-workstyle-service'),
+ ('08-member-voices', 'voicesC', 'MEMBER VOICES', ['voices'], True, 'alt-05c-voices'),
+ ('09-open-positions-cta', 'positions', 'OPEN POSITIONS〜CTA', ['positions', 'cta'], True, '06-open-positions-to-footer'),
+ ('10-footer', 'footer', 'フッターメニュー', ['band', 'flinks', 'footer'], False, '07-footer'),
+]
+if MODE == 'fine': SPEC = FINE
+else: SPEC = [x + (x[0],) for x in SPEC]
+for fname, mg, title, parts, anch, hkey in SPEC:
     body = ''.join(part(p) for p in parts)
     first, last = parts[0], parts[-1]
     if anch: body = '<div data-topspace aria-hidden="true" style="height:76px;background:%s"></div>' % BG[first] + body
@@ -80,7 +95,7 @@ var LINKS = %s;
        ('var TOP_SPACE = { pc: 76, tablet: 76, phone: 76 };   /* ★ ヘッダーを固定にしている場合：ブロック先頭の余白(px)＝ヘッダーの高さ。メニューで飛んだとき見出しが隠れないため */\n' if anch else ''),
        'var FILL_COLOR = "%s";   /* ブロックの高さが余ったときの下側の色 */\n' % endc, text_js, obj(IM), obj(AL), obj(LK),
        ('var POSITIONS = [\n' + ',\n'.join('  ' + js(p) for p in POSITIONS) + '\n];   /* ★ 募集職種：title=職種名, tagA/tagB=タグ, url=応募先, img=画像, summary=説明文（HTML可） */\nvar HERO_MAX = 3;   /* ファーストビューの早見に出す最大件数 */\nvar APPLY_LABEL = "この職種に応募する";\nvar APPLY_NOTE = "まずはカジュアルな面談から";\n' if uses_pos else ''))
-    h = HEIGHTS.get(mg) or HEIGHTS.get(fname) or [0, 0, 0]
+    h = HEIGHTS.get(hkey) or HEIGHTS.get(mg) or [0, 0, 0]
     hdr = '<!-- ★高さ（ブレイクポイント別）：PC(1281px以上) %dpx ／ タブレット768〜1280px %dpx ／ スマホ〜430px %dpx 以上 -->\n' % tuple(h) if any(h) else ''
     out = '''<!-- ===== ミントフラッグ 採用LP（PC） ／ STUDIO Embed（分割版）: %s ===== -->
 <!-- STUDIO：このブロックを「Embed」で配置し、コード欄にこのファイルの中身をそのまま貼り付け。幅は100%% -->
