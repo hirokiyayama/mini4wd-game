@@ -2001,12 +2001,6 @@ export function Beyblade() {
           ctx.beginPath(); ctx.ellipse(3, 5, BEY_R, BEY_R * 0.85, 0, 0, Math.PI * 2); ctx.fill();
           drawBey(ctx, t.color, i === 0 ? '#38b6ff' : '#ff3ea5', b.angle, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, null, t.spinDir);
           ctx.restore();
-          if (b.dashFx > 0) {
-            ctx.fillStyle = `rgba(230,110,0,${Math.min(1, b.dashFx * 1.5)})`;
-            ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText('XTREME DASH!', b.x, b.y - 46);
-            ctx.textAlign = 'start';
-          }
         });
       }
       // 落とす場所・向き・シュート方法のプレビュー（スタート時は相手のものも見える）
