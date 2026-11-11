@@ -35,7 +35,9 @@
     var ref = ''; try{ ref = document.referrer || ''; }catch(e){}
     var ru = null; try{ ru = new URL(ref); }catch(e){}
     if(ru && ru.pathname.length > 1){ page = ru.origin + ru.pathname + ru.search; }
-    else { var og = ''; try{ og = location.ancestorOrigins[0] || ''; }catch(e){} if(!og && ru) og = ru.origin; if(og) page = og + (typeof PAGE_PATH!=='undefined' ? PAGE_PATH : '/'); }
+    else { var og = ''; try{ og = location.ancestorOrigins[0] || ''; }catch(e){} if(!og && ru) og = ru.origin;
+      if(og){ var isProd = (typeof PROD_HOST!=='undefined') && og.indexOf(PROD_HOST) > -1;   /* 本番ドメインなら PAGE_PATH、プレビュー等なら PREVIEW_PATH */
+        page = og + (isProd ? (typeof PAGE_PATH!=='undefined' ? PAGE_PATH : '/') : (typeof PREVIEW_PATH!=='undefined' ? PREVIEW_PATH : '/')); } }
   }
   page = page.replace(/#.*$/, '');
   $all('a[href^="#"]').forEach(function(a){

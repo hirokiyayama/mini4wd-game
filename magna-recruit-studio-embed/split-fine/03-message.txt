@@ -64,7 +64,9 @@ html,body{margin:0;padding:0}
 var MG_NAME = "messageA";
 var ASSET_BASE = "https://cdn.jsdelivr.net/gh/hirokiyayama/mini4wd-game@claude/affectionate-darwin-300fus/magna-recruit-studio-embed/assets/";   /* ★ 画像を置いたフォルダのURL（末尾は / ） */
 var PAGE_URL = "";   /* 空欄＝自動（いま表示しているドメイン＋PAGE_PATH。プレビューでも本番でも動きます）。固定したい場合だけ https://… を入力 */
-var PAGE_PATH = "/recruit";   /* ★ STUDIOページのパス（公開URLが https://mintflag.com/recruit なら /recruit） */
+var PROD_HOST = "mintflag.com";   /* 本番サイトのドメイン */
+var PAGE_PATH = "/recruit";   /* 本番ページのパス（公開URLが https://mintflag.com/recruit なら /recruit） */
+var PREVIEW_PATH = "/";   /* ★ プレビュー（本番ドメイン以外）で開いているときのパス。プレビューのアドレス欄が https://〇〇/xxxx なら /xxxx を入力 */
 var ANCHORS = {
   "mission": "mission",   /* MISSION → STUDIOで「MISSION」を含むブロックに付けるID */
   "concept": "concept",   /* FUN LEARNING → 「FUN LEARNING」ブロックのID */
@@ -133,7 +135,9 @@ var LINKS = {
     var ref = ''; try{ ref = document.referrer || ''; }catch(e){}
     var ru = null; try{ ru = new URL(ref); }catch(e){}
     if(ru && ru.pathname.length > 1){ page = ru.origin + ru.pathname + ru.search; }
-    else { var og = ''; try{ og = location.ancestorOrigins[0] || ''; }catch(e){} if(!og && ru) og = ru.origin; if(og) page = og + (typeof PAGE_PATH!=='undefined' ? PAGE_PATH : '/'); }
+    else { var og = ''; try{ og = location.ancestorOrigins[0] || ''; }catch(e){} if(!og && ru) og = ru.origin;
+      if(og){ var isProd = (typeof PROD_HOST!=='undefined') && og.indexOf(PROD_HOST) > -1;   /* 本番ドメインなら PAGE_PATH、プレビュー等なら PREVIEW_PATH */
+        page = og + (isProd ? (typeof PAGE_PATH!=='undefined' ? PAGE_PATH : '/') : (typeof PREVIEW_PATH!=='undefined' ? PREVIEW_PATH : '/')); } }
   }
   page = page.replace(/#.*$/, '');
   $all('a[href^="#"]').forEach(function(a){
