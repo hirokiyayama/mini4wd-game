@@ -1,0 +1,6 @@
+<script type="application/ld+json">
+[
+{"@context":"https://schema.org","@type":"JobPosting","title":"コーチ","description":"<p>Fun Learningで子どもたちの「できた！」を増やすコーチ。フルリモート・副業OK。</p>","datePosted":"2026-10-15","employmentType":["PART_TIME","CONTRACTOR"],"hiringOrganization":{"@type":"Organization","name":"ミントフラッグ株式会社","sameAs":"https://mintflag.com/"},"jobLocationType":"TELECOMMUTE","applicantLocationRequirements":{"@type":"Country","name":"JP"}},
+{"@context":"https://schema.org","@type":"JobPosting","title":"バイリンガルティーチャー","description":"<p>子どもたちに英語の楽しさを届けるバイリンガルティーチャー。英語堪能な方、子ども好きな方を歓迎。</p>","datePosted":"2026-10-15","employmentType":["PART_TIME","CONTRACTOR"],"hiringOrganization":{"@type":"Organization","name":"ミントフラッグ株式会社","sameAs":"https://mintflag.com/"},"jobLocationType":"TELECOMMUTE","applicantLocationRequirements":{"@type":"Country","name":"JP"}},
+{"@context":"https://schema.org","@type":"JobPosting","title":"体験会スタッフ","description":"<p>体験会で子どもと保護者を迎える体験会スタッフ。営業・接客経験者、子ども好きな方を歓迎。</p>","datePosted":"2026-10-15","employmentType":["PART_TIME","CONTRACTOR"],"hiringOrganization":{"@type":"Organization","name":"ミントフラッグ株式会社","sameAs":"https://mintflag.com/"},"jobLocationType":"TELECOMMUTE","applicantLocationRequirements":{"@type":"Country","name":"JP"}}
+]</script>
