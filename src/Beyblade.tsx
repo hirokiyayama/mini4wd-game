@@ -461,7 +461,7 @@ function BracketView({ t, availW, availH }: { t: Tour; availW: number; availH: n
           </g>
         </svg>
         <div style={{ position: 'absolute', left: cx - 80, top: yF + 14, width: 160, textAlign: 'center' }}>
-          <div style={{ fontWeight: 900, fontSize: 12, letterSpacing: 2, color: '#7a5a00' }}>RESULT</div>
+          <div style={{ fontWeight: 900, fontSize: 12, letterSpacing: 2, color: '#7a5a00' }}>WINNER</div>
           <div style={{
             marginTop: 2, height: 32, border: '3px solid #d4a300', background: '#fffbe0', borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontWeight: 900, fontSize: 15, color: t.champion !== null && t.entrants[t.champion].human ? '#1d4ed8' : '#111',
@@ -2572,9 +2572,9 @@ export function Beyblade() {
               </div>
               {phase === 'tchamp' && t.champion !== null ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, minHeight: headH - 8 }}>
-                  <span style={{ fontSize: 13, opacity: 0.85 }}>1位</span>
+                  <span style={{ fontSize: 13, opacity: 0.85 }}>優勝</span>
                   <div style={{ color: '#ffd740', textShadow: '0 2px 10px #000' }}><NameBlock e={t.entrants[t.champion]} nameSize={24} catchSize={11} /></div>
-                  <span style={{ fontSize: 12.5, opacity: 0.75 }}>{t.entrants.some(e => e.human) && (t.entrants[t.champion].human ? 'おめでとう！' : 'プレイヤーは途中で終了しました')}</span>
+                  <span style={{ fontSize: 12.5, opacity: 0.75 }}>{t.entrants.some(e => e.human) && (t.entrants[t.champion].human ? 'おめでとう！' : 'プレイヤーは敗退しました')}</span>
                 </div>
               ) : cur ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, padding: '3px 10px', borderRadius: 10, border: '2px solid #ffd740', background: '#14204f', minHeight: headH - 12 }}>
@@ -2627,7 +2627,7 @@ export function Beyblade() {
                   {phase === 'over' ? (
                     <>
                       <div style={{ fontSize: 36 * cs, fontWeight: 900, color: message.winner === 'me' ? '#5aabff' : '#ef4444' }}>
-                        {vs === '2p' || gameMode === 'tournament' ? `${message.winner === 'me' ? nameMe : nameCpu} の先取！` : message.winner === 'me' ? 'あなたの先取！' : 'CPUの先取！'}
+                        {vs === '2p' || gameMode === 'tournament' ? `${message.winner === 'me' ? nameMe : nameCpu} の勝ち！` : message.winner === 'me' ? 'YOU WIN!' : 'YOU LOSE...'}
                       </div>
                       {online === 'guest' ? <div style={{ fontSize: 14 * cs + 4 }}>ホストの操作を待っています…</div>
                         : gameMode === 'tournament'
