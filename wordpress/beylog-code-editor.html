@@ -4,6 +4,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+JP:wght@400;500;700;900&display=swap">
 <style>
+/* Cocoon: このページだけテーマの見出し・余白・サイドバーを消す */
+body:has(#beylog) #header-container,body:has(#beylog) .header-container,body:has(#beylog) #navi,body:has(#beylog) .navi,body:has(#beylog) .article-header,body:has(#beylog) .entry-title,body:has(#beylog) .eye-catch-wrap,body:has(#beylog) .breadcrumb,body:has(#beylog) #breadcrumb,body:has(#beylog) #sidebar,body:has(#beylog) .sidebar,body:has(#beylog) .article-footer,body:has(#beylog) .sns-share,body:has(#beylog) .sns-follow,body:has(#beylog) .author-info,body:has(#beylog) .post-date,body:has(#beylog) .date-tags,body:has(#beylog) #comment-area,body:has(#beylog) #footer,body:has(#beylog) .footer,body:has(#beylog) .go-to-top,body:has(#beylog) #go-to-top{display:none!important}
+body:has(#beylog) #content,body:has(#beylog) #content-in,body:has(#beylog) .content,body:has(#beylog) .content-in,body:has(#beylog) #main,body:has(#beylog) .main,body:has(#beylog) .article,body:has(#beylog) .entry-content,body:has(#beylog) .wrap{width:100%!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:none!important}
+body:has(#beylog) .entry-content>*{margin-top:0!important;margin-bottom:0!important}
+body:has(#beylog){overflow-x:hidden}
 html{scroll-behavior:smooth}
 .beylog{container-type:inline-size;font-family:"Noto Sans JP",system-ui,sans-serif;font-size:16px;line-height:1.9;color:#1a1c20;background:#fff;-webkit-font-smoothing:antialiased}
 .beylog *{box-sizing:border-box}
