@@ -8,6 +8,7 @@ css = open(B+'/style.css', encoding='utf-8').read()
 part = lambda n: open(os.path.join(B, 'part_%s.html' % n), encoding='utf-8').read()
 FONT = "@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap');"
 extra = '''
+html,body{margin:0;padding:0}
 .mg-root [data-pos]{display:contents}
 .mg-root img{vertical-align:middle}
 .mg-root{-webkit-text-size-adjust:100%;text-size-adjust:100%}

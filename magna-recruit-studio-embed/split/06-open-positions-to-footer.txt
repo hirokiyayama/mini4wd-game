@@ -22,6 +22,7 @@
 .mg-root .mf-hero-band{display:none}}
 @media (max-width:640px){.mg-root .br-pc{display:none}}
 
+html,body{margin:0;padding:0}
 .mg-root [data-pos]{display:contents}
 .mg-root img{vertical-align:middle}
 .mg-root{-webkit-text-size-adjust:100%;text-size-adjust:100%}
