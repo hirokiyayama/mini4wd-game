@@ -184,5 +184,5 @@ npm run dev
 - 画像は base64(WebP) で HTML に埋め込み済み。アップロード・URL差し替え不要
 - テーマの見出し・ナビ・余白は `<style>` 先頭の `body:has(#beylog) ...` で非表示。ページ全体は `.beylog` で100vw幅
 - 注意: `:has(>.wp-block-post-title)` のようにタイトルを含む親グループを隠すルールは禁止（本文ごと消える。過去に白画面になった）
-- 未置換: お問い合わせの `[contact-form-7 id="0000" ...]`
+- お問い合わせ: Contact Form 7 設定済み（`[contact-form-7 id="88c5d6f" ...]`）
 - 変更したら編集 → コミット → `claude/pensive-hopper-obhzvr` にプッシュ → ユーザーが再貼り付け
