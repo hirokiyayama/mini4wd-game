@@ -29,7 +29,14 @@
   $all('[data-pos-count]').forEach(function(e){ e.textContent = list.length; });
   $all('[data-link]').forEach(function(e){ var k=e.getAttribute('data-link'); if(LINKS[k]) e.href = u(LINKS[k]); });
   /* ---- 他のブロックへのリンク（STUDIOページ内の別Embedへ移動） ---- */
-  var page = PAGE_URL || ''; if(!page){ try{ page = document.referrer || ''; }catch(e){} if(!page){ try{ page = location.ancestorOrigins[0] + '/'; }catch(e){} } }
+  /* 移動先のページURL：PAGE_URL が空欄なら、いま表示しているサイトのドメイン（プレビューでも本番でも自動）＋ PAGE_PATH を使う */
+  var page = PAGE_URL || '';
+  if(!page){
+    var ref = ''; try{ ref = document.referrer || ''; }catch(e){}
+    var ru = null; try{ ru = new URL(ref); }catch(e){}
+    if(ru && ru.pathname.length > 1){ page = ru.origin + ru.pathname + ru.search; }
+    else { var og = ''; try{ og = location.ancestorOrigins[0] || ''; }catch(e){} if(!og && ru) og = ru.origin; if(og) page = og + (typeof PAGE_PATH!=='undefined' ? PAGE_PATH : '/'); }
+  }
   page = page.replace(/#.*$/, '');
   $all('a[href^="#"]').forEach(function(a){
     var id = a.getAttribute('href').slice(1); if(!id) return;

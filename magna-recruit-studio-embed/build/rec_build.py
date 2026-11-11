@@ -108,7 +108,8 @@ for fname, mg, title, parts, anch, hkey in SPEC:
    ================================================================ */
 var MG_NAME = "%s";
 var ASSET_BASE = "%s";   /* ★ 画像を置いたフォルダのURL（末尾は / ） */
-var PAGE_URL = "https://mintflag.com/recruit";   /* ★ 公開したSTUDIOページのURL */
+var PAGE_URL = "";   /* 空欄＝自動（いま表示しているドメイン＋PAGE_PATH。プレビューでも本番でも動きます）。固定したい場合だけ https://… を入力 */
+var PAGE_PATH = "/recruit";   /* ★ STUDIOページのパス（公開URLが https://mintflag.com/recruit なら /recruit） */
 var ANCHORS = %s;
 var EXTERNAL_TARGET = "_top";   /* 外部サイトへのリンクの開き方："_top"=同じタブ / "_blank"=新しいタブ */
 %s%svar TEXT = %s;
