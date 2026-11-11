@@ -1,15 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import wizardImg from './assets/beys/wizard.png';
-import sharkImg from './assets/beys/shark.png';
-import aeroImg from './assets/beys/aero.png';
-import meteorImg from './assets/beys/meteor.png';
-import cobaltImg from './assets/beys/cobalt.png';
-import gloryImg from './assets/beys/glory.png';
-import knight2Img from './assets/beys/knight2.png';
 import { createRoom, joinRoom, randomCode } from './online';
 import type { Link, Msg } from './online';
-import launcherRedImg from './assets/launcher_red.png';
-import launcherBlackImg from './assets/launcher_black.png';
 
 // ベイブレードX風バトル（4ポイント先取）
 // スタジアムは参考動画（真上視点）に合わせる：八角形の枠 + 円形のすり鉢 + オレンジのXライン(円形リング)
@@ -71,68 +62,48 @@ interface PartDef {
   dashLimit?: [number, number]; // 1ラウンドでXダッシュできる回数の上限（最小〜最大からランダム）。Eビットは2〜3回
 }
 const BLADES: PartDef[] = [
-  { id: 'meteor', name: 'メテオドラグーン', desc: '大型ラバー軸が搭載された3枚刃で、強烈な一撃を繰り出す。メタルが塗装され性能がアップしている。', s: { atk: 75, def: 15, sta: 35 }, weight: 39.0, color: '#c4b5fd', blades: 3, img: meteorImg, spinDir: -1, absorb: 0.45, burstMod: 1.5 },
-  { id: 'cobalt', name: 'コバルトドラグーン', desc: '先端が分厚い4枚のアッパー刃による高い弾き性能を持った左回転ブレード。', s: { atk: 60, def: 15, sta: 25 }, weight: 37.9, color: '#3b82f6', blades: 4, img: cobaltImg, spinDir: -1, absorb: 1.0, burstMod: 1.0 },
-  { id: 'wizard', name: 'ウィザードロッド', desc: '外重心かつ径の大きい5枚刃形状で、遠心力を生み出すことに特化した設計。', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5, img: wizardImg },
-  { id: 'aero', name: 'エアロペガサス', desc: '大型の3枚刃が高い打撃力を生む設計。メタルが二重に塗装され性能がアップしている。', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3, img: aeroImg },
-  { id: 'shark', name: 'シャークスケイル', desc: '打撃部位を複数備えた大型2枚刃で、低い位置からの強烈なアッパー攻撃に特化した設計。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2, img: sharkImg },
-  { id: 'glory', comeback: 2.2, name: 'グローリーワルキューレ', desc: 'ラチェット一体型のブレード。スプリング内蔵の可動刃が攻撃時にバウンドし、反発力による強烈な弾き性能に特化。メタルが塗装され性能がアップしている。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, img: gloryImg, integrated: true, kick: 1.25, burstFloor: 80, burstTough: 2.3 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
-  { id: 'knight2', name: 'ナイトシールドV2', desc: '6枚の防御刃で衝撃を吸収しやすいダンパー構造を採用。', s: { atk: 22, def: 60, sta: 28 }, hid: { sta: 55 }, weight: 36.5, color: '#4ade80', blades: 6, img: knight2Img },
+  { id: 'meteor', name: 'メテオドラグーン', desc: '3枚の刃で一撃が重いアタッカー。当たると大きく弾く。', s: { atk: 75, def: 15, sta: 35 }, weight: 39.0, color: '#c4b5fd', blades: 3, spinDir: -1, absorb: 0.45, burstMod: 1.5 },
+  { id: 'cobalt', name: 'コバルトドラグーン', desc: '4枚の刃で弾き力が高い、左回転のブレード。右回転の相手の回転を吸いやすい。', s: { atk: 60, def: 15, sta: 25 }, weight: 37.9, color: '#3b82f6', blades: 4, spinDir: -1, absorb: 1.0, burstMod: 1.0 },
+  { id: 'wizard', name: 'ウィザードロッド', desc: '外側が重く、丸い輪郭で長く回るスタミナ型。', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5 },
+  { id: 'aero', name: 'エアロペガサス', desc: '大きな3枚刃で打撃力が高いアタッカー。', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3 },
+  { id: 'shark', name: 'シャークスケイル', desc: 'とがった2枚刃で、低い位置から強く打ち込む。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2 },
+  { id: 'glory', comeback: 2.2, name: 'グローリーワルキューレ', desc: 'ラチェットと一体になったブレード。当たった相手を強く弾き、バーストしにくい。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, integrated: true, kick: 1.25, burstFloor: 80, burstTough: 2.3 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
+  { id: 'knight2', name: 'ナイトシールドV2', desc: '6枚の刃で衝撃をやわらげる、守りのブレード。', s: { atk: 22, def: 60, sta: 28 }, hid: { sta: 55 }, weight: 36.5, color: '#4ade80', blades: 6 },
 ];
 const RATCHETS: PartDef[] = [
-  { id: 'r160', comeback: 2.2, name: '1-60', desc: 'ベイを低めにセットするパーツ。攻撃性能に特化した1枚刃を採用。', s: { atk: 17, def: 9, sta: 4 }, height: 60, weight: 6.0 },
-  { id: 'r170', comeback: 2, name: '1-70', desc: 'ベイの高さを中位にセットするパーツ。攻撃性能に特化した1枚刃を採用。', s: { atk: 17, def: 6, sta: 7 }, height: 70, weight: 6.1 },
-  { id: 'r360', name: '3-60', desc: 'ベイを低めにセットするパーツ。弾き性能の高い3枚刃を採用。', s: { atk: 15, def: 9, sta: 6 }, height: 60, weight: 6.3 },
-  { id: 'r560', name: '5-60', desc: 'ベイを低くにセットするパーツ。分厚く遠心力に優れた5枚刃を採用。', s: { atk: 10, def: 9, sta: 11 }, height: 60, weight: 6.6 },
-  { id: 'r760', name: '7-60', desc: 'ベイを低めにセットするパーツ。分厚く防御性能に優れた連打7枚刃を採用。', s: { atk: 8, def: 14, sta: 8 }, height: 60, weight: 7.2 },
-  { id: 'r960', name: '9-60', desc: 'ベイを低めにセットするパーツ。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 7 }, hid: { sta: 12, atk: 8 }, height: 60, weight: 6.1 },
-  { id: 'r965', name: '9-65', desc: 'ベイを低めにセットするパーツ。ビットのバースト耐性を一定にする構造によりブレが少ない、シンプルタイプのラチェット。連打に優れた9枚刃を採用。', s: { atk: 13, def: 10, sta: 7 }, height: 65, weight: 4.3, burstFloor: 50 },
+  { id: 'r160', comeback: 2.2, name: '1-60', desc: '低めに構えるラチェット。攻撃力が高い。', s: { atk: 17, def: 9, sta: 4 }, height: 60, weight: 6.0 },
+  { id: 'r170', comeback: 2, name: '1-70', desc: '中くらいの高さのラチェット。攻撃力が高い。', s: { atk: 17, def: 6, sta: 7 }, height: 70, weight: 6.1 },
+  { id: 'r360', name: '3-60', desc: '低めに構えるラチェット。弾き力が高い。', s: { atk: 15, def: 9, sta: 6 }, height: 60, weight: 6.3 },
+  { id: 'r560', name: '5-60', desc: '低く構えるラチェット。遠心力に強く、バランスがよい。', s: { atk: 10, def: 9, sta: 11 }, height: 60, weight: 6.6 },
+  { id: 'r760', name: '7-60', desc: '低めに構えるラチェット。守りが固く、連続して当てやすい。', s: { atk: 8, def: 14, sta: 8 }, height: 60, weight: 7.2 },
+  { id: 'r960', name: '9-60', desc: '低めに構えるラチェット。連続して当てやすい。', s: { atk: 13, def: 10, sta: 7 }, hid: { sta: 12, atk: 8 }, height: 60, weight: 6.1 },
+  { id: 'r965', name: '9-65', desc: '低めに構えるラチェット。バースト耐性が安定し、ぶれが少ない。', s: { atk: 13, def: 10, sta: 7 }, height: 65, weight: 4.3, burstFloor: 50 },
 ];
 const BITS: PartDef[] = [
-  { id: 'E', name: 'E', desc: '大型のガイドが付いた設計で姿勢をキープしやすく、Xダッシュ時に軸先が浮き上がりスマッシュ攻撃が可能。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, weight: 3.1, smash: 1.35, absorbBit: 1, dashLimit: [2, 3] },
-  { id: 'B', name: 'B', desc: '球状の軸先による、程よい動きで攻撃をかわし高い持久力を実現。', s: { atk: 15, def: 25, sta: 50, dash: 10, burst: 30 }, weight: 2.1 },
-  { id: 'FB', name: 'FB', desc: 'ラチェットに対してフリー回転するビット。細めで球状の軸先により回転のロスを減らす設計。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
-  { id: 'R', name: 'R', desc: '10枚歯ギヤでXダッシュの速度を抑える分、ダッシュ回数を増やす設計。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
-  { id: 'LR', name: 'LR', desc: 'Rビットより1mm低く設計され、アッパー攻撃を得意とする。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, mobility: 1.8 },
-  { id: 'H', name: 'H', desc: '軸先側の6つの平面形状がベイの傾きを抑制し、常に安定した体勢を保持し続ける設計。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
-  { id: 'L', name: 'L', desc: '3段階の高さを持つ軸先により、低速・中速・高速の3パターンの攻撃速度を実現。', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
-  { id: 'Nr', name: 'Nr', desc: '細い球状の軸先で長く回り、10枚刃ギヤでXダッシュ時の速度を抑えスタミナロスを軽減する設計。', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
-  { id: 'K', name: 'K', desc: '角ばった軸先側面でスタジアム内を蹴り、連続攻撃やカウンター防御に繋がる動きを実現。', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, weight: 2.1 },
+  { id: 'E', name: 'E', desc: '姿勢が安定しやすく、ダッシュ中の打撃が強い。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, weight: 3.1, smash: 1.35, absorbBit: 1, dashLimit: [2, 3] },
+  { id: 'B', name: 'B', desc: '丸い軸先で動きがやわらかく、長く回る。', s: { atk: 15, def: 25, sta: 50, dash: 10, burst: 30 }, weight: 2.1 },
+  { id: 'FB', name: 'FB', desc: '空回りする軸先で、回転のロスが少ない。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
+  { id: 'R', name: 'R', desc: 'ダッシュは控えめだが、回数が多い。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
+  { id: 'LR', name: 'LR', desc: 'Rより低めで、下から打ち上げるのが得意。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, mobility: 1.8 },
+  { id: 'H', name: 'H', desc: '姿勢が安定して小さな円を描いて回り続ける。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
+  { id: 'L', name: 'L', desc: '速さを3段階に切り替えて攻める。', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
+  { id: 'Nr', name: 'Nr', desc: '細い軸先で長く回り、ダッシュによるスタミナの消耗が少ない。', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
+  { id: 'K', name: 'K', desc: '角のある軸先でスタジアムを蹴って動き回る。', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, weight: 2.1 },
 ];
 
 // ブレードの写真（背景を抜いた画像）。戦闘中・プレビューでこの画像を回して描く
-const LAUNCHERS = { red: new Image(), black: new Image() }; // 相手の落とす位置を隠しているときのヒント
-LAUNCHERS.red.src = launcherRedImg; LAUNCHERS.black.src = launcherBlackImg;
-const SPRITES: Record<string, HTMLImageElement> = {};
-
 // ---- ブレードの形：写真の輪郭から、角度ごとの半径を作る（丸くない・凹凸がある）。当たる場所によって、弾く向き・飛ぶ量が変わり、形がいびつなほど動きが不規則になる
 const SHAPE_N = 72;
-const SHAPES: Record<string, { r: Float32Array; mean: number; nr: number; mx: number; cx: number; cy: number; ecc: number }> = {};
-function computeShape(id: string, im: HTMLImageElement) {
-  const S = im.naturalWidth || 256;
-  const cv = document.createElement('canvas'); cv.width = cv.height = S;
-  const c2 = cv.getContext('2d'); if (!c2) return;
-  c2.drawImage(im, 0, 0, S, S);
-  const data = c2.getImageData(0, 0, S, S).data;
-  const r = new Float32Array(SHAPE_N), c0 = S / 2;
-  let sx0 = 0, sy0 = 0, cnt0 = 0; // 重さの中心（写真の形の重心）：回転の軸（画像の真ん中）からのずれ
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-    if (data[(y * S + x) * 4 + 3] < 128) continue;
-    sx0 += x + 0.5 - c0; sy0 += y + 0.5 - c0; cnt0++;
-    const dx = x + 0.5 - c0, dy = y + 0.5 - c0, rr = Math.hypot(dx, dy);
-    const k = Math.floor(((Math.atan2(dy, dx) + Math.PI) / (2 * Math.PI)) * SHAPE_N) % SHAPE_N;
-    if (rr > r[k]) r[k] = rr;
-  }
-  // 抜けを埋めて、なめらかにする
-  for (let k = 0; k < SHAPE_N; k++) if (r[k] === 0) r[k] = (r[(k + SHAPE_N - 1) % SHAPE_N] + r[(k + 1) % SHAPE_N]) / 2 || 1;
-  const sm = new Float32Array(SHAPE_N), sc = (BEY_R * 2.15) / S;
-  for (let k = 0; k < SHAPE_N; k++) sm[k] = ((r[(k + SHAPE_N - 1) % SHAPE_N] + 2 * r[k] + r[(k + 1) % SHAPE_N]) / 4) * sc;
-  let mean = 0; for (const v of sm) mean += v; mean /= SHAPE_N;
-  let sd = 0; for (const v of sm) sd += (v - mean) ** 2; sd = Math.sqrt(sd / SHAPE_N) / mean;
-  const cmx = (sx0 / (cnt0 || 1)) * sc, cmy = (sy0 / (cnt0 || 1)) * sc;
-  SHAPES[id] = { r: sm, mean, mx: Math.max(...sm), cx: cmx, cy: cmy, ecc: Math.hypot(cmx, cmy) / mean, nr: Math.max(0, Math.min(1, (sd - 0.015) / 0.035)) }; // nr：0＝まん丸 … 1＝いびつ
-  (window as unknown as { __shapes?: typeof SHAPES }).__shapes = SHAPES; // 動作確認用
-}
+// 当たり判定用の外形（角度ごとの半径）と重さの中心。見た目は円形のコマだが、当たり方はブレードごとの形で決まる
+const SHAPES: Record<string, { r: Float32Array; mean: number; nr: number; mx: number; cx: number; cy: number; ecc: number }> = {
+  meteor: { r: Float32Array.from([32.5,32.23,31.95,31.69,31.7,31.96,32.22,32.41,32.45,32.35,32.34,32.61,32.91,32.95,32.79,32.8,33.05,33.23,32.32,30.63,30.03,29.41,27.73,27.71,29.66,30.9,31.19,31.48,31.82,32.11,32.19,32.25,32.58,33.02,33.35,33.71,34.08,34.29,34.22,34.15,34.41,34.62,33.66,31.87,31,30.22,29.28,30.11,31.65,32.39,32.7,32.88,32.97,32.99,32.87,32.79,33,33.09,33.08,33.37,33.59,33.38,32.94,32.61,32.91,33.97,34.89,35.09,35.05,34.77,33.9,32.98]), mean: 32.472, nr: 0.899, mx: 35.09, cx: -0.452, cy: 0.645, ecc: 0.0243 },
+  cobalt: { r: Float32Array.from([33.47,33.45,32.21,30.07,29.36,30.2,31.07,31.2,30.87,30.46,29.95,29.98,30.74,31.6,32.24,32.69,33.15,33.59,33.84,32.85,30.67,29.76,30.57,31.52,31.75,31.37,30.96,30.45,30.02,30.37,31.19,31.85,32.34,32.72,33.02,33.27,33.44,32.32,30.05,29.22,30.03,30.94,31.21,30.97,30.91,30.66,30.17,30.28,30.92,31.68,32.4,32.95,33.37,33.74,34.06,32.85,30.18,28.95,29.44,30.4,31.1,30.99,30.63,30.31,29.9,29.99,30.68,31.46,32.06,32.45,32.8,33.19]), mean: 31.409, nr: 0.761, mx: 34.06, cx: 0.013, cy: -0.101, ecc: 0.0033 },
+  wizard: { r: Float32Array.from([33.21,33.27,33.31,33.34,33.07,32.4,31.94,32.41,33.44,34,34.08,34.15,34.13,33.97,33.89,33.85,33.89,33.91,33.65,33.02,32.45,32.78,33.85,34.49,34.52,34.34,34.15,34.02,33.95,33.97,34,33.93,33.7,33.15,32.45,32.32,33,33.71,33.9,33.87,33.85,33.78,33.63,33.49,33.34,33.27,33.2,32.81,32.16,31.78,32.22,33.08,33.53,33.69,33.78,33.78,33.86,34,33.97,33.85,33.76,33.48,32.76,31.83,31.51,32.15,33.06,33.43,33.38,33.35,33.29,33.19]), mean: 33.385, nr: 0.159, mx: 34.52, cx: 0.229, cy: -0.274, ecc: 0.0107 },
+  aero: { r: Float32Array.from([32.77,32.85,32.88,32.87,32.89,32.92,32.93,32.88,32.8,32.68,32.43,31.97,31.22,30.23,30.37,32.24,33.62,33.94,34.11,34.18,34.16,34.09,33.93,33.85,33.93,34.04,34.09,34.12,34.16,34.2,34.19,34.12,33.98,33.76,33.29,32.44,31.31,30.14,30.52,32.77,34.16,34.3,34.34,34.28,34.15,33.99,33.82,33.72,33.7,33.66,33.57,33.49,33.47,33.44,33.32,33.19,33.04,32.78,32.35,31.62,30.52,29.16,29.36,31.73,33.5,34.1,34.46,34.53,34.37,33.99,33.4,32.89]), mean: 33.087, nr: 0.665, mx: 34.53, cx: 0.476, cy: -0.084, ecc: 0.0146 },
+  shark: { r: Float32Array.from([32.54,32.68,32.57,31.99,31.77,32.26,32.49,32.51,32.86,33.16,32.93,32.28,31.66,31.18,30.69,30.21,29.84,29.52,29.84,31.55,33.75,34.9,35.15,35.36,35.21,34.52,33.81,33.33,33.11,32.87,32.38,32.17,32.46,32.57,32.4,32.27,32.38,32.7,32.64,32.07,31.92,32.36,32.65,32.83,33.24,33.59,33.46,32.99,32.52,32.07,31.57,31.08,30.68,30.43,30.93,32.57,34.18,34.65,34.62,34.78,34.63,34.01,33.4,33.04,32.89,32.63,32.12,31.99,32.49,32.78,32.62,32.49]), mean: 32.622, nr: 0.679, mx: 35.36, cx: 0.127, cy: 0.223, ecc: 0.0079 },
+  glory: { r: Float32Array.from([33.18,33.89,34.24,34.32,34.15,33.63,32.79,31.88,31.15,30.69,30.68,31.24,31.96,32.46,32.75,32.75,32.83,33.41,33.8,33.81,33.81,33.98,34.49,35.27,36.17,36.88,37.16,37.19,36.94,36.25,35.25,34.22,33.33,32.64,32.48,33.01,33.5,33.59,33.41,33.28,33.52,33.68,33.42,33.05,32.95,33.23,33.76,34.36,34.82,34.99,34.88,34.51,33.82,32.71,31.51,30.62,29.95,29.39,29.28,29.78,30.35,30.58,30.54,30.29,30.31,30.91,31.26,31.12,31.02,31.16,31.55,32.26]), mean: 32.972, nr: 1, mx: 37.19, cx: 1.488, cy: -1.047, ecc: 0.0552 },
+  knight2: { r: Float32Array.from([33.12,32.88,33.14,33.4,33.38,33.43,33.43,33.3,33.25,33.22,33.01,32.88,33.14,33.47,33.64,33.81,33.8,33.67,33.59,33.7,34.1,34.32,34.18,33.95,33.65,33.46,33.62,33.92,34.1,34.18,34.15,34.09,34.06,33.74,33.37,33.47,33.91,34.35,34.58,34.46,34.31,34.49,34.62,34.67,34.78,34.59,34.19,33.74,33.36,33.34,33.58,33.69,33.69,33.86,34.04,34.1,33.95,33.49,33.12,33.32,33.82,34.18,34.41,34.28,33.96,33.98,34.02,34.06,34.24,34.19,33.92,33.58]), mean: 33.812, nr: 0, mx: 34.78, cx: 0.298, cy: 0.161, ecc: 0.01 }
+};
 const nrOf = (id: string) => SHAPES[id]?.nr ?? 0.5;
 // 変重心：ブレードの重い側が、いま向いている方向（-1〜1。相手の側に重い側が向いているほどプラス）
 function heavySide(id: string, angle: number, nx: number, ny: number) {
@@ -168,15 +139,6 @@ function polyContact(ida: string, xa: number, ya: number, aa: number, idb: strin
   test(idb, xb, yb, ab, ida, xa, ya, aa, 1);  // bの点がaの中へ：aの外向き法線（a→b向き）
   return pen > 0 ? { nx, ny, pen, cx: qx, cy: qy } : null;
 }
-for (const bl of BLADES) {
-  if (!bl.img) continue;
-  const im = new Image();
-  im.onload = () => computeShape(bl.id, im);
-  im.src = bl.img;
-  if (im.complete && im.naturalWidth) computeShape(bl.id, im);
-  SPRITES[bl.id] = im;
-}
-
 interface Custom { blade: string; ratchet: string; bit: string }
 // バランス確認用：?me=blade,ratchet,bit &cpu=blade,ratchet,bit &speed=倍速（通常は使わない）
 const urlParams = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
@@ -255,7 +217,7 @@ function buildBey(c: Custom) {
   const ef = calcStats(c, true).st; // バトルの計算用（隠れ性能を含む）。画面には st を出す
   return {
     name: bl.integrated ? `${bl.name} ${c.bit}` : `${bl.name} ${pick(RATCHETS, c.ratchet).name} ${c.bit}`,
-    color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, sprite: SPRITES[bl.id] ?? null,
+    color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3,
     stats: st, weight, height,
     atk: norm(ef.atk, 90, 1.0), // 与ダメージ・弾き飛ばす力
     def: norm(ef.def, 55, 0.45), // 被スピンダメージの軽減
@@ -608,8 +570,8 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
 }
 
 // 高速回転のベイは止まって見えるほど速く回っているので、残像（ブラー）で描く。回転が落ちると羽根がはっきり見えてくる
-function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, angle: number, ratio: number, cap: string, nBlades = 3, sprite: HTMLImageElement | null = null, dir: 1 | -1 = 1, showRing = true) {
-  const useSprite = !!sprite && sprite.complete && sprite.naturalWidth > 0;
+function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, angle: number, ratio: number, cap: string, nBlades = 3, _unused: unknown = null, dir: 1 | -1 = 1, showRing = true) {
+  // 見た目は、単純な円形のコマ（当たり判定はブレードごとの形のまま）
   // 回転が落ちてくるとふらつく
   if (ratio > 0.001 && ratio < 0.3) {
     const t = performance.now(), A = (0.3 - ratio) * 14;
@@ -619,38 +581,27 @@ function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, ang
     ctx.strokeStyle = ring; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.arc(0, 0, BEY_R + 4, 0, Math.PI * 2); ctx.stroke();
   }
-  const blades = () => {
-    if (useSprite) { const sz = BEY_R * 2.15; ctx.drawImage(sprite!, -sz / 2, -sz / 2, sz, sz); return; }
-    const hw = 30 / nBlades; // 羽根が多いほど細い
-    for (let k = 0; k < nBlades; k++) {
-      ctx.rotate((Math.PI * 2) / nBlades);
-      ctx.beginPath();
-      ctx.moveTo(0, 0); ctx.lineTo(BEY_R, -hw * 0.9); ctx.lineTo(BEY_R + 3, hw * 1.1); ctx.closePath();
-      ctx.fill();
-    }
-  };
-  ctx.save();
-  ctx.fillStyle = color;
-  ctx.globalAlpha *= 0.4;
-  if (!useSprite) { ctx.beginPath(); ctx.arc(0, 0, BEY_R * 0.95, 0, Math.PI * 2); ctx.fill(); } // ぼやけた円盤
-  ctx.restore();
-  const sweep = 2.4 * Math.pow(ratio, 1.5); // 回転が速いほど残像が長い。落ちてくると羽根がはっきり見える
-  ctx.save();
-  ctx.rotate(angle);
-  ctx.fillStyle = color;
   const baseAlpha = ctx.globalAlpha;
-  for (let k = 0; k < 8 && sweep > 0.05; k++) {
-    ctx.save(); ctx.rotate(-dir * (k / 8) * sweep); ctx.globalAlpha = baseAlpha * (0.38 - k * 0.04); blades(); ctx.restore();
-  }
-  ctx.globalAlpha = baseAlpha * (0.5 + 0.45 * (1 - Math.min(1, ratio / 0.5)));
-  blades();
+  // 円盤
+  ctx.save();
+  ctx.fillStyle = '#161d38'; ctx.beginPath(); ctx.arc(0, 0, BEY_R, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0, 0, BEY_R - 2.5, 0, Math.PI * 2); ctx.stroke();
   ctx.restore();
-  if (useSprite) return; // 写真には中心のエンブレムも入っている
-  ctx.fillStyle = '#10183a';
-  ctx.beginPath(); ctx.arc(0, 0, BEY_R * 0.62, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.stroke();
-  ctx.fillStyle = cap;
-  ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
+  // 回転が分かる目印（羽根の数だけ並べた短い線）。速いほど残像が伸びる
+  const sweep = 2.4 * Math.pow(ratio, 1.5);
+  const marks = (a: number) => {
+    ctx.save(); ctx.rotate(a); ctx.fillStyle = color;
+    for (let k = 0; k < nBlades; k++) { ctx.rotate((Math.PI * 2) / nBlades); ctx.beginPath(); ctx.roundRect(BEY_R * 0.4, -3, BEY_R * 0.42, 6, 3); ctx.fill(); }
+    ctx.restore();
+  };
+  for (let k = 1; k < 8 && sweep > 0.05; k++) { ctx.globalAlpha = baseAlpha * (0.34 - k * 0.04); marks(angle - dir * (k / 8) * sweep); }
+  ctx.globalAlpha = baseAlpha * (0.55 + 0.4 * (1 - Math.min(1, ratio / 0.5)));
+  marks(angle);
+  ctx.globalAlpha = baseAlpha;
+  // 中心
+  ctx.fillStyle = '#10183a'; ctx.beginPath(); ctx.arc(0, 0, BEY_R * 0.34, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.fillStyle = cap; ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
 }
 
 function drawStadium(ctx: CanvasRenderingContext2D) {
@@ -734,7 +685,6 @@ function drawStadium(ctx: CanvasRenderingContext2D) {
   ctx.setLineDash([2, 5]); ringPath(8); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(60,140,20,0.7)'; ctx.stroke(); ctx.setLineDash([]); // ぎざぎざ
   // 台座の文字
   ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(95,105,125,0.6)';
-  ctx.fillText('BEYBLADE X', 0, -H - 24);
   ctx.textAlign = 'start';
 }
 
@@ -851,7 +801,7 @@ export function Beyblade() {
   selfReadyRef.current = selfReady;
   const placeSentRef = useRef(0);
   const tickRef = useRef(0);
-  const onlineLabelRef = useRef('オンライン');
+  const onlineLabelRef = useRef('プライベート対戦');
   const ghostDispRef = useRef<{ x: number; y: number } | null>(null); // 相手のランチャーの表示位置（なめらかに動かす）
   const readyRef = useRef({ host: false, guest: false });
   const snapsRef = useRef<{ t: number; b: number[][] }[]>([]);
@@ -1493,12 +1443,10 @@ export function Beyblade() {
     const draw = () => {
       ctx.clearRect(0, 0, 170, 170);
       ctx.save(); ctx.translate(85, 85); ctx.scale(2.2, 2.2);
-      drawBey(ctx, bey.color, '#5aabff', 0, 0, '#fff', bey.blades, bey.sprite, bey.spinDir, false);
+      drawBey(ctx, bey.color, '#5aabff', 0, 0, '#fff', bey.blades, null, bey.spinDir, false);
       ctx.restore();
     };
     draw();
-    bey.sprite?.addEventListener('load', draw); // 画像の読み込みが終わったら描き直す
-    return () => bey.sprite?.removeEventListener('load', draw);
   }, [inSelect, custom]);
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1964,7 +1912,19 @@ export function Beyblade() {
         if (bey.outT > 0) continue;
         if (bey.retPlan && bey.spin > 0) {
           // 回転が残っていた：スタジアムに戻ってくる（持久はだいぶ減る）
-          const th = Math.atan2(bey.x, bey.y), rr = wallAt(th, R - BEY_R * 1.3);
+          let th = Math.atan2(bey.x, bey.y), rr = wallAt(th, R - BEY_R * 1.3);
+          { // 戻ってくる場所：相手のベイと重ならない所を選ぶ（壁に沿って少しずらす・内側へ寄せる）
+            const oth = beys[1 - i], need = 2 * BEY_R * 1.25 + 14, th0 = th;
+            let best = { th, rr, c: oth.outT > 0 ? 1e9 : Math.hypot(Math.sin(th) * rr - oth.x, Math.cos(th) * rr - oth.y) };
+            if (best.c < need) {
+              outer: for (const inset of [0, 24, 48]) for (let k = 0; k <= 8; k++) for (const sg of k === 0 ? [1] : [1, -1]) {
+                const t2 = th0 + sg * k * 0.07, r2 = wallAt(t2, R - BEY_R * 1.3) - inset, c = Math.hypot(Math.sin(t2) * r2 - oth.x, Math.cos(t2) * r2 - oth.y);
+                if (c > best.c) best = { th: t2, rr: r2, c };
+                if (c >= need) { best = { th: t2, rr: r2, c }; break outer; }
+              }
+            }
+            th = best.th; rr = best.rr;
+          }
           bey.x = Math.sin(th) * rr; bey.y = Math.cos(th) * rr;
           const ix = -Math.sin(th), iy = -Math.cos(th), lat = (Math.random() - 0.5) * 0.9;
           const sp2 = 650 + Math.random() * 250;
@@ -2039,7 +1999,7 @@ export function Beyblade() {
           ctx.translate(b.x, b.y);
           ctx.fillStyle = 'rgba(0,0,0,0.22)';
           ctx.beginPath(); ctx.ellipse(3, 5, BEY_R, BEY_R * 0.85, 0, 0, Math.PI * 2); ctx.fill();
-          drawBey(ctx, t.color, i === 0 ? '#38b6ff' : '#ff3ea5', b.angle, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, t.sprite, t.spinDir);
+          drawBey(ctx, t.color, i === 0 ? '#38b6ff' : '#ff3ea5', b.angle, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, null, t.spinDir);
           ctx.restore();
           if (b.dashFx > 0) {
             ctx.fillStyle = `rgba(230,110,0,${Math.min(1, b.dashFx * 1.5)})`;
@@ -2078,11 +2038,11 @@ export function Beyblade() {
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current && !(onlineRef.current && selfIdxRef.current !== 0) && (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 0))) {
         const g = dropRef.current;
         const diag = modeRef.current === 'diag';
-        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y, TYPES.me.spinDir), diag, TYPES.me.color, '#38b6ff', '#e8590c', `${namesRef.current.me}：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, TYPES.me.sprite, TYPES.me.spinDir);
+        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y, TYPES.me.spinDir), diag, TYPES.me.color, '#38b6ff', '#e8590c', `${namesRef.current.me}：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, null, TYPES.me.spinDir);
       }
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && !(onlineRef.current && selfIdxRef.current !== 1) && (vsRef.current === '2p' ? (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 1)) : !hideOppRef.current)) {
         const c = cpuPlanRef.current;
-        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ff3ea5', '#d81b8a', `${namesRef.current.cpu}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite, TYPES.cpu.spinDir, vsRef.current === '2p');
+        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ff3ea5', '#d81b8a', `${namesRef.current.cpu}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, null, TYPES.cpu.spinDir, vsRef.current === '2p');
       }
       // 相手の落とす位置を隠しているときのヒント：その位置にランチャーを置く（向きや打ち方は分からない）
       // オンライン対戦も同じ：相手が置き場所を迷って動かすと、ランチャーも動く
@@ -2092,12 +2052,12 @@ export function Beyblade() {
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && oppP) {
         const gd = ghostDispRef.current ?? (ghostDispRef.current = { x: oppP.x, y: oppP.y });
         gd.x += (oppP.x - gd.x) * 0.25; gd.y += (oppP.y - gd.y) * 0.25; // なめらかに動かす
-        const c = gd, im = c.x < 0 ? LAUNCHERS.red : LAUNCHERS.black;
-        if (im.complete && im.naturalWidth > 0) {
+        const c = gd;
+        {
           // ランチャーは横向きのまま、落とせる半分（左右どちらか）の約3分の1を隠す大きさで置く。正確な位置は分からないように少しずらして描く
           // （同じ位置なら同じずれ方なので、ちらつかない）。落とせる半分と、すり鉢の外にははみ出さない
           const sd = c.x < 0 ? -1 : 1;
-          const lw = 190, lh = (lw * im.naturalHeight) / im.naturalWidth;
+          const lw = 190, lh = 64;
           const hz = (k: number) => 0.5 * Math.sin(c.x * 0.011 * k + c.y * 0.017 + k * 1.7); // 位置になめらかに応じたずれ（動かしても急には飛ばない）
           const cx = sd * (R / 2 + hz(1) * 80), cy = Math.max(-150, Math.min(150, c.y * 0.5 + hz(2) * 160));
           ctx.save();
@@ -2105,7 +2065,12 @@ export function Beyblade() {
           ctx.beginPath(); ctx.rect(sd < 0 ? -R : 2, -R, R, R * 2); ctx.clip();
           ctx.translate(cx, cy);
           ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 16;
-          ctx.drawImage(im, -lw / 2, -lh / 2, lw, lh);
+          // 相手のランチャー（簡単な絵）：左側は赤、右側は黒
+          const lg = ctx.createLinearGradient(0, -lh / 2, 0, lh / 2);
+          if (c.x < 0) { lg.addColorStop(0, '#f0575f'); lg.addColorStop(1, '#a8202a'); } else { lg.addColorStop(0, '#4a4f5c'); lg.addColorStop(1, '#14171d'); }
+          ctx.fillStyle = lg; ctx.beginPath(); ctx.roundRect(-lw / 2, -lh / 2, lw, lh, 18); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.roundRect(-lw / 2 + 12, -lh / 2 + 8, lw - 24, 10, 5); ctx.fill();
+          ctx.fillStyle = '#d9dee8'; ctx.beginPath(); ctx.arc(sd < 0 ? lw / 2 - 28 : -lw / 2 + 28, 0, 15, 0, Math.PI * 2); ctx.fill();
           ctx.restore();
         }
       }
@@ -2330,7 +2295,7 @@ export function Beyblade() {
     }
     // 試合の表示（ラベル）：トーナメントなら回戦、対戦なら 1on1 / 3on3
     const tm = tourMatchRef.current, tt = tourRef.current;
-    const matchLabel = online ? onlineLabel || 'オンライン' : gameMode === 'tournament' && tm && tt ? roundLabel(tt.rounds[tm.r].length, tm.r) : `${mode === '3v3' ? `3on3・第${roundIdx + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : '1on1'}`;
+    const matchLabel = online ? onlineLabel || 'プライベート対戦' : gameMode === 'tournament' && tm && tt ? roundLabel(tt.rounds[tm.r].length, tm.r) : `${mode === '3v3' ? `3on3・第${roundIdx + 1}戦${cycle > 0 ? `(${cycle + 1}周目)` : ''}` : '1on1'}`;
     return (
       // 中継画面のような表示：枠は自分が青、相手がピンク。大きな得点、ブレーダー名、下にベイの名前
       <div style={{
@@ -2366,7 +2331,7 @@ export function Beyblade() {
         {phase === 'top' && (
           // ---- トップページ：対戦 / トーナメント
           <div style={{ position: 'absolute', inset: 0, padding: '6px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
-            <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: 2 }}>BEYBLADE X BATTLE</div>
+            <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: 2 }}>ベイブレードX シミュレーター</div>
             <div style={{ display: 'flex', gap: 8 }}>
               {([['versus', '対戦', '相手と戦う（CPU / 2人）'], ['tournament', 'トーナメント', '最大32人で勝ち抜き戦']] as const).map(([k, label, sub]) => (
                 <button key={k} onClick={() => { setGameMode(k); setTopOnline(false); setLobbyMsg(''); }} style={{ ...sb(gameMode === k && !topOnline), padding: '5px 18px', textAlign: 'center' }}>
@@ -2374,7 +2339,7 @@ export function Beyblade() {
                 </button>
               ))}
               <button onClick={() => { setTopOnline(true); setLobbyMsg(''); }} style={{ ...sb(topOnline), padding: '5px 18px', textAlign: 'center' }}>
-                <div style={{ fontWeight: 900, fontSize: 15 }}>オンライン</div><div style={{ fontSize: 11.5, opacity: 0.85 }}>部屋番号で2人対戦</div>
+                <div style={{ fontWeight: 900, fontSize: 15 }}>プライベート対戦</div><div style={{ fontSize: 11.5, opacity: 0.85 }}>部屋番号で友だちと対戦</div>
               </button>
             </div>
             {topOnline ? (
@@ -2432,7 +2397,7 @@ export function Beyblade() {
             {lobbyMsg && <div style={{ fontSize: 13, fontWeight: 700, color: '#ffb4b4' }}>{lobbyMsg}</div>}
             {!topOnline && <button style={{ ...yb, opacity: gameMode === 'tournament' && tCpu + tHumans < 2 ? 0.4 : 1 }} disabled={gameMode === 'tournament' && tCpu + tHumans < 2} onClick={() => { setWho(0); setSlot(0); setPhase('select'); }}>次へ（カスタマイズ）</button>}
             {!frame.emulate && <div style={{ fontSize: 11.5, color: '#ffd740' }}>↕ 画面を上にスクロールすると、ブラウザのメニューが消えて広く遊べます</div>}
-            <div style={{ fontSize: 11, opacity: 0.55 }}>非公式のファンメイド作品です。ベイブレードX・各パーツの名称や画像の権利は各権利者に帰属します。</div>
+            <div style={{ fontSize: 11, opacity: 0.55 }}>非公式のファン制作のシミュレーターです。名称などの権利は各権利者に帰属します。</div>
           </div>
         )}
 
@@ -2451,7 +2416,7 @@ export function Beyblade() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, minHeight: 26 }}>
               <button onClick={() => (online ? leaveOnline() : setPhase('top'))} style={sb(false)}>← トップ</button>
               <span style={{ fontSize: 12.5, opacity: 0.85, whiteSpace: 'nowrap' }}>
-                {online ? `オンライン対戦（${online === 'host' ? 'ホスト・部屋' + roomCode : 'ゲスト'}）` : <>{gameMode === 'tournament' ? `トーナメント（CPU ${tCpu}・プレイヤー ${tHumans}）` : vs === 'cpu' ? 'CPU対戦' : '2人対戦'}・{mode === '3v3' ? '3on3' : '1on1'}</>}
+                {online ? `プライベート対戦（${online === 'host' ? 'ホスト・部屋' + roomCode : 'ゲスト'}）` : <>{gameMode === 'tournament' ? `トーナメント（CPU ${tCpu}・プレイヤー ${tHumans}）` : vs === 'cpu' ? 'CPU対戦' : '2人対戦'}・{mode === '3v3' ? '3on3' : '1on1'}</>}
               </span>
               {online === 'host' && (['1v1', '3v3'] as const).map(k => (
                 <button key={k} onClick={() => { setMode(k); if (k === '3v3') setDecks(ds => ds.map(d => dedupeDeck(d))); }} style={sb(mode === k)}>{k === '1v1' ? '1on1' : '3on3'}</button>
@@ -2582,7 +2547,7 @@ export function Beyblade() {
                     position: 'relative', width: Math.min(190, (FW - 60) / 3), padding: '6px 6px', borderRadius: 10, cursor: pos < 0 ? 'pointer' : 'default', color: '#fff',
                     border: `3px solid ${pos >= 0 ? bey.color : '#2a3566'}`, background: pos >= 0 ? '#14204f' : '#0a1030', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                   }}>
-                    {bey.sprite && <img src={bey.sprite.src} alt="" width={58} height={58} />}
+                    <div style={{ width: 46, height: 46, borderRadius: '50%', background: '#161d38', border: `5px solid ${bey.color}`, boxSizing: 'border-box' }} />
                     <div style={{ fontWeight: 800, color: bey.color, textAlign: 'center', fontSize: 13, lineHeight: 1.2 }}>{bey.name}</div>
                     <div style={{ fontSize: 11, opacity: 0.85 }}>攻{bey.stats.atk} 防{bey.stats.def} 持{bey.stats.sta} ダ{bey.stats.dash} 耐{bey.stats.burst}</div>
                     {pos >= 0 && <div style={{ position: 'absolute', top: -9, left: -9, width: 26, height: 26, borderRadius: 13, background: '#ffd740', color: '#04071a', fontWeight: 900, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pos + 1}</div>}
