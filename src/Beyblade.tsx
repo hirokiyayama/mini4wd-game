@@ -236,7 +236,7 @@ function buildBey(c: Custom) {
     flat: ['K', 'L', 'R', 'LR'].includes(bit.id), // 底が平ら：きれいな円を描かず、楕円で回り、そのうちリングや壁に当たって軌道が変わる
     noRideInner: ['E', 'B', 'FB', 'H', 'Nr'].includes(bit.id),
     orbitR: bit.id === 'E' ? 153 : bit.id === 'H' ? 80 : ['B', 'FB', 'Nr'].includes(bit.id) ? 92 : 0, // 小さな円の半径（実際に描く円は、これより少し大きくなる）：B・FB・Nrは中心の円の段のあたり、Eはもっと外側、Hはもっと内側, // 水平シュートで真ん中の円の中に落とすと、その円より少し大きいくらいの小さな円を描いて回る（ぶつかるまで）
-    tip: bit.id === 'H', // 底がとがっている：B・FB・Nrより小さな円できれいに回る
+    tip: bit.id === 'H', // 底がとがっている：真ん中にとどまり、円を描かずにその場で回る
     cruise: 360 * Math.sqrt(bit.mobility ?? 1), // 実際の動画：ベイは中央に落ち着いても止まらず、一定の速さで動き回り続ける（Rなど動き回るビットは速く、Hは遅い）
     steady: bit.steady ?? 1,
     exitResist: bit.exitResist ?? 1,
@@ -554,7 +554,7 @@ function defaultAim(x: number, y: number, dir: 1 | -1 = 1) {
 function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: number; y: number } | null, power: number): Bey {
   const spinMax = 3350 * (0.6 + 0.4 * power);
   const smallCircle = !diag && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5; // 小さな円で回るビットは、最初から円に沿う向きで動き出す
-  const tdn = Math.hypot(x, y) || 1, a = diag ? (aim ?? defaultAim(x, y, TYPES[type].spinDir)) : smallCircle ? { x: (y / tdn) * TYPES[type].spinDir, y: (-x / tdn) * TYPES[type].spinDir } : defaultAim(x, y, TYPES[type].spinDir); // 水平シュートは矢印なし：決めた向きには飛ばさず、そのまま回り始める（斜めだけ向きを決められる）
+  const tdn = Math.hypot(x, y) || 1, a = diag ? (aim ?? defaultAim(x, y, TYPES[type].spinDir)) : TYPES[type].tip ? { x: -x / tdn, y: -y / tdn } : smallCircle ? { x: (y / tdn) * TYPES[type].spinDir, y: (-x / tdn) * TYPES[type].spinDir } : defaultAim(x, y, TYPES[type].spinDir); // 水平シュートは矢印なし：決めた向きには飛ばさず、そのまま回り始める（斜めだけ向きを決められる）。Hビットは、どこから水平シュートしても真ん中へ向かう
   const mob = TYPES[type].mobility;
   const sp = (260 + 140 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない
   return {
@@ -565,7 +565,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, orbR: !diag && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5 ? TYPES[type].orbitR : 0, softDone: false, spiralT: 0, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0, hPh: 3, hT: 0,
+    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, orbR: !diag && !TYPES[type].tip && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5 ? TYPES[type].orbitR : 0, softDone: false, spiralT: 0, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0, hPh: 3, hT: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -1699,13 +1699,12 @@ export function Beyblade() {
           } else if (b.hPh === 2) { // 止まった場所で、しばらくその場で回り続ける
             const k = 1 - 6 * DT; b.vx *= k; b.vy *= k;
             b.hT -= DT; if (b.hT <= 0) b.hPh = 3;
-          } else { // 3＝真ん中へゆっくり戻る／0＝真ん中で、ほぼ一点に近い小さな円を描く
+          } else { // 3＝真ん中へゆっくり戻る／0＝真ん中で、円を描かずに、その場で回り続ける
             if (b.hPh === 3 && rr < 40) b.hPh = 0;
             else if (b.hPh === 0 && rr > 95) b.hPh = 3;
-            const back = b.hPh === 3, tx = (b.dir * b.y) / rr, ty = (-b.dir * b.x) / rr, pw = 0.4 + 0.6 * Math.sqrt(ratio);
-            const rT = 18 + 6 * Math.sin(b.age * 0.7 + b.ph0);
-            const vr = back ? -(55 + 60 * Math.min(1, rr / R)) * (0.6 + 0.4 * Math.sqrt(ratio)) : Math.max(-80, Math.min(80, -(rr - rT) * 2.5));
-            const vtn = back ? 25 : (45 + 25 * Math.sin(b.age * 1.3 + b.ph0)) * pw;
+            const back = b.hPh === 3, tx = (b.dir * b.y) / rr, ty = (-b.dir * b.x) / rr;
+            const vr = back ? -(55 + 60 * Math.min(1, rr / R)) * (0.6 + 0.4 * Math.sqrt(ratio)) : -Math.min(80, rr * 2.5);
+            const vtn = back ? 25 : 0;
             const k = Math.min(1, (back ? 1.6 : 3) * DT);
             b.vx += (ux * vr + tx * vtn - b.vx) * k; b.vy += (uy * vr + ty * vtn - b.vy) * k;
           }
@@ -1775,7 +1774,7 @@ export function Beyblade() {
             const cR = RING_R * 0.5, dn2 = Math.hypot(b.x, b.y);
             if ((b.prevD <= cR) !== (dn2 <= cR)) {
               const vr = (b.vx * b.x + b.vy * b.y) / (dn2 || 1), ux2 = b.x / (dn2 || 1), uy2 = b.y / (dn2 || 1);
-              const dv = vr > 0 ? -Math.min(vr, 70) : 30; // 外向きなら減速、内向きなら少し加速
+              const dv = vr > 0 ? -Math.min(vr, 70) : TYPES[b.type].tip ? -30 : 30; // 外向きなら減速、内向きなら少し加速（Hビットは段で押し返されず、そのまま真ん中へ落ちる）
               b.vx += ux2 * dv; b.vy += uy2 * dv;
             }
           }
