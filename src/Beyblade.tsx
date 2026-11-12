@@ -236,7 +236,7 @@ function buildBey(c: Custom) {
     flat: ['K', 'L', 'R', 'LR'].includes(bit.id), // 底が平ら：きれいな円を描かず、楕円で回り、そのうちリングや壁に当たって軌道が変わる
     noRideInner: ['E', 'B', 'FB', 'H', 'Nr'].includes(bit.id),
     orbitR: bit.id === 'E' ? 153 : bit.id === 'H' ? 80 : ['B', 'FB', 'Nr'].includes(bit.id) ? 92 : 0, // 小さな円の半径（実際に描く円は、これより少し大きくなる）：B・FB・Nrは中心の円の段のあたり、Eはもっと外側、Hはもっと内側, // 水平シュートで真ん中の円の中に落とすと、その円より少し大きいくらいの小さな円を描いて回る（ぶつかるまで）
-    tip: bit.id === 'H', // 底がとがっている：真ん中にとどまり、円を描かずにその場で回る
+    tip: bit.id === 'H', // 底がとがっている：真ん中にとどまり、ほんの少しだけ小さな円を描いて動く
     cruise: 360 * Math.sqrt(bit.mobility ?? 1), // 実際の動画：ベイは中央に落ち着いても止まらず、一定の速さで動き回り続ける（Rなど動き回るビットは速く、Hは遅い）
     steady: bit.steady ?? 1,
     exitResist: bit.exitResist ?? 1,
@@ -1605,7 +1605,7 @@ export function Beyblade() {
         const ringTx = (b.dir * b.y) / (dist || 1), ringTy = (-b.dir * b.x) / (dist || 1);
         const alongRing = b.vx * ringTx + b.vy * ringTy; // リングをたどる向きの速さ（負なら逆走）
         const rem = ((((Math.atan2(b.y, b.x) + Math.PI / 2) * b.dir) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI); // ラインに乗ってから凹みまでの、走る向きの残りの角度（ぐるっと1周近く走らせない）
-        if (!b.riding && !(t.tip && b.hPh !== 0) && b.dashesLeft > 0 && b.dashCd <= 0 && ratio > 0.25 && rem < 3.6 && speed > 120 && dist > R * 0.8 && alongRing > 0.2 * speed) {
+        if (!b.riding && !(t.tip && b.hPh === 2) && b.dashesLeft > 0 && b.dashCd <= 0 && ratio > 0.25 && rem < 3.6 && speed > 120 && dist > R * 0.8 && alongRing > 0.2 * speed) {
           if (b.rideChance >= 1) { b.riding = true; b.rideT = 0; b.dAt = Math.max(-1, Math.min(1, (Math.random() + Math.random() - 1) * 1.5)); }
           else if (!b.onRing) {
             // 斜めシュートはリングに乗りにくい（乗れないぶん、自爆しにくい）
@@ -1617,6 +1617,7 @@ export function Beyblade() {
         if (dist < R * 0.7) b.onRing = false;
         if (b.riding) {
           b.rideT += DT;
+          if (t.tip) b.hPh = 3; // Hビット：エクストリームラインにギアがかかったらダッシュする。ダッシュのあとは、ゆっくり真ん中へ戻る
           const d = Math.hypot(b.x, b.y) || 1;
           // 右回転は反時計回りにリングを走る（右側を駆け上がる）。左回転はその鏡写し（左側を駆け上がる）
           const tx = (b.dir * b.y) / d, ty = (-b.dir * b.x) / d;
@@ -1699,12 +1700,13 @@ export function Beyblade() {
           } else if (b.hPh === 2) { // 止まった場所で、しばらくその場で回り続ける
             const k = 1 - 6 * DT; b.vx *= k; b.vy *= k;
             b.hT -= DT; if (b.hT <= 0) b.hPh = 3;
-          } else { // 3＝真ん中へゆっくり戻る／0＝真ん中で、円を描かずに、その場で回り続ける
+          } else { // 3＝真ん中へゆっくり戻る／0＝真ん中で、ほんの少しだけ小さな円を描いて動く
             if (b.hPh === 3 && rr < 40) b.hPh = 0;
             else if (b.hPh === 0 && rr > 95) b.hPh = 3;
-            const back = b.hPh === 3, tx = (b.dir * b.y) / rr, ty = (-b.dir * b.x) / rr;
-            const vr = back ? -(55 + 60 * Math.min(1, rr / R)) * (0.6 + 0.4 * Math.sqrt(ratio)) : -Math.min(80, rr * 2.5);
-            const vtn = back ? 25 : 0;
+            const back = b.hPh === 3, tx = (b.dir * b.y) / rr, ty = (-b.dir * b.x) / rr, pw = 0.4 + 0.6 * Math.sqrt(ratio);
+            const rT = 18 + 6 * Math.sin(b.age * 0.7 + b.ph0);
+            const vr = back ? -(55 + 60 * Math.min(1, rr / R)) * (0.6 + 0.4 * Math.sqrt(ratio)) : Math.max(-80, Math.min(80, -(rr - rT) * 2.5));
+            const vtn = back ? 25 : (45 + 25 * Math.sin(b.age * 1.3 + b.ph0)) * pw;
             const k = Math.min(1, (back ? 1.6 : 3) * DT);
             b.vx += (ux * vr + tx * vtn - b.vx) * k; b.vy += (uy * vr + ty * vtn - b.vy) * k;
           }
