@@ -85,7 +85,7 @@ const BITS: PartDef[] = [
   { id: 'FB', name: 'FB', desc: '空回りする軸先で、回転のロスが少ない。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
   { id: 'R', name: 'R', desc: 'ダッシュは控えめだが、回数が多い。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
   { id: 'LR', name: 'LR', desc: 'Rより低めで、下から打ち上げるのが得意。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, mobility: 1.8 },
-  { id: 'H', name: 'H', desc: '姿勢が安定して小さな円を描いて回り続ける。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
+  { id: 'H', name: 'H', desc: '先がとがっていて、すり鉢の真ん中にとどまって回り続ける。飛ばされても、ひと呼吸おいてゆっくり真ん中へ戻る。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
   { id: 'L', name: 'L', desc: '速さを3段階に切り替えて攻める。', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
   { id: 'Nr', name: 'Nr', desc: '細い軸先で長く回り、ダッシュによるスタミナの消耗が少ない。', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
   { id: 'K', name: 'K', desc: '角のある軸先でスタジアムを蹴って動き回る。', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, weight: 2.1 },
@@ -512,6 +512,7 @@ interface Bey {
   mode: number; r0: number; osgn: number; // ぶつかったあとの動き：0=そのまま 1=真ん中に戻る 2=その周りを回る（半径・回る向き）
   outT: number; outKind: 'extreme' | 'over'; outPhi: number; retPlan: boolean; retCount: number; grace: number; // 場外ポケット：滞在時間・出口の種類・戻るか・戻った回数・戻った直後の猶予
   dashesLeft: number; // 残りXダッシュ回数（Eビットは2〜3回まで）
+  hPh: number; hT: number; // Hビットの動き：0=真ん中で小さく回る 1=飛ばされてすべる 2=止まった場所で待つ 3=真ん中へゆっくり戻る／待つ残り時間
 }
 interface Spark { x: number; y: number; vx: number; vy: number; life: number; max: number; w: number; old?: boolean }
 // 火花を作る（ぶつかった・壁に当たった・ダッシュの瞬間など）。多めに、速く、尾を引いて飛び散る
@@ -564,7 +565,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, orbR: !diag && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5 ? TYPES[type].orbitR : 0, softDone: false, spiralT: 0, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0,
+    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, orbR: !diag && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5 ? TYPES[type].orbitR : 0, softDone: false, spiralT: 0, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0, hPh: 3, hT: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -1542,6 +1543,8 @@ export function Beyblade() {
           continue;
         }
 
+        // Hビット：先がとがっていて床をほとんどつかまないので、自分からは動き回らず、すり鉢の真ん中にとどまる（動きは下でまとめて決める）
+        const hCtl = t.tip && b.dashT <= 0 && !b.riding;
         // すり鉢の傾斜（中央へ引く）
         const sT0 = Math.max(0, Math.min(1, (0.68 - ratio) / 0.38)), wMode = 1 - sT0 * sT0 * (3 - 2 * sT0); // 回転が強いほど1（ぶつかったあとの別々の動きが、はっきり出る）
         // 実際の動画：最初はリングの近くを動き回り、時間がたつにつれて中央付近に集まる（すり鉢の中心へ引かれる力が、だんだん強くなる）
@@ -1551,7 +1554,7 @@ export function Beyblade() {
         if (b.mode === 2 && !t.flat) kPull *= 1 - 0.85 * wMode; // 回る動き：真ん中には引かれず、決まった半径を回る
         else if (b.mode === 1) kPull += 7 * wMode; // 真ん中に戻る動き
         const shp = Math.max(0, Math.min(1, 1 - b.postT)); // ぶつかった直後は0（円・楕円の力なし）、時間がたつと1に戻る
-        if (t.flat) { // 楕円で回る：向きは、ゆっくり変わる
+        if (hCtl) { /* Hビットは下でまとめて動かす */ } else if (t.flat) { // 楕円で回る：向きは、ゆっくり変わる
           b.eAng += 0.12 * DT;
           const ce = Math.cos(b.eAng), se = Math.sin(b.eAng), px = b.x * ce + b.y * se, py = -b.x * se + b.y * ce;
           const ax = -kPull * px, ay = -kPull * (b.er * shp + (1 - shp)) * py;
@@ -1561,32 +1564,32 @@ export function Beyblade() {
           b.vx += -b.x * kk * DT;
           b.vy += -b.y * kk * DT;
         }
-        if (b.orbR > 0 && !b.hit && b.dashT <= 0 && !b.riding) { // ぶつかるまでは、真ん中の円より少し大きい円を、なめらかに描いて回る
+        if (!hCtl && b.orbR > 0 && !b.hit && b.dashT <= 0 && !b.riding) { // ぶつかるまでは、真ん中の円より少し大きい円を、なめらかに描いて回る
           const w = Math.max(wMode, 0.4), rr = Math.hypot(b.x, b.y) || 1, ux = b.x / rr, uy = b.y / rr, tx = (b.dir * b.y) / rr, ty = (-b.dir * b.x) / rr;
           const tgt = t.cruise * 0.95, rv = Math.max(-260, Math.min(260, -(rr - b.orbR) * 4)); // 円の半径に近づくように、少しずつ内外へ寄る
           const k = Math.min(1, 7 * w * DT);
           b.vx += (tx * tgt + ux * rv - b.vx) * k; b.vy += (ty * tgt + uy * rv - b.vy) * k;
         }
-        if (b.mode === 2 && !t.flat && wMode > 0.02 && b.dashT <= 0) { // 一方のベイは、真ん中の周りを回り続ける
+        if (!hCtl && b.mode === 2 && !t.flat && wMode > 0.02 && b.dashT <= 0) { // 一方のベイは、真ん中の周りを回り続ける
           const rr = Math.hypot(b.x, b.y) || 1, ux = b.x / rr, uy = b.y / rr, tx = -uy * b.osgn, ty = ux * b.osgn;
           const pull = -(rr - b.r0) * 7 * wMode;
           b.vx += ux * pull * DT; b.vy += uy * pull * DT;
           const vtan = b.vx * tx + b.vy * ty, tgt = t.cruise * 0.95 * wMode;
           if (vtan < tgt) { b.vx += tx * (tgt - vtan) * 3 * DT; b.vy += ty * (tgt - vtan) * 3 * DT; }
         }
-        { // すり鉢の傾き：外周と中心付近の高さの差は2cmほどしかないので、ほんの少しだけ、中心へ向かって下る（外へ行くほど傾きが大きく、中心付近はほぼ平ら）
+        if (!(hCtl && b.hPh === 2)) { // すり鉢の傾き：（Hビットが止まって待っている間は除く）外周と中心付近の高さの差は2cmほどしかないので、ほんの少しだけ、中心へ向かって下る（外へ行くほど傾きが大きく、中心付近はほぼ平ら）
           const gd = Math.hypot(b.x, b.y) || 1, g = BOWL_TILT * Math.min(1.1, gd / RING_R);
           b.vx -= (b.x / gd) * g * DT; b.vy -= (b.y / gd) * g * DT;
         }
         // ジャイロ効果で軌道が緩やかにカーブする
-        const c = b.curl * 0.35 * (0.3 + ratio) * DT; // ゆるやかなカーブ（外周をぐるぐる回り続けないように）
+        const c = hCtl ? 0 : b.curl * 0.35 * (0.3 + ratio) * DT; // ゆるやかなカーブ（外周をぐるぐる回り続けないように）
         const cs = Math.cos(c), sn = Math.sin(c);
         const nvx = b.vx * cs - b.vy * sn, nvy = b.vx * sn + b.vy * cs;
         b.vx = nvx; b.vy = nvy;
         let speed = Math.hypot(b.vx, b.vy);
         // 回転が残っている間は動き回る
         const minSp = 240 * Math.max(0, ratio - 0.25) * Math.min(1, t.mobility);
-        if (speed < minSp) {
+        if (!hCtl && speed < minSp) {
           const a = speed > 1 ? Math.atan2(b.vy, b.vx) : Math.random() * Math.PI * 2;
           b.vx += Math.cos(a) * 500 * DT; b.vy += Math.sin(a) * 500 * DT;
         }
@@ -1602,7 +1605,7 @@ export function Beyblade() {
         const ringTx = (b.dir * b.y) / (dist || 1), ringTy = (-b.dir * b.x) / (dist || 1);
         const alongRing = b.vx * ringTx + b.vy * ringTy; // リングをたどる向きの速さ（負なら逆走）
         const rem = ((((Math.atan2(b.y, b.x) + Math.PI / 2) * b.dir) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI); // ラインに乗ってから凹みまでの、走る向きの残りの角度（ぐるっと1周近く走らせない）
-        if (!b.riding && b.dashesLeft > 0 && b.dashCd <= 0 && ratio > 0.25 && rem < 3.6 && speed > 120 && dist > R * 0.8 && alongRing > 0.2 * speed) {
+        if (!b.riding && !(t.tip && b.hPh !== 0) && b.dashesLeft > 0 && b.dashCd <= 0 && ratio > 0.25 && rem < 3.6 && speed > 120 && dist > R * 0.8 && alongRing > 0.2 * speed) {
           if (b.rideChance >= 1) { b.riding = true; b.rideT = 0; b.dAt = Math.max(-1, Math.min(1, (Math.random() + Math.random() - 1) * 1.5)); }
           else if (!b.onRing) {
             // 斜めシュートはリングに乗りにくい（乗れないぶん、自爆しにくい）
@@ -1664,7 +1667,7 @@ export function Beyblade() {
           }
           continue;
         }
-        if (b.spiralT > 0) { // 斜めシュートで壁に当たったあと：勢いよく戻らず、回りながらゆっくり真ん中へ寄っていく
+        if (b.spiralT > 0 && !hCtl) { // 斜めシュートで壁に当たったあと：勢いよく戻らず、回りながらゆっくり真ん中へ寄っていく
           b.spiralT -= DT;
           const sd = Math.hypot(b.x, b.y) || 1;
           if (b.dashT > 0 || b.knockT > 0 || sd < 110) b.spiralT = 0;
@@ -1687,7 +1690,28 @@ export function Beyblade() {
             speed = Math.hypot(b.vx, b.vy);
           }
         }
-        if (b.dashT <= 0 && b.knockT <= 0) {
+        if (hCtl) {
+          const rr = Math.hypot(b.x, b.y) || 1, ux = b.x / rr, uy = b.y / rr;
+          if (b.knockT > 1.1) b.hPh = 1; // 相手に飛ばされた
+          if (b.hPh === 1) { // 飛ばされ中：先がとがっていて床をつかまないので、勢いのまま、すーっとすべる（自分では向きを変えない）
+            const k = 1 - 0.9 * DT; b.vx *= k; b.vy *= k;
+            if (speed < 110 || b.knockT <= 0) { b.hPh = 2; b.hT = 0.6 + 0.6 * Math.random(); }
+          } else if (b.hPh === 2) { // 止まった場所で、しばらくその場で回り続ける
+            const k = 1 - 6 * DT; b.vx *= k; b.vy *= k;
+            b.hT -= DT; if (b.hT <= 0) b.hPh = 3;
+          } else { // 3＝真ん中へゆっくり戻る／0＝真ん中で、ほぼ一点に近い小さな円を描く
+            if (b.hPh === 3 && rr < 40) b.hPh = 0;
+            else if (b.hPh === 0 && rr > 95) b.hPh = 3;
+            const back = b.hPh === 3, tx = (b.dir * b.y) / rr, ty = (-b.dir * b.x) / rr, pw = 0.4 + 0.6 * Math.sqrt(ratio);
+            const rT = 18 + 6 * Math.sin(b.age * 0.7 + b.ph0);
+            const vr = back ? -(55 + 60 * Math.min(1, rr / R)) * (0.6 + 0.4 * Math.sqrt(ratio)) : Math.max(-80, Math.min(80, -(rr - rT) * 2.5));
+            const vtn = back ? 25 : (45 + 25 * Math.sin(b.age * 1.3 + b.ph0)) * pw;
+            const k = Math.min(1, (back ? 1.6 : 3) * DT);
+            b.vx += (ux * vr + tx * vtn - b.vx) * k; b.vy += (uy * vr + ty * vtn - b.vy) * k;
+          }
+          speed = Math.hypot(b.vx, b.vy);
+        }
+        if (!hCtl && b.dashT <= 0 && b.knockT <= 0) {
           // 回転が強いうちは動き回り、回転が弱まるにつれて、中央に寄り添ってゆっくり動く（回転が強いうちにぶつかると、弾ける向きがばらばらで、何度も続けて真ん中でぶつからない）
           const ageT = Math.max(0, Math.min(1, (0.68 - ratio) / 0.38)), ageF = 1 - 0.65 * ageT * ageT * (3 - 2 * ageT);
           const vt = t.cruise * ageF * (1 - 0.85 * Math.min(1, b.calmT / 2.5)) * (1 - (1 - (b.mode === 2 ? 0.2 : b.mode === 1 ? 0.5 : 1)) * wMode) * (0.2 + 0.8 * Math.sqrt(ratio));
