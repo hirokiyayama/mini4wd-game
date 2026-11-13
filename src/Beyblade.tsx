@@ -512,6 +512,7 @@ interface Bey {
   mode: number; r0: number; osgn: number; // ぶつかったあとの動き：0=そのまま 1=真ん中に戻る 2=その周りを回る（半径・回る向き）
   outT: number; outKind: 'extreme' | 'over'; outPhi: number; retPlan: boolean; retCount: number; grace: number; // 場外ポケット：滞在時間・出口の種類・戻るか・戻った回数・戻った直後の猶予
   dashesLeft: number; // 残りXダッシュ回数（Eビットは2〜3回まで）
+  vAng: number; // 画面に描くときの回転の向き（実際の回転が速すぎると、コマ送りで止まって見える・逆に回って見えるので、描くとき用は別に回す）
   hPh: number; hT: number; // Hビットの動き：0=真ん中で小さく回る 1=飛ばされてすべる 2=止まった場所で待つ 3=真ん中へゆっくり戻る／待つ残り時間
 }
 interface Spark { x: number; y: number; vx: number; vy: number; life: number; max: number; w: number; old?: boolean }
@@ -565,7 +566,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0, riding: false, rideT: 0,
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, orbR: !diag && !TYPES[type].tip && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5 ? TYPES[type].orbitR : 0, softDone: false, spiralT: 0, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0, hPh: 3, hT: 0,
+    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, orbR: !diag && !TYPES[type].tip && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5 ? TYPES[type].orbitR : 0, softDone: false, spiralT: 0, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0, vAng: Math.random() * Math.PI * 2, hPh: 3, hT: 0,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -589,7 +590,7 @@ function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, ang
   ctx.strokeStyle = color; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0, 0, BEY_R - 2.5, 0, Math.PI * 2); ctx.stroke();
   ctx.restore();
   // 回転が分かる目印（羽根の数だけ並べた短い線）。速いほど残像が伸びる
-  const sweep = 2.4 * Math.pow(ratio, 1.5);
+  const sweep = Math.min(2.4 * Math.pow(ratio, 1.5), 0.6 * (Math.PI * 2) / nBlades); // 残像は、となりの羽根まで届かない長さまで（全部が一続きの輪になって、回っていないように見えないように）
   const marks = (a: number) => {
     ctx.save(); ctx.rotate(a); ctx.fillStyle = color;
     for (let k = 0; k < nBlades; k++) { ctx.rotate((Math.PI * 2) / nBlades); ctx.beginPath(); ctx.roundRect(BEY_R * 0.4, -3, BEY_R * 0.42, 6, 3); ctx.fill(); }
@@ -1457,6 +1458,7 @@ export function Beyblade() {
     let raf = 0;
     let last = performance.now();
     let acc = 0;
+    let visDt = 1 / 60; // 前の画面からの時間（ベイの絵の回転に使う）
     const DT = 1 / 120;
 
     const spark = (x: number, y: number, n: number, old = false) => {
@@ -2024,7 +2026,11 @@ export function Beyblade() {
           ctx.translate(b.x, b.y);
           ctx.fillStyle = 'rgba(0,0,0,0.22)';
           ctx.beginPath(); ctx.ellipse(3, 5, BEY_R, BEY_R * 0.85, 0, 0, Math.PI * 2); ctx.fill();
-          drawBey(ctx, t.color, i === 0 ? '#38b6ff' : '#ff3ea5', b.angle, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, null, t.spinDir);
+          { // 絵の回転：1回の画面の更新で回す角度を、羽根と羽根の間の角度の約3分の1までにする（速く回っているときに、止まって見えたり逆に回って見えたりしないように）。速さは残像で見せる
+            const rt = Math.max(0, b.spin / b.spinMax), w = b.spin > 0 ? 2 + 75 * Math.pow(rt, 1.5) : 0;
+            b.vAng += t.spinDir * Math.min(w * visDt, 0.36 * (Math.PI * 2) / t.blades);
+          }
+          drawBey(ctx, t.color, i === 0 ? '#38b6ff' : '#ff3ea5', b.vAng, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, null, t.spinDir);
           ctx.restore();
         });
       }
@@ -2032,7 +2038,7 @@ export function Beyblade() {
       const drawGhost = (g: { x: number; y: number }, aim: { x: number; y: number }, diag: boolean, color: string, ring: string, arrow: string, label: string, nb: number, sp: HTMLImageElement | null, sd: 1 | -1, showInfo = true) => {
         ctx.save(); ctx.translate(g.x, g.y);
         ctx.globalAlpha = 0.85;
-        drawBey(ctx, color, ring, (performance.now() / 18) * sd, 1, '#fff', nb, sp, sd);
+        drawBey(ctx, color, ring, (performance.now() / 1000) * Math.min(55, 0.3 * (Math.PI * 2) / nb * 30) * sd, 1, '#fff', nb, sp, sd);
         ctx.globalAlpha = 1;
         if (!showInfo) { ctx.restore(); return; } // CPU対戦では、相手の打ち方（水平/斜め）と進行方向は見せない（位置だけ見える）
         ctx.strokeStyle = arrow; ctx.fillStyle = arrow; ctx.lineWidth = 4;
@@ -2164,6 +2170,7 @@ export function Beyblade() {
     };
     const loop = (now: number) => {
       acc += Math.min(0.05, (now - last) / 1000) * timeScale;
+      visDt = Math.min(0.1, Math.max(0, (now - last) / 1000));
       last = now;
       while (acc >= DT) { step(); acc -= DT; }
       if (onlineRef.current === 'guest') applyInterp(now);
