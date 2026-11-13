@@ -209,6 +209,11 @@ function calcStats(c: Custom, hidden = false) {
   return { st, weight: Math.round(weight * 10) / 10, height: bl.integrated ? bl.height ?? 50 : ra.height ?? 60, bit };
 }
 
+// Googleアナリティクスに、どのモードを使ったかを送る（計測コードが読み込まれていないときは何もしない）
+function track(name: string, params: Record<string, string> = {}) {
+  try { (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag?.('event', name, params); } catch { /* 計測に失敗しても遊べるように */ }
+}
+
 // 合計値 → バトル中の動きの係数（基準値の付近で1になる）
 const norm = (v: number, ref: number, k: number) => Math.max(0.3, 1 + k * (v / ref - 1));
 
@@ -940,6 +945,7 @@ export function Beyblade() {
   };
 
   const startMatch = () => {
+    track('simulation_start', { vs }); // シミュレーション（CPU／2人）
     window.clearTimeout(timerRef.current);
     scoreRef.current = { me: 0, cpu: 0 };
     setScore({ me: 0, cpu: 0 });
@@ -996,6 +1002,7 @@ export function Beyblade() {
 
   // ---- トーナメント：参加者を決めて、組み合わせを作る（CPUは32人のロスターから）
   const startTournament = () => {
+    track('tournament_start'); // トーナメント
     const fmt = mode;
     const humans: Entrant[] = Array.from({ length: tHumans }, (_, k) => ({
       id: k, name: playerNames[k].trim() || `プレイヤー${k + 1}`, human: true, deck: (fmt === '3v3' ? decks[k] : [decks[k][0]]).map(c => ({ ...c })),
@@ -1258,6 +1265,7 @@ export function Beyblade() {
   };
   const attachLink = (link: Link, role: 'host' | 'guest') => {
     linkRef.current = link; onlineRef.current = role; setOnline(role);
+    track('private_start', { role }); // プライベートシミュレーション（相手とつながった）
     link.onMsg = m => handleMsgRef.current(m);
     link.onClose = () => leaveOnline('相手との接続が切れました');
     vsRef.current = '2p'; setVs('2p'); setMode('1v1'); setGameMode('versus'); setMySide('left'); sideRef.current = 'left';
