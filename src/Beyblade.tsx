@@ -95,6 +95,11 @@ const BITS: PartDef[] = [
 // ---- ブレードの形：写真の輪郭から、角度ごとの半径を作る（丸くない・凹凸がある）。当たる場所によって、弾く向き・飛ぶ量が変わり、形がいびつなほど動きが不規則になる
 const SHAPE_N = 72;
 // 当たり判定用の外形（角度ごとの半径）と重さの中心。見た目は円形のコマだが、当たり方はブレードごとの形で決まる
+// 個人用の画像つき版（npm run build:bey-personal）だけ、ブレードとランチャーの画像を読み込む。公開用の版には画像は入らない
+const IMG_URLS = (window as unknown as { __BEY_IMGS?: Record<string, string> }).__BEY_IMGS ?? {};
+const loadImg = (id: string) => { if (!IMG_URLS[id]) return null; const im = new Image(); im.src = IMG_URLS[id]; return im; };
+const SPRITES: Record<string, HTMLImageElement | null> = {};
+const LAUNCHERS = { red: loadImg('launcher_red'), black: loadImg('launcher_black') }; // 相手の落とす位置を隠しているときのヒント
 const SHAPES: Record<string, { r: Float32Array; mean: number; nr: number; mx: number; cx: number; cy: number; ecc: number }> = {
   meteor: { r: Float32Array.from([32.5,32.23,31.95,31.69,31.7,31.96,32.22,32.41,32.45,32.35,32.34,32.61,32.91,32.95,32.79,32.8,33.05,33.23,32.32,30.63,30.03,29.41,27.73,27.71,29.66,30.9,31.19,31.48,31.82,32.11,32.19,32.25,32.58,33.02,33.35,33.71,34.08,34.29,34.22,34.15,34.41,34.62,33.66,31.87,31,30.22,29.28,30.11,31.65,32.39,32.7,32.88,32.97,32.99,32.87,32.79,33,33.09,33.08,33.37,33.59,33.38,32.94,32.61,32.91,33.97,34.89,35.09,35.05,34.77,33.9,32.98]), mean: 32.472, nr: 0.899, mx: 35.09, cx: -0.452, cy: 0.645, ecc: 0.0243 },
   cobalt: { r: Float32Array.from([33.47,33.45,32.21,30.07,29.36,30.2,31.07,31.2,30.87,30.46,29.95,29.98,30.74,31.6,32.24,32.69,33.15,33.59,33.84,32.85,30.67,29.76,30.57,31.52,31.75,31.37,30.96,30.45,30.02,30.37,31.19,31.85,32.34,32.72,33.02,33.27,33.44,32.32,30.05,29.22,30.03,30.94,31.21,30.97,30.91,30.66,30.17,30.28,30.92,31.68,32.4,32.95,33.37,33.74,34.06,32.85,30.18,28.95,29.44,30.4,31.1,30.99,30.63,30.31,29.9,29.99,30.68,31.46,32.06,32.45,32.8,33.19]), mean: 31.409, nr: 0.761, mx: 34.06, cx: 0.013, cy: -0.101, ecc: 0.0033 },
@@ -222,7 +227,7 @@ function buildBey(c: Custom) {
   const ef = calcStats(c, true).st; // バトルの計算用（隠れ性能を含む）。画面には st を出す
   return {
     name: bl.integrated ? `${bl.name} ${c.bit}` : `${bl.name} ${pick(RATCHETS, c.ratchet).name} ${c.bit}`,
-    color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3,
+    color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, sprite: bl.id in SPRITES ? SPRITES[bl.id] : (SPRITES[bl.id] = loadImg(bl.id)), // 画像（個人用の版だけ。ブレードのidと同じ名前の画像）
     stats: st, weight, height,
     atk: norm(ef.atk, 90, 1.0), // 与ダメージ・弾き飛ばす力
     def: norm(ef.def, 55, 0.45), // 被スピンダメージの軽減
@@ -577,7 +582,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
 }
 
 // 高速回転のベイは止まって見えるほど速く回っているので、残像（ブラー）で描く。回転が落ちると羽根がはっきり見えてくる
-function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, angle: number, ratio: number, cap: string, nBlades = 3, _unused: unknown = null, dir: 1 | -1 = 1, showRing = true) {
+function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, angle: number, ratio: number, cap: string, nBlades = 3, sprite: HTMLImageElement | null = null, dir: 1 | -1 = 1, showRing = true) {
   // 見た目は、単純な円形のコマ（当たり判定はブレードごとの形のまま）
   // 回転が落ちてくるとふらつく
   if (ratio > 0.001 && ratio < 0.3) {
@@ -589,6 +594,15 @@ function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, ang
     ctx.beginPath(); ctx.arc(0, 0, BEY_R + 4, 0, Math.PI * 2); ctx.stroke();
   }
   const baseAlpha = ctx.globalAlpha;
+  if (sprite && sprite.complete && sprite.naturalWidth > 0) { // 個人用の版：ブレードの画像を回して描く（速いほど残像が伸びる）
+    const sz = BEY_R * 2.15, sw = Math.min(2.4 * Math.pow(ratio, 1.5), 0.6 * (Math.PI * 2) / nBlades);
+    const img = (a: number) => { ctx.save(); ctx.rotate(a); ctx.drawImage(sprite, -sz / 2, -sz / 2, sz, sz); ctx.restore(); };
+    for (let k = 1; k < 8 && sw > 0.05; k++) { ctx.globalAlpha = baseAlpha * (0.34 - k * 0.04); img(angle - dir * (k / 8) * sw); }
+    ctx.globalAlpha = baseAlpha * (sw > 0.05 ? 0.6 + 0.4 * (1 - Math.min(1, ratio / 0.5)) : 1);
+    img(angle);
+    ctx.globalAlpha = baseAlpha;
+    return;
+  }
   // 円盤
   ctx.save();
   ctx.fillStyle = '#161d38'; ctx.beginPath(); ctx.arc(0, 0, BEY_R, 0, Math.PI * 2); ctx.fill();
@@ -1453,10 +1467,12 @@ export function Beyblade() {
     const draw = () => {
       ctx.clearRect(0, 0, 170, 170);
       ctx.save(); ctx.translate(85, 85); ctx.scale(2.2, 2.2);
-      drawBey(ctx, bey.color, '#5aabff', 0, 0, '#fff', bey.blades, null, bey.spinDir, false);
+      drawBey(ctx, bey.color, '#5aabff', 0, 0, '#fff', bey.blades, bey.sprite, bey.spinDir, false);
       ctx.restore();
     };
     draw();
+    bey.sprite?.addEventListener('load', draw); // 画像の読み込みが終わったら描き直す
+    return () => bey.sprite?.removeEventListener('load', draw);
   }, [inSelect, custom]);
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -2040,7 +2056,7 @@ export function Beyblade() {
             const rt = Math.max(0, b.spin / b.spinMax), w = b.spin > 0 ? 2 + 75 * Math.pow(rt, 1.5) : 0;
             b.vAng += t.spinDir * Math.min(w * visDt, 0.36 * (Math.PI * 2) / t.blades);
           }
-          drawBey(ctx, t.color, i === 0 ? '#38b6ff' : '#ff3ea5', b.vAng, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, null, t.spinDir);
+          drawBey(ctx, t.color, i === 0 ? '#38b6ff' : '#ff3ea5', b.vAng, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, t.sprite, t.spinDir);
           ctx.restore();
         });
       }
@@ -2073,11 +2089,11 @@ export function Beyblade() {
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && dropRef.current && !(onlineRef.current && selfIdxRef.current !== 0) && (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 0))) {
         const g = dropRef.current;
         const diag = modeRef.current === 'diag';
-        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y, TYPES.me.spinDir), diag, TYPES.me.color, '#38b6ff', '#e8590c', `${namesRef.current.me}：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, null, TYPES.me.spinDir);
+        drawGhost(g, aimRef.current ?? defaultAim(g.x, g.y, TYPES.me.spinDir), diag, TYPES.me.color, '#38b6ff', '#e8590c', `${namesRef.current.me}：${diag ? '斜めシュート' : '水平シュート'}`, TYPES.me.blades, TYPES.me.sprite, TYPES.me.spinDir);
       }
       if ((phaseRef.current === 'launch' || phaseRef.current === 'count') && cpuPlanRef.current && !(onlineRef.current && selfIdxRef.current !== 1) && (vsRef.current === '2p' ? (!seqRef.current || (phaseRef.current === 'launch' && placeStepRef.current === 1)) : !hideOppRef.current)) {
         const c = cpuPlanRef.current;
-        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ff3ea5', '#d81b8a', `${namesRef.current.cpu}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, null, TYPES.cpu.spinDir, vsRef.current === '2p');
+        drawGhost(c, c.aim, c.diag, TYPES.cpu.color, '#ff3ea5', '#d81b8a', `${namesRef.current.cpu}：${c.diag ? '斜めシュート' : '水平シュート'}`, TYPES.cpu.blades, TYPES.cpu.sprite, TYPES.cpu.spinDir, vsRef.current === '2p');
       }
       // 相手の落とす位置を隠しているときのヒント：その位置にランチャーを置く（向きや打ち方は分からない）
       // オンライン対戦も同じ：相手が置き場所を迷って動かすと、ランチャーも動く
@@ -2092,7 +2108,8 @@ export function Beyblade() {
           // ランチャーは横向きのまま、落とせる半分（左右どちらか）の約3分の1を隠す大きさで置く。正確な位置は分からないように少しずらして描く
           // （同じ位置なら同じずれ方なので、ちらつかない）。落とせる半分と、すり鉢の外にははみ出さない
           const sd = c.x < 0 ? -1 : 1;
-          const lw = 190, lh = 64;
+          const lim = c.x < 0 ? LAUNCHERS.red : LAUNCHERS.black, useIm = !!lim && lim.complete && lim.naturalWidth > 0; // 個人用の版：ランチャーの画像
+          const lw = 190, lh = useIm ? (lw * lim!.naturalHeight) / lim!.naturalWidth : 64;
           const hz = (k: number) => 0.5 * Math.sin(c.x * 0.011 * k + c.y * 0.017 + k * 1.7); // 位置になめらかに応じたずれ（動かしても急には飛ばない）
           const cx = sd * (R / 2 + hz(1) * 80), cy = Math.max(-150, Math.min(150, c.y * 0.5 + hz(2) * 160));
           ctx.save();
@@ -2100,12 +2117,14 @@ export function Beyblade() {
           ctx.beginPath(); ctx.rect(sd < 0 ? -R : 2, -R, R, R * 2); ctx.clip();
           ctx.translate(cx, cy);
           ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 16;
-          // 相手のランチャー（簡単な絵）：左側は赤、右側は黒
+          if (useIm) ctx.drawImage(lim!, -lw / 2, -lh / 2, lw, lh);
+          else { // 相手のランチャー（簡単な絵）：左側は赤、右側は黒
           const lg = ctx.createLinearGradient(0, -lh / 2, 0, lh / 2);
           if (c.x < 0) { lg.addColorStop(0, '#f0575f'); lg.addColorStop(1, '#a8202a'); } else { lg.addColorStop(0, '#4a4f5c'); lg.addColorStop(1, '#14171d'); }
           ctx.fillStyle = lg; ctx.beginPath(); ctx.roundRect(-lw / 2, -lh / 2, lw, lh, 18); ctx.fill();
           ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.roundRect(-lw / 2 + 12, -lh / 2 + 8, lw - 24, 10, 5); ctx.fill();
           ctx.fillStyle = '#d9dee8'; ctx.beginPath(); ctx.arc(sd < 0 ? lw / 2 - 28 : -lw / 2 + 28, 0, 15, 0, Math.PI * 2); ctx.fill();
+          }
           ctx.restore();
         }
       }
@@ -2584,6 +2603,7 @@ export function Beyblade() {
                     border: `3px solid ${pos >= 0 ? bey.color : '#2a3566'}`, background: pos >= 0 ? '#14204f' : '#0a1030', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                   }}>
                     <div style={{ width: 46, height: 46, borderRadius: '50%', background: '#161d38', border: `5px solid ${bey.color}`, boxSizing: 'border-box' }} />
+                    {bey.sprite && <img src={bey.sprite.src} alt="" width={58} height={58} />}
                     <div style={{ fontWeight: 800, color: bey.color, textAlign: 'center', fontSize: 13, lineHeight: 1.2 }}>{bey.name}</div>
                     <div style={{ fontSize: 11, opacity: 0.85 }}>攻{bey.stats.atk} 防{bey.stats.def} 持{bey.stats.sta} ダ{bey.stats.dash} 耐{bey.stats.burst}</div>
                     {pos >= 0 && <div style={{ position: 'absolute', top: -9, left: -9, width: 26, height: 26, borderRadius: 13, background: '#ffd740', color: '#04071a', fontWeight: 900, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pos + 1}</div>}

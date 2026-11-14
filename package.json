@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "build:bey": "tsc -b && vite build -c vite.bey.config.ts && node -e \"require('fs').renameSync('dist-bey/bey.html','dist-bey/index.html')\""
+    "build:bey": "tsc -b && vite build -c vite.bey.config.ts && node -e \"require('fs').renameSync('dist-bey/bey.html','dist-bey/index.html')\"",
+    "build:bey-personal": "tsc -b && vite build -c vite.bey-personal.config.ts && node -e \"require('fs').renameSync('dist-bey-personal/bey-personal.html','dist-bey-personal/index.html')\""
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
