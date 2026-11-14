@@ -1823,7 +1823,7 @@ export function Beyblade() {
             { const inn = -(b.vx * nx + b.vy * ny); if (inn < 160) { b.vx -= nx * (160 - inn); b.vy -= ny * (160 - inn); } } // 壁に当たったら、必ずリング内へ戻る向きの速さが残る
             if (t.flat) { b.eAng = Math.random() * Math.PI; b.er = 0.35 + Math.random() * 0.25; } // 壁に当たると、楕円の向きが変わる（軌道が変わる）
             // 相手に強く飛ばされて壁に当たって戻ってくると、持久が少し削られる（自分でぶつかったときは削れない）
-            if (outv > 150 && b.knockT > 0) { b.spin = Math.max(0, b.spin - 0.4 * outv); }
+            if (outv > 150 && b.knockT > 0) { b.spin = Math.max(0, b.spin - Math.min(0.4 * outv, b.spinMax * 0.06)); } // 1回で削られるのは、最大でも回転の6%まで（相手を場外へ飛ばした反動で壁に当たっても、大きく削られすぎない）
           }
           { const k = lim / s2; b.x *= k; b.y *= k; }
         }
@@ -1960,10 +1960,12 @@ export function Beyblade() {
             }
             th = best.th; rr = best.rr;
           }
+          { const rg = ringRadiusAt(Math.sin(th), Math.cos(th)) - BEY_R * 0.6; if (rr > rg) rr = rg; } // リングの内側に戻す（リングの外側だと、強く内側へ押し戻されて、反対側まで飛んでいってしまう）
           bey.x = Math.sin(th) * rr; bey.y = Math.cos(th) * rr;
           const ix = -Math.sin(th), iy = -Math.cos(th), lat = (Math.random() - 0.5) * 0.9;
-          const sp2 = 650 + Math.random() * 250;
+          const sp2 = 150 + Math.random() * 80; // 戻るときは、ふちから少し内側へ転がり出る程度（反対側までは戻らない）
           bey.vx = (ix + -iy * lat) * sp2; bey.vy = (iy + ix * lat) * sp2;
+          bey.calmT = Math.max(bey.calmT, 3); bey.postT = 2.5; bey.dashT = 0; bey.coast = 2; bey.knockT = 0; // 戻ってすぐは勢いをつけない（巡航で加速せず、すり鉢の真ん中へ引かれる力も弱める）
           bey.spin = Math.max(1, bey.spin - bey.spinMax * (0.12 + Math.random() * 0.08));
           bey.retCount++; bey.grace = 1.2; bey.riding = false; bey.holdT = 0; bey.dashCd = Math.max(bey.dashCd, 0.8);
           bey.trail = [];
