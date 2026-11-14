@@ -1839,7 +1839,7 @@ export function Beyblade() {
             { const inn = -(b.vx * nx + b.vy * ny); if (inn < 160) { b.vx -= nx * (160 - inn); b.vy -= ny * (160 - inn); } } // 壁に当たったら、必ずリング内へ戻る向きの速さが残る
             if (t.flat) { b.eAng = Math.random() * Math.PI; b.er = 0.35 + Math.random() * 0.25; } // 壁に当たると、楕円の向きが変わる（軌道が変わる）
             // 相手に強く飛ばされて壁に当たって戻ってくると、持久が少し削られる（自分でぶつかったときは削れない）
-            if (outv > 150 && b.knockT > 0) { b.spin = Math.max(0, b.spin - Math.min(0.4 * outv, b.spinMax * 0.06)); } // 1回で削られるのは、最大でも回転の6%まで（相手を場外へ飛ばした反動で壁に当たっても、大きく削られすぎない）
+            if (outv > 150 && b.knockT > 0) { b.spin = Math.max(0, b.spin - 0.4 * outv); }
           }
           { const k = lim / s2; b.x *= k; b.y *= k; }
         }
