@@ -2002,6 +2002,7 @@ export function Beyblade() {
             const ratio = bey.spin / bey.spinMax;
             const f = Math.max(0, Math.min(1, (ratio - 0.35) / 0.55));
             const pr = bey.retCount >= 1 ? 0 : Math.min(0.8, 0.28 * f * TYPES[bey.type].comeback);
+            beys[1 - i].knockT = 0; // 相手を場外へ飛ばした側：その反動で壁に当たっても、「飛ばされて壁に当たった」扱いで持久を削らない
             bey.outT = 0.9; bey.outKind = k; bey.outPhi = k === 'extreme' ? 0 : Math.sign(bey.x || 1) * OVER_PHI;
             bey.retPlan = Math.random() < pr;
             bey.vx *= 0.35; bey.vy *= 0.35; bey.riding = false; bey.holdT = 0;
