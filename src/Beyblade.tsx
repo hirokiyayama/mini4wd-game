@@ -561,7 +561,10 @@ function defaultAim(x: number, y: number, dir: 1 | -1 = 1) {
 }
 
 // 水平シュート：すぐにリングへ向かいエクストリームダッシュ / 斜めシュート：その場でほんの少し動きながらとどまり、それから動き出す（その間は飛ばされにくい）
-// power(0〜1)：発射時のゲージで決まる。回転数と飛び出しの勢いに効く
+// シュートパワー（回転数）：5000〜15000で選べる。13500が、これまでの標準の強さ（power 0.85）
+const POW_MIN = 5000, POW_MAX = 15000, POW_DEFAULT = 13500;
+const rpmToPower = (rpm: number) => Math.max(0, Math.min(1, (rpm - POW_MIN) / (POW_MAX - POW_MIN)));
+// power(0〜1)：シュートパワーで決まる。回転数と飛び出しの勢いに効く
 function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: number; y: number } | null, power: number): Bey {
   const spinMax = 3350 * (0.6 + 0.4 * power);
   const smallCircle = !diag && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5; // 小さな円で回るビットは、最初から円に沿う向きで動き出す
@@ -786,6 +789,10 @@ export function Beyblade() {
   const [orderWho, setOrderWho] = useState<0 | 1>(0); // 2人対戦の3on3：順番を決めているプレイヤー
   const [hasDrop2, setHasDrop2] = useState(false); // 2人対戦：プレイヤー2が場所を決めたか
   const [shotMode2, setShotMode2] = useState<'flat' | 'diag'>('flat');
+  const [shotPow, setShotPow] = useState(POW_DEFAULT); // シュートパワー：左（自分・プレイヤー1）
+  const [shotPow2, setShotPow2] = useState(POW_DEFAULT); // シュートパワー：右（プレイヤー2）
+  const powRef = useRef(POW_DEFAULT), pow2Ref = useRef(POW_DEFAULT);
+  powRef.current = shotPow; pow2Ref.current = shotPow2;
   const [, setCpuCustom] = useState<Custom>(DEFAULT_CUSTOM); // 再描画用（中身は TYPES.cpu に入る）
   const [cpuSels, setCpuSels] = useState<Custom[]>([0, 1, 2].map(() => ({ blade: '', ratchet: '', bit: '' }))); // CPUのパーツ選択（空 = ランダム）
   const [deck, setDeck] = useState<{ me: Custom[]; cpu: Custom[] }>({ me: [], cpu: [] }); // この対戦で使う3体（1on1は1体）
@@ -1132,8 +1139,8 @@ export function Beyblade() {
     if (phaseRef.current !== 'count' || !my || !cpu) return;
     countTimers.current.forEach(window.clearTimeout);
     const bs: [Bey, Bey] = [
-      makeBey('me', my.x, my.y, modeRef.current === 'diag', aimRef.current, 0.85),
-      makeBey('cpu', cpu.x, cpu.y, cpu.diag, cpu.aim, vsRef.current === '2p' ? 0.85 : cpu.power ?? 0.7 + Math.random() * 0.3),
+      makeBey('me', my.x, my.y, modeRef.current === 'diag', aimRef.current, rpmToPower(powRef.current)),
+      makeBey('cpu', cpu.x, cpu.y, cpu.diag, cpu.aim, vsRef.current === '2p' ? rpmToPower(pow2Ref.current) : cpu.power ?? 0.7 + Math.random() * 0.3),
     ];
     if (vsRef.current === 'cpu') { // CPUの強さ：ベイの回転数が変わる
       const m = DIFF_SPIN[diffRef.current];
@@ -1263,7 +1270,7 @@ export function Beyblade() {
     else if (dropRef.current) q = { x: dropRef.current.x, y: dropRef.current.y, diag: modeRef.current === 'diag', aim: aimRef.current };
     if (!q) return;
     placeSentRef.current = Date.now();
-    sendOn({ t: 'place', x: q.x, y: q.y, diag: q.diag, aim: q.aim, ready });
+    sendOn({ t: 'place', x: q.x, y: q.y, diag: q.diag, aim: q.aim, ready, pow: selfIdxRef.current === 1 ? pow2Ref.current : powRef.current });
   };
   const leaveOnline = (msg = '') => {
     cancelRef.current?.(); cancelRef.current = null;
@@ -1392,6 +1399,7 @@ export function Beyblade() {
         tryStartOrdered();
       } else if (m.t === 'place' && phaseRef.current === 'launch') { // ゲストの置き場所（ゲストが入っている側の枠に入れる）
         const x = Number(m.x), y = Number(m.y), diag = !!m.diag, gi = 1 - selfIdxRef.current;
+        if (typeof m.pow === 'number') { const pw = Math.max(POW_MIN, Math.min(POW_MAX, m.pow)); if (gi === 1) { pow2Ref.current = pw; setShotPow2(pw); } else { powRef.current = pw; setShotPow(pw); } } // ゲストのシュートパワー
         const aim = (m.aim as { x: number; y: number } | null) ?? defaultAim(x, y, gi === 0 ? TYPES.me.spinDir : TYPES.cpu.spinDir);
         if (gi === 1) { cpuPlanRef.current = { x, y, diag, aim }; setHasDrop2(true); }
         else { dropRef.current = { x, y }; aimRef.current = (m.aim as { x: number; y: number } | null); modeRef.current = diag ? 'diag' : 'flat'; setShotMode(diag ? 'diag' : 'flat'); setHasDrop(true); }
@@ -2244,6 +2252,14 @@ export function Beyblade() {
       ))}
     </div>
   );
+  const powCtl = (cur: number, onPick: (v: number) => void, color: string) => ( // シュートパワー（5000〜15000）
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <div style={{ fontSize: 11.5, fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}><span>シュートパワー</span><span style={{ color }}>{cur.toLocaleString()}</span></div>
+      <input type="range" min={POW_MIN} max={POW_MAX} step={500} value={cur} onChange={e => onPick(Number(e.target.value))} style={{ width: '100%', accentColor: color }} />
+    </div>
+  );
+  const setPow1 = (v: number) => { setShotPow(v); powRef.current = v; };
+  const setPow2 = (v: number) => { setShotPow2(v); pow2Ref.current = v; };
   const setMode2 = (k: 'flat' | 'diag') => { setShotMode2(k); if (cpuPlanRef.current) cpuPlanRef.current = { ...cpuPlanRef.current, diag: k === 'diag' }; };
 
   // ---- カスタマイズ（コンパクト）
@@ -2315,6 +2331,7 @@ export function Beyblade() {
           <>
             <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{selfReady ? '相手を待っています…' : placed ? (shotMode === 'diag' ? 'ドラッグで向き → 「決定」' : '「決定」') : `${selfIdx === 0 ? '左' : '右'}半分をタップ`}</div>
             {!selfReady && (selfIdx === 0 ? modeBtns(shotMode, k => { setShotMode(k); modeRef.current = k; sendPlace(false); }, '#38b6ff') : modeBtns(shotMode2, k => { setMode2(k); sendPlace(false); }, '#ff3ea5'))}
+            {!selfReady && (selfIdx === 0 ? powCtl(shotPow, v => { setPow1(v); sendPlace(false); }, '#38b6ff') : powCtl(shotPow2, v => { setPow2(v); sendPlace(false); }, '#ff3ea5'))}
             <button style={{ ...yb, opacity: placed && !selfReady ? 1 : 0.4 }} disabled={!placed || selfReady} onClick={decide}>決定</button>
           </>
         ) : <div style={{ fontSize: 12, opacity: 0.75 }}>相手が場所を決めています…</div>;
@@ -2323,6 +2340,7 @@ export function Beyblade() {
           <>
             <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{hasDrop ? (shotMode === 'diag' ? 'ドラッグで向きを決めて、スタート' : 'スタート') : `${side === 'left' ? '左' : '右'}半分をタップ${compact ? '' : 'して、落とす場所を決める'}`}</div>
             {modeBtns(shotMode, setShotMode, '#ffd740')}
+            {powCtl(shotPow, setPow1, '#ffd740')}
             <button style={{ ...yb, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={shoot}>スタート</button>
           </>
         );
@@ -2331,6 +2349,7 @@ export function Beyblade() {
           <>
             <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{(key === 'me' ? hasDrop : hasDrop2) ? ((key === 'me' ? shotMode : shotMode2) === 'diag' ? 'ドラッグで向き' : '向きはなし') : `${key === 'me' ? '左' : '右'}半分をタップ`}</div>
             {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ff3ea5')}
+            {key === 'me' ? powCtl(shotPow, setPow1, '#5aabff') : powCtl(shotPow2, setPow2, '#ff3ea5')}
           </>
         );
       } else if (seq && ((placeStep === 0 && key === 'me') || (placeStep === 1 && key === 'cpu'))) {
@@ -2340,6 +2359,7 @@ export function Beyblade() {
               {key === 'me' ? (hasDrop ? (shotMode === 'diag' ? 'ドラッグで向き → 「決定」' : '「決定」') : '左半分をタップ（相手は見ないでね）') : (hasDrop2 ? (shotMode2 === 'diag' ? 'ドラッグで向き → 「スタート」' : '「スタート」') : '右半分をタップ')}
             </div>
             {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ff3ea5')}
+            {key === 'me' ? powCtl(shotPow, setPow1, '#5aabff') : powCtl(shotPow2, setPow2, '#ff3ea5')}
             {key === 'me'
               ? <button style={{ ...yb, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={() => setPlaceStep(1)}>決定</button>
               : <button style={{ ...yb, opacity: hasDrop2 ? 1 : 0.4 }} disabled={!hasDrop2} onClick={shoot}>スタート</button>}
