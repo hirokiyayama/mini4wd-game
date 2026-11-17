@@ -41,6 +41,8 @@ const STAT_MAX: Record<keyof Stats, number> = { atk: 140, def: 80, sta: 140, das
 interface PartDef {
   id: string; name: string; desc: string;
   s: Partial<Stats>; weight: number; height?: number; // 重量(g) / 高さ（ラチェットのみ）
+  tier?: number; // ティア表（ユーザーのスプレッドシート）のティア。1が一番強い。書かなければ1
+  bal?: number; // 同じティアの中で強さをそろえるための、バトルの計算だけの倍率（ティア表に合わせて調整した値）
   hid?: Partial<Stats>; // 隠れ性能：画面の数字は変えずに、バトルの計算だけ、この値に置き換える
   type?: 'atk' | 'def' | 'sta' | 'bal'; // タイプ（カスタマイズのタブ分け）。書かなければ性能から自動で決める
   color?: string; blades?: number; img?: string;
@@ -63,32 +65,32 @@ interface PartDef {
   dashLimit?: [number, number]; // 1ラウンドでXダッシュできる回数の上限（最小〜最大からランダム）。Eビットは2〜3回
 }
 const BLADES: PartDef[] = [
-  { id: 'meteor', name: 'メテオドラグーン', desc: '3枚の刃で一撃が重いアタッカー。当たると大きく弾く。', s: { atk: 75, def: 15, sta: 35 }, weight: 39.0, color: '#c4b5fd', blades: 3, spinDir: -1, absorb: 0.45, burstMod: 1.5 },
-  { id: 'cobalt', name: 'コバルトドラグーン', desc: '4枚の刃で弾き力が高い、左回転のブレード。右回転の相手の回転を吸いやすい。', s: { atk: 60, def: 15, sta: 25 }, weight: 37.9, color: '#3b82f6', blades: 4, spinDir: -1, absorb: 1.0, burstMod: 1.0 },
-  { id: 'wizard', name: 'ウィザードロッド', desc: '外側が重く、丸い輪郭で長く回るスタミナ型。', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5 },
-  { id: 'aero', name: 'エアロペガサス', desc: '大きな3枚刃で打撃力が高いアタッカー。', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3 },
-  { id: 'shark', name: 'シャークスケイル', desc: 'とがった2枚刃で、低い位置から強く打ち込む。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2 },
-  { id: 'glory', comeback: 2.2, name: 'グローリーワルキューレ', desc: 'ラチェットと一体になったブレード。当たった相手を強く弾き、バーストしにくい。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, integrated: true, kick: 1.25, burstFloor: 80, burstTough: 2.3 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
-  { id: 'phoenix', name: 'フェニックスウイング', desc: '重い3枚刃で、当たった相手を大きく弾くアタッカー。', s: { atk: 65, def: 30, sta: 20 }, weight: 38.0, color: '#ef4444', blades: 3 },
-  { id: 'knight2', name: 'ナイトシールドV2', desc: '6枚の刃で衝撃をやわらげる、守りのブレード。', s: { atk: 22, def: 60, sta: 28 }, hid: { sta: 55 }, weight: 36.5, color: '#4ade80', blades: 6 },
+  { id: 'meteor', bal: 1.2, name: 'メテオドラグーン', desc: '3枚の刃で一撃が重いアタッカー。当たると大きく弾く。', s: { atk: 75, def: 15, sta: 35 }, weight: 39.0, color: '#c4b5fd', blades: 3, spinDir: -1, absorb: 0.45, burstMod: 1.5 },
+  { id: 'cobalt', bal: 1.14, name: 'コバルトドラグーン', desc: '4枚の刃で弾き力が高い、左回転のブレード。右回転の相手の回転を吸いやすい。', s: { atk: 60, def: 15, sta: 25 }, weight: 37.9, color: '#3b82f6', blades: 4, spinDir: -1, absorb: 1.0, burstMod: 1.0 },
+  { id: 'wizard', bal: 1.07, name: 'ウィザードロッド', desc: '外側が重く、丸い輪郭で長く回るスタミナ型。', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5 },
+  { id: 'aero', bal: 0.96, name: 'エアロペガサス', desc: '大きな3枚刃で打撃力が高いアタッカー。', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3 },
+  { id: 'shark', bal: 0.96, name: 'シャークスケイル', desc: 'とがった2枚刃で、低い位置から強く打ち込む。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2 },
+  { id: 'glory', bal: 0.95, comeback: 2.2, name: 'グローリーワルキューレ', desc: 'ラチェットと一体になったブレード。当たった相手を強く弾き、バーストしにくい。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, integrated: true, kick: 1.25, burstFloor: 80, burstTough: 2.3 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
+  { id: 'phoenix', bal: 0.95, tier: 2, name: 'フェニックスウイング', desc: '重い3枚刃で、当たった相手を大きく弾くアタッカー。', s: { atk: 65, def: 30, sta: 20 }, weight: 38.0, color: '#ef4444', blades: 3 },
+  { id: 'knight2', bal: 0.98, name: 'ナイトシールドV2', desc: '6枚の刃で衝撃をやわらげる、守りのブレード。', s: { atk: 22, def: 60, sta: 28 }, hid: { sta: 55 }, weight: 36.5, color: '#4ade80', blades: 6 },
 ];
 const RATCHETS: PartDef[] = [
   { id: 'r160', comeback: 2.2, name: '1-60', desc: '低めに構えるラチェット。攻撃力が高い。', s: { atk: 17, def: 9, sta: 4 }, height: 60, weight: 6.0 },
-  { id: 'r170', comeback: 2, name: '1-70', desc: '中くらいの高さのラチェット。攻撃力が高い。', s: { atk: 17, def: 6, sta: 7 }, height: 70, weight: 6.1 },
+  { id: 'r170', bal: 1.06, comeback: 2, name: '1-70', desc: '中くらいの高さのラチェット。攻撃力が高い。', s: { atk: 17, def: 6, sta: 7 }, height: 70, weight: 6.1 },
   { id: 'r360', name: '3-60', desc: '低めに構えるラチェット。弾き力が高い。', s: { atk: 15, def: 9, sta: 6 }, height: 60, weight: 6.3 },
   { id: 'r560', name: '5-60', desc: '低く構えるラチェット。遠心力に強く、バランスがよい。', s: { atk: 10, def: 9, sta: 11 }, height: 60, weight: 6.6 },
   { id: 'r760', name: '7-60', desc: '低めに構えるラチェット。守りが固く、連続して当てやすい。', s: { atk: 8, def: 14, sta: 8 }, height: 60, weight: 7.2 },
   { id: 'r960', name: '9-60', desc: '低めに構えるラチェット。連続して当てやすい。', s: { atk: 13, def: 10, sta: 7 }, hid: { sta: 12, atk: 8 }, height: 60, weight: 6.1 },
-  { id: 'r965', name: '9-65', desc: '低めに構えるラチェット。バースト耐性が安定し、ぶれが少ない。', s: { atk: 13, def: 10, sta: 7 }, height: 65, weight: 4.3, burstFloor: 50 },
+  { id: 'r965', bal: 0.95, tier: 2, name: '9-65', desc: '低めに構えるラチェット。バースト耐性が安定し、ぶれが少ない。', s: { atk: 13, def: 10, sta: 7 }, height: 65, weight: 4.3, burstFloor: 50 },
 ];
 const BITS: PartDef[] = [
-  { id: 'E', name: 'E', desc: '姿勢が安定しやすく、ダッシュ中の打撃が強い。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, weight: 3.1, smash: 1.35, absorbBit: 1, dashLimit: [2, 3] },
+  { id: 'E', bal: 1.03, name: 'E', desc: '姿勢が安定しやすく、ダッシュ中の打撃が強い。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, weight: 3.1, smash: 1.35, absorbBit: 1, dashLimit: [2, 3] },
   { id: 'B', name: 'B', desc: '丸い軸先で動きがやわらかく、長く回る。', s: { atk: 15, def: 25, sta: 50, dash: 10, burst: 30 }, weight: 2.1 },
-  { id: 'FB', name: 'FB', desc: '空回りする軸先で、回転のロスが少ない。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
-  { id: 'R', name: 'R', desc: 'ダッシュは控えめだが、回数が多い。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
-  { id: 'LR', name: 'LR', desc: 'Rより低めで、下から打ち上げるのが得意。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, mobility: 1.8 },
-  { id: 'H', name: 'H', desc: '先がとがっていて、すり鉢の真ん中にとどまって回り続ける。飛ばされても、ひと呼吸おいてゆっくり真ん中へ戻る。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, type: 'def', weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
-  { id: 'L', name: 'L', desc: '速さを3段階に切り替えて攻める。', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
+  { id: 'FB', bal: 1.06, name: 'FB', desc: '空回りする軸先で、回転のロスが少ない。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
+  { id: 'R', bal: 0.96, name: 'R', desc: 'ダッシュは控えめだが、回数が多い。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
+  { id: 'LR', bal: 1.03, name: 'LR', desc: 'Rより低めで、下から打ち上げるのが得意。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, mobility: 1.8 },
+  { id: 'H', bal: 0.93, name: 'H', desc: '先がとがっていて、すり鉢の真ん中にとどまって回り続ける。飛ばされても、ひと呼吸おいてゆっくり真ん中へ戻る。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, type: 'def', weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
+  { id: 'L', bal: 1.05, name: 'L', desc: '速さを3段階に切り替えて攻める。', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
   { id: 'Nr', name: 'Nr', desc: '細い軸先で長く回り、ダッシュによるスタミナの消耗が少ない。', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
   { id: 'K', name: 'K', desc: '角のある軸先でスタジアムを蹴って動き回る。', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, weight: 2.1 },
 ];
@@ -225,18 +227,25 @@ function track(name: string, params: Record<string, string> = {}) {
 // 合計値 → バトル中の動きの係数（基準値の付近で1になる）
 const norm = (v: number, ref: number, k: number) => Math.max(0.3, 1 + k * (v / ref - 1));
 
+// ティア表：https://docs.google.com/spreadsheets/d/16ubBwJc3xgnxmZ5GcFnMk6HznfX2o6r_wU0Am8o9wRc （ブレード・ラチェット・ビットの3シート。ティア1が一番強い）
+// 各パーツの tier にティアを書き、bal は同じティア同士の勝率がそろうように、たくさんのラウンドを走らせて決めた値
+// ティアごとの強さ（バトルの計算だけ）：ティアが1つ下がるごとに、攻撃・防御・持久・バースト耐性が少しずつ下がる
+const TIER_POW = [1, 1, 0.92, 0.85, 0.78, 0.72];
+const tierPow = (pt: PartDef | undefined) => (pt ? (TIER_POW[pt.tier ?? 1] ?? 0.72) * (pt.bal ?? 1) : 1);
 function buildBey(c: Custom) {
   const bl = pick(BLADES, c.blade), { st, weight, height, bit } = calcStats(c);
   const ef = calcStats(c, true).st; // バトルの計算用（隠れ性能を含む）。画面には st を出す
+  const tp = tierPow(bl) * (bl.integrated ? 1 : tierPow(pick(RATCHETS, c.ratchet))) * tierPow(bit); // ティア表に合わせた強さ
+  const hBurst = Math.pow(60 / height, 0.8), hSta = Math.pow(height / 60, 0.6); // ラチェットが高いほどバーストされやすく、低いほど持久が上がる（ティア表の注意書き）
   return {
     name: bl.integrated ? `${bl.name} ${c.bit}` : `${bl.name} ${pick(RATCHETS, c.ratchet).name} ${c.bit}`,
     color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, sprite: bl.id in SPRITES ? SPRITES[bl.id] : (SPRITES[bl.id] = loadImg(bl.id)), // 画像（個人用の版だけ。ブレードのidと同じ名前の画像）
     stats: st, weight, height,
-    atk: norm(ef.atk, 90, 1.0), // 与ダメージ・弾き飛ばす力
-    def: norm(ef.def, 55, 0.45), // 被スピンダメージの軽減
-    decay: 0.85 / norm(ef.sta, 90, 0.6), // 持久が高いほど回転が減りにくい
+    atk: norm(ef.atk, 90, 1.0) * tp, // 与ダメージ・弾き飛ばす力
+    def: norm(ef.def, 55, 0.45) * tp, // 被スピンダメージの軽減
+    decay: (0.85 / norm(ef.sta, 90, 0.6)) * hSta / tp, // 持久が高いほど回転が減りにくい
     mass: (weight / 45) ** 2 * (60 / height), // 重いほど、ラチェットが低いほど、飛ばされにくい
-    burstRes: norm(ef.burst, 55, 0.35) * (1 + ((bl.burstMod ?? 1) - 1) * (bit.id === 'E' ? 1 : 0.3)) * (bl.burstTough ?? 1), // ブレードの形状による差は、Eビットのときに大きく出る // バースト耐性（ビットの値）
+    burstRes: norm(ef.burst, 55, 0.35) * (1 + ((bl.burstMod ?? 1) - 1) * (bit.id === 'E' ? 1 : 0.3)) * (bl.burstTough ?? 1) * hBurst * tp, // ブレードの形状による差は、Eビットのときに大きく出る // バースト耐性（ビットの値）
     dash: bit.dashSpeed ?? 1, // Xダッシュの速さ
     dashCost: bit.dashCost ?? 1, // Xダッシュで失う持久の倍率
     kick: bl.kick ?? 1, // 相手を弾く力の倍率
