@@ -55,6 +55,7 @@ interface PartDef {
   burstMod?: number; // ブレードの形状によるバーストしやすさ（大きいほどバーストしにくい）
   smash?: number; // Xダッシュ中の打撃力の倍率（Eビットのスマッシュ攻撃）
   absorbBit?: number; // ビット側の回転吸収の得意さ
+  low?: { s: Partial<Stats>; hid?: Partial<Stats>; height: number }; // 高さを切り替えられるブレード（ヘルズネザー）：ローモードの性能と高さ
   integrated?: boolean; // ラチェット一体型のブレード（ラチェットは選べない。高さと重量はブレードのもの）
   syn?: { blades: string[]; good?: Partial<Stats>; bad?: Partial<Stats> }; // 相性のよいブレードに付けたときの隠れ補正 / それ以外に付けたときの隠れ補正（バトルの計算だけ）
   dashCost?: number; // Xダッシュで失う持久の倍率（Nrビット：スタミナロスを軽減）
@@ -72,6 +73,10 @@ const BLADES: PartDef[] = [
   { id: 'shark', bal: 0.96, name: 'シャークスケイル', desc: 'とがった2枚刃で、低い位置から強く打ち込む。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2 },
   { id: 'glory', bal: 0.95, comeback: 2.2, name: 'グローリーワルキューレ', desc: 'ラチェットと一体になったブレード。当たった相手を強く弾き、バーストしにくい。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, integrated: true, kick: 1.25, burstFloor: 80, burstTough: 2.3 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
   { id: 'phoenix', bal: 0.95, tier: 2, name: 'フェニックスウイング', desc: '重い3枚刃で、当たった相手を大きく弾くアタッカー。', s: { atk: 65, def: 30, sta: 20 }, weight: 38.0, color: '#ef4444', blades: 3 },
+  { id: 'hells', bal: 0.97, tier: 2, name: 'ヘルズネザー', desc: 'ラチェットと一体になったブレード。高さを切り替えて、弾きの強いアタック刃（ロー）といなし刃（ノーマル）を使い分ける。', s: { atk: 50, def: 50, sta: 30 }, hid: { atk: 86, def: 80, sta: 51 }, low: { s: { atk: 70, def: 45, sta: 15 }, hid: { atk: 106, def: 75, sta: 36 }, height: 50 }, weight: 42.9, height: 60, color: '#f97316', blades: 4, integrated: true }, // 一体型なので、ラチェットのぶん（バトルの計算でラチェットは3倍）を隠れ性能に足している
+  { id: 'wyvern', bal: 1.02, tier: 2, comeback: 2.0, name: 'ワイバーンホバー', desc: '下向きにすぼまった段差のある2枚刃で、相手の攻撃を上から押さえつけて衝撃を分散する。場外から戻りやすい。', s: { atk: 13, def: 60, sta: 27 }, type: 'def', weight: 34.9, color: '#a3e635', blades: 2 },
+  { id: 'clock', bal: 1.05, tier: 3, name: 'クロックミラージュ', desc: '円盤の形をした60枚刃で、とても長く回り続ける。そのかわり、とてもバーストしやすい。', s: { atk: 10, def: 10, sta: 80 }, type: 'sta', weight: 37.7, color: '#22d3ee', blades: 6, burstTough: 0.55 },
+  { id: 'golem', bal: 1.08, tier: 3, name: 'ゴーレムロック', desc: '連打形状の側面で攻撃を受け止め、傾いたときは上下方向の打撃面で相手を弾く。', s: { atk: 30, def: 60, sta: 10 }, type: 'def', weight: 34.0, color: '#fb923c', blades: 4, kick: 1.1 },
   { id: 'knight2', bal: 0.98, name: 'ナイトシールドV2', desc: '6枚の刃で衝撃をやわらげる、守りのブレード。', s: { atk: 22, def: 60, sta: 28 }, hid: { sta: 55 }, weight: 36.5, color: '#4ade80', blades: 6 },
 ];
 const RATCHETS: PartDef[] = [
@@ -112,6 +117,10 @@ const SHAPES: Record<string, { r: Float32Array; mean: number; nr: number; mx: nu
   shark: { r: Float32Array.from([32.54,32.68,32.57,31.99,31.77,32.26,32.49,32.51,32.86,33.16,32.93,32.28,31.66,31.18,30.69,30.21,29.84,29.52,29.84,31.55,33.75,34.9,35.15,35.36,35.21,34.52,33.81,33.33,33.11,32.87,32.38,32.17,32.46,32.57,32.4,32.27,32.38,32.7,32.64,32.07,31.92,32.36,32.65,32.83,33.24,33.59,33.46,32.99,32.52,32.07,31.57,31.08,30.68,30.43,30.93,32.57,34.18,34.65,34.62,34.78,34.63,34.01,33.4,33.04,32.89,32.63,32.12,31.99,32.49,32.78,32.62,32.49]), mean: 32.622, nr: 0.679, mx: 35.36, cx: 0.127, cy: 0.223, ecc: 0.0079 },
   glory: { r: Float32Array.from([33.18,33.89,34.24,34.32,34.15,33.63,32.79,31.88,31.15,30.69,30.68,31.24,31.96,32.46,32.75,32.75,32.83,33.41,33.8,33.81,33.81,33.98,34.49,35.27,36.17,36.88,37.16,37.19,36.94,36.25,35.25,34.22,33.33,32.64,32.48,33.01,33.5,33.59,33.41,33.28,33.52,33.68,33.42,33.05,32.95,33.23,33.76,34.36,34.82,34.99,34.88,34.51,33.82,32.71,31.51,30.62,29.95,29.39,29.28,29.78,30.35,30.58,30.54,30.29,30.31,30.91,31.26,31.12,31.02,31.16,31.55,32.26]), mean: 32.972, nr: 1, mx: 37.19, cx: 1.488, cy: -1.047, ecc: 0.0552 },
   phoenix: { r: Float32Array.from([30.06,32.44,33.68,33.53,33.34,33.16,32.64,32.37,32.9,33.3,33.19,32.85,32.46,32.44,32.65,32.58,32.58,32.9,32.36,30.75,29.52,29.19,29.34,29.56,30.79,33.04,34.11,34,33.83,33.51,33.23,33.4,33.67,33.61,33.37,32.99,32.62,32.58,32.51,32.31,32.4,32.12,30.89,29.31,28.14,28.01,28.64,29.03,30.12,32.38,33.56,33.51,33.35,32.91,32.68,33.1,33.34,33.13,32.89,32.54,32.17,32.09,32.06,31.96,32.2,32.38,31.53,30,28.97,28.57,28.61,28.84]), mean: 31.955, nr: 1, mx: 34.11, cx: 0.128, cy: -0.299, ecc: 0.0102 }, // フェニックスウイング：写真の輪郭から作った外形（3つのとがった刃先で強く弾く）
+  wyvern: { r: Float32Array.from([29.69,29.23,28.72,28.34,28.48,29.14,29.57,29.55,29.36,29.16,29.1,29.39,30.14,30.89,31.19,31.23,31.28,31.41,31.6,31.81,32.04,32.35,32.72,32.91,32.82,32.5,32.21,32.46,33.14,33.46,33.04,32.28,31.66,31.15,30.92,30.74,30.24,29.66,29.25,29.36,29.99,30.38,30.35,30.26,30.15,30.01,29.94,30.31,31.04,31.38,31.32,31.26,31.28,31.35,31.5,31.85,32.3,32.66,33,33.21,32.99,32.43,32.12,32.43,33.19,33.84,33.6,32.66,31.69,30.86,30.37,30.07]), mean: 31.167, nr: 0.855, mx: 33.84, cx: 0.223, cy: 0.209, ecc: 0.0098 }, // ワイバーンホバー：2枚刃の段差：写真の輪郭から作った外形
+  hells: { r: Float32Array.from([32.43,32.08,31.56,31.33,31.56,32.37,33.32,33.58,33.26,32.92,32.75,32.66,32.56,32.48,32.44,32.34,32.03,31.71,31.78,32.37,33.12,33.44,33.19,32.83,32.57,32.33,32.11,32,31.93,31.63,31.3,31.29,31.69,32.5,33.17,33.16,32.75,32.38,32.18,32.06,31.99,31.97,31.93,31.62,31.19,31.14,31.41,31.97,32.72,32.96,32.67,32.56,32.5,32.22,31.86,31.7,31.71,31.47,31.04,30.89,31.2,31.74,32.69,33.69,34.03,33.77,33.35,33.06,32.88,32.71,32.58,32.51]), mean: 32.318, nr: 0.202, mx: 34.03, cx: -0.206, cy: -0.558, ecc: 0.0184 }, // ヘルズネザー：ほぼ丸い外形：写真の輪郭から作った外形
+  clock: { r: Float32Array.from([33.58,33.57,33.46,33.28,33.14,33.1,33.11,33.14,33.11,32.96,32.79,32.65,32.6,32.62,32.63,32.71,32.86,32.96,32.95,32.91,33,33.15,33.16,33.14,33.17,33.2,33.26,33.34,33.46,33.64,33.7,33.58,33.38,33.32,33.42,33.51,33.62,33.76,33.83,33.85,33.86,33.82,33.7,33.55,33.47,33.47,33.5,33.54,33.51,33.47,33.55,33.68,33.75,33.78,33.85,33.94,33.99,34.02,34.06,34.08,34.03,33.96,33.91,33.94,34.05,34.1,34,33.84,33.66,33.56,33.58,33.59]), mean: 33.465, nr: 0, mx: 34.10, cx: -0.068, cy: 0.413, ecc: 0.0125 }, // クロックミラージュ：細かい刃の円盤（ほぼ真円）：写真の輪郭から作った外形
+  golem: { r: Float32Array.from([32.38,32.58,32.59,32.32,31.77,31.31,31.19,31.34,31.63,32.05,32.51,32.79,32.85,32.92,32.96,32.75,32.35,32.11,32.31,32.99,33.79,34.15,34.14,34.03,33.86,33.31,32.29,31.22,30.45,30.39,31.17,31.99,32.43,32.56,32.51,32.45,32.12,31.39,30.74,30.33,30.14,30.26,30.39,30.1,29.51,29.07,28.91,29.12,29.4,29.36,29.08,28.98,29.27,29.84,30.45,30.95,31.31,31.4,31.94,33.25,34,33.93,33.42,32.46,31.37,30.42,29.77,29.82,30.64,31.48,31.9,32.11]), mean: 31.598, nr: 0.874, mx: 34.15, cx: -0.366, cy: -1.318, ecc: 0.0433 }, // ゴーレムロック：ごつごつした岩の外形：写真の輪郭から作った外形
   knight2: { r: Float32Array.from([33.12,32.88,33.14,33.4,33.38,33.43,33.43,33.3,33.25,33.22,33.01,32.88,33.14,33.47,33.64,33.81,33.8,33.67,33.59,33.7,34.1,34.32,34.18,33.95,33.65,33.46,33.62,33.92,34.1,34.18,34.15,34.09,34.06,33.74,33.37,33.47,33.91,34.35,34.58,34.46,34.31,34.49,34.62,34.67,34.78,34.59,34.19,33.74,33.36,33.34,33.58,33.69,33.69,33.86,34.04,34.1,33.95,33.49,33.12,33.32,33.82,34.18,34.41,34.28,33.96,33.98,34.02,34.06,34.24,34.19,33.92,33.58]), mean: 33.812, nr: 0, mx: 34.78, cx: 0.298, cy: 0.161, ecc: 0.01 }
 };
 const nrOf = (id: string) => SHAPES[id]?.nr ?? 0.5;
@@ -149,7 +158,7 @@ function polyContact(ida: string, xa: number, ya: number, aa: number, idb: strin
   test(idb, xb, yb, ab, ida, xa, ya, aa, 1);  // bの点がaの中へ：aの外向き法線（a→b向き）
   return pen > 0 ? { nx, ny, pen, cx: qx, cy: qy } : null;
 }
-interface Custom { blade: string; ratchet: string; bit: string }
+interface Custom { blade: string; ratchet: string; bit: string; low?: boolean } // low：高さを切り替えられるブレードのローモード
 // バランス確認用：?me=blade,ratchet,bit &cpu=blade,ratchet,bit &speed=倍速（通常は使わない）
 const urlParams = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
 const urlCustom = (key: string): Custom | null => {
@@ -159,6 +168,8 @@ const urlCustom = (key: string): Custom | null => {
 const DEFAULT_CUSTOM: Custom = { blade: 'shark', ratchet: 'r560', bit: 'B' };
 const pick = (list: PartDef[], id: string) => list.find(p => p.id === id) ?? list[0];
 
+// ローモードを選んでいるときは、ブレードの性能と高さをローモードのものにする
+const bladeOf = (c: Custom): PartDef => { const b = pick(BLADES, c.blade); return b.low && c.low ? { ...b, s: b.low.s, hid: b.low.hid, height: b.low.height } : b; };
 const isInt = (c: Custom) => !!pick(BLADES, c.blade).integrated; // ラチェット一体型のブレードか
 
 // 3on3の公式ルール：3体で同じパーツ（ブレード・ラチェット・ビット）を重ねて使えない
@@ -189,6 +200,7 @@ function randomDeck(sels: Custom[]): Custom[] {
     const pool = shuffled(LISTS[key].map(pt => pt.id).filter(id => !taken.has(id)));
     for (const o of out) if (!o[key]) o[key] = pool.pop() ?? LISTS[key][0].id;
   }
+  for (const o of out) if (pick(BLADES, o.blade).low && o.low === undefined) o.low = Math.random() < 0.5; // 高さを切り替えられるブレードは、ノーマルかローをランダムに
   return out;
 }
 
@@ -197,7 +209,7 @@ const makeDefaultDeck = (): Custom[] => randomDeck([0, 1, 2].map(() => ({ blade:
 // パーツの数値を合計する（重量・高さも）
 function calcStats(c: Custom, hidden = false) {
   const st: Stats = { atk: 0, def: 0, sta: 0, dash: 0, burst: 0 };
-  const bl = pick(BLADES, c.blade), ra = pick(RATCHETS, c.ratchet), bit = pick(BITS, c.bit);
+  const bl = bladeOf(c), ra = pick(RATCHETS, c.ratchet), bit = pick(BITS, c.bit);
   const parts = bl.integrated ? [bl, bit] : [bl, ra, bit]; // ラチェット一体型のブレードは、ラチェットを使わない
   let weight = 0;
   for (const part of parts) {
@@ -233,12 +245,12 @@ const norm = (v: number, ref: number, k: number) => Math.max(0.3, 1 + k * (v / r
 const TIER_POW = [1, 1, 0.92, 0.85, 0.78, 0.72];
 const tierPow = (pt: PartDef | undefined) => (pt ? (TIER_POW[pt.tier ?? 1] ?? 0.72) * (pt.bal ?? 1) : 1);
 function buildBey(c: Custom) {
-  const bl = pick(BLADES, c.blade), { st, weight, height, bit } = calcStats(c);
+  const bl = bladeOf(c), { st, weight, height, bit } = calcStats(c);
   const ef = calcStats(c, true).st; // バトルの計算用（隠れ性能を含む）。画面には st を出す
   const tp = tierPow(bl) * (bl.integrated ? 1 : tierPow(pick(RATCHETS, c.ratchet))) * tierPow(bit); // ティア表に合わせた強さ
   const hBurst = Math.pow(60 / height, 0.8), hSta = Math.pow(height / 60, 0.6); // ラチェットが高いほどバーストされやすく、低いほど持久が上がる（ティア表の注意書き）
   return {
-    name: bl.integrated ? `${bl.name} ${c.bit}` : `${bl.name} ${pick(RATCHETS, c.ratchet).name} ${c.bit}`,
+    name: bl.integrated ? `${bl.name}${bl.low ? (c.low ? '（ロー）' : '（ノーマル）') : ''} ${c.bit}` : `${bl.name} ${pick(RATCHETS, c.ratchet).name} ${c.bit}`,
     color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, sprite: bl.id in SPRITES ? SPRITES[bl.id] : (SPRITES[bl.id] = loadImg(bl.id)), // 画像（個人用の版だけ。ブレードのidと同じ名前の画像）
     stats: st, weight, height,
     atk: norm(ef.atk, 90, 1.0) * tp, // 与ダメージ・弾き飛ばす力
@@ -289,12 +301,12 @@ const HARD_POOL: Custom[] = [
 type Style = 'power' | 'technique' | 'attacker' | 'stamina' | 'defense' | 'absorb' | 'dasher' | 'balance' | 'wild';
 // タイプごとに使うパーツの傾向（3体で同じパーツは重ならない）
 const STYLE_POOLS: Record<Style, { blade: string[]; ratchet: string[]; bit: string[] } | null> = {
-  attacker: { blade: ['aero', 'shark', 'glory', 'meteor', 'phoenix'], ratchet: ['r160', 'r170', 'r360'], bit: ['LR', 'R', 'K', 'L', 'E'] },
-  stamina: { blade: ['wizard', 'knight2', 'shark'], ratchet: ['r960', 'r965', 'r760'], bit: ['B', 'FB', 'Nr'] },
-  defense: { blade: ['knight2', 'wizard', 'aero'], ratchet: ['r760', 'r560', 'r960'], bit: ['H', 'B', 'FB'] },
+  attacker: { blade: ['aero', 'shark', 'glory', 'meteor', 'phoenix', 'hells'], ratchet: ['r160', 'r170', 'r360'], bit: ['LR', 'R', 'K', 'L', 'E'] },
+  stamina: { blade: ['wizard', 'knight2', 'shark', 'clock'], ratchet: ['r960', 'r965', 'r760'], bit: ['B', 'FB', 'Nr'] },
+  defense: { blade: ['knight2', 'wizard', 'aero', 'wyvern', 'golem'], ratchet: ['r760', 'r560', 'r960'], bit: ['H', 'B', 'FB'] },
   absorb: { blade: ['cobalt', 'meteor', 'glory'], ratchet: ['r960', 'r760', 'r560'], bit: ['E', 'L', 'LR'] },
   dasher: { blade: ['aero', 'shark', 'glory'], ratchet: ['r760', 'r360', 'r960'], bit: ['R', 'LR', 'K'] },
-  power: { blade: ['glory', 'meteor', 'aero', 'phoenix'], ratchet: ['r160', 'r360', 'r170'], bit: ['L', 'E', 'LR'] },
+  power: { blade: ['glory', 'meteor', 'aero', 'phoenix', 'hells'], ratchet: ['r160', 'r360', 'r170'], bit: ['L', 'E', 'LR'] },
   technique: { blade: ['shark', 'aero', 'wizard'], ratchet: ['r760', 'r360', 'r560'], bit: ['R', 'LR', 'B'] },
   balance: null, wild: null,
 };
@@ -2336,6 +2348,7 @@ export function Beyblade() {
                 <span style={{ opacity: 0.8 }}>{sel.weight}g</span>
                 {sel.img && <span style={{ color: sel.spinDir === -1 ? '#ffd740' : '#9fb2ff', fontWeight: 700 }}>{sel.spinDir === -1 ? '左回転' : '右回転'}</span>}
               </div>
+              {sel.low && <div style={{ opacity: 0.9 }}>ローモード：{STAT_LABELS.filter(([k]) => sel.low!.s[k] !== undefined).map(([k, label]) => `${label} ${sel.low!.s[k]}`).join('  ')}  高さ {sel.low.height}（左の画面で切り替え）</div>}
             </>
           )}
         </div>
@@ -2580,6 +2593,13 @@ export function Beyblade() {
                     ))}
                   </div>
                   <div style={{ fontSize: 11, opacity: 0.85, textAlign: 'center' }}>{myBey.weight}g・高さ{myBey.height}・<span style={{ color: myBey.spinDir === -1 ? '#ffd740' : '#9fb2ff', fontWeight: 700 }}>{myBey.spinDir === -1 ? '左回転' : '右回転'}</span></div>
+                  {pick(BLADES, custom.blade).low && ( // 高さを切り替えられるブレード（ヘルズネザー）
+                    <div style={{ display: 'flex', gap: 3, width: '100%' }}>
+                      {([[false, 'ノーマル'], [true, 'ロー']] as const).map(([k, l]) => (
+                        <button key={l} onClick={() => setCustom(c => ({ ...c, low: k }))} title={k ? '低く構えて、弾きの強いアタック刃で当てる' : 'いなし刃で受け流す'} style={{ ...sb(!!custom.low === k, myBey.color), flex: 1, padding: '2px 4px', fontSize: 12 }}>{l}</button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {partPicker('ブレード', BLADES, custom.blade, id => setCustom(c => ({ ...c, blade: id })), usedByOthers('blade'))}
                 {partPicker('ラチェット', RATCHETS, custom.ratchet, id => setCustom(c => ({ ...c, ratchet: id })), usedByOthers('ratchet'))}
@@ -2633,6 +2653,16 @@ export function Beyblade() {
                         </select>
                       </label>
                     ); })}
+                    {BLADES.find(b => b.id === cpuSels[n].blade)?.low && (
+                      <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        モード
+                        <select value={cpuSels[n].low === undefined ? '' : cpuSels[n].low ? 'low' : 'normal'}
+                          onChange={e => setCpuSels(cs => cs.map((c, i) => (i !== n ? c : { ...c, low: e.target.value === '' ? undefined : e.target.value === 'low' })))}
+                          style={{ padding: '2px 4px', borderRadius: 5, background: '#14204f', color: '#fff', border: '1px solid #2a3566', fontSize: 12.5 }}>
+                          <option value="">ランダム</option><option value="normal">ノーマル</option><option value="low">ロー</option>
+                        </select>
+                      </label>
+                    )}
                   </div>
                 ))}
               </div>
