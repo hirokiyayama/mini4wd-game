@@ -89,15 +89,15 @@ const RATCHETS: PartDef[] = [
   { id: 'r965', bal: 0.95, tier: 2, name: '9-65', desc: '低めに構えるラチェット。バースト耐性が安定し、ぶれが少ない。', s: { atk: 13, def: 10, sta: 7 }, height: 65, weight: 4.3, burstFloor: 50 },
 ];
 const BITS: PartDef[] = [
-  { id: 'E', bal: 1.03, name: 'E', desc: '姿勢が安定しやすく、ダッシュ中の打撃が強い。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, weight: 3.1, smash: 1.35, absorbBit: 1, dashLimit: [2, 3] },
+  { id: 'E', bal: 1.03, name: 'E', desc: '姿勢が安定しやすく、ダッシュ中の打撃が強い。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, type: 'bal', weight: 3.1, smash: 1.35, absorbBit: 1, dashLimit: [2, 3] },
   { id: 'B', name: 'B', desc: '丸い軸先で動きがやわらかく、長く回る。', s: { atk: 15, def: 25, sta: 50, dash: 10, burst: 30 }, weight: 2.1 },
   { id: 'FB', bal: 1.06, name: 'FB', desc: '空回りする軸先で、回転のロスが少ない。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
   { id: 'R', bal: 0.96, name: 'R', desc: 'ダッシュは控えめだが、回数が多い。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
   { id: 'LR', bal: 1.03, name: 'LR', desc: 'Rより低めで、下から打ち上げるのが得意。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, mobility: 1.8 },
-  { id: 'H', bal: 0.93, name: 'H', desc: '先がとがっていて、すり鉢の真ん中にとどまって回り続ける。飛ばされても、ひと呼吸おいてゆっくり真ん中へ戻る。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, type: 'def', weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
+  { id: 'H', bal: 0.93, name: 'H', desc: '先がとがっていて、すり鉢の真ん中にとどまって回り続ける。飛ばされても、ひと呼吸おいてゆっくり真ん中へ戻る。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, type: 'bal', weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
   { id: 'L', bal: 1.05, name: 'L', desc: '速さを3段階に切り替えて攻める。', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
   { id: 'Nr', name: 'Nr', desc: '細い軸先で長く回り、ダッシュによるスタミナの消耗が少ない。', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
-  { id: 'K', name: 'K', desc: '角のある軸先でスタジアムを蹴って動き回る。', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, weight: 2.1 },
+  { id: 'K', name: 'K', desc: '角のある軸先でスタジアムを蹴って動き回る。', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, type: 'bal', weight: 2.1 },
 ];
 
 // ブレードの写真（背景を抜いた画像）。戦闘中・プレビューでこの画像を回して描く
