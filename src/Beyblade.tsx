@@ -792,6 +792,7 @@ export function Beyblade() {
   const [orderWho, setOrderWho] = useState<0 | 1>(0); // 2人対戦の3on3：順番を決めているプレイヤー
   const [hasDrop2, setHasDrop2] = useState(false); // 2人対戦：プレイヤー2が場所を決めたか
   const [shotMode2, setShotMode2] = useState<'flat' | 'diag'>('flat');
+  const [partTab, setPartTab] = useState<Record<string, string>>({}); // カスタマイズ：パーツ一覧のしぼりこみ（ブレード・ラチェット・ビットごと）
   const [shotPow, setShotPow] = useState(POW_DEFAULT); // シュートパワー：左（自分・プレイヤー1）
   const [shotPow2, setShotPow2] = useState(POW_DEFAULT); // シュートパワー：右（プレイヤー2）
   const powRef = useRef(POW_DEFAULT), pow2Ref = useRef(POW_DEFAULT);
@@ -2271,11 +2272,25 @@ export function Beyblade() {
   const partPicker = (title: string, list: PartDef[], value: string, onPick: (id: string) => void, blocked: string[] = []) => {
     const sel = list.find(pt => pt.id === value) ?? list[0];
     const allBlocked = list.every(pt => blocked.includes(pt.id));
+    // パーツが増えても選びやすいように：いちばん高い性能（攻撃・防御・持久・ダッシュ）でタイプ分けして、タブでしぼりこむ。一覧はスクロールする
+    const TYPE_KEYS = [['atk', '攻撃'], ['def', '防御'], ['sta', '持久'], ['dash', 'ダッシュ']] as const;
+    const typeOf = (pt: PartDef) => { let best: string = 'atk', bv = -Infinity; for (const [k] of TYPE_KEYS) { const v = (pt.s as Record<string, number | undefined>)[k]; if (v !== undefined && v > bv) { bv = v; best = k; } } return best; };
+    const tabs = TYPE_KEYS.filter(([k]) => list.some(pt => typeOf(pt) === k));
+    const useTabs = list.length > 6 && tabs.length > 1;
+    const tab = useTabs ? partTab[title] ?? 'all' : 'all';
+    const shown = tab === 'all' ? list : list.filter(pt => typeOf(pt) === tab);
     return (
       <div style={{ flex: list.length > 6 && title === 'ブレード' ? 1.25 : 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3, minHeight: 0 }}>
-        <div style={{ fontWeight: 800, fontSize: 13 }}>{title}</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-          {list.map(pt => {
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}><span style={{ fontWeight: 800, fontSize: 13 }}>{title}</span><span style={{ fontSize: 10.5, opacity: 0.6 }}>{list.length}種類</span></div>
+        {useTabs && (
+          <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            {([['all', 'すべて'], ...tabs] as const).map(([k, l]) => (
+              <button key={k} onClick={() => setPartTab(t => ({ ...t, [title]: k }))} style={{ padding: '0 6px', borderRadius: 8, fontSize: 10.5, fontWeight: 700, cursor: 'pointer', color: tab === k ? '#04071a' : '#cfd8ff', background: tab === k ? '#ffd740' : '#121a42', border: '1px solid #2a3566' }}>{l}</button>
+            ))}
+          </div>
+        )}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, alignContent: 'flex-start', overflowY: 'auto', flex: '1 1 0', minHeight: 40, paddingRight: 2, scrollbarWidth: 'thin', scrollbarColor: '#5aabff #0a1030' }}>
+          {shown.map(pt => {
             const bl = blocked.includes(pt.id);
             const on = value === pt.id && !allBlocked;
             return (
@@ -2291,7 +2306,7 @@ export function Beyblade() {
           })}
         </div>
         {/* 押した（選んだ）パーツの詳細 */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 6px', borderRadius: 6, background: '#0a1030', border: '1px solid #2a3566', fontSize: 11.5, lineHeight: 1.35 }}>
+        <div style={{ flex: '0 0 auto', maxHeight: '40%', minHeight: 44, overflowY: 'auto', padding: '4px 6px', borderRadius: 6, background: '#0a1030', border: '1px solid #2a3566', fontSize: 11.5, lineHeight: 1.35 }}>
           {allBlocked ? (
             <div style={{ opacity: 0.8 }}>ラチェット一体型のブレードなので、ラチェットは選べません。</div>
           ) : (
