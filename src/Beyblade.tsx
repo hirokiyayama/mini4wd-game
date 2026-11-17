@@ -42,6 +42,7 @@ interface PartDef {
   id: string; name: string; desc: string;
   s: Partial<Stats>; weight: number; height?: number; // 重量(g) / 高さ（ラチェットのみ）
   hid?: Partial<Stats>; // 隠れ性能：画面の数字は変えずに、バトルの計算だけ、この値に置き換える
+  type?: 'atk' | 'def' | 'sta' | 'bal'; // タイプ（カスタマイズのタブ分け）。書かなければ性能から自動で決める
   color?: string; blades?: number; img?: string;
   dashSpeed?: number; // Xダッシュの速さの倍率（現在はどのビットも等倍。R/LRはダッシュの回数だけが増える）
   steady?: number; // 当てられたときの飛ばされにくさ（小さいほど飛ばされにくい。姿勢保持・攻撃をかわす系のビット）
@@ -86,7 +87,7 @@ const BITS: PartDef[] = [
   { id: 'FB', name: 'FB', desc: '空回りする軸先で、回転のロスが少ない。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
   { id: 'R', name: 'R', desc: 'ダッシュは控えめだが、回数が多い。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
   { id: 'LR', name: 'LR', desc: 'Rより低めで、下から打ち上げるのが得意。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, mobility: 1.8 },
-  { id: 'H', name: 'H', desc: '先がとがっていて、すり鉢の真ん中にとどまって回り続ける。飛ばされても、ひと呼吸おいてゆっくり真ん中へ戻る。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
+  { id: 'H', name: 'H', desc: '先がとがっていて、すり鉢の真ん中にとどまって回り続ける。飛ばされても、ひと呼吸おいてゆっくり真ん中へ戻る。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, type: 'def', weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
   { id: 'L', name: 'L', desc: '速さを3段階に切り替えて攻める。', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
   { id: 'Nr', name: 'Nr', desc: '細い軸先で長く回り、ダッシュによるスタミナの消耗が少ない。', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
   { id: 'K', name: 'K', desc: '角のある軸先でスタジアムを蹴って動き回る。', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, weight: 2.1 },
@@ -2272,11 +2273,18 @@ export function Beyblade() {
   const partPicker = (title: string, list: PartDef[], value: string, onPick: (id: string) => void, blocked: string[] = []) => {
     const sel = list.find(pt => pt.id === value) ?? list[0];
     const allBlocked = list.every(pt => blocked.includes(pt.id));
-    // パーツが増えても選びやすいように：いちばん高い性能（攻撃・防御・持久・ダッシュ）でタイプ分けして、タブでしぼりこむ。一覧はスクロールする
-    const TYPE_KEYS = [['atk', '攻撃'], ['def', '防御'], ['sta', '持久'], ['dash', 'ダッシュ']] as const;
-    const typeOf = (pt: PartDef) => { let best: string = 'atk', bv = -Infinity; for (const [k] of TYPE_KEYS) { const v = (pt.s as Record<string, number | undefined>)[k]; if (v !== undefined && v > bv) { bv = v; best = k; } } return best; };
-    const tabs = TYPE_KEYS.filter(([k]) => list.some(pt => typeOf(pt) === k));
-    const useTabs = list.length > 6 && tabs.length > 1;
+    // パーツが増えても選びやすいように、タブでしぼりこむ。一覧はスクロールする
+    // ブレード・ビット：アタック／ディフェンス／スタミナ／バランス（type を書いていなければ性能から決める）。ラチェット：高さで50〜80系統
+    const isRatchet = list === RATCHETS;
+    const tabs: [string, string][] = isRatchet ? [['50', '50系統'], ['60', '60系統'], ['70', '70系統'], ['80', '80系統']] : [['atk', 'アタック'], ['def', 'ディフェンス'], ['sta', 'スタミナ'], ['bal', 'バランス']];
+    const typeOf = (pt: PartDef): string => {
+      if (isRatchet) return String(Math.floor((pt.height ?? 60) / 10) * 10);
+      if (pt.type) return pt.type;
+      const v = { atk: Math.max(pt.s.atk ?? 0, pt.s.dash ?? 0), def: pt.s.def ?? 0, sta: pt.s.sta ?? 0 }; // ダッシュが高いものはアタックとして数える
+      const sorted = (Object.entries(v) as [string, number][]).sort((a, b) => b[1] - a[1]);
+      return sorted[0][1] - sorted[1][1] < 10 ? 'bal' : sorted[0][0]; // いちばん高い性能が飛びぬけていなければバランス
+    };
+    const useTabs = list.length > 6;
     const tab = useTabs ? partTab[title] ?? 'all' : 'all';
     const shown = tab === 'all' ? list : list.filter(pt => typeOf(pt) === tab);
     return (
@@ -2284,12 +2292,13 @@ export function Beyblade() {
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}><span style={{ fontWeight: 800, fontSize: 13 }}>{title}</span><span style={{ fontSize: 10.5, opacity: 0.6 }}>{list.length}種類</span></div>
         {useTabs && (
           <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            {([['all', 'すべて'], ...tabs] as const).map(([k, l]) => (
+            {([['all', 'すべて'], ...tabs] as [string, string][]).map(([k, l]) => (
               <button key={k} onClick={() => setPartTab(t => ({ ...t, [title]: k }))} style={{ padding: '0 6px', borderRadius: 8, fontSize: 10.5, fontWeight: 700, cursor: 'pointer', color: tab === k ? '#04071a' : '#cfd8ff', background: tab === k ? '#ffd740' : '#121a42', border: '1px solid #2a3566' }}>{l}</button>
             ))}
           </div>
         )}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, alignContent: 'flex-start', overflowY: 'auto', flex: '1 1 0', minHeight: 40, paddingRight: 2, scrollbarWidth: 'thin', scrollbarColor: '#5aabff #0a1030' }}>
+          {shown.length === 0 && <div style={{ fontSize: 11, opacity: 0.6 }}>まだありません</div>}
           {shown.map(pt => {
             const bl = blocked.includes(pt.id);
             const on = value === pt.id && !allBlocked;
