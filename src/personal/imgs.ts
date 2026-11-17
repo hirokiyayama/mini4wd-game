@@ -6,7 +6,8 @@ import aero from './beys/aero.png';
 import shark from './beys/shark.png';
 import glory from './beys/glory.png';
 import knight2 from './beys/knight2.png';
+import phoenix from './beys/phoenix.png';
 import launcher_red from './launcher_red.png';
 import launcher_black from './launcher_black.png';
 
-(window as unknown as { __BEY_IMGS?: Record<string, string> }).__BEY_IMGS = { meteor, cobalt, wizard, aero, shark, glory, knight2, launcher_red, launcher_black };
+(window as unknown as { __BEY_IMGS?: Record<string, string> }).__BEY_IMGS = { meteor, cobalt, wizard, aero, shark, glory, knight2, phoenix, launcher_red, launcher_black };
