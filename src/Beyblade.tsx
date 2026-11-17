@@ -2348,15 +2348,7 @@ export function Beyblade() {
                 <span style={{ opacity: 0.8 }}>{sel.weight}g</span>
                 {sel.img && <span style={{ color: sel.spinDir === -1 ? '#ffd740' : '#9fb2ff', fontWeight: 700 }}>{sel.spinDir === -1 ? '左回転' : '右回転'}</span>}
               </div>
-              {sel.low && list === BLADES && ( // 高さを切り替えられるブレード（ヘルズネザー）：モードの切り替え
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2, flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: 700 }}>モード</span>
-                  {([[false, 'ノーマル'], [true, 'ロー']] as const).map(([k, l]) => (
-                    <button key={l} onClick={() => setCustom(c => ({ ...c, low: k }))} title={k ? '低く構えて、弾きの強いアタック刃で当てる' : 'いなし刃で受け流す'} style={{ padding: '0 8px', borderRadius: 8, fontSize: 11.5, fontWeight: 800, cursor: 'pointer', color: !!custom.low === k ? '#04071a' : '#cfd8ff', background: !!custom.low === k ? (sel.color ?? '#ffd740') : '#121a42', border: '1px solid #2a3566' }}>{l}</button>
-                  ))}
-                  <span style={{ opacity: 0.8 }}>ロー：{STAT_LABELS.filter(([k]) => sel.low!.s[k] !== undefined).map(([k, label]) => `${label}${sel.low!.s[k]}`).join(' ')} 高さ{sel.low.height}</span>
-                </div>
-              )}
+              {sel.low && <div style={{ opacity: 0.9 }}>ローモード：{STAT_LABELS.filter(([k]) => sel.low!.s[k] !== undefined).map(([k, label]) => `${label} ${sel.low!.s[k]}`).join('  ')}  高さ {sel.low.height}（左の画面で切り替え）</div>}
             </>
           )}
         </div>
@@ -2601,6 +2593,13 @@ export function Beyblade() {
                     ))}
                   </div>
                   <div style={{ fontSize: 11, opacity: 0.85, textAlign: 'center' }}>{myBey.weight}g・高さ{myBey.height}・<span style={{ color: myBey.spinDir === -1 ? '#ffd740' : '#9fb2ff', fontWeight: 700 }}>{myBey.spinDir === -1 ? '左回転' : '右回転'}</span></div>
+                  {pick(BLADES, custom.blade).low && ( // 高さを切り替えられるブレード（ヘルズネザー）
+                    <div style={{ display: 'flex', gap: 3, width: '100%' }}>
+                      {([[false, 'ノーマル'], [true, 'ロー']] as const).map(([k, l]) => (
+                        <button key={l} onClick={() => setCustom(c => ({ ...c, low: k }))} title={k ? '低く構えて、弾きの強いアタック刃で当てる' : 'いなし刃で受け流す'} style={{ ...sb(!!custom.low === k, myBey.color), flex: 1, padding: '2px 4px', fontSize: 12 }}>{l}</button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {partPicker('ブレード', BLADES, custom.blade, id => setCustom(c => ({ ...c, blade: id })), usedByOthers('blade'))}
                 {partPicker('ラチェット', RATCHETS, custom.ratchet, id => setCustom(c => ({ ...c, ratchet: id })), usedByOthers('ratchet'))}
