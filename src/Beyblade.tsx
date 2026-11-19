@@ -1599,9 +1599,9 @@ export function Beyblade() {
 
         // 斜めシュート：落とした場所でしばらく回り続け、それから動き出す
         if (b.holdT > 0) {
-          b.holdT -= DT;
+          b.holdT -= DT / GAME_SPEED; // 斜めシュートのとどまる動きだけは、試合のスピードを上げる前と同じ速さ・長さで見せる
           // とどまっていても、狙った向きへほんの少しずつ動く（当てられたら、その場で解除される）
-          const drift = (75 + 0.16 * b.push) * (t.mobility > 1 ? t.mobility ** 2 : 1);
+          const drift = (75 + 0.16 * b.push) * (t.mobility > 1 ? t.mobility ** 2 : 1) / GAME_SPEED;
           b.vx += (b.ax * drift + (Math.random() - 0.5) * 20 - b.vx) * 6 * DT;
           b.vy += (b.ay * drift + (Math.random() - 0.5) * 20 - b.vy) * 6 * DT;
           b.x += b.vx * DT; b.y += b.vy * DT;
@@ -1610,7 +1610,7 @@ export function Beyblade() {
             if (dh > lh) { const hx = Math.sign(b.x) * Math.pow(Math.abs(b.x), WALL_N - 1), hy = Math.sign(b.y) * Math.pow(Math.abs(b.y), WALL_N - 1), hl = Math.hypot(hx, hy) || 1, nx = hx / hl, ny = hy / hl, ov = b.vx * nx + b.vy * ny; b.x *= lh / dh; b.y *= lh / dh; if (ov > 0) { b.vx -= ov * nx; b.vy -= ov * ny; } } }
           b.trail.push({ x: b.x, y: b.y });
           if (b.trail.length > 14) b.trail.shift();
-          b.spin = Math.max(0, b.spin - 9 * t.decay * DT * 6);
+          b.spin = Math.max(0, b.spin - 9 * t.decay * DT * 6 / GAME_SPEED); // とどまる時間が長くなったぶん、回転の減り方は同じになるように
           if (b.holdT <= 0) {
             b.vx = b.ax * b.push; b.vy = b.ay * b.push;
             b.dashCd = 0.8;
