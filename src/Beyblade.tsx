@@ -587,6 +587,7 @@ function defaultAim(x: number, y: number, dir: 1 | -1 = 1) {
 
 // 水平シュート：すぐにリングへ向かいエクストリームダッシュ / 斜めシュート：その場でほんの少し動きながらとどまり、それから動き出す（その間は飛ばされにくい）
 // シュートパワー（回転数）：5000〜15000で選べる。10000がまん中（暴れも落ち着きもない）。高いほど回転は多いが最初は暴れて自滅しやすく、低いほど回転は少ないが落ち着いて動く
+const GAME_SPEED = 1.5; // 試合のスピードの倍率（1で元の速さ）
 const POW_MIN = 5000, POW_MAX = 15000, POW_DEFAULT = 10000;
 const rpmToPower = (rpm: number) => Math.max(0, Math.min(1, (rpm - POW_MIN) / (POW_MAX - POW_MIN)));
 // power(0〜1)：シュートパワーで決まる。回転数と飛び出しの勢いに効く
@@ -1526,7 +1527,7 @@ export function Beyblade() {
     const canvas = canvasRef.current;
     if (!canvasOn || !canvas) return;
     const ctx = canvas.getContext('2d')!;
-    const timeScale = Number(new URLSearchParams(window.location.search).get('speed')) || 1;
+    const timeScale = GAME_SPEED * (Number(new URLSearchParams(window.location.search).get('speed')) || 1); // 試合のスピード（ベイの動きも回転の減り方も、まとめて速くする。強さのバランスは変わらない）
     let raf = 0;
     let last = performance.now();
     let acc = 0;
