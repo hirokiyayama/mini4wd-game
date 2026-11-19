@@ -2385,6 +2385,7 @@ export function Beyblade() {
     const ent = ents[key];
     const isLeftCol = side === 'left';
     const compact = sideW < 175 || cH < 430; // 幅のせまい画面では、飾りを減らして収める
+    const ybx: React.CSSProperties = compact ? { ...yb, padding: cH < 340 ? '3px 10px' : '5px 12px', fontSize: cH < 340 ? 13 : 14 } : yb; // せまい画面では、ボタンを小さくして枠の中に収める
     let controls: React.ReactNode = null;
     const isSelf = !!online && selfIdx === (key === 'me' ? 0 : 1);
     if (phase === 'launch') {
@@ -2395,7 +2396,7 @@ export function Beyblade() {
             <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{selfReady ? '相手を待っています…' : placed ? (shotMode === 'diag' ? 'ドラッグで向き → 「決定」' : '「決定」') : `${selfIdx === 0 ? '左' : '右'}半分をタップ`}</div>
             {!selfReady && (selfIdx === 0 ? modeBtns(shotMode, k => { setShotMode(k); modeRef.current = k; sendPlace(false); }, '#38b6ff') : modeBtns(shotMode2, k => { setMode2(k); sendPlace(false); }, '#ff3ea5'))}
             {!selfReady && (selfIdx === 0 ? powCtl(shotPow, v => { setPow1(v); sendPlace(false); }, '#38b6ff') : powCtl(shotPow2, v => { setPow2(v); sendPlace(false); }, '#ff3ea5'))}
-            <button style={{ ...yb, opacity: placed && !selfReady ? 1 : 0.4 }} disabled={!placed || selfReady} onClick={decide}>決定</button>
+            <button style={{ ...ybx, opacity: placed && !selfReady ? 1 : 0.4 }} disabled={!placed || selfReady} onClick={decide}>決定</button>
           </>
         ) : <div style={{ fontSize: 12, opacity: 0.75 }}>相手が場所を決めています…</div>;
       } else if (vs === 'cpu' && key === 'me') {
@@ -2404,7 +2405,7 @@ export function Beyblade() {
             <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{hasDrop ? (shotMode === 'diag' ? 'ドラッグで向きを決めて、スタート' : 'スタート') : `${side === 'left' ? '左' : '右'}半分をタップ${compact ? '' : 'して、落とす場所を決める'}`}</div>
             {modeBtns(shotMode, setShotMode, '#ffd740')}
             {powCtl(shotPow, setPow1, '#ffd740')}
-            <button style={{ ...yb, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={shoot}>スタート</button>
+            <button style={{ ...ybx, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={shoot}>スタート</button>
           </>
         );
       } else if (vs === '2p' && !seq) {
@@ -2424,8 +2425,8 @@ export function Beyblade() {
             {key === 'me' ? modeBtns(shotMode, setShotMode, '#5aabff') : modeBtns(shotMode2, setMode2, '#ff3ea5')}
             {key === 'me' ? powCtl(shotPow, setPow1, '#5aabff') : powCtl(shotPow2, setPow2, '#ff3ea5')}
             {key === 'me'
-              ? <button style={{ ...yb, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={() => setPlaceStep(1)}>決定</button>
-              : <button style={{ ...yb, opacity: hasDrop2 ? 1 : 0.4 }} disabled={!hasDrop2} onClick={shoot}>スタート</button>}
+              ? <button style={{ ...ybx, opacity: hasDrop ? 1 : 0.4 }} disabled={!hasDrop} onClick={() => setPlaceStep(1)}>決定</button>
+              : <button style={{ ...ybx, opacity: hasDrop2 ? 1 : 0.4 }} disabled={!hasDrop2} onClick={shoot}>スタート</button>}
           </>
         );
       } else if (seq) {
@@ -2442,11 +2443,11 @@ export function Beyblade() {
         background: 'linear-gradient(180deg,#07102c,#030618)', border: `2px solid ${ent.color}`, borderRadius: 10, boxShadow: `0 0 14px ${ent.color}66, inset 0 0 18px ${ent.color}22`,
       }}>
         <div style={{ fontSize: 11, fontWeight: 800, opacity: 0.85, letterSpacing: 1 }}>{isSelf ? '★あなた　' : ''}{isLeftCol ? `${WIN_POINTS}pt先取` : matchLabel}</div>
-        <div style={{ fontSize: compact ? 26 : 52, fontWeight: 900, lineHeight: 1, color: '#fff', textShadow: `0 0 12px ${ent.color}` }}>{ent.pt}</div>
+        <div style={{ fontSize: compact ? (cH < 340 ? 21 : 26) : 52, fontWeight: 900, lineHeight: 1, color: '#fff', textShadow: `0 0 12px ${ent.color}` }}>{ent.pt}</div>
         {!compact && <div style={{ fontSize: 10, fontWeight: 700, color: ent.color, borderTop: `1px solid ${ent.color}88`, paddingTop: 2 }}>ブレーダー名</div>}
         <div style={{ fontSize: compact ? 13 : 15, fontWeight: 900, lineHeight: 1.15, padding: '3px 4px', border: `2px solid ${ent.color}`, borderRadius: 6, background: '#050b22', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ent.name}</div>
         <div style={{ fontSize: 12, fontWeight: 900, padding: '4px 4px', borderRadius: 6, background: `linear-gradient(90deg,${ent.color}55,${ent.color}22)`, border: `1px solid ${ent.color}`, lineHeight: 1.2, wordBreak: 'keep-all' }}>{ent.bey.name}</div>
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: compact ? 3 : 4, textAlign: 'left', fontSize: compact ? 11 : 12 }}>
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: compact ? 3 : 4, textAlign: 'left', fontSize: compact ? 11 : 12 }}>
           {controls}
         </div>
         {/* 戻るボタンは、操作の欄とは別にして、いつも枠の下に見えるようにする（スマホでベイの名前が2行になっても見切れない） */}
