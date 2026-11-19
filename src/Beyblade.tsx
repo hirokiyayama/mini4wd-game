@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createRoom, joinRoom, randomCode } from './online';
 import type { Link, Msg } from './online';
+import BeyStatsView from './BeyStatsView';
+import { recordRound } from './beyStats';
+import type { Side } from './beyStats';
 
 // ベイブレードX風バトル（4ポイント先取）
 // スタジアムは参考動画（真上視点）に合わせる：八角形の枠 + 円形のすり鉢 + オレンジのXライン(円形リング)
@@ -758,7 +761,7 @@ function useFrame() {
 export function Beyblade() {
   const frame = useFrame();
   const [cpuOpen, setCpuOpen] = useState(false); // カスタマイズ画面：CPUのベイ設定を開く
-  const [phase, setPhase] = useState<'top' | 'lobby' | 'select' | 'order' | 'tbracket' | 'tchamp' | 'launch' | 'count' | 'battle' | 'result' | 'over'>('top');
+  const [phase, setPhase] = useState<'top' | 'lobby' | 'select' | 'order' | 'tbracket' | 'tchamp' | 'launch' | 'count' | 'battle' | 'result' | 'over' | 'stats'>('top');
   const [shotMode, setShotMode] = useState<'flat' | 'diag'>('flat');
   const [hasDrop, setHasDrop] = useState(false);
   const [mySide, setMySide] = useState<'left' | 'right'>('left'); // 自分が立つ側（左の人は左半分、右の人は右半分にしか落とせない）
@@ -842,6 +845,8 @@ export function Beyblade() {
   const [order, setOrder] = useState<number[]>([]); // 自分の出す順番（deck.me の番号）
   const cpuOrderRef = useRef<number[]>([0, 1, 2]);
   const vsRef = useRef<'cpu' | '2p'>('cpu');
+  // 対戦データ：いまのラウンドの両者のパーツと、人が選んだベイか（結果の記録に使う）
+  const statRef = useRef<{ me: Custom; cpu: Custom; hMe: boolean; hCpu: boolean; gm: 'v' | 't' | 'o'; f: 1 | 3 } | null>(null);
   const hideOppRef = useRef(false); // 相手の落とす位置を隠す（CPU対戦の設定 / トーナメント）
   const mode2Ref = useRef<'flat' | 'diag'>('flat');
   const aim2Ref = useRef<{ x: number; y: number } | null>(null);
@@ -983,6 +988,7 @@ export function Beyblade() {
 
   // 1戦ぶんの準備：ベイのデータを作って、場所決めの画面へ
   const setupRound = (m: Custom, c: Custom) => {
+    statRef.current = { me: m, cpu: c, hMe: true, hCpu: !!onlineRef.current || vsRef.current === '2p', gm: onlineRef.current ? 'o' : gameMode === 'tournament' ? 't' : 'v', f: mode === '3v3' ? 3 : 1 };
     TYPES.me = buildBey(m);
     TYPES.cpu = buildBey(c);
     setCpuCustom(c);
@@ -1266,6 +1272,12 @@ export function Beyblade() {
     if (onlineRef.current === 'guest' && Date.now() - placeSentRef.current > 70) sendPlace(false);
   };
 
+  // 1ラウンドの結果を、対戦データとして記録する
+  const saveStat = (winner: 'me' | 'cpu', finish: string, send: boolean) => {
+    const st = statRef.current; if (!st) return;
+    const side = (c: Custom, h: boolean): Side => { const bl = pick(BLADES, c.blade); return { b: bl.id, r: bl.integrated ? '' : c.ratchet, t: c.bit, ...(bl.low && c.low ? { low: 1 as const } : {}), h: h ? 1 : 0 }; };
+    recordRound({ at: Date.now(), gm: st.gm, f: st.f, fin: finish, w: winner === 'me' ? 0 : 1, s: [side(st.me, st.hMe), side(st.cpu, st.hCpu)] }, send);
+  };
   const endRound = useCallback((winner: 'me' | 'cpu', finish: Finish) => {
     if (endedRef.current) return;
     endedRef.current = true;
@@ -1290,6 +1302,7 @@ export function Beyblade() {
       }
     }
     linkRef.current?.send({ t: 'end', winner, finish });
+    saveStat(winner, finish, true);
     setMessage({ winner, finish });
     // 決着の動きを見せてから結果表示
     timerRef.current = window.setTimeout(() => {
@@ -1451,6 +1464,7 @@ export function Beyblade() {
     switch (m.t) {
       case 'round': {
         TYPES.me = buildBey(m.me as Custom); TYPES.cpu = buildBey(m.cpu as Custom);
+        statRef.current = { me: m.me as Custom, cpu: m.cpu as Custom, hMe: true, hCpu: true, gm: 'o', f: 1 };
         const nn = m.names as { me: string; cpu: string };
         namesNowRef.current = nn; setNames(nn); setOnlineLabel(String(m.label ?? '')); setHostLeft(!!m.hostLeft); selfIdxRef.current = m.hostLeft ? 1 : 0;
         scoreRef.current = m.score as { me: number; cpu: number }; setScore(scoreRef.current);
@@ -1488,7 +1502,7 @@ export function Beyblade() {
       case 's': snapsRef.current.push({ t: performance.now(), b: m.b as number[][] }); if (snapsRef.current.length > 8) snapsRef.current.shift(); break;
       case 'sp': makeSparks(sparksRef.current, Number(m.x), Number(m.y), Number(m.n), !!m.old); break;
       case 'parts': partsRef.current.push(...(m.parts as Part[])); break;
-      case 'end': setMessage({ winner: m.winner as 'me' | 'cpu', finish: m.finish as Finish }); break;
+      case 'end': setMessage({ winner: m.winner as 'me' | 'cpu', finish: m.finish as Finish }); saveStat(m.winner as 'me' | 'cpu', String(m.finish), false); break; // ゲスト：自分の記録だけ（全ユーザーの集計にはホストが送る）
       case 'res': scoreRef.current = m.score as { me: number; cpu: number }; setScore(scoreRef.current); setPhase(m.phase as 'result' | 'over'); break;
       case 'toSelect': window.clearTimeout(timerRef.current); beysRef.current = null; setMessage(null); setSelfReady(false); setPhase('select'); break;
     }
@@ -2548,10 +2562,17 @@ export function Beyblade() {
               </div>
             )}
             {lobbyMsg && <div style={{ fontSize: 13, fontWeight: 700, color: '#ffb4b4' }}>{lobbyMsg}</div>}
+            <button onClick={() => setPhase('stats')} style={{ ...sb(false), position: 'absolute', right: 10, top: 8, fontSize: 12.5, padding: '3px 10px' }}>📊 データ・ランキング</button>
             {!topOnline && <button style={{ ...yb, opacity: gameMode === 'tournament' && tCpu + tHumans < 2 ? 0.4 : 1 }} disabled={gameMode === 'tournament' && tCpu + tHumans < 2} onClick={() => { setWho(0); setSlot(0); setPhase('select'); }}>次へ（カスタマイズ）</button>}
             {!frame.emulate && <div style={{ fontSize: 11.5, color: '#ffd740' }}>↕ 画面を上にスクロールすると、ブラウザのメニューが消えて広く遊べます</div>}
             <div style={{ fontSize: 11, opacity: 0.55 }}>非公式のファン制作のシミュレーターです。名称などの権利は各権利者に帰属します。</div>
           </div>
+        )}
+
+        {phase === 'stats' && (
+          <BeyStatsView sb={sb} onBack={() => setPhase('top')}
+            nameOf={(kind, key) => pick(kind === 'blade' ? BLADES : kind === 'ratchet' ? RATCHETS : BITS, key).name}
+            colorOf={key => pick(BLADES, key).color ?? '#fff'} />
         )}
 
         {phase === 'lobby' && (
