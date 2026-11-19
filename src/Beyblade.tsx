@@ -816,7 +816,19 @@ export function Beyblade() {
   const [hasDrop2, setHasDrop2] = useState(false); // 2人対戦：プレイヤー2が場所を決めたか
   const [shotMode2, setShotMode2] = useState<'flat' | 'diag'>('flat');
   const [moreBelow, setMoreBelow] = useState<Record<string, boolean>>({}); // カスタマイズ：パーツ一覧に、下へスクロールすると続きがあるか（スマホではスクロールバーが最初は見えないので、印を出す）
-  const [partTab, setPartTab] = useState<Record<string, string>>({}); // カスタマイズ：パーツ一覧のしぼりこみ（ブレード・ラチェット・ビットごと）
+  const [partTab, setPartTab] = useState<Record<string, string>>({});
+  useEffect(() => { // パーツ一覧に続きがあるかを、ときどき確かめる（文字や画像の読み込み・画面の回転で、あとから一覧の高さが変わることがあるため）
+    const id = window.setInterval(() => {
+      const els = document.querySelectorAll<HTMLElement>('[data-partlist]');
+      if (!els.length) return;
+      setMoreBelow(o => {
+        let ch = false; const n = { ...o };
+        els.forEach(el => { const k = el.dataset.partlist!, m = el.scrollTop + el.clientHeight < el.scrollHeight - 4; if (!!o[k] !== m) { n[k] = m; ch = true; } });
+        return ch ? n : o;
+      });
+    }, 300);
+    return () => window.clearInterval(id);
+  }, []); // カスタマイズ：パーツ一覧のしぼりこみ（ブレード・ラチェット・ビットごと）
   const [shotPow, setShotPow] = useState(POW_DEFAULT); // シュートパワー：左（自分・プレイヤー1）
   const [shotPow2, setShotPow2] = useState(POW_DEFAULT); // シュートパワー：右（プレイヤー2）
   const powRef = useRef(POW_DEFAULT), pow2Ref = useRef(POW_DEFAULT);
@@ -2323,7 +2335,7 @@ export function Beyblade() {
           </div>
         )}
         <div style={{ position: 'relative', flex: '1 1 0', minHeight: 40, display: 'flex', flexDirection: 'column' }}>
-        <div ref={el => { if (el) { const m = el.scrollTop + el.clientHeight < el.scrollHeight - 4; if (!!moreBelow[title] !== m) setTimeout(() => setMoreBelow(o => ({ ...o, [title]: m })), 0); } }}
+        <div data-partlist={title}
           onScroll={e => { const el = e.currentTarget, m = el.scrollTop + el.clientHeight < el.scrollHeight - 4; if (!!moreBelow[title] !== m) setMoreBelow(o => ({ ...o, [title]: m })); }}
           style={{ display: 'flex', flexWrap: 'wrap', gap: 3, alignContent: 'flex-start', overflowY: 'auto', flex: '1 1 0', minHeight: 0, paddingRight: 2, scrollbarWidth: 'thin', scrollbarColor: '#5aabff #0a1030' }}>
           {shown.length === 0 && <div style={{ fontSize: 11, opacity: 0.6 }}>まだありません</div>}
