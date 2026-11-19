@@ -815,6 +815,7 @@ export function Beyblade() {
   const [orderWho, setOrderWho] = useState<0 | 1>(0); // 2人対戦の3on3：順番を決めているプレイヤー
   const [hasDrop2, setHasDrop2] = useState(false); // 2人対戦：プレイヤー2が場所を決めたか
   const [shotMode2, setShotMode2] = useState<'flat' | 'diag'>('flat');
+  const [moreBelow, setMoreBelow] = useState<Record<string, boolean>>({}); // カスタマイズ：パーツ一覧に、下へスクロールすると続きがあるか（スマホではスクロールバーが最初は見えないので、印を出す）
   const [partTab, setPartTab] = useState<Record<string, string>>({}); // カスタマイズ：パーツ一覧のしぼりこみ（ブレード・ラチェット・ビットごと）
   const [shotPow, setShotPow] = useState(POW_DEFAULT); // シュートパワー：左（自分・プレイヤー1）
   const [shotPow2, setShotPow2] = useState(POW_DEFAULT); // シュートパワー：右（プレイヤー2）
@@ -2321,7 +2322,10 @@ export function Beyblade() {
             ))}
           </div>
         )}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, alignContent: 'flex-start', overflowY: 'auto', flex: '1 1 0', minHeight: 40, paddingRight: 2, scrollbarWidth: 'thin', scrollbarColor: '#5aabff #0a1030' }}>
+        <div style={{ position: 'relative', flex: '1 1 0', minHeight: 40, display: 'flex', flexDirection: 'column' }}>
+        <div ref={el => { if (el) { const m = el.scrollTop + el.clientHeight < el.scrollHeight - 4; if (!!moreBelow[title] !== m) setTimeout(() => setMoreBelow(o => ({ ...o, [title]: m })), 0); } }}
+          onScroll={e => { const el = e.currentTarget, m = el.scrollTop + el.clientHeight < el.scrollHeight - 4; if (!!moreBelow[title] !== m) setMoreBelow(o => ({ ...o, [title]: m })); }}
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 3, alignContent: 'flex-start', overflowY: 'auto', flex: '1 1 0', minHeight: 0, paddingRight: 2, scrollbarWidth: 'thin', scrollbarColor: '#5aabff #0a1030' }}>
           {shown.length === 0 && <div style={{ fontSize: 11, opacity: 0.6 }}>まだありません</div>}
           {shown.map(pt => {
             const bl = blocked.includes(pt.id);
@@ -2337,6 +2341,12 @@ export function Beyblade() {
               </button>
             );
           })}
+        </div>
+        {moreBelow[title] && ( // 下にまだパーツがある印（スクロールすると消える）
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 26, pointerEvents: 'none', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'linear-gradient(180deg, rgba(4,7,26,0), rgba(4,7,26,0.95))' }}>
+            <span style={{ fontSize: 10.5, fontWeight: 800, color: '#04071a', background: '#ffd740', borderRadius: 8, padding: '0 7px', marginBottom: 1, animation: 'beyMore 1.2s ease-in-out infinite' }}>▼ 下にもあります</span>
+          </div>
+        )}
         </div>
         {/* 押した（選んだ）パーツの詳細 */}
         <div style={{ flex: '0 0 auto', maxHeight: '40%', minHeight: 44, overflowY: 'auto', padding: '4px 6px', borderRadius: 6, background: '#0a1030', border: '1px solid #2a3566', fontSize: 11.5, lineHeight: 1.35 }}>
@@ -2374,7 +2384,7 @@ export function Beyblade() {
   const sideCol = (key: 'me' | 'cpu', side: 'left' | 'right') => {
     const ent = ents[key];
     const isLeftCol = side === 'left';
-    const compact = sideW < 175; // 幅のせまい画面では、飾りを減らして収める
+    const compact = sideW < 175 || cH < 430; // 幅のせまい画面では、飾りを減らして収める
     let controls: React.ReactNode = null;
     const isSelf = !!online && selfIdx === (key === 'me' ? 0 : 1);
     if (phase === 'launch') {
@@ -2432,14 +2442,15 @@ export function Beyblade() {
         background: 'linear-gradient(180deg,#07102c,#030618)', border: `2px solid ${ent.color}`, borderRadius: 10, boxShadow: `0 0 14px ${ent.color}66, inset 0 0 18px ${ent.color}22`,
       }}>
         <div style={{ fontSize: 11, fontWeight: 800, opacity: 0.85, letterSpacing: 1 }}>{isSelf ? '★あなた　' : ''}{isLeftCol ? `${WIN_POINTS}pt先取` : matchLabel}</div>
-        <div style={{ fontSize: compact ? 36 : 52, fontWeight: 900, lineHeight: 1, color: '#fff', textShadow: `0 0 12px ${ent.color}` }}>{ent.pt}</div>
+        <div style={{ fontSize: compact ? 26 : 52, fontWeight: 900, lineHeight: 1, color: '#fff', textShadow: `0 0 12px ${ent.color}` }}>{ent.pt}</div>
         {!compact && <div style={{ fontSize: 10, fontWeight: 700, color: ent.color, borderTop: `1px solid ${ent.color}88`, paddingTop: 2 }}>ブレーダー名</div>}
         <div style={{ fontSize: compact ? 13 : 15, fontWeight: 900, lineHeight: 1.15, padding: '3px 4px', border: `2px solid ${ent.color}`, borderRadius: 6, background: '#050b22', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ent.name}</div>
         <div style={{ fontSize: 12, fontWeight: 900, padding: '4px 4px', borderRadius: 6, background: `linear-gradient(90deg,${ent.color}55,${ent.color}22)`, border: `1px solid ${ent.color}`, lineHeight: 1.2, wordBreak: 'keep-all' }}>{ent.bey.name}</div>
-        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: 4, textAlign: 'left', fontSize: compact ? 11 : 12 }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', gap: compact ? 3 : 4, textAlign: 'left', fontSize: compact ? 11 : 12 }}>
           {controls}
-          {isLeftCol && <button onClick={() => (online ? leaveOnline() : backToSelect())} style={{ ...sb(false), fontSize: 12, padding: '2px 8px', alignSelf: 'flex-start', marginTop: 'auto' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>}
         </div>
+        {/* 戻るボタンは、操作の欄とは別にして、いつも枠の下に見えるようにする（スマホでベイの名前が2行になっても見切れない） */}
+        {isLeftCol && <button onClick={() => (online ? leaveOnline() : backToSelect())} style={{ ...sb(false), flex: '0 0 auto', fontSize: 12, padding: '2px 8px', alignSelf: 'flex-start' }}>{gameMode === 'tournament' ? '← 表へ' : '← 戻る'}</button>}
       </div>
     );
   };
