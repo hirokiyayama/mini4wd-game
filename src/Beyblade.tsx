@@ -94,7 +94,7 @@ const BITS: PartDef[] = [
   { id: 'FB', bal: 1.06, name: 'FB', desc: '空回りする軸先で、回転のロスが少ない。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
   { id: 'R', bal: 0.96, name: 'R', desc: 'ダッシュは控えめだが、回数が多い。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
   { id: 'LR', bal: 1.03, name: 'LR', desc: 'Rより低めで、下から打ち上げるのが得意。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, mobility: 1.8 },
-  { id: 'H', bal: 0.93, name: 'H', desc: '先がとがっていて、すり鉢の真ん中にとどまって回り続ける。飛ばされても、ひと呼吸おいてゆっくり真ん中へ戻る。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, type: 'bal', weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
+  { id: 'H', bal: 0.88, name: 'H', desc: '先がとがっていて、すり鉢の真ん中にとどまって回り続ける。飛ばされても、ひと呼吸おいてゆっくり真ん中へ戻る。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, type: 'bal', weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
   { id: 'L', bal: 1.05, name: 'L', desc: '速さを3段階に切り替えて攻める。', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
   { id: 'Nr', name: 'Nr', desc: '細い軸先で長く回り、ダッシュによるスタミナの消耗が少ない。', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
   { id: 'K', name: 'K', desc: '角のある軸先でスタジアムを蹴って動き回る。', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, type: 'bal', weight: 2.1 },
@@ -688,6 +688,7 @@ function drawStadium(ctx: CanvasRenderingContext2D) {
   dish.addColorStop(0, '#2b313b'); dish.addColorStop(0.7, '#1a1e25'); dish.addColorStop(1, '#101318');
   ctx.beginPath(); ctx.arc(0, 0, RING_R + 6, 0, Math.PI * 2); ctx.fillStyle = dish; ctx.fill();
   ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(180,195,215,0.28)';
+  { ctx.beginPath(); ctx.arc(0, 0, RING_R * 0.5, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,0,0,0.16)'; ctx.fill(); } // 中心の円は、一段下がっている（へこんだ段：内側を少し暗く）
   for (const f of [0.5]) { ctx.beginPath(); ctx.arc(0, 0, RING_R * f, 0, Math.PI * 2); ctx.stroke(); ctx.save(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.arc(0, 0, RING_R * f - 3, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); } // 段（外側に明るい縁、内側に影） // 一番小さい円と、リングのすぐ内側の円は、なし
   ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.08)';
   ctx.beginPath(); ctx.arc(-18, -22, RING_R * 0.62, 0.2, 1.6); ctx.stroke();
@@ -1756,8 +1757,8 @@ export function Beyblade() {
           const rr = Math.hypot(b.x, b.y) || 1, ux = b.x / rr, uy = b.y / rr;
           if (b.knockT > 1.1) b.hPh = 1; // 相手に飛ばされた
           if (b.hPh === 1) { // 飛ばされ中：先がとがっていて床をつかまないので、勢いのまま、すーっとすべる（自分では向きを変えない）
-            const k = 1 - 0.9 * DT; b.vx *= k; b.vy *= k;
-            if (speed < 110 || b.knockT <= 0) { b.hPh = 2; b.hT = 0.6 + 0.6 * Math.random(); }
+            const k = 1 - 1.5 * DT; b.vx *= k; b.vy *= k;
+            if (speed < 110 || b.knockT <= 0) { b.hPh = 2; b.hT = 0.15 + 0.2 * Math.random(); } // 止まって待つのは、ほんの一瞬
           } else if (b.hPh === 2) { // 止まった場所で、しばらくその場で回り続ける
             const k = 1 - 6 * DT; b.vx *= k; b.vy *= k;
             b.hT -= DT; if (b.hT <= 0) b.hPh = 3;
@@ -1807,7 +1808,7 @@ export function Beyblade() {
             const against = (b.x * b.vy - b.y * b.vx) * b.dir > 0;
             const rr = against ? (Math.random() < 0.7 ? 0.9 : 0.6) : Math.random() < 0.6 * wildNow ? 0.6 : Math.random(); // パワーが高く暴れているときは、ゾーンへ飛び込みやすい
             const dsp = (1500 + 200 * ratio) * t.dash * (0.4 + 0.6 * Math.pow(ratio, 1.4));
-            let ax = nx0, ay = ny0, sp2 = against ? 520 : dsp;
+            let ax = nx0, ay = ny0, sp2 = against ? 200 + 80 * Math.random() : dsp; // ギアがかみ合わない向きのときは、ダッシュせず、ゆっくり内側へ
             if (rr < 0.5) { // 真ん中へダッシュ
               const j0 = (Math.random() + Math.random() - 1) * 0.3; ax = nx0 * Math.cos(j0) - ny0 * Math.sin(j0); ay = nx0 * Math.sin(j0) + ny0 * Math.cos(j0);
             } else if (rr < 0.75) { // 下のオーバー／エクストリームゾーンへ
@@ -1815,7 +1816,7 @@ export function Beyblade() {
               ax = qx / ql; ay = qy / ql;
             } else { // スタジアム内へ戻る
               const tx2 = (Math.random() - 0.5) * R * 0.9, ty2 = (Math.random() - 0.5) * R * 0.9, ql = Math.hypot(tx2 - b.x, ty2 - b.y) || 1;
-              ax = (tx2 - b.x) / ql; ay = (ty2 - b.y) / ql; sp2 = against ? 170 + 90 * Math.random() : 650 + 250 * Math.random(); b.calmT = 3;
+              ax = (tx2 - b.x) / ql; ay = (ty2 - b.y) / ql; sp2 = 200 + 100 * Math.random(); b.calmT = 3; // ダッシュではないので、勢いよく走らない（壁まで突っ走らない）
             }
             b.vx = ax * sp2; b.vy = ay * sp2;
             if (rr < 0.75 && !against) { b.dashT = 0.4; b.coast = 1.0; b.dashFx = 0.7; b.spin = Math.max(0, b.spin - b.spinMax * 0.05 * t.dashCost); spark(b.x, b.y, 22); }
@@ -2024,12 +2025,13 @@ export function Beyblade() {
           spark(bey.x, bey.y, 16); flashRef.current = 0.5;
         } else { endRound(names[1 - i], bey.outKind); return; }
       }
-      if (beys.some(x => x.outT > 0)) return;
+      const waiting = beys.some(x => x.outT > 0); // 片方が場外ポケットにいる間は、バースト・スピンの決着は待つ（もう片方が出口に入ったときは、そのベイもポケットに入れる。先に入ったほうから行方を決める）
       for (let i = 0; i < 2; i++) {
         const bey = beys[i];
         const other = names[1 - i];
+        if (bey.outT > 0) continue;
         // 回転が5分の1以下になったベイはバーストしない
-        if (bey.burst >= 100 && bey.spin / bey.spinMax > 0.2) { endRound(other, 'burst'); return; }
+        if (!waiting && bey.burst >= 100 && bey.spin / bey.spinMax > 0.2) { endRound(other, 'burst'); return; }
         if (sqn(bey.x, bey.y) > R && bey.grace <= 0) {
           const k = exitKind(bey.x, bey.y);
           if (k) {
@@ -2043,8 +2045,9 @@ export function Beyblade() {
             bey.vx *= 0.35; bey.vy *= 0.35; bey.riding = false; bey.holdT = 0;
             return;
           }
+          if (sqn(bey.x, bey.y) > R + BEY_R) { const k2 = (R + BEY_R) / sqn(bey.x, bey.y); bey.x *= k2; bey.y *= k2; } // 念のため：出口以外でスタジアムの外へ出たら戻す（画面の外に消えない）
         }
-        if (bey.spin <= 0) { endRound(other, 'spin'); return; }
+        if (!waiting && bey.spin <= 0) { endRound(other, 'spin'); return; }
       }
     };
 
