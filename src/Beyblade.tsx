@@ -587,7 +587,6 @@ function defaultAim(x: number, y: number, dir: 1 | -1 = 1) {
 
 // 水平シュート：すぐにリングへ向かいエクストリームダッシュ / 斜めシュート：その場でほんの少し動きながらとどまり、それから動き出す（その間は飛ばされにくい）
 // シュートパワー（回転数）：5000〜15000で選べる。10000がまん中（暴れも落ち着きもない）。高いほど回転は多いが最初は暴れて自滅しやすく、低いほど回転は少ないが落ち着いて動く
-const GAME_SPEED = 1.5; // 試合のスピードの倍率（1で元の速さ）
 const POW_MIN = 5000, POW_MAX = 15000, POW_DEFAULT = 10000;
 const rpmToPower = (rpm: number) => Math.max(0, Math.min(1, (rpm - POW_MIN) / (POW_MAX - POW_MIN)));
 // power(0〜1)：シュートパワーで決まる。回転数と飛び出しの勢いに効く
@@ -1527,7 +1526,7 @@ export function Beyblade() {
     const canvas = canvasRef.current;
     if (!canvasOn || !canvas) return;
     const ctx = canvas.getContext('2d')!;
-    const timeScale = GAME_SPEED * (Number(new URLSearchParams(window.location.search).get('speed')) || 1); // 試合のスピード（ベイの動きも回転の減り方も、まとめて速くする。強さのバランスは変わらない）
+    const timeScale = Number(new URLSearchParams(window.location.search).get('speed')) || 1;
     let raf = 0;
     let last = performance.now();
     let acc = 0;
@@ -1599,9 +1598,9 @@ export function Beyblade() {
 
         // 斜めシュート：落とした場所でしばらく回り続け、それから動き出す
         if (b.holdT > 0) {
-          b.holdT -= DT / GAME_SPEED; // 斜めシュートのとどまる動きだけは、試合のスピードを上げる前と同じ速さ・長さで見せる
+          b.holdT -= DT;
           // とどまっていても、狙った向きへほんの少しずつ動く（当てられたら、その場で解除される）
-          const drift = (75 + 0.16 * b.push) * (t.mobility > 1 ? t.mobility ** 2 : 1) / GAME_SPEED;
+          const drift = (75 + 0.16 * b.push) * (t.mobility > 1 ? t.mobility ** 2 : 1);
           b.vx += (b.ax * drift + (Math.random() - 0.5) * 20 - b.vx) * 6 * DT;
           b.vy += (b.ay * drift + (Math.random() - 0.5) * 20 - b.vy) * 6 * DT;
           b.x += b.vx * DT; b.y += b.vy * DT;
@@ -1610,7 +1609,7 @@ export function Beyblade() {
             if (dh > lh) { const hx = Math.sign(b.x) * Math.pow(Math.abs(b.x), WALL_N - 1), hy = Math.sign(b.y) * Math.pow(Math.abs(b.y), WALL_N - 1), hl = Math.hypot(hx, hy) || 1, nx = hx / hl, ny = hy / hl, ov = b.vx * nx + b.vy * ny; b.x *= lh / dh; b.y *= lh / dh; if (ov > 0) { b.vx -= ov * nx; b.vy -= ov * ny; } } }
           b.trail.push({ x: b.x, y: b.y });
           if (b.trail.length > 14) b.trail.shift();
-          b.spin = Math.max(0, b.spin - 9 * t.decay * DT * 6 / GAME_SPEED); // とどまる時間が長くなったぶん、回転の減り方は同じになるように
+          b.spin = Math.max(0, b.spin - 9 * t.decay * DT * 6);
           if (b.holdT <= 0) {
             b.vx = b.ax * b.push; b.vy = b.ay * b.push;
             b.dashCd = 0.8;
