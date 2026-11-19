@@ -528,7 +528,7 @@ interface Bey {
   curl: number; dashT: number; dashCd: number; dashFx: number;
   trail: { x: number; y: number }[];
   out: boolean; dead: boolean;
-  holdT: number; // 斜めシュート：その場にとどまる残り時間
+  holdT: number; hold0: number; // 斜めシュート：その場にとどまる残り時間／とどまる時間の全体（だんだん速く動き出すのに使う）
   riding: boolean; rideT: number; // Xライン（リング）に乗って走行中
   ax: number; ay: number; push: number; // 走らせる向きと、斜めシュートで動き出すときの勢い
   knockT: number; // 相手に当てられて飛ばされた直後の時間（この間に壁へ当たると持久が削られる。自分でぶつかったときは削れない）
@@ -599,11 +599,11 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
   const mob = TYPES[type].mobility;
   const sp = (260 + 140 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない
   return {
-    type, x, y, vx: diag ? a.x * (75 + 0.16 * (130 + 140 * power) * (mob > 1 ? 1.3 : 1)) * (mob > 1 ? mob * mob : 1) : a.x * sp, vy: diag ? a.y * (75 + 0.16 * (130 + 140 * power) * (mob > 1 ? 1.3 : 1)) * (mob > 1 ? mob * mob : 1) : a.y * sp,
+    type, x, y, vx: diag ? a.x * (75 + 0.16 * (130 + 140 * power) * (mob > 1 ? 1.3 : 1)) * (mob > 1 ? mob * mob : 1) * HOLD_SLOW / GAME_SPEED : a.x * sp, vy: diag ? a.y * (75 + 0.16 * (130 + 140 * power) * (mob > 1 ? 1.3 : 1)) * (mob > 1 ? mob * mob : 1) * HOLD_SLOW / GAME_SPEED : a.y * sp, // 斜めシュートは、最初はゆっくり
     spin: spinMax, spinMax, burst: 0, angle: 0,
     dir: TYPES[type].spinDir, curl: 1.1 * TYPES[type].spinDir, dashT: 0, dashCd: 0, dashFx: 0, trail: [], out: false, dead: false,
     // 斜め：その場にとどまる（R系は短く、よく動く） / Hは水平でも少しとどまる
-    holdT: (diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0) * (1 + 0.8 * Math.max(0, (0.5 - power) / 0.5)), riding: false, rideT: 0, // パワーが低いほど、斜めシュートでとどまる時間が長い
+    hold0: 0, holdT: (diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0) * (1 + 0.8 * Math.max(0, (0.5 - power) / 0.5)), riding: false, rideT: 0, // パワーが低いほど、斜めシュートでとどまる時間が長い
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
     age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, orbR: !diag && !TYPES[type].tip && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5 ? TYPES[type].orbitR : 0, softDone: false, spiralT: 0, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0, vAng: Math.random() * Math.PI * 2, hPh: 3, hT: 0, wild: Math.max(0, (power - 0.5) / 0.5), calm: Math.max(0, (0.5 - power) / 0.5),
@@ -1600,9 +1600,13 @@ export function Beyblade() {
 
         // 斜めシュート：落とした場所でしばらく回り続け、それから動き出す
         if (b.holdT > 0) {
+          if (b.hold0 < b.holdT) b.hold0 = b.holdT; // とどまり始めた時の長さを覚えておく
           b.holdT -= DT / (GAME_SPEED * HOLD_LONG); // 斜めシュートは、しっかりとどまってから動き出す（試合のスピードを上げても、とどまる時間は短くしない）
           // とどまっていても、狙った向きへほんの少しずつ動く（当てられたら、その場で解除される）
-          const drift = (75 + 0.16 * b.push) * (t.mobility > 1 ? t.mobility ** 2 : 1) * HOLD_SLOW / GAME_SPEED;
+          const drift0 = (75 + 0.16 * b.push) * (t.mobility > 1 ? t.mobility ** 2 : 1) * HOLD_SLOW / GAME_SPEED;
+          // 急に動き出さないように：とどまっている間に、動き出すときの速さまで、だんだん速くなる
+          const hp = b.hold0 > 0 ? Math.max(0, Math.min(1, 1 - b.holdT / b.hold0)) : 1;
+          const drift = drift0 + Math.max(0, 0.6 * b.push / GAME_SPEED - drift0) * hp * hp;
           b.vx += (b.ax * drift + (Math.random() - 0.5) * 20 - b.vx) * 6 * DT;
           b.vy += (b.ay * drift + (Math.random() - 0.5) * 20 - b.vy) * 6 * DT;
           b.x += b.vx * DT; b.y += b.vy * DT;
@@ -1613,7 +1617,7 @@ export function Beyblade() {
           if (b.trail.length > 14) b.trail.shift();
           b.spin = Math.max(0, b.spin - 9 * t.decay * DT * 6 / (GAME_SPEED * HOLD_LONG)); // とどまる時間が長くなったぶん、とどまる間に減る回転の合計は前と同じになるように
           if (b.holdT <= 0) {
-            b.vx = b.ax * b.push / GAME_SPEED; b.vy = b.ay * b.push / GAME_SPEED; // 動き出しも、ゆっくり
+            b.vx = b.ax * 0.6 * b.push / GAME_SPEED; b.vy = b.ay * 0.6 * b.push / GAME_SPEED; // 動き出しも、とどまっている間の最後の速さのまま（急に速くならない）
             b.dashCd = 0.8;
           }
           continue;
@@ -1710,7 +1714,7 @@ export function Beyblade() {
             // 斜めシュート：凹みに少し滞在して、ゆっくり中央に向かって降りてくる
             b.notched = true; b.riding = false; b.rideChance = 1;
             const dn = d || 1; b.ax = -b.x / dn; b.ay = -b.y / dn; b.push = 150;
-            b.holdT = 0.7 + Math.random() * 0.6; b.calmT = 3.0; b.vx = b.ax * 40; b.vy = b.ay * 40; b.dashCd = Math.max(b.dashCd, 0.8);
+            b.holdT = 0.7 + Math.random() * 0.6; b.hold0 = 0; b.calmT = 3.0; b.vx = b.ax * 40; b.vy = b.ay * 40; b.dashCd = Math.max(b.dashCd, 0.8);
           } else if (atTop && b.rideT > 0.05 && ratio > 0.22) {
             // 上側から中央へ発射
             const nx = -b.x / d, ny = -b.y / d;
