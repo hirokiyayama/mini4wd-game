@@ -248,6 +248,13 @@ const norm = (v: number, ref: number, k: number) => Math.max(0.3, 1 + k * (v / r
 // ティアごとの強さ（バトルの計算だけ）：ティアが1つ下がるごとに、攻撃・防御・持久・バースト耐性が少しずつ下がる
 const TIER_POW = [1, 1, 0.92, 0.85, 0.78, 0.72];
 const tierPow = (pt: PartDef | undefined) => (pt ? (TIER_POW[pt.tier ?? 1] ?? 0.72) * (pt.bal ?? 1) : 1);
+// パーツのタイプ（アタック/ディフェンス/スタミナ/バランス）。書いていなければ性能から決める
+function partTypeOf(pt: PartDef): string {
+  if (pt.type) return pt.type;
+  const v = { atk: Math.max(pt.s.atk ?? 0, pt.s.dash ?? 0), def: pt.s.def ?? 0, sta: pt.s.sta ?? 0 }; // ダッシュが高いものはアタックとして数える
+  const sorted = (Object.entries(v) as [string, number][]).sort((a, b) => b[1] - a[1]);
+  return sorted[0][1] - sorted[1][1] < 10 ? 'bal' : sorted[0][0]; // いちばん高い性能が飛びぬけていなければバランス
+}
 function buildBey(c: Custom) {
   const bl = bladeOf(c), { st, weight, height, bit } = calcStats(c);
   const ef = calcStats(c, true).st; // バトルの計算用（隠れ性能を含む）。画面には st を出す
@@ -271,7 +278,7 @@ function buildBey(c: Custom) {
     absorb: (bl.absorb ?? 0) * (bit.absorbBit ?? 0.25), // 左回転の回転吸収力（Eビットで大きく発揮される）
     mobility: bit.mobility ?? 1,
     bid: bl.id, // ブレードの種類（形の計算に使う）
-    atkBit: ['L', 'R', 'LR'].includes(bit.id), // アタック系のビット
+    splitLoss: ['atk', 'bal'].includes(partTypeOf(bit)) ? 0.2 : 0, // バレットグリフォンが分かれるときに失う回転：アタック・バランス系のビットは2割、スタミナ・ディフェンス系は失わない
     flat: ['K', 'L', 'R', 'LR'].includes(bit.id), // 底が平ら：きれいな円を描かず、楕円で回り、そのうちリングや壁に当たって軌道が変わる
     noRideInner: ['E', 'B', 'FB', 'H', 'Nr'].includes(bit.id),
     orbitR: bit.id === 'E' ? 153 : bit.id === 'H' ? 80 : ['B', 'FB', 'Nr'].includes(bit.id) ? 92 : 0, // 小さな円の半径（実際に描く円は、これより少し大きくなる）：B・FB・Nrは中心の円の段のあたり、Eはもっと外側、Hはもっと内側, // 水平シュートで真ん中の円の中に落とすと、その円より少し大きいくらいの小さな円を描いて回る（ぶつかるまで）
@@ -1572,7 +1579,7 @@ export function Beyblade() {
       };
       { const q = b.blt, qd = sqn(q.x, q.y), lim = R - BEY_R * 1.2; if (qd > lim) { q.x *= lim / qd; q.y *= lim / qd; } } // 壁の外には出さない
       b.vx = b.vx * 0.6 - ca * 60; b.vy = b.vy * 0.6 - sa * 60; // 本体は、分かれた反動で少し押し戻される
-      b.spin *= t.atkBit ? 0.6 : 0.9; // 分かれるときに回転を失う。アタック系のビット（R・LR・L）は、地面をつかんで暴れるぶん、大きく失う
+      b.spin *= 1 - t.splitLoss; // 分かれるときに回転を失う（アタック・バランス系のビットだけ）
       spark(b.x, b.y, 18);
       flashRef.current = Math.max(flashRef.current, 0.4);
       { const w = window as unknown as { __split?: number }; w.__split = (w.__split ?? 0) + 1; } // 動作確認用：分かれた回数
@@ -2392,10 +2399,7 @@ export function Beyblade() {
     const tabs: [string, string][] = isRatchet ? [['50', '50系統'], ['60', '60系統'], ['70', '70系統'], ['80', '80系統']] : [['atk', 'アタック'], ['def', 'ディフェンス'], ['sta', 'スタミナ'], ['bal', 'バランス']];
     const typeOf = (pt: PartDef): string => {
       if (isRatchet) return String(Math.floor((pt.height ?? 60) / 10) * 10);
-      if (pt.type) return pt.type;
-      const v = { atk: Math.max(pt.s.atk ?? 0, pt.s.dash ?? 0), def: pt.s.def ?? 0, sta: pt.s.sta ?? 0 }; // ダッシュが高いものはアタックとして数える
-      const sorted = (Object.entries(v) as [string, number][]).sort((a, b) => b[1] - a[1]);
-      return sorted[0][1] - sorted[1][1] < 10 ? 'bal' : sorted[0][0]; // いちばん高い性能が飛びぬけていなければバランス
+      return partTypeOf(pt);
     };
     const useTabs = list.length > 6;
     const tab = useTabs ? partTab[title] ?? 'all' : 'all';
