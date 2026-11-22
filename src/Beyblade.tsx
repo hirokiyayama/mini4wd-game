@@ -271,6 +271,7 @@ function buildBey(c: Custom) {
     absorb: (bl.absorb ?? 0) * (bit.absorbBit ?? 0.25), // 左回転の回転吸収力（Eビットで大きく発揮される）
     mobility: bit.mobility ?? 1,
     bid: bl.id, // ブレードの種類（形の計算に使う）
+    atkBit: ['L', 'R', 'LR'].includes(bit.id), // アタック系のビット
     flat: ['K', 'L', 'R', 'LR'].includes(bit.id), // 底が平ら：きれいな円を描かず、楕円で回り、そのうちリングや壁に当たって軌道が変わる
     noRideInner: ['E', 'B', 'FB', 'H', 'Nr'].includes(bit.id),
     orbitR: bit.id === 'E' ? 153 : bit.id === 'H' ? 80 : ['B', 'FB', 'Nr'].includes(bit.id) ? 92 : 0, // 小さな円の半径（実際に描く円は、これより少し大きくなる）：B・FB・Nrは中心の円の段のあたり、Eはもっと外側、Hはもっと内側, // 水平シュートで真ん中の円の中に落とすと、その円より少し大きいくらいの小さな円を描いて回る（ぶつかるまで）
@@ -1571,6 +1572,7 @@ export function Beyblade() {
       };
       { const q = b.blt, qd = sqn(q.x, q.y), lim = R - BEY_R * 1.2; if (qd > lim) { q.x *= lim / qd; q.y *= lim / qd; } } // 壁の外には出さない
       b.vx = b.vx * 0.6 - ca * 60; b.vy = b.vy * 0.6 - sa * 60; // 本体は、分かれた反動で少し押し戻される
+      b.spin *= t.atkBit ? 0.6 : 0.9; // 分かれるときに回転を失う。アタック系のビット（R・LR・L）は、地面をつかんで暴れるぶん、大きく失う
       spark(b.x, b.y, 18);
       flashRef.current = Math.max(flashRef.current, 0.4);
       { const w = window as unknown as { __split?: number }; w.__split = (w.__split ?? 0) + 1; } // 動作確認用：分かれた回数
