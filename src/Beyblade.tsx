@@ -8,7 +8,7 @@ import type { Link, Msg } from './online';
 const WIN_POINTS = 4;
 const R = 265; // すり鉢の半径
 const BEY_R = 32;
-const BLT_R = 19; // バレットグリフォンから分かれた「バレット」の大きさ（当たり判定）
+const BLT_R = 29; // バレットグリフォンから分かれた「バレット」の大きさ（当たり判定）
 const W = 900, H = 700, CX = W / 2, CY = 335;
 const EXIT_HALF = 0.25; // 出口の幅（rad）
 // ---- スタジアムの形：緑のリング（エクストリームライン）は円で、上に凹みがある。リングの外の壁は、円ではなく四角（角が丸い）
@@ -76,7 +76,7 @@ const BLADES: PartDef[] = [
   { id: 'glory', bal: 0.95, comeback: 2.2, name: 'グローリーワルキューレ', desc: 'ラチェットと一体になったブレード。当たった相手を強く弾き、バーストしにくい。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, integrated: true, kick: 1.25, burstFloor: 80, burstTough: 2.3 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
   { id: 'phoenix', bal: 0.95, tier: 2, name: 'フェニックスウイング', desc: '重い3枚刃で、当たった相手を大きく弾くアタッカー。', s: { atk: 65, def: 30, sta: 20 }, weight: 38.0, color: '#ef4444', blades: 3 },
   { id: 'hells', bal: 0.97, tier: 2, name: 'ヘルズネザー', desc: 'ラチェットと一体になったブレード。高さを切り替えて、弾きの強いアタック刃（ロー）といなし刃（ノーマル）を使い分ける。', s: { atk: 50, def: 50, sta: 30 }, hid: { atk: 86, def: 80, sta: 51 }, low: { s: { atk: 70, def: 45, sta: 15 }, hid: { atk: 106, def: 75, sta: 36 }, height: 50 }, weight: 42.9, height: 60, color: '#f97316', blades: 4, integrated: true }, // 一体型なので、ラチェットのぶん（バトルの計算でラチェットは3倍）を隠れ性能に足している
-  { id: 'bullet', bal: 0.96, tier: 2, name: 'バレットグリフォン', desc: 'ラチェットと一体になったブレード。バトル中に「バレット」と「本体」に分かれる。バレットは平らな軸先で走り回って攻撃し、本体は円い形で攻撃に耐える。水平シュートだと分かれやすく、斜めシュートだと分かれにくい。', s: { atk: 45, def: 45, sta: 40 }, hid: { atk: 81, def: 75, sta: 61 }, weight: 60.7, height: 60, color: '#e11d48', blades: 3, integrated: true, split: { bulletW: 32.6, bodyW: 28.1 } }, // 勝ち負けは、ビットの付いた本体で決める（バレットは止まっても、場外に出ても負けにならない）
+  { id: 'bullet', bal: 1.06, tier: 2, comeback: 0.4, name: 'バレットグリフォン', desc: 'ラチェットと一体になったブレード。バトル中に「バレット」と「本体」に分かれる。バレットは平らな軸先で走り回って攻撃し、本体は円い形で攻撃に耐える。水平シュートだと分かれやすく、斜めシュートだと分かれにくい。', s: { atk: 45, def: 45, sta: 40 }, hid: { atk: 81, def: 75, sta: 61 }, weight: 60.7, height: 60, color: '#e11d48', blades: 3, integrated: true, split: { bulletW: 32.6, bodyW: 28.1 } }, // 勝ち負けは、ビットの付いた本体で決める（バレットは止まっても、場外に出ても負けにならない）
   { id: 'wyvern', bal: 1.02, tier: 2, comeback: 2.0, name: 'ワイバーンホバー', desc: '下向きにすぼまった段差のある2枚刃で、相手の攻撃を上から押さえつけて衝撃を分散する。場外から戻りやすい。', s: { atk: 13, def: 60, sta: 27 }, type: 'def', weight: 34.9, color: '#a3e635', blades: 2 },
   { id: 'clock', bal: 1.05, tier: 3, name: 'クロックミラージュ', desc: '円盤の形をした60枚刃で、とても長く回り続ける。そのかわり、とてもバーストしやすい。', s: { atk: 10, def: 10, sta: 80 }, type: 'sta', weight: 37.7, color: '#22d3ee', blades: 6, burstTough: 0.55 },
   { id: 'golem', bal: 1.08, tier: 3, name: 'ゴーレムロック', desc: '連打形状の側面で攻撃を受け止め、傾いたときは上下方向の打撃面で相手を弾く。', s: { atk: 30, def: 60, sta: 10 }, type: 'def', weight: 34.0, color: '#fb923c', blades: 4, kick: 1.1 },
@@ -1552,19 +1552,24 @@ export function Beyblade() {
       const t = TT(b);
       if (!t.split || b.isBody || b.tt) return;
       b.isBody = true;
-      const bt = { ...buildBey({ blade: 'bullet', ratchet: 'r560', bit: 'R' }), mass: t.split.bltMass, bid: 'bulletP', comeback: 1, split: null, spinDir: t.spinDir, absorb: 0 };
+      const bt0 = buildBey({ blade: 'bullet', ratchet: 'r560', bit: 'R' });
+      const bt = { ...bt0, decay: bt0.decay * 1.4, mass: t.split.bltMass, bid: 'bulletP', comeback: 1, split: null, spinDir: t.spinDir, absorb: 0 };
       TYPES[b.type] = { ...t, mass: t.split.bodyMass, split: null }; // 本体：バレットのぶん軽くなる
       const sp = Math.hypot(b.vx, b.vy);
       const dx = sp > 20 ? b.vx / sp : Math.cos(b.angle), dy = sp > 20 ? b.vy / sp : Math.sin(b.angle);
-      const ang = Math.atan2(dy, dx) + b.dir * (0.4 + 0.8 * Math.random()), ca = Math.cos(ang), sa = Math.sin(ang);
-      const bv = Math.max(sp, 260) + 160;
+      let ang = Math.atan2(dy, dx) + b.dir * (0.4 + 0.8 * Math.random());
+      { const bd = Math.hypot(b.x, b.y) || 1, ux = b.x / bd, uy = b.y / bd, vr = Math.cos(ang) * ux + Math.sin(ang) * uy; // 外へ向かう向きなら、内側へ折り返す（分かれた瞬間にゾーンへ飛び込まない）
+        if (vr > 0) { const nx = Math.cos(ang) - 2 * vr * ux, ny = Math.sin(ang) - 2 * vr * uy; ang = Math.atan2(ny, nx); } }
+      const ca = Math.cos(ang), sa = Math.sin(ang);
+      const bv = Math.min(Math.max(sp, 220), 420) + 80;
       b.blt = {
         ...b, tt: bt, blt: null, isBody: false, trail: [],
         x: b.x + ca * (BEY_R + BLT_R * 0.4), y: b.y + sa * (BEY_R + BLT_R * 0.4), vx: ca * bv, vy: sa * bv,
-        spin: b.spin * 0.9, spinMax: b.spinMax * 0.9, burst: 0, riding: false, rideT: 0, holdT: 0, dashT: 0, coast: 0, dashCd: 0.6, dashFx: 0,
+        spin: b.spin * 0.65, spinMax: b.spinMax, burst: 0, // 回転はそのとき残っている分から（増えない）。バレットの持久は本体より低い riding: false, rideT: 0, holdT: 0, dashT: 0, coast: 0, dashCd: 0.6, dashFx: 0,
         hit: true, rideChance: 1, onRing: false, diagShot: false, softDone: true, spiralT: 0, orbR: 0, mode: 0, postT: 1, calmT: 0, knockT: 0,
-        outT: 0, out: false, dead: false, retPlan: false, retCount: 1, grace: 0, dashesLeft: Infinity, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, ph0: Math.random() * 6.28,
+        outT: 0, out: false, dead: false, retPlan: false, retCount: 1, grace: 1.5, outAng: 0, dashesLeft: Infinity, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, ph0: Math.random() * 6.28,
       };
+      { const q = b.blt, qd = sqn(q.x, q.y), lim = R - BEY_R * 1.2; if (qd > lim) { q.x *= lim / qd; q.y *= lim / qd; } } // 壁の外には出さない
       b.vx = b.vx * 0.6 - ca * 60; b.vy = b.vy * 0.6 - sa * 60; // 本体は、分かれた反動で少し押し戻される
       spark(b.x, b.y, 18);
       flashRef.current = Math.max(flashRef.current, 0.4);
@@ -1936,7 +1941,7 @@ export function Beyblade() {
         for (const x of beys) { const q = x.blt; if (!q || q.dead) continue;
           if (q.out) { q.outT -= DT; if (q.outT <= 0) q.dead = true; continue; }
           const sq = sqn(q.x, q.y);
-          if (sq > R) { if (exitKind(q.x, q.y)) { q.out = true; q.outT = 0.8; q.riding = false; q.vx *= 0.35; q.vy *= 0.35; } else if (sq > R + BEY_R) { q.x *= (R + BEY_R) / sq; q.y *= (R + BEY_R) / sq; } }
+          if (sq > R) { if (exitKind(q.x, q.y)) { q.out = true; q.outT = 0.8; { const w = window as unknown as { __bltOut?: number }; w.__bltOut = (w.__bltOut ?? 0) + 1; } /* 動作確認用 */ q.riding = false; q.vx *= 0.35; q.vy *= 0.35; } else if (sq > R + BEY_R) { q.x *= (R + BEY_R) / sq; q.y *= (R + BEY_R) / sq; } }
         }
       }
       // ベイ同士の衝突（バレットグリフォンのバレットも、相手・味方の両方とぶつかる）
@@ -2153,7 +2158,7 @@ export function Beyblade() {
             const rt = Math.max(0, b.spin / b.spinMax), w = b.spin > 0 ? 2 + 75 * Math.pow(rt, 1.5) : 0;
             b.vAng += t.spinDir * Math.min(w * visDt, 0.36 * (Math.PI * 2) / t.blades);
           }
-          drawBey(ctx, t.color, i === 0 ? '#38b6ff' : '#ff3ea5', b.vAng, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, t.sprite, t.spinDir);
+          drawBey(ctx, b.isBody ? '#3b82f6' : t.color, i === 0 ? '#38b6ff' : '#ff3ea5', b.vAng, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, b.isBody ? null : t.sprite, t.spinDir); // バレットグリフォンの本体は、分かれたら青で描く（バレットと見分ける）
           ctx.restore();
         });
         beys.forEach((b, i) => { // バレットグリフォンから分かれたバレット
