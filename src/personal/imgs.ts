@@ -11,7 +11,12 @@ import hells from './beys/hells.png';
 import wyvern from './beys/wyvern.png';
 import clock from './beys/clock.png';
 import golem from './beys/golem.png';
+import zeke from './beys/zeke.png';
+import luster from './beys/luster.png';
+import scythe2 from './beys/scythe2.png';
+import dran2 from './beys/dran2.png';
+import warrow2 from './beys/warrow2.png';
 import launcher_red from './launcher_red.png';
 import launcher_black from './launcher_black.png';
 
-(window as unknown as { __BEY_IMGS?: Record<string, string> }).__BEY_IMGS = { meteor, cobalt, wizard, aero, shark, glory, knight2, phoenix, hells, wyvern, clock, golem, launcher_red, launcher_black };
+(window as unknown as { __BEY_IMGS?: Record<string, string> }).__BEY_IMGS = { meteor, cobalt, wizard, aero, shark, glory, knight2, phoenix, hells, wyvern, clock, golem, zeke, luster, scythe2, dran2, warrow2, launcher_red, launcher_black };
