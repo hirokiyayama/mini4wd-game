@@ -1851,7 +1851,7 @@ export function Beyblade() {
             const cR = RING_R * 0.5, dn2 = Math.hypot(b.x, b.y);
             if ((b.prevD <= cR) !== (dn2 <= cR)) {
               const vr = (b.vx * b.x + b.vy * b.y) / (dn2 || 1), ux2 = b.x / (dn2 || 1), uy2 = b.y / (dn2 || 1);
-              const dv = vr > 0 ? -Math.min(vr, 70) : TYPES[b.type].tip ? -30 : 30; // 外向きなら減速、内向きなら少し加速（Hビットは段で押し返されず、そのまま真ん中へ落ちる）
+              const dv = vr > 0 ? -Math.min(vr, 70) : -30; // 中心へ下りる段：外へ出るときは段を上るので減速、内へ入るときは段を下りるので内向きに少し加速（以前は内へ入るときに外へ押し返していて、段の外側に引っかかっていた）
               b.vx += ux2 * dv; b.vy += uy2 * dv;
             }
           }
