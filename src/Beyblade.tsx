@@ -8,6 +8,7 @@ import type { Link, Msg } from './online';
 const WIN_POINTS = 4;
 const R = 265; // すり鉢の半径
 const BEY_R = 32;
+const BLT_R = 19; // バレットグリフォンから分かれた「バレット」の大きさ（当たり判定）
 const W = 900, H = 700, CX = W / 2, CY = 335;
 const EXIT_HALF = 0.25; // 出口の幅（rad）
 // ---- スタジアムの形：緑のリング（エクストリームライン）は円で、上に凹みがある。リングの外の壁は、円ではなく四角（角が丸い）
@@ -75,7 +76,7 @@ const BLADES: PartDef[] = [
   { id: 'glory', bal: 0.95, comeback: 2.2, name: 'グローリーワルキューレ', desc: 'ラチェットと一体になったブレード。当たった相手を強く弾き、バーストしにくい。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, integrated: true, kick: 1.25, burstFloor: 80, burstTough: 2.3 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
   { id: 'phoenix', bal: 0.95, tier: 2, name: 'フェニックスウイング', desc: '重い3枚刃で、当たった相手を大きく弾くアタッカー。', s: { atk: 65, def: 30, sta: 20 }, weight: 38.0, color: '#ef4444', blades: 3 },
   { id: 'hells', bal: 0.97, tier: 2, name: 'ヘルズネザー', desc: 'ラチェットと一体になったブレード。高さを切り替えて、弾きの強いアタック刃（ロー）といなし刃（ノーマル）を使い分ける。', s: { atk: 50, def: 50, sta: 30 }, hid: { atk: 86, def: 80, sta: 51 }, low: { s: { atk: 70, def: 45, sta: 15 }, hid: { atk: 106, def: 75, sta: 36 }, height: 50 }, weight: 42.9, height: 60, color: '#f97316', blades: 4, integrated: true }, // 一体型なので、ラチェットのぶん（バトルの計算でラチェットは3倍）を隠れ性能に足している
-  { id: 'bullet', bal: 0.76, tier: 2, name: 'バレットグリフォン', desc: 'ラチェットと一体になったブレード。バトル中に「バレット」と「本体」に分かれる。バレットは平らな軸先で走り回って攻撃し、本体は円い形で攻撃に耐える。水平シュートだと分かれやすく、斜めシュートだと分かれにくい。', s: { atk: 45, def: 45, sta: 40 }, hid: { atk: 81, def: 75, sta: 61 }, weight: 60.7, height: 60, color: '#e11d48', blades: 3, integrated: true, split: { bulletW: 32.6, bodyW: 28.1 } }, // 勝ち負けは、ビットの付いた本体で決める（バレットは止まっても、場外に出ても負けにならない）
+  { id: 'bullet', bal: 0.96, tier: 2, name: 'バレットグリフォン', desc: 'ラチェットと一体になったブレード。バトル中に「バレット」と「本体」に分かれる。バレットは平らな軸先で走り回って攻撃し、本体は円い形で攻撃に耐える。水平シュートだと分かれやすく、斜めシュートだと分かれにくい。', s: { atk: 45, def: 45, sta: 40 }, hid: { atk: 81, def: 75, sta: 61 }, weight: 60.7, height: 60, color: '#e11d48', blades: 3, integrated: true, split: { bulletW: 32.6, bodyW: 28.1 } }, // 勝ち負けは、ビットの付いた本体で決める（バレットは止まっても、場外に出ても負けにならない）
   { id: 'wyvern', bal: 1.02, tier: 2, comeback: 2.0, name: 'ワイバーンホバー', desc: '下向きにすぼまった段差のある2枚刃で、相手の攻撃を上から押さえつけて衝撃を分散する。場外から戻りやすい。', s: { atk: 13, def: 60, sta: 27 }, type: 'def', weight: 34.9, color: '#a3e635', blades: 2 },
   { id: 'clock', bal: 1.05, tier: 3, name: 'クロックミラージュ', desc: '円盤の形をした60枚刃で、とても長く回り続ける。そのかわり、とてもバーストしやすい。', s: { atk: 10, def: 10, sta: 80 }, type: 'sta', weight: 37.7, color: '#22d3ee', blades: 6, burstTough: 0.55 },
   { id: 'golem', bal: 1.08, tier: 3, name: 'ゴーレムロック', desc: '連打形状の側面で攻撃を受け止め、傾いたときは上下方向の打撃面で相手を弾く。', s: { atk: 30, def: 60, sta: 10 }, type: 'def', weight: 34.0, color: '#fb923c', blades: 4, kick: 1.1 },
@@ -125,6 +126,7 @@ const SHAPES: Record<string, { r: Float32Array; mean: number; nr: number; mx: nu
   golem: { r: Float32Array.from([32.38,32.58,32.59,32.32,31.77,31.31,31.19,31.34,31.63,32.05,32.51,32.79,32.85,32.92,32.96,32.75,32.35,32.11,32.31,32.99,33.79,34.15,34.14,34.03,33.86,33.31,32.29,31.22,30.45,30.39,31.17,31.99,32.43,32.56,32.51,32.45,32.12,31.39,30.74,30.33,30.14,30.26,30.39,30.1,29.51,29.07,28.91,29.12,29.4,29.36,29.08,28.98,29.27,29.84,30.45,30.95,31.31,31.4,31.94,33.25,34,33.93,33.42,32.46,31.37,30.42,29.77,29.82,30.64,31.48,31.9,32.11]), mean: 31.598, nr: 0.874, mx: 34.15, cx: -0.366, cy: -1.318, ecc: 0.0433 }, // ゴーレムロック：ごつごつした岩の外形：写真の輪郭から作った外形
   knight2: { r: Float32Array.from([33.12,32.88,33.14,33.4,33.38,33.43,33.43,33.3,33.25,33.22,33.01,32.88,33.14,33.47,33.64,33.81,33.8,33.67,33.59,33.7,34.1,34.32,34.18,33.95,33.65,33.46,33.62,33.92,34.1,34.18,34.15,34.09,34.06,33.74,33.37,33.47,33.91,34.35,34.58,34.46,34.31,34.49,34.62,34.67,34.78,34.59,34.19,33.74,33.36,33.34,33.58,33.69,33.69,33.86,34.04,34.1,33.95,33.49,33.12,33.32,33.82,34.18,34.41,34.28,33.96,33.98,34.02,34.06,34.24,34.19,33.92,33.58]), mean: 33.812, nr: 0, mx: 34.78, cx: 0.298, cy: 0.161, ecc: 0.01 }
 };
+SHAPES.bulletP = { r: new Float32Array(SHAPE_N).fill(BLT_R), mean: BLT_R, nr: 0.3, mx: BLT_R, cx: 0, cy: 0, ecc: 0 }; // バレットグリフォンのバレット：小さな円
 const nrOf = (id: string) => SHAPES[id]?.nr ?? 0.5;
 // 変重心：ブレードの重い側が、いま向いている方向（-1〜1。相手の側に重い側が向いているほどプラス）
 function heavySide(id: string, angle: number, nx: number, ny: number) {
@@ -284,6 +286,7 @@ function buildBey(c: Custom) {
 
 // バトルで使うベイ（スタート時に、カスタマイズ内容から作り直す）
 const TYPES: Record<BeyType, ReturnType<typeof buildBey>> = { me: buildBey(DEFAULT_CUSTOM), cpu: buildBey(DEFAULT_CUSTOM) };
+const TT = (b: Bey) => b.tt ?? TYPES[b.type]; // そのコマの性能（バレットグリフォンのバレットは、自分の性能を持つ）
 
 // ---------------- CPUの強さ ----------------
 type Diff = 'easy' | 'normal' | 'hard';
@@ -551,18 +554,9 @@ interface Bey {
   dashesLeft: number; // 残りXダッシュ回数（Eビットは2〜3回まで）
   wild: number; calm: number; // シュートパワーの影響：高いほど最初は暴れる（0〜1）／低いほど落ち着いて動く（0〜1）。10000ではどちらも0
   vAng: number; // 画面に描くときの回転の向き（実際の回転が速すぎると、コマ送りで止まって見える・逆に回って見えるので、描くとき用は別に回す）
-  splitAt: number; isBody: boolean; blt: Blt | null; // バレットグリフォン：分かれる時刻（-1＝このラウンドは分かれない）／分かれたあとの本体か／分かれたバレット
+  isBody: boolean; blt: Bey | null; tt?: ReturnType<typeof buildBey>; // バレットグリフォン：分かれたあとの本体か／分かれたバレット（Rビットと同じ動きの小さなコマ。勝ち負けには関係しない）／バレット自身の性能
   hPh: number; hT: number; // Hビットの動き：0=真ん中で小さく回る 1=飛ばされてすべる 2=止まった場所で待つ 3=真ん中へゆっくり戻る／待つ残り時間
 }
-// バレットグリフォンから分かれた「バレット」：内蔵の平らな軸先で走り回り、相手を攻撃する（勝ち負けには関係しない）
-interface Blt {
-  x: number; y: number; vx: number; vy: number; angle: number; vAng: number;
-  spin: number; spinMax: number; out: boolean; outT: number; gone: boolean;
-  trail: { x: number; y: number }[];
-  age: number; hitCd: number; lungeT: number; rush: number; // 相手へ向かって飛び込むまでの時間／飛び込み中の残り時間
-  atk: number; def: number; decay: number; mass: number; dir: 1 | -1; color: string;
-}
-const BLT_R = 19; // バレットの大きさ（当たり判定）
 interface Spark { x: number; y: number; vx: number; vy: number; life: number; max: number; w: number; old?: boolean }
 // 火花を作る（ぶつかった・壁に当たった・ダッシュの瞬間など）。多めに、速く、尾を引いて飛び散る
 function makeSparks(arr: Spark[], x: number, y: number, n: number, old = false) {
@@ -618,7 +612,7 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
     age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, orbR: !diag && !TYPES[type].tip && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5 ? TYPES[type].orbitR : 0, softDone: false, spiralT: 0, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0, vAng: Math.random() * Math.PI * 2, hPh: 3, hT: 0, wild: Math.max(0, (power - 0.5) / 0.5), calm: Math.max(0, (0.5 - power) / 0.5),
-    splitAt: TYPES[type].split ? (diag ? (Math.random() < 0.22 ? 2 + 3 * Math.random() : -1) : (Math.random() < 0.8 ? 1.2 + 1.6 * Math.random() : -1)) : -1, isBody: false, blt: null, // 水平シュートは分かれやすく、斜めシュートは分かれにくい
+    isBody: false, blt: null,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
 }
@@ -1552,133 +1546,29 @@ export function Beyblade() {
       makeSparks(sparksRef.current, x, y, n, old);
     };
 
-    // バレットグリフォン：「バレット」と「本体」に分かれる。本体（ビット付き）は円い形で守りが固く、真ん中でじっと耐える。バレットは走り回って相手を攻撃する
+    // バレットグリフォン：相手とぶつかったときに「バレット」と「本体」に分かれる。本体はビットの動きのまま（大きさも同じ）。
+    // バレットはRビットと同じ動きで走り回って攻撃し、回転が止まっても消えずにその場に残って、相手や味方のじゃまをする
     const doSplit = (b: Bey) => {
-      const t = TYPES[b.type];
-      if (!t.split || b.isBody) return;
-      b.isBody = true; b.splitAt = -1;
+      const t = TT(b);
+      if (!t.split || b.isBody || b.tt) return;
+      b.isBody = true;
+      const bt = { ...buildBey({ blade: 'bullet', ratchet: 'r560', bit: 'R' }), mass: t.split.bltMass, bid: 'bulletP', comeback: 1, split: null, spinDir: t.spinDir, absorb: 0 };
+      TYPES[b.type] = { ...t, mass: t.split.bodyMass, split: null }; // 本体：バレットのぶん軽くなる
       const sp = Math.hypot(b.vx, b.vy);
       const dx = sp > 20 ? b.vx / sp : Math.cos(b.angle), dy = sp > 20 ? b.vy / sp : Math.sin(b.angle);
-      const ang = Math.atan2(dy, dx) + b.dir * (0.3 + 0.6 * Math.random()), ca = Math.cos(ang), sa = Math.sin(ang);
-      const bv = Math.max(sp, 280) + 180;
+      const ang = Math.atan2(dy, dx) + b.dir * (0.4 + 0.8 * Math.random()), ca = Math.cos(ang), sa = Math.sin(ang);
+      const bv = Math.max(sp, 260) + 160;
       b.blt = {
-        x: b.x + ca * BEY_R * 0.7, y: b.y + sa * BEY_R * 0.7, vx: ca * bv, vy: sa * bv, angle: b.angle, vAng: b.vAng,
-        spin: b.spin * 0.85, spinMax: b.spinMax * 0.85, out: false, outT: 0, gone: false, trail: [],
-        age: 0, hitCd: 0.3, lungeT: 0.7 + Math.random() * 0.8, rush: 0,
-        atk: t.atk * 1.3, def: t.def * 0.75, decay: t.decay * 1.5, mass: t.split.bltMass, dir: b.dir, color: t.color,
+        ...b, tt: bt, blt: null, isBody: false, trail: [],
+        x: b.x + ca * (BEY_R + BLT_R * 0.4), y: b.y + sa * (BEY_R + BLT_R * 0.4), vx: ca * bv, vy: sa * bv,
+        spin: b.spin * 0.9, spinMax: b.spinMax * 0.9, burst: 0, riding: false, rideT: 0, holdT: 0, dashT: 0, coast: 0, dashCd: 0.6, dashFx: 0,
+        hit: true, rideChance: 1, onRing: false, diagShot: false, softDone: true, spiralT: 0, orbR: 0, mode: 0, postT: 1, calmT: 0, knockT: 0,
+        outT: 0, out: false, dead: false, retPlan: false, retCount: 1, grace: 0, dashesLeft: Infinity, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, ph0: Math.random() * 6.28,
       };
-      TYPES[b.type] = { ...t, mass: t.split.bodyMass, atk: t.atk * 0.6, def: t.def * 1.35, burstRes: t.burstRes * 1.3, decay: t.decay * 0.85, tip: true, flat: false, noRideInner: true, cruise: 80, mobility: 0.45, steady: 0.8, kick: 1, split: null };
-      b.vx = b.vx * 0.25 - ca * 70; b.vy = b.vy * 0.25 - sa * 70; // 本体は、分かれた反動で少し下がって、その場にとどまる
-      b.riding = false; b.dashT = 0; b.coast = 0; b.dashesLeft = 0; b.orbR = 0; b.mode = 0; b.hPh = 3; b.holdT = 0; b.spiralT = 0;
+      b.vx = b.vx * 0.6 - ca * 60; b.vy = b.vy * 0.6 - sa * 60; // 本体は、分かれた反動で少し押し戻される
       spark(b.x, b.y, 18);
       flashRef.current = Math.max(flashRef.current, 0.4);
       { const w = window as unknown as { __split?: number }; w.__split = (w.__split ?? 0) + 1; } // 動作確認用：分かれた回数
-    };
-    // バレットがベイに当たる（own=自分の本体：弾き合うだけ）
-    const bltHit = (q: Blt, v: Bey, own: boolean) => {
-      if (v.dead || v.out || v.outT > 0) return;
-      const tv = TYPES[v.type];
-      const dx = v.x - q.x, dy = v.y - q.y, d = Math.hypot(dx, dy) || 0.001;
-      const rv = shapeR(tv.bid, Math.atan2(-dy, -dx) - v.angle);
-      if (d >= BLT_R + rv) return;
-      const nx = dx / d, ny = dy / d;
-      const rel = (q.vx - v.vx) * nx + (q.vy - v.vy) * ny;
-      const mq = q.mass, mv = tv.mass * (v.holdT > 0 ? 2.2 : 1);
-      if (rel > 0) {
-        const rq = Math.max(0, q.spin / q.spinMax), rvv = Math.max(0, v.spin / v.spinMax);
-        if (own) {
-          const j = (1.6 * rel) / (1 / mq + 1 / mv);
-          q.vx -= (j / mq) * nx; q.vy -= (j / mq) * ny; v.vx += (j / mv) * nx; v.vy += (j / mv) * ny;
-        } else if (q.hitCd <= 0) {
-          const spinPow = Math.pow((rq + rvv) / 2, 1.3), spinKick = (150 * (rq * q.atk + rvv * tv.atk)) / 2;
-          const j = ((0.6 + 0.9 * Math.random()) * (1.1 + 3.5 * spinPow) * (rel + spinKick)) / (1 / mq + 1 / mv);
-          const s0 = Math.hypot(v.vx, v.vy);
-          q.vx -= (j / mq) * nx; q.vy -= (j / mq) * ny;
-          v.vx += (j / mv) * nx * tv.steady; v.vy += (j / mv) * ny * tv.steady;
-          if (Math.hypot(v.vx, v.vy) > Math.max(250, s0 * 1.15)) v.knockT = 1.2;
-          v.postT = 4; v.calmT = Math.max(v.calmT, 2.5); v.hit = true; v.rideChance = 1; v.spiralT = 0;
-          if (v.holdT > 0) { v.holdT = 0; v.dashCd = Math.max(v.dashCd, 0.8); }
-          if (v.riding && Math.random() < 0.5) { v.riding = false; v.dashCd = Math.max(v.dashCd, 0.6); }
-          const impact = Math.min(1, rel / 120) * rel * (0.45 + 0.55 * spinPow);
-          v.spin = Math.max(0, v.spin - (impact * q.atk * 0.28) / tv.def);
-          q.spin = Math.max(0, q.spin - (impact * tv.atk * 0.28) / q.def);
-          const sf = Math.max(0, (rvv - 0.2) / 0.8), hard = Math.min(1.5, Math.max(0, (impact - 300) / 450));
-          if (Math.random() < (0.13 * hard * q.atk * Math.max(0.3, rq) * sf) / tv.burstRes) v.burst = 100;
-          if (tv.split && !v.isBody && impact > 300 && (v.splitAt > 0 || Math.random() < 0.08)) doSplit(v); // 相手もバレットグリフォンなら、強く当たると分かれることがある
-          spark((q.x + v.x) / 2, (q.y + v.y) / 2, 6 + Math.floor(impact / 40), true);
-          flashRef.current = Math.min(1, Math.max(flashRef.current, impact / 600));
-          q.hitCd = 0.12; q.rush = 0;
-        }
-      }
-      const pen = BLT_R + rv - d + 0.3, sh = (1 / mq) / (1 / mq + 1 / mv);
-      q.x -= nx * pen * sh; q.y -= ny * pen * sh; v.x += nx * pen * (1 - sh); v.y += ny * pen * (1 - sh);
-    };
-    // バレットの動き：平らな軸先でリングの近くを走り回り、ときどき相手へ向かって飛び込む
-    const stepBlt = (beys: [Bey, Bey]) => {
-      for (let i = 0; i < 2; i++) {
-        const q = beys[i].blt; if (!q || q.gone) continue;
-        const opp = beys[1 - i];
-        q.age += DT; q.hitCd = Math.max(0, q.hitCd - DT); q.rush = Math.max(0, q.rush - DT);
-        const ratio = Math.max(0, q.spin / q.spinMax);
-        q.angle += q.spin > 0 ? q.dir * (2 + 75 * Math.pow(ratio, 1.5)) * DT : 0;
-        if (q.out) { // 場外へ出たバレットは、ポケットに入って消える（負けにはならない）
-          q.vx *= 1 - 5 * DT; q.vy *= 1 - 5 * DT; q.x += q.vx * DT; q.y += q.vy * DT;
-          const dq = sqn(q.x, q.y); if (dq > R + 40) { q.x *= (R + 40) / dq; q.y *= (R + 40) / dq; }
-          q.outT -= DT; if (q.outT <= 0) q.gone = true;
-          continue;
-        }
-        let sp = Math.hypot(q.vx, q.vy);
-        if (q.spin > 0) {
-          const vt = 560 * (0.25 + 0.75 * Math.sqrt(ratio));
-          const dist = Math.hypot(q.x, q.y) || 1, ux = q.x / dist, uy = q.y / dist;
-          q.lungeT -= DT;
-          if (q.lungeT <= 0 && !opp.dead && !opp.out && opp.outT <= 0 && ratio > 0.15) {
-            const lx = opp.x - q.x, ly = opp.y - q.y, ll = Math.hypot(lx, ly) || 1, jt = (Math.random() - 0.5) * 0.5, cj = Math.cos(jt), sj = Math.sin(jt);
-            const ax = (lx / ll) * cj - (ly / ll) * sj, ay = (lx / ll) * sj + (ly / ll) * cj, v = vt * 1.4;
-            q.vx = ax * v; q.vy = ay * v; q.rush = 0.6;
-            q.lungeT = 1.0 + 1.4 * Math.random();
-          } else if (q.rush <= 0) {
-            const tx = (q.dir * q.y) / dist, ty = (-q.dir * q.x) / dist; // リングを走る向き
-            const rT = RING_R * (0.64 + 0.14 * Math.sin(q.age * 0.8)), vr = Math.max(-250, Math.min(250, -(dist - rT) * 2.2));
-            const k = Math.min(1, 1.8 * DT);
-            q.vx += (tx * vt + ux * vr - q.vx) * k; q.vy += (ty * vt + uy * vr - q.vy) * k;
-          }
-          if (ratio < 0.25) { q.vx += (Math.random() - 0.5) * 2400 * (0.25 - ratio) * DT; q.vy += (Math.random() - 0.5) * 2400 * (0.25 - ratio) * DT; }
-        } else { q.vx *= 1 - 6 * DT; q.vy *= 1 - 6 * DT; } // 回転が止まったバレットは、その場に止まる
-        { const dm = 1 - 0.15 * DT; q.vx *= dm; q.vy *= dm; }
-        sp = Math.hypot(q.vx, q.vy);
-        if (sp > 1800) { q.vx *= 1800 / sp; q.vy *= 1800 / sp; sp = 1800; }
-        q.x += q.vx * DT; q.y += q.vy * DT;
-        q.trail.push({ x: q.x, y: q.y }); if (q.trail.length > 12) q.trail.shift();
-        q.spin = Math.max(0, q.spin - (4.5 + sp * 0.005) * q.decay * DT * 6);
-        { const dd = Math.hypot(q.x, q.y) || 1, rg = ringRadiusAt(q.x, q.y);
-          if (dd > rg + 3 && !exitKind(q.x, q.y) && (q.vx * q.x + q.vy * q.y) / dd < 120) { const f = Math.min(2, (dd - (rg + 3)) / 5) * 3200 * DT; q.vx -= (q.x / dd) * f; q.vy -= (q.y / dd) * f; } }
-        const lim = R - BLT_R * 0.3, s2 = sqn(q.x, q.y);
-        if (s2 > lim) {
-          const gx = Math.sign(q.x) * Math.pow(Math.abs(q.x), WALL_N - 1), gy = Math.sign(q.y) * Math.pow(Math.abs(q.y), WALL_N - 1), gl = Math.hypot(gx, gy) || 1, nx = gx / gl, ny = gy / gl;
-          const outv = q.vx * nx + q.vy * ny, ek = exitKind(q.x, q.y);
-          if (ek && outv > (ek === 'extreme' ? 400 : 300) && !endedRef.current) { q.out = true; q.outT = 0.8; q.vx *= 0.35; q.vy *= 0.35; continue; }
-          if (outv > 0) { q.vx -= 1.5 * outv * nx; q.vy -= 1.5 * outv * ny; }
-          const k = lim / s2; q.x *= k; q.y *= k;
-        }
-        bltHit(q, opp, false);
-        bltHit(q, beys[i], true);
-      }
-      const q0 = beys[0].blt, q1 = beys[1].blt; // バレットどうし
-      if (q0 && q1 && !q0.gone && !q1.gone && !q0.out && !q1.out) {
-        const dx = q1.x - q0.x, dy = q1.y - q0.y, d = Math.hypot(dx, dy) || 0.001;
-        if (d < BLT_R * 2) {
-          const nx = dx / d, ny = dy / d, rel = (q0.vx - q1.vx) * nx + (q0.vy - q1.vy) * ny;
-          if (rel > 0) {
-            const j = (1.8 * rel) / (1 / q0.mass + 1 / q1.mass);
-            q0.vx -= (j / q0.mass) * nx; q0.vy -= (j / q0.mass) * ny; q1.vx += (j / q1.mass) * nx; q1.vy += (j / q1.mass) * ny;
-            const imp = Math.min(1, rel / 120) * rel * 0.6;
-            q0.spin = Math.max(0, q0.spin - (imp * q1.atk * 0.28) / q0.def); q1.spin = Math.max(0, q1.spin - (imp * q0.atk * 0.28) / q1.def);
-            spark((q0.x + q1.x) / 2, (q0.y + q1.y) / 2, 6, true);
-          }
-          const pen = (BLT_R * 2 - d) / 2 + 0.2; q0.x -= nx * pen; q0.y -= ny * pen; q1.x += nx * pen; q1.y += ny * pen;
-        }
-      }
     };
 
     const step = () => {
@@ -1687,7 +1577,8 @@ export function Beyblade() {
       if (!beys) return;
       if (phaseRef.current === 'count') { for (const b of beys) b.angle += 0.6; return; }
       if (phaseRef.current !== 'battle') return;
-      for (const b of beys) {
+      const all = [...beys, ...beys.map(x => x.blt).filter((q): q is Bey => !!q)]; // バレットグリフォンのバレットも、同じ動きの計算で動かす
+      for (const b of all) {
         if (b.dead) continue;
         // 回転の速さは回転数に応じて落ちていく。0になったら止まる
         { const rt = Math.max(0, b.spin / b.spinMax); b.angle += b.spin > 0 ? b.dir * (2 + 75 * Math.pow(rt, 1.5)) * DT : 0; }
@@ -1699,7 +1590,7 @@ export function Beyblade() {
           if (dq > R + 40) { b.x *= (R + 40) / dq; b.y *= (R + 40) / dq; }
           continue;
         }
-        const t = TYPES[b.type];
+        const t = TT(b);
         const ratio = Math.max(0, b.spin / b.spinMax);
         b.grace = Math.max(0, b.grace - DT);
         b.age += DT;
@@ -1739,7 +1630,6 @@ export function Beyblade() {
           continue;
         }
 
-        if (b.splitAt > 0 && b.age >= b.splitAt && b.holdT <= 0 && !b.riding && b.dashT <= 0) doSplit(b); // バレットグリフォン：シュートしてしばらくすると分かれる
         // 斜めシュート：落とした場所でしばらく回り続け、それから動き出す
         if (b.holdT > 0) {
           b.holdT -= DT;
@@ -1985,7 +1875,7 @@ export function Beyblade() {
           if (!b.riding && b.prevD > 0 && b.prevD <= rr0 && dn > rr0) {
             const ov = (b.vx * b.x + b.vy * b.y) / (dn || 1);
             const wrongL = (b.x * b.vy - b.y * b.vx) * b.dir > 0; // ギアがかみ合わない向き（右回転の時計回りなど）は、段を乗り越えにくい
-            if (ov < 440 * TYPES[b.type].exitResist * (wrongL ? 1.4 : 1) && !endedRef.current === true) {
+            if (ov < 440 * TT(b).exitResist * (wrongL ? 1.4 : 1) && !endedRef.current === true) {
               b.vx -= 1.4 * ov * (b.x / dn); b.vy -= 1.4 * ov * (b.y / dn);
               b.x *= (rr0 - 0.5) / dn; b.y *= (rr0 - 0.5) / dn;
             }
@@ -2018,7 +1908,7 @@ export function Beyblade() {
         const outSpeed = b.vx * wnx + b.vy * wny;
         const ek = exitKind(b.x, b.y);
         // 出口の手前には段があり、それを越える勢いがないと入れない（エクストリームは特に高い）
-        const needOut = (ek === 'extreme' ? 440 : ek === 'over' ? 320 : 0) * TYPES[b.type].exitResist * (b.grace > 0 ? 9 : 1) * (endedRef.current ? 1e9 : 1) * (1 - 0.45 * wildNow + 0.4 * b.calm); // パワーが高く暴れているときは出口の段を越えやすく（自滅しやすい）、低いと越えにくい // 決着したあと、勝ったほうのベイは、場外へ出ない
+        const needOut = (ek === 'extreme' ? 440 : ek === 'over' ? 320 : 0) * TT(b).exitResist * (b.grace > 0 ? 9 : 1) * (endedRef.current ? 1e9 : 1) * (1 - 0.45 * wildNow + 0.4 * b.calm); // パワーが高く暴れているときは出口の段を越えやすく（自滅しやすい）、低いと越えにくい // 決着したあと、勝ったほうのベイは、場外へ出ない
         if (s2 > lim && (!ek || outSpeed < needOut)) {
           const nx = wnx, ny = wny;
           const outv = b.vx * nx + b.vy * ny;
@@ -2042,111 +1932,120 @@ export function Beyblade() {
       { const w = window as unknown as { __maxd?: number }; for (const q of beys) { if (!Number.isFinite(q.x + q.y + q.spin)) (w as { __nan?: boolean }).__nan = true; } for (const q of beys) if (!q.out && q.outT <= 0 && !exitKind(q.x, q.y)) w.__maxd = Math.max(w.__maxd ?? 0, sqn(q.x, q.y)); } // 動作確認用：出口以外で壁の外に出た最大距離
       if (endedRef.current) return;
 
-      stepBlt(beys);
-      // ベイ同士の衝突
-      const [a, b] = beys;
-      const dx = b.x - a.x, dy = b.y - a.y;
-      const d = Math.hypot(dx, dy) || 0.001;
-      const ta = TYPES[a.type], tb = TYPES[b.type];
-      const phi = Math.atan2(dy, dx), tha = phi - a.angle, thb = phi + Math.PI - b.angle;
-      const ra = shapeR(ta.bid, tha), rb = shapeR(tb.bid, thb); // 当たる場所での、それぞれの半径（丸くない）
-      const pc = a.outT <= 0 && b.outT <= 0 && d < (SHAPES[ta.bid]?.mx ?? BEY_R) + (SHAPES[tb.bid]?.mx ?? BEY_R) + 1 ? polyContact(ta.bid, a.x, a.y, a.angle, tb.bid, b.x, b.y, b.angle) : null;
-      if (pc) {
-        // 当たった点の向き：外形どうしの、いちばん深く食い込んだ点での外形の向き。中心どうしを結ぶ向きからのずれは、最大約60度
-        const cxl = dx / d, cyl = dy / d;
-        let nx = cxl, ny = cyl;
-        {
-          const base = Math.atan2(cyl, cxl);
-          let df = Math.atan2(pc.ny, pc.nx) - base; df = Math.atan2(Math.sin(df), Math.cos(df));
-          df = Math.max(-1.05, Math.min(1.05, df + (Math.random() - 0.5) * 0.2)); // 当たり所の小さなばらつき
-          nx = Math.cos(base + df); ny = Math.sin(base + df);
+      { // バレットグリフォンのバレット：場外に出たら消える（負けにはならない）。出口以外でスタジアムの外へ出たら戻す
+        for (const x of beys) { const q = x.blt; if (!q || q.dead) continue;
+          if (q.out) { q.outT -= DT; if (q.outT <= 0) q.dead = true; continue; }
+          const sq = sqn(q.x, q.y);
+          if (sq > R) { if (exitKind(q.x, q.y)) { q.out = true; q.outT = 0.8; q.riding = false; q.vx *= 0.35; q.vy *= 0.35; } else if (sq > R + BEY_R) { q.x *= (R + BEY_R) / sq; q.y *= (R + BEY_R) / sq; } }
         }
-        // とがったところで当たるほど強く飛ばす／いびつなブレードほど飛ばしやすい
-        const ma0 = SHAPES[ta.bid]?.mean ?? BEY_R, mb0 = SHAPES[tb.bid]?.mean ?? BEY_R;
-        const lobe = Math.pow(Math.min(1.25, Math.max(0.8, (ra / ma0 + rb / mb0) / 2)), 2) * (1 + 0.3 * (nrOf(ta.bid) + nrOf(tb.bid)) / 2);
-        const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
-        // 斜めシュートで固定されている間は飛ばされにくい
-        const hsA = heavySide(ta.bid, a.angle, nx, ny), hsB = heavySide(tb.bid, b.angle, -nx, -ny); // 重い側が相手に向いているか
-        const ma = ta.mass * (a.holdT > 0 ? 2.2 : 1) * (1 + 0.35 * hsA), mb = tb.mass * (b.holdT > 0 ? 2.2 : 1) * (1 + 0.35 * hsB);
-        // 当たった点が、中心（回転の軸）からどれだけ横にずれているか：0＝まっすぐ中心へ向かって当たる、1＝かすめるように当たる
-        const rax = pc.cx - a.x, ray = pc.cy - a.y, rbx = pc.cx - b.x, rby = pc.cy - b.y, rla = Math.hypot(rax, ray) || 1, rlb = Math.hypot(rbx, rby) || 1;
-        const levA = Math.min(1, Math.abs(rax * ny - ray * nx) / rla), levB = Math.min(1, Math.abs(rbx * ny - rby * nx) / rlb), scrape = 1 + 0.4 * (levA + levB) / 2;
-        if (rel > 0) {
-          for (const x of [a, b]) if (x.riding) {
-            // エクストリームラインを駆け上がっているベイは勢いがあるので、止まっている相手に当たっても止まらない（そのままダッシュまで行く）。走っている同士の正面衝突だけは止まる
-            const o = x === a ? b : a;
-            if (!o.riding && x.spin / x.spinMax > 0.25 && Math.random() < 0.7) continue;
-            x.riding = false; x.dashCd = Math.max(x.dashCd, 0.6);
+      }
+      // ベイ同士の衝突（バレットグリフォンのバレットも、相手・味方の両方とぶつかる）
+      const collide = (a: Bey, b: Bey) => {
+        if (a.dead || b.dead || a.out || b.out) return;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const d = Math.hypot(dx, dy) || 0.001;
+        const ta = TT(a), tb = TT(b);
+        const phi = Math.atan2(dy, dx), tha = phi - a.angle, thb = phi + Math.PI - b.angle;
+        const ra = shapeR(ta.bid, tha), rb = shapeR(tb.bid, thb); // 当たる場所での、それぞれの半径（丸くない）
+        const pc = a.outT <= 0 && b.outT <= 0 && d < (SHAPES[ta.bid]?.mx ?? BEY_R) + (SHAPES[tb.bid]?.mx ?? BEY_R) + 1 ? polyContact(ta.bid, a.x, a.y, a.angle, tb.bid, b.x, b.y, b.angle) : null;
+        if (pc) {
+          // 当たった点の向き：外形どうしの、いちばん深く食い込んだ点での外形の向き。中心どうしを結ぶ向きからのずれは、最大約60度
+          const cxl = dx / d, cyl = dy / d;
+          let nx = cxl, ny = cyl;
+          {
+            const base = Math.atan2(cyl, cxl);
+            let df = Math.atan2(pc.ny, pc.nx) - base; df = Math.atan2(Math.sin(df), Math.cos(df));
+            df = Math.max(-1.05, Math.min(1.05, df + (Math.random() - 0.5) * 0.2)); // 当たり所の小さなばらつき
+            nx = Math.cos(base + df); ny = Math.sin(base + df);
           }
-          // 回転しているベイは、ダッシュしていなくても当たれば相手を弾き飛ばせる
-          const spinKick = 150 * ((a.spin / a.spinMax) * ta.atk + (b.spin / b.spinMax) * tb.atk) / 2;
-          // 弾く力は、ぶつかった2つのベイの回転の強さで決まる。回転が落ちるほど、反発が小さくなる
-          // （満タンの回転では係数4.6、回転が3割なら約1.8、1割なら約1.3）
-          const spinPow = Math.pow((a.spin / a.spinMax + b.spin / b.spinMax) / 2, 1.3);
-          const avgR = (a.spin / a.spinMax + b.spin / b.spinMax) / 2, hitVar = (0.6 + 0.95 * Math.random()) * (0.5 + 0.9 * Math.pow(avgR, 1.2)); // 回転が少ないと、あまり弾かない； // 当たり所（凹凸）によって、はじける距離が毎回ちがう
-          const j = (hitVar * lobe * (1.1 + 3.5 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
-          const sa0 = Math.hypot(a.vx, a.vy), sb0 = Math.hypot(b.vx, b.vy);
-          { // 当たった点での、回っているブレードの表面の動き：相手を横に引きずり、自分は反対向きに引かれる（かすめるほど、横に飛ぶ）
-            const tnx = -ny, tny = nx;
-            const sa = a.dir * (-ray * tnx + rax * tny) / rla, sb = b.dir * (-rby * tnx + rbx * tny) / rlb;
-            const vA = 0.16 * j * (a.spin / a.spinMax) * sa, vB = 0.16 * j * (b.spin / b.spinMax) * sb;
-            b.vx += tnx * vA / mb; b.vy += tny * vA / mb; a.vx -= tnx * vA / ma; a.vy -= tny * vA / ma;
-            a.vx += tnx * vB / ma; a.vy += tny * vB / ma; b.vx -= tnx * vB / mb; b.vy -= tny * vB / mb;
-            a.angle += (Math.random() - 0.5) * levA * 1.2; b.angle += (Math.random() - 0.5) * levB * 1.2; // 当たった点がずれるほど、ブレードの向きが変わる（次に当たる所が変わる）
-          }
-          a.vx -= (j / ma) * nx * ta.steady * tb.kick; a.vy -= (j / ma) * ny * ta.steady * tb.kick;
-          b.vx += (j / mb) * nx * tb.steady * ta.kick; b.vy += (j / mb) * ny * tb.steady * ta.kick;
-          // 当てられて速度が増したほう＝飛ばされたほう
-          if (Math.hypot(a.vx, a.vy) > Math.max(250, sa0 * 1.15)) a.knockT = 1.2;
-          if (Math.hypot(b.vx, b.vy) > Math.max(250, sb0 * 1.15)) b.knockT = 1.2;
-          // ぶつかったあとは、ビットごとの円・楕円には戻らず、惰性で動く（しばらく、円や楕円の力を切る）
-          a.postT = 4; b.postT = 4; a.calmT = Math.max(a.calmT, 2.5); b.calmT = Math.max(b.calmT, 2.5); // ぶつかったあと、真ん中へ戻るときも、勢いをつけない
-          // Xダッシュ中の打撃は強い（Eビットはスマッシュ攻撃でさらに強い）
-          const impact = Math.min(1, rel / 120) * rel * Math.max(a.dashT > 0 ? 1.5 * ta.smash : 1, b.dashT > 0 ? 1.5 * tb.smash : 1) * (0.45 + 0.55 * spinPow);
-          // 反対回転どうしが当たると、接触面の動きが揃ってスピンの削れが少し減る
-          const oppo = a.dir !== b.dir ? 0.6 : 1;
-          // バースト：ラチェットにうまく強打が当たると一発で起こる。強く当たるほど・当てる側の回転が強いほど確率が高く、
-          // 当てられる側の回転が弱いほど確率が下がる（回転が5分の1以下ならバーストしない）。ちょこちょこ当たるだけではバーストしない
-          const tryBurst = (v: Bey, tv: typeof ta, att: Bey, tAtt: typeof ta) => {
-            const sf = Math.max(0, (v.spin / v.spinMax - 0.2) / 0.8);
-            const hardness = Math.min(1.5, Math.max(0, (impact - 300) / 450));
-            const attSpin = Math.max(0.3, att.spin / att.spinMax);
-            if (Math.random() < (0.13 * hardness * tAtt.atk * attSpin * sf * (1 + 0.3 * (att === a ? hsA : hsB))) / (tv.burstRes * (1 + 0.15 * (v === a ? hsA : hsB)))) v.burst = 100;
-          };
-          tryBurst(a, ta, b, tb);
-          tryBurst(b, tb, a, ta);
-          for (const x of [a, b]) if (TYPES[x.type].split && !x.isBody && impact > 300 && (x.splitAt > 0 || Math.random() < 0.08)) doSplit(x); // バレットグリフォン：強く当たると、その場で分かれる（斜めシュートで分かれない予定のときは、まれに）
-          a.spin = Math.max(0, a.spin - (impact * tb.atk * 0.28 * oppo * scrape) / ta.def);
-          b.spin = Math.max(0, b.spin - (impact * ta.atk * 0.28 * oppo * scrape) / tb.def);
-          if (a.dir !== b.dir) {
-            // 回転吸収：左回転ベイは、右回転ベイの回転を奪える（Eビットのコバルトドラグーンが最も得意）。
-            // 吸収力が足りない組み合わせでは、逆に左回転ベイのほうが回転を奪われる
-            const Lb = a.dir < 0 ? a : b, Rb = Lb === a ? b : a;
-            const net = TYPES[Lb.type].absorb - 0.45, imp = Math.min(1, impact / 500);
-            if (net > 0) {
-              const T = net * 0.38 * Rb.spin * imp;
-              Rb.spin = Math.max(0, Rb.spin - T);
-              Lb.spin = Math.min(Lb.spinMax * 1.05, Lb.spin + T * 0.85);
-            } else {
-              const T = -net * 0.3 * Lb.spin * imp;
-              Lb.spin = Math.max(0, Lb.spin - T);
-              Rb.spin = Math.min(Rb.spinMax * 1.05, Rb.spin + T * 0.7);
+          // とがったところで当たるほど強く飛ばす／いびつなブレードほど飛ばしやすい
+          const ma0 = SHAPES[ta.bid]?.mean ?? BEY_R, mb0 = SHAPES[tb.bid]?.mean ?? BEY_R;
+          const lobe = Math.pow(Math.min(1.25, Math.max(0.8, (ra / ma0 + rb / mb0) / 2)), 2) * (1 + 0.3 * (nrOf(ta.bid) + nrOf(tb.bid)) / 2);
+          const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+          // 斜めシュートで固定されている間は飛ばされにくい
+          const hsA = heavySide(ta.bid, a.angle, nx, ny), hsB = heavySide(tb.bid, b.angle, -nx, -ny); // 重い側が相手に向いているか
+          const ma = ta.mass * (a.holdT > 0 ? 2.2 : 1) * (1 + 0.35 * hsA), mb = tb.mass * (b.holdT > 0 ? 2.2 : 1) * (1 + 0.35 * hsB);
+          // 当たった点が、中心（回転の軸）からどれだけ横にずれているか：0＝まっすぐ中心へ向かって当たる、1＝かすめるように当たる
+          const rax = pc.cx - a.x, ray = pc.cy - a.y, rbx = pc.cx - b.x, rby = pc.cy - b.y, rla = Math.hypot(rax, ray) || 1, rlb = Math.hypot(rbx, rby) || 1;
+          const levA = Math.min(1, Math.abs(rax * ny - ray * nx) / rla), levB = Math.min(1, Math.abs(rbx * ny - rby * nx) / rlb), scrape = 1 + 0.4 * (levA + levB) / 2;
+          if (rel > 0) {
+            for (const x of [a, b]) if (x.riding) {
+              // エクストリームラインを駆け上がっているベイは勢いがあるので、止まっている相手に当たっても止まらない（そのままダッシュまで行く）。走っている同士の正面衝突だけは止まる
+              const o = x === a ? b : a;
+              if (!o.riding && x.spin / x.spinMax > 0.25 && Math.random() < 0.7) continue;
+              x.riding = false; x.dashCd = Math.max(x.dashCd, 0.6);
+            }
+            // 回転しているベイは、ダッシュしていなくても当たれば相手を弾き飛ばせる
+            const spinKick = 150 * ((a.spin / a.spinMax) * ta.atk + (b.spin / b.spinMax) * tb.atk) / 2;
+            // 弾く力は、ぶつかった2つのベイの回転の強さで決まる。回転が落ちるほど、反発が小さくなる
+            // （満タンの回転では係数4.6、回転が3割なら約1.8、1割なら約1.3）
+            const spinPow = Math.pow((a.spin / a.spinMax + b.spin / b.spinMax) / 2, 1.3);
+            const avgR = (a.spin / a.spinMax + b.spin / b.spinMax) / 2, hitVar = (0.6 + 0.95 * Math.random()) * (0.5 + 0.9 * Math.pow(avgR, 1.2)); // 回転が少ないと、あまり弾かない； // 当たり所（凹凸）によって、はじける距離が毎回ちがう
+            const j = (hitVar * lobe * (1.1 + 3.5 * spinPow) * (rel + spinKick)) / (1 / ma + 1 / mb);
+            const sa0 = Math.hypot(a.vx, a.vy), sb0 = Math.hypot(b.vx, b.vy);
+            { // 当たった点での、回っているブレードの表面の動き：相手を横に引きずり、自分は反対向きに引かれる（かすめるほど、横に飛ぶ）
+              const tnx = -ny, tny = nx;
+              const sa = a.dir * (-ray * tnx + rax * tny) / rla, sb = b.dir * (-rby * tnx + rbx * tny) / rlb;
+              const vA = 0.16 * j * (a.spin / a.spinMax) * sa, vB = 0.16 * j * (b.spin / b.spinMax) * sb;
+              b.vx += tnx * vA / mb; b.vy += tny * vA / mb; a.vx -= tnx * vA / ma; a.vy -= tny * vA / ma;
+              a.vx += tnx * vB / ma; a.vy += tny * vB / ma; b.vx -= tnx * vB / mb; b.vy -= tny * vB / mb;
+              a.angle += (Math.random() - 0.5) * levA * 1.2; b.angle += (Math.random() - 0.5) * levB * 1.2; // 当たった点がずれるほど、ブレードの向きが変わる（次に当たる所が変わる）
+            }
+            a.vx -= (j / ma) * nx * ta.steady * tb.kick; a.vy -= (j / ma) * ny * ta.steady * tb.kick;
+            b.vx += (j / mb) * nx * tb.steady * ta.kick; b.vy += (j / mb) * ny * tb.steady * ta.kick;
+            // 当てられて速度が増したほう＝飛ばされたほう
+            if (Math.hypot(a.vx, a.vy) > Math.max(250, sa0 * 1.15)) a.knockT = 1.2;
+            if (Math.hypot(b.vx, b.vy) > Math.max(250, sb0 * 1.15)) b.knockT = 1.2;
+            // ぶつかったあとは、ビットごとの円・楕円には戻らず、惰性で動く（しばらく、円や楕円の力を切る）
+            a.postT = 4; b.postT = 4; a.calmT = Math.max(a.calmT, 2.5); b.calmT = Math.max(b.calmT, 2.5); // ぶつかったあと、真ん中へ戻るときも、勢いをつけない
+            // Xダッシュ中の打撃は強い（Eビットはスマッシュ攻撃でさらに強い）
+            const impact = Math.min(1, rel / 120) * rel * Math.max(a.dashT > 0 ? 1.5 * ta.smash : 1, b.dashT > 0 ? 1.5 * tb.smash : 1) * (0.45 + 0.55 * spinPow);
+            // 反対回転どうしが当たると、接触面の動きが揃ってスピンの削れが少し減る
+            const oppo = a.dir !== b.dir ? 0.6 : 1;
+            // バースト：ラチェットにうまく強打が当たると一発で起こる。強く当たるほど・当てる側の回転が強いほど確率が高く、
+            // 当てられる側の回転が弱いほど確率が下がる（回転が5分の1以下ならバーストしない）。ちょこちょこ当たるだけではバーストしない
+            const tryBurst = (v: Bey, tv: typeof ta, att: Bey, tAtt: typeof ta) => {
+              const sf = Math.max(0, (v.spin / v.spinMax - 0.2) / 0.8);
+              const hardness = Math.min(1.5, Math.max(0, (impact - 300) / 450));
+              const attSpin = Math.max(0.3, att.spin / att.spinMax);
+              if (Math.random() < (0.13 * hardness * tAtt.atk * attSpin * sf * (1 + 0.3 * (att === a ? hsA : hsB))) / (tv.burstRes * (1 + 0.15 * (v === a ? hsA : hsB)))) v.burst = 100;
+            };
+            tryBurst(a, ta, b, tb);
+            tryBurst(b, tb, a, ta);
+            for (const x of [a, b]) if (TT(x).split && !x.isBody && !(x.diagShot && x.spin / x.spinMax > 0.7) && Math.random() < 0.9 * Math.min(1, 0.5 + impact / 200)) doSplit(x); // バレットグリフォン：相手に当たられたときに分かれる。水平シュートは最初から分かれやすい。斜めシュートは序盤は分かれず、中盤（回転が7割を切ったころ）から、当たられると分かれる
+            a.spin = Math.max(0, a.spin - (impact * tb.atk * 0.28 * oppo * scrape) / ta.def);
+            b.spin = Math.max(0, b.spin - (impact * ta.atk * 0.28 * oppo * scrape) / tb.def);
+            if (a.dir !== b.dir) {
+              // 回転吸収：左回転ベイは、右回転ベイの回転を奪える（Eビットのコバルトドラグーンが最も得意）。
+              // 吸収力が足りない組み合わせでは、逆に左回転ベイのほうが回転を奪われる
+              const Lb = a.dir < 0 ? a : b, Rb = Lb === a ? b : a;
+              const net = TT(Lb).absorb - 0.45, imp = Math.min(1, impact / 500);
+              if (net > 0) {
+                const T = net * 0.38 * Rb.spin * imp;
+                Rb.spin = Math.max(0, Rb.spin - T);
+                Lb.spin = Math.min(Lb.spinMax * 1.05, Lb.spin + T * 0.85);
+              } else {
+                const T = -net * 0.3 * Lb.spin * imp;
+                Lb.spin = Math.max(0, Lb.spin - T);
+                Rb.spin = Math.min(Rb.spinMax * 1.05, Rb.spin + T * 0.7);
+              }
+            }
+            spark((a.x + b.x) / 2, (a.y + b.y) / 2, 8 + Math.floor(impact / 40), true);
+            flashRef.current = Math.min(1, impact / 600);
+            // 動き出す前に当てられたら、弾かれて進行方向が変わる（矢印の向きには戻らない）
+            for (const x of [a, b]) {
+              x.hit = true;
+              x.rideChance = 1; // 当たったあとは水平シュートと同じ（リングに乗れる）
+              if (x.holdT > 0) { x.holdT = 0; x.dashCd = Math.max(x.dashCd, 0.8); } x.spiralT = 0;
             }
           }
-          spark((a.x + b.x) / 2, (a.y + b.y) / 2, 8 + Math.floor(impact / 40), true);
-          flashRef.current = Math.min(1, impact / 600);
-          // 動き出す前に当てられたら、弾かれて進行方向が変わる（矢印の向きには戻らない）
-          for (const x of [a, b]) {
-            x.hit = true;
-            x.rideChance = 1; // 当たったあとは水平シュートと同じ（リングに乗れる）
-            if (x.holdT > 0) { x.holdT = 0; x.dashCd = Math.max(x.dashCd, 0.8); } x.spiralT = 0;
-          }
+          const overlap = pc.pen + 0.3; // 食い込んだぶんだけ、外形の向きに押し出す
+          const shareA = (1 / ma) / (1 / ma + 1 / mb);
+          a.x -= pc.nx * overlap * shareA; a.y -= pc.ny * overlap * shareA;
+          b.x += pc.nx * overlap * (1 - shareA); b.y += pc.ny * overlap * (1 - shareA);
         }
-        const overlap = pc.pen + 0.3; // 食い込んだぶんだけ、外形の向きに押し出す
-        const shareA = (1 / ma) / (1 / ma + 1 / mb);
-        a.x -= pc.nx * overlap * shareA; a.y -= pc.ny * overlap * shareA;
-        b.x += pc.nx * overlap * (1 - shareA); b.y += pc.ny * overlap * (1 - shareA);
-      }
+      };
+      { const live = all.filter(x => !x.dead && !x.out); for (let p = 0; p < live.length; p++) for (let q = p + 1; q < live.length; q++) collide(live[p], live[q]); }
 
       // 決着判定
       const names = ['me', 'cpu'] as const;
@@ -2254,23 +2153,22 @@ export function Beyblade() {
             const rt = Math.max(0, b.spin / b.spinMax), w = b.spin > 0 ? 2 + 75 * Math.pow(rt, 1.5) : 0;
             b.vAng += t.spinDir * Math.min(w * visDt, 0.36 * (Math.PI * 2) / t.blades);
           }
-          if (b.isBody) ctx.scale(0.86, 0.86); // 分かれたあとの本体は、ひと回り小さい円い形
-          drawBey(ctx, t.color, i === 0 ? '#38b6ff' : '#ff3ea5', b.vAng, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', b.isBody ? 6 : t.blades, b.isBody ? null : t.sprite, t.spinDir);
+          drawBey(ctx, t.color, i === 0 ? '#38b6ff' : '#ff3ea5', b.vAng, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, t.sprite, t.spinDir);
           ctx.restore();
         });
         beys.forEach((b, i) => { // バレットグリフォンから分かれたバレット
-          const q = b.blt; if (!q || q.gone) return;
+          const q = b.blt; if (!q || q.dead) return;
           if (q.trail.length > 1) {
-            ctx.strokeStyle = q.rush > 0 ? 'rgba(255,140,0,0.7)' : 'rgba(200,215,240,0.3)'; ctx.lineWidth = q.rush > 0 ? 7 : 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.strokeStyle = q.dashT > 0 || q.riding ? 'rgba(255,140,0,0.7)' : 'rgba(200,215,240,0.3)'; ctx.lineWidth = q.dashT > 0 || q.riding ? 7 : 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             ctx.beginPath(); ctx.moveTo(q.trail[0].x, q.trail[0].y); for (const p of q.trail) ctx.lineTo(p.x, p.y); ctx.stroke();
           }
           ctx.save(); ctx.translate(q.x, q.y);
           if (q.out) ctx.globalAlpha = Math.max(0, Math.min(1, q.outT / 0.8));
           ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.ellipse(2, 4, BLT_R, BLT_R * 0.85, 0, 0, Math.PI * 2); ctx.fill();
-          const rt = Math.max(0, q.spin / q.spinMax), w = q.spin > 0 ? 2 + 75 * Math.pow(rt, 1.5) : 0;
+          const rt = Math.max(0, q.spin / q.spinMax), w = q.spin > 0 ? 2 + 75 * Math.pow(rt, 1.5) : 0, col = TYPES[b.type].color;
           q.vAng += q.dir * Math.min(w * visDt, 0.36 * (Math.PI * 2) / 3);
           ctx.scale(BLT_R / BEY_R, BLT_R / BEY_R);
-          drawBey(ctx, q.color, i === 0 ? '#38b6ff' : '#ff3ea5', q.vAng, rt, i === 0 ? '#fff' : '#ffb4b4', 3, null, q.dir);
+          drawBey(ctx, col, i === 0 ? '#38b6ff' : '#ff3ea5', q.vAng, rt, i === 0 ? '#fff' : '#ffb4b4', 3, null, q.dir);
           ctx.restore();
         });
       }
@@ -2409,12 +2307,11 @@ export function Beyblade() {
         b.riding = !!(c[8] & 1); b.out = !!(c[8] & 2); b.dead = !!(c[8] & 4); b.isBody = !!(c[8] & 8);
         b.trail.push({ x: b.x, y: b.y }); if (b.trail.length > 14) b.trail.shift();
         const qc = B.b.find((r, k) => k >= 2 && r[5] === i);
-        if (!qc) { if (b.blt) b.blt.gone = true; return; }
+        if (!qc) { b.blt = null; return; }
         const qa = A.b.find((r, k) => k >= 2 && r[5] === i) ?? qc;
-        if (!b.blt || b.blt.gone) b.blt = { x: qc[0], y: qc[1], vx: 0, vy: 0, angle: qc[2], vAng: 0, spin: qc[3], spinMax: qc[4], out: false, outT: 0, gone: false, trail: [], age: 0, hitCd: 0, lungeT: 0, rush: 0, atk: 1, def: 1, decay: 1, mass: 1, dir: TYPES[b.type].spinDir, color: TYPES[b.type].color };
-        const q = b.blt;
+        const q = b.blt ?? (b.blt = { ...makeBey(b.type, qc[0], qc[1], false, null, 0.85), trail: [] });
         q.x = qa[0] + (qc[0] - qa[0]) * al; q.y = qa[1] + (qc[1] - qa[1]) * al; q.angle = qc[2]; q.spin = qc[3]; q.spinMax = qc[4];
-        q.out = !!(qc[6] & 1); q.rush = qc[6] & 2 ? 1 : 0; q.outT = qc[7];
+        q.out = !!(qc[6] & 1); q.dashT = qc[6] & 2 ? 1 : 0; q.outT = qc[7];
         q.trail.push({ x: q.x, y: q.y }); if (q.trail.length > 12) q.trail.shift();
       });
       flashRef.current = Math.max(flashRef.current, B.b[0][9] ?? 0);
@@ -2431,7 +2328,7 @@ export function Beyblade() {
         lastSendRef.current = now;
         const r1 = (v: number) => Math.round(v * 10) / 10, r2 = (v: number) => Math.round(v * 100) / 100;
         const rows = beysRef.current.map(b => [r1(b.x), r1(b.y), r2(b.angle), Math.round(b.spin), Math.round(b.spinMax), Math.round(b.burst), r2(b.dashT), r2(b.dashFx), (b.riding ? 1 : 0) | (b.out ? 2 : 0) | (b.dead ? 4 : 0) | (b.isBody ? 8 : 0), r2(flashRef.current)]);
-        beysRef.current.forEach((b, i) => { const q = b.blt; if (q && !q.gone) rows.push([r1(q.x), r1(q.y), r2(q.angle), Math.round(q.spin), Math.round(q.spinMax), i, (q.out ? 1 : 0) | (q.rush > 0 ? 2 : 0), r2(q.outT)]); }); // 3行目からは、バレットグリフォンのバレット
+        beysRef.current.forEach((b, i) => { const q = b.blt; if (q && !q.dead) rows.push([r1(q.x), r1(q.y), r2(q.angle), Math.round(q.spin), Math.round(q.spinMax), i, (q.out ? 1 : 0) | (q.dashT > 0 || q.riding ? 2 : 0), r2(q.outT)]); }); // 3行目からは、バレットグリフォンのバレット
         linkRef.current?.send({ t: 's', b: rows });
       }
       raf = requestAnimationFrame(loop);
