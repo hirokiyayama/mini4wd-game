@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import { createRoom, joinRoom, randomCode } from './online';
 import type { Link, Msg } from './online';
 
@@ -137,6 +138,8 @@ const SHAPES: Record<string, { r: Float32Array; mean: number; nr: number; mx: nu
 bullet: { r: Float32Array.from([32.53,32.52,32.12,31.29,30.64,30.23,29.69,28.72,27.62,28,29.77,30.78,31.08,31.46,31.73,31.81,31.99,32.42,32.67,32.55,32,31.75,32.34,32.79,32.84,32.85,32.66,32.04,31.33,30.95,30.62,29.87,29.02,29.49,31.19,32.12,32.35,32.85,33.32,33.52,33.74,34.07,34.2,33.97,33.3,33.01,33.61,34.03,34.02,34.03,33.6,32.68,31.95,31.55,31.05,30.09,29.06,29.49,31.26,32.26,32.53,32.89,33.07,33.07,33.13,33.31,33.34,32.97,32.11,31.7,32.22,32.55]), mean: 31.936, nr: 0.92, mx: 34.20, cx: 0.530, cy: 0.775, ecc: 0.0294 },
   bulletB: { r: Float32Array.from([32.81,32.89,32.97,33.02,32.76,32.22,31.95,31.96,31.96,31.96,31.96,31.95,31.96,31.96,31.96,32.02,32.48,33.19,33.49,33.48,33.53,33.52,33.41,33.42,33.52,33.54,33.54,33.72,34.03,33.6,32.5,32.3,32.95,33.27,33.21,33.1,33.07,33.1,33.04,32.92,32.86,32.88,32.83,32.61,32.4,32.35,32.36,32.39,32.49,32.56,32.55,32.69,32.97,32.79,32.21,31.95,32.01,32.16,32.25,32.25,32.29,32.3,32.28,32.33,32.49,32.68,32.69,32.62,32.63,32.65,32.69,32.74]), mean: 32.696, nr: 0.036, mx: 34.03, cx: 0.359, cy: -0.271, ecc: 0.0138 },
   bulletP: { r: Float32Array.from([29.64,29.51,29.36,28.9,28.11,27.54,27.24,26.76,25.94,25.08,25.44,27.1,28.17,28.45,28.72,28.88,28.97,29.27,29.74,29.94,29.73,29.1,28.92,29.68,30.13,30.04,29.95,29.58,28.95,28.62,28.47,27.92,26.88,26.82,28.22,29.2,29.47,29.78,30.09,30.27,30.45,30.75,30.88,30.59,29.86,28.5,26.32,24.36,23.64,23.65,23.98,25.04,26.37,26.75,26.43,25.42,23.64,24.12,27.21,28.91,29.02,29.23,29.43,29.53,29.61,29.77,29.96,30.01,29.6,28.71,28.53,29.29]), mean: 28.252, nr: 1, mx: 30.885, cx: 0.496, cy: -1.360, ecc: 0.0512 },
+assist_A: { r: Float32Array.from([30.82,30.98,31.29,31.57,31.54,31.23,30.69,29.5,28.41,28.41,28.82,29.06,29.29,29.59,29.96,30.36,30.73,30.72,30.31,30.1,30.71,31.95,32.98,33.53,33.85,34,34.05,34.05,33.91,33.47,32.33,30.69,29.76,29.84,30.1,30.31,30.59,30.82,31,31.22,31.28,30.95,30.45,30.35,31.04,32.01,32.42,32.4,32.37,32.35,32.37,32.37,32.1,31.35,30.02,28.49,27.68,27.68,27.82,27.95,28.1,28.28,28.52,28.84,29.09,28.83,28.18,27.92,28.33,29.21,30.16,30.68]), mean: 30.585, nr: 1, mx: 34.05, cx: 1.332, cy: -0.614, ecc: 0.0480 },
+  main_blast: { r: Float32Array.from([30.68,31.51,32.05,32.21,32.31,32.39,32.39,32.23,31.97,31.86,31.68,31.24,30.71,29.99,29.46,29.49,29.77,30.04,30.55,31.44,32.1,32.36,32.54,32.76,33.31,33.96,34.22,34.18,34.04,33.8,33.46,33.02,32.49,31.86,30.95,29.59,28.6,28.57,28.81,29.01,29.22,29.58,30.13,30.45,30.48,30.45,30.37,30.74,31.63,32.06,31.91,31.71,31.56,31.35,30.91,30.26,29.65,29.09,28.39,27.49,26.73,26.56,26.66,26.72,27.05,27.35,27.71,28.45,29.08,29.39,29.73,30.12]), mean: 30.647, nr: 1, mx: 34.22, cx: 0.825, cy: -1.412, ecc: 0.0533 },
   knight2: { r: Float32Array.from([33.12,32.88,33.14,33.4,33.38,33.43,33.43,33.3,33.25,33.22,33.01,32.88,33.14,33.47,33.64,33.81,33.8,33.67,33.59,33.7,34.1,34.32,34.18,33.95,33.65,33.46,33.62,33.92,34.1,34.18,34.15,34.09,34.06,33.74,33.37,33.47,33.91,34.35,34.58,34.46,34.31,34.49,34.62,34.67,34.78,34.59,34.19,33.74,33.36,33.34,33.58,33.69,33.69,33.86,34.04,34.1,33.95,33.49,33.12,33.32,33.82,34.18,34.41,34.28,33.96,33.98,34.02,34.06,34.24,34.19,33.92,33.58]), mean: 33.812, nr: 0, mx: 34.78, cx: 0.298, cy: 0.161, ecc: 0.01 }
 };
 const nrOf = (id: string) => SHAPES[id]?.nr ?? 0.5;
@@ -185,12 +188,64 @@ const DEFAULT_CUSTOM: Custom = { blade: 'shark', ratchet: 'r560', bit: 'B' };
 const pick = (list: PartDef[], id: string) => list.find(p => p.id === id) ?? list[0];
 
 // ローモードを選んでいるときは、ブレードの性能と高さをローモードのものにする
-const bladeOf = (c: Custom): PartDef => { const b = pick(BLADES, c.blade); return b.low && c.low ? { ...b, s: b.low.s, hid: b.low.hid, height: b.low.height } : b; };
-const isInt = (c: Custom) => !!pick(BLADES, c.blade).integrated; // ラチェット一体型のブレードか
+// ---- CXライン：ロックチップ＋メインブレード＋アシストブレードを組み合わせて、1つのブレードとして扱う（ラチェット・ビットはBX・UXと共通）
+// ティア表：メインブレード・アシストブレードはそれぞれのシート。ロックチップは重さだけなので、ティアなし
+const CX_CHIPS: PartDef[] = [
+  { id: 'pegasus', name: 'ペガサス', desc: 'CXのブレードを固定する、ペガサスモデルのロックパーツ。', s: {}, weight: 1.7, color: '#d9f99d' },
+];
+const CX_MAINS: PartDef[] = [
+  { id: 'blast', bal: 1, tier: 2, name: 'ブラスト', desc: '流線型の重厚な3枚刃で、相手を弾き飛ばすことに優れる。メタルが塗装され性能がアップしている。', s: { atk: 50, def: 10, sta: 15 }, type: 'atk', weight: 32.7, color: '#22d3ee', blades: 3 },
+];
+const CX_ASSISTS: PartDef[] = [
+  { id: 'A', bal: 1, tier: 3, name: 'A（アサルト）', desc: '厚みのある3枚刃で、高い弾き性能を実現。', s: { atk: 25, def: 10, sta: 5 }, type: 'atk', weight: 5.0, height: 60, color: '#d9f99d' },
+];
+const CX_BAL = 0.95; // CXの組み合わせ全体の強さの倍率（ティア表に合わせて調整した値）
+const cxId = (chip: string, main: string, assist: string) => `cx:${chip}:${main}:${assist}`;
+const cxParts = (id: string) => { const [, c, m, a] = id.split(':'); return { chip: pick(CX_CHIPS, c), main: pick(CX_MAINS, m), assist: pick(CX_ASSISTS, a) }; };
+const isCx = (id: string) => id.startsWith('cx:');
+const cxShort = (a: PartDef) => a.name.replace(/（.*）/, ''); // アシストブレードの略号（A など）
+const CX_CACHE: Record<string, PartDef> = {};
+// 組み立てたCXブレード：性能はメイン＋アシストの合計、重さは3つの合計。形はメインとアシストの外形の大きいほう
+function cxBlade(id: string): PartDef {
+  if (CX_CACHE[id]) return CX_CACHE[id];
+  const { chip, main, assist } = cxParts(id);
+  const s: Partial<Stats> = {};
+  for (const src of [main.s, assist.s]) for (const [k, v] of Object.entries(src)) s[k as keyof Stats] = (s[k as keyof Stats] ?? 0) + (v as number);
+  const tp = Math.sqrt(tierPow(main) * tierPow(assist)) * CX_BAL;
+  const sm = SHAPES['main_' + main.id], sa = SHAPES['assist_' + assist.id];
+  if (sm && !SHAPES[id]) {
+    const r = new Float32Array(SHAPE_N); for (let k = 0; k < SHAPE_N; k++) r[k] = Math.max(sm.r[k], sa ? sa.r[k] * 0.95 : 0);
+    let mean = 0; for (const v of r) mean += v; mean /= SHAPE_N;
+    SHAPES[id] = { ...sm, r, mean, mx: Math.max(...r) };
+  }
+  return (CX_CACHE[id] = { id, name: `${chip.name}${main.name} ${cxShort(assist)}`, desc: main.desc, s, weight: Math.round((chip.weight + main.weight + assist.weight) * 10) / 10, type: main.type, color: main.color, blades: main.blades, spinDir: main.spinDir, absorb: main.absorb, tier: 1, bal: tp });
+}
+// CXの画像（個人用の版だけ）：アシストブレード → メインブレード → ロックチップの順に重ねて、1枚の画像にする
+function cxSprite(id: string): HTMLImageElement | null {
+  if (id in SPRITES) return SPRITES[id];
+  const { chip, main, assist } = cxParts(id);
+  const ims = [loadImg('assist_' + assist.id), loadImg('main_' + main.id), loadImg('chip_' + chip.id)];
+  if (!ims[1]) return (SPRITES[id] = null);
+  const out = new Image(); SPRITES[id] = out;
+  const make = () => {
+    if (!ims.every(im => !im || (im.complete && im.naturalWidth > 0))) return;
+    const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d')!;
+    const put = (im: HTMLImageElement | null, k: number) => { if (im) g.drawImage(im, 128 - 128 * k, 128 - 128 * k, 256 * k, 256 * k); };
+    put(ims[0], 0.95); put(ims[1], 1); put(ims[2], 0.46);
+    out.src = cv.toDataURL();
+  };
+  for (const im of ims) if (im) im.addEventListener('load', make);
+  make();
+  return out;
+}
+const CX_ALL = () => CX_CHIPS.flatMap(c => CX_MAINS.flatMap(m => CX_ASSISTS.map(a => cxBlade(cxId(c.id, m.id, a.id)))));
+const bladeById = (id: string) => (isCx(id) ? cxBlade(id) : pick(BLADES, id));
+const bladeOf = (c: Custom): PartDef => { const b = bladeById(c.blade); return b.low && c.low ? { ...b, s: b.low.s, hid: b.low.hid, height: b.low.height } : b; };
+const isInt = (c: Custom) => !!bladeById(c.blade).integrated; // ラチェット一体型のブレードか
 
 // 3on3の公式ルール：3体で同じパーツ（ブレード・ラチェット・ビット）を重ねて使えない
 const KEYS = ['blade', 'ratchet', 'bit'] as const;
-const LISTS: Record<(typeof KEYS)[number], PartDef[]> = { blade: BLADES, ratchet: RATCHETS, bit: BITS };
+const LISTS: Record<(typeof KEYS)[number], PartDef[]> = { get blade() { return [...BLADES, ...CX_ALL()]; }, ratchet: RATCHETS, bit: BITS }; // ブレードにはCXの組み合わせも入る
 const shuffled = <T,>(a: T[]) => [...a].sort(() => Math.random() - 0.5);
 // 重複しているパーツを、まだ使っていないパーツに置き換える
 function dedupeDeck(deck: Custom[]): Custom[] {
@@ -216,7 +271,7 @@ function randomDeck(sels: Custom[]): Custom[] {
     const pool = shuffled(LISTS[key].map(pt => pt.id).filter(id => !taken.has(id)));
     for (const o of out) if (!o[key]) o[key] = pool.pop() ?? LISTS[key][0].id;
   }
-  for (const o of out) if (pick(BLADES, o.blade).low && o.low === undefined) o.low = Math.random() < 0.5; // 高さを切り替えられるブレードは、ノーマルかローをランダムに
+  for (const o of out) if (bladeById(o.blade).low && o.low === undefined) o.low = Math.random() < 0.5; // 高さを切り替えられるブレードは、ノーマルかローをランダムに
   return out;
 }
 
@@ -274,7 +329,7 @@ function buildBey(c: Custom) {
   const hBurst = Math.pow(60 / height, 0.8), hSta = Math.pow(height / 60, 0.6); // ラチェットが高いほどバーストされやすく、低いほど持久が上がる（ティア表の注意書き）
   return {
     name: bl.integrated ? `${bl.name} ${c.bit}` : `${bl.name} ${pick(RATCHETS, c.ratchet).name} ${c.bit}`,
-    color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, sprite: bl.id in SPRITES ? SPRITES[bl.id] : (SPRITES[bl.id] = loadImg(bl.id)), // 画像（個人用の版だけ。ブレードのidと同じ名前の画像）
+    color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, sprite: isCx(bl.id) ? cxSprite(bl.id) : bl.id in SPRITES ? SPRITES[bl.id] : (SPRITES[bl.id] = loadImg(bl.id)), // 画像（個人用の版だけ。ブレードのidと同じ名前の画像）
     stats: st, weight, height,
     atk: norm(ef.atk, 90, 1.0) * tp, // 与ダメージ・弾き飛ばす力
     def: norm(ef.def, 55, 0.45) * tp, // 被スピンダメージの軽減
@@ -845,6 +900,7 @@ export function Beyblade() {
   const [shotMode2, setShotMode2] = useState<'flat' | 'diag'>('flat');
   const [moreBelow, setMoreBelow] = useState<Record<string, boolean>>({}); // カスタマイズ：パーツ一覧に、下へスクロールすると続きがあるか（スマホではスクロールバーが最初は見えないので、印を出す）
   const [partTab, setPartTab] = useState<Record<string, string>>({});
+  const lastBladeRef = useRef<{ bx: string; cx: string }>({ bx: BLADES[0].id, cx: '' }); // BX・UX／CXを切り替えたときに、前に選んでいたブレードに戻す
   useEffect(() => { // パーツ一覧に続きがあるかを、ときどき確かめる（文字や画像の読み込み・画面の回転で、あとから一覧の高さが変わることがあるため）
     const id = window.setInterval(() => {
       const els = document.querySelectorAll<HTMLElement>('[data-partlist]');
@@ -2402,7 +2458,57 @@ export function Beyblade() {
 
   // ---- カスタマイズ（コンパクト）
   const myBey = buildBey(custom);
-  const partPicker = (title: string, list: PartDef[], value: string, onPick: (id: string) => void, blocked: string[] = []) => {
+  // ブレードの列の上の切り替え：BX・UX（一体のブレード）／CX（ロックチップ＋メインブレード＋アシストブレードを組み立てる）
+  const lineToggle = (
+    <div style={{ display: 'flex', gap: 2, marginLeft: 'auto' }}>
+      {([['bx', 'BX・UX'], ['cx', 'CX']] as const).map(([k, l]) => {
+        const on = (k === 'cx') === isCx(custom.blade);
+        return (
+          <button key={k} onClick={() => {
+            if (on) return;
+            const lb = lastBladeRef.current; lb[isCx(custom.blade) ? 'cx' : 'bx'] = custom.blade;
+            setCustom(c => ({ ...c, blade: k === 'cx' ? lb.cx || CX_ALL()[0].id : lb.bx || BLADES[0].id, ratchet: c.ratchet || RATCHETS[0].id }));
+          }} style={{ padding: '0 7px', borderRadius: 8, fontSize: 11, fontWeight: 800, cursor: 'pointer', color: on ? '#04071a' : '#cfd8ff', background: on ? '#5aabff' : '#121a42', border: '1px solid #2a3566' }}>{l}</button>
+        );
+      })}
+    </div>
+  );
+  // CXのブレードを組み立てる欄：上から ロックチップ → メインブレード → アシストブレード
+  const cxPicker = (value: string, onPick: (id: string) => void) => {
+    const { chip, main, assist } = cxParts(value), bl = cxBlade(value);
+    const row = (label: string, list: PartDef[], cur: string, set: (id: string) => void, note: string) => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ fontSize: 11, fontWeight: 800, opacity: 0.85 }}>{label}<span style={{ fontWeight: 400, opacity: 0.7, marginLeft: 5 }}>{note}</span></div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+          {list.map(pt => { const on = pt.id === cur; return (
+            <button key={pt.id} onClick={() => set(pt.id)} style={{ padding: '1px 7px', borderRadius: 12, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', whiteSpace: 'nowrap', border: `2px solid ${on ? (pt.color ?? '#ffd740') : '#2a3566'}`, background: on ? '#14204f' : '#0a1030' }}>
+              <span style={{ color: pt.color ?? '#fff' }}>{pt.name}</span>
+            </button>
+          ); })}
+        </div>
+      </div>
+    );
+    const line = (pt: PartDef) => (
+      <div key={pt.id}><b style={{ color: pt.color ?? '#fff' }}>{pt.name}</b>{' '}
+        {STAT_LABELS.filter(([k]) => pt.s[k] !== undefined).map(([k, label]) => `${label} ${pt.s[k]}`).join('  ')}{pt.height !== undefined ? `  高さ ${pt.height}` : ''}  <span style={{ opacity: 0.8 }}>{pt.weight}g</span>
+      </div>
+    );
+    return (
+      <div style={{ flex: 1.25, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3, minHeight: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}><span style={{ fontWeight: 800, fontSize: 13 }}>ブレード</span><span style={{ fontSize: 10.5, opacity: 0.6 }}>CX</span>{lineToggle}</div>
+        <div style={{ flex: '1 1 0', minHeight: 40, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 5, scrollbarWidth: 'thin', scrollbarColor: '#5aabff #0a1030' }}>
+          {row('ロックチップ', CX_CHIPS, chip.id, id => onPick(cxId(id, main.id, assist.id)), '重さだけ')}
+          {row('メインブレード', CX_MAINS, main.id, id => onPick(cxId(chip.id, id, assist.id)), '')}
+          {row('アシストブレード', CX_ASSISTS, assist.id, id => onPick(cxId(chip.id, main.id, id)), '')}
+        </div>
+        <div style={{ flex: '0 0 auto', maxHeight: '45%', minHeight: 44, overflowY: 'auto', padding: '4px 6px', borderRadius: 6, background: '#0a1030', border: '1px solid #2a3566', fontSize: 11.5, lineHeight: 1.35 }}>
+          <div style={{ fontWeight: 800, color: bl.color ?? '#fff', fontSize: 12.5 }}>{bl.name}<span style={{ fontWeight: 400, opacity: 0.8, marginLeft: 6 }}>合計 {STAT_LABELS.filter(([k]) => bl.s[k] !== undefined).map(([k, label]) => `${label} ${bl.s[k]}`).join('  ')}  {bl.weight}g</span></div>
+          {line(chip)}{line(main)}{line(assist)}
+        </div>
+      </div>
+    );
+  };
+  const partPicker = (title: string, list: PartDef[], value: string, onPick: (id: string) => void, blocked: string[] = [], head: ReactNode = null) => {
     const sel = list.find(pt => pt.id === value) ?? list[0];
     const allBlocked = list.every(pt => blocked.includes(pt.id));
     // パーツが増えても選びやすいように、タブでしぼりこむ。一覧はスクロールする
@@ -2418,7 +2524,7 @@ export function Beyblade() {
     const shown = tab === 'all' ? list : list.filter(pt => typeOf(pt) === tab);
     return (
       <div style={{ flex: list.length > 6 && title === 'ブレード' ? 1.25 : 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3, minHeight: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}><span style={{ fontWeight: 800, fontSize: 13 }}>{title}</span><span style={{ fontSize: 10.5, opacity: 0.6 }}>{list.length}種類</span></div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}><span style={{ fontWeight: 800, fontSize: 13 }}>{title}</span><span style={{ fontSize: 10.5, opacity: 0.6 }}>{list.length}種類</span>{head}</div>
         {useTabs && (
           <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             {([['all', 'すべて'], ...tabs] as [string, string][]).map(([k, l]) => (
@@ -2712,7 +2818,7 @@ export function Beyblade() {
                     ))}
                   </div>
                   <div style={{ fontSize: 11, opacity: 0.85, textAlign: 'center' }}>{myBey.weight}g・高さ{myBey.height}・<span style={{ color: myBey.spinDir === -1 ? '#ffd740' : '#9fb2ff', fontWeight: 700 }}>{myBey.spinDir === -1 ? '左回転' : '右回転'}</span></div>
-                  {pick(BLADES, custom.blade).low && ( // 高さを切り替えられるブレード（ヘルズネザー）
+                  {bladeById(custom.blade).low && ( // 高さを切り替えられるブレード（ヘルズネザー）
                     <div style={{ display: 'flex', gap: 3, width: '100%' }}>
                       {([[false, 'ノーマル'], [true, 'ロー']] as const).map(([k, l]) => (
                         <button key={l} onClick={() => setCustom(c => ({ ...c, low: k }))} title={k ? '低く構えて、弾きの強いアタック刃で当てる' : 'いなし刃で受け流す'} style={{ ...sb(!!custom.low === k, myBey.color), flex: 1, padding: '2px 4px', fontSize: 12 }}>{l}</button>
@@ -2720,7 +2826,7 @@ export function Beyblade() {
                     </div>
                   )}
                 </div>
-                {partPicker('ブレード', BLADES, custom.blade, id => setCustom(c => ({ ...c, blade: id })), usedByOthers('blade'))}
+                {isCx(custom.blade) ? cxPicker(custom.blade, id => setCustom(c => ({ ...c, blade: id }))) : partPicker('ブレード', BLADES, custom.blade, id => setCustom(c => ({ ...c, blade: id })), usedByOthers('blade'), lineToggle)}
                 {partPicker('ラチェット', RATCHETS, custom.ratchet, id => setCustom(c => ({ ...c, ratchet: id })), usedByOthers('ratchet'))}
                 {partPicker('ビット', BITS, custom.bit, id => setCustom(c => ({ ...c, bit: id })), usedByOthers('bit'))}
               </div>
@@ -2756,14 +2862,14 @@ export function Beyblade() {
                 {Array.from({ length: mode === '3v3' ? 3 : 1 }, (_, n) => (
                   <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 800, color: '#ef4444', fontSize: 13, minWidth: 74 }}>{mode === '3v3' ? `CPUのベイ${n + 1}` : 'CPUのベイ'}</span>
-                    {([['ブレード', BLADES, 'blade'], ['ラチェット', RATCHETS, 'ratchet'], ['ビット', BITS, 'bit']] as const).map(([label, list, key]) => { const cpuInt = !!BLADES.find(b => b.id === cpuSels[n].blade)?.integrated; return (
+                    {([['ブレード', [...BLADES, ...CX_ALL()], 'blade'], ['ラチェット', RATCHETS, 'ratchet'], ['ビット', BITS, 'bit']] as const).map(([label, list, key]) => { const cpuInt = !!(cpuSels[n].blade ? bladeById(cpuSels[n].blade) : undefined)?.integrated; return (
                       <label key={key} style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 4 }}>
                         {label}
                         <select value={key === 'ratchet' && cpuInt ? '' : cpuSels[n][key]} disabled={key === 'ratchet' && cpuInt}
                           onChange={e => setCpuSels(cs => cs.map((c, i) => {
                             if (i !== n) return c;
                             const nc = { ...c, [key]: e.target.value };
-                            if (key === 'blade' && BLADES.find(b => b.id === e.target.value)?.integrated) nc.ratchet = ''; // 一体型のブレードはラチェットなし
+                            if (key === 'blade' && e.target.value && bladeById(e.target.value).integrated) nc.ratchet = ''; // 一体型のブレードはラチェットなし
                             return nc;
                           }))}
                           style={{ padding: '2px 4px', borderRadius: 5, background: '#14204f', color: '#fff', border: '1px solid #2a3566', fontSize: 12.5, opacity: key === 'ratchet' && cpuInt ? 0.5 : 1 }}>
@@ -2772,7 +2878,7 @@ export function Beyblade() {
                         </select>
                       </label>
                     ); })}
-                    {BLADES.find(b => b.id === cpuSels[n].blade)?.low && (
+                    {(cpuSels[n].blade ? bladeById(cpuSels[n].blade) : undefined)?.low && (
                       <label style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 4 }}>
                         モード
                         <select value={cpuSels[n].low === undefined ? '' : cpuSels[n].low ? 'low' : 'normal'}
