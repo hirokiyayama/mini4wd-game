@@ -59,6 +59,7 @@ interface PartDef {
   absorbBit?: number; // ビット側の回転吸収の得意さ
   low?: { s: Partial<Stats>; hid?: Partial<Stats>; height: number }; // 高さを切り替えられるブレード（ヘルズネザー）：ローモードの性能と高さ
   split?: { bulletW: number; bodyW: number }; // バトル中に「バレット」と「本体」に分かれるブレード（バレットグリフォン）：それぞれの重量(g)
+  line?: 'BX' | 'UX'; // ブレードのシリーズ（カスタマイズでBX／UX／CXを切り替えて選ぶ）
   integrated?: boolean; // ラチェット一体型のブレード（ラチェットは選べない。高さと重量はブレードのもの）
   syn?: { blades: string[]; good?: Partial<Stats>; bad?: Partial<Stats> }; // 相性のよいブレードに付けたときの隠れ補正 / それ以外に付けたときの隠れ補正（バトルの計算だけ）
   dashCost?: number; // Xダッシュで失う持久の倍率（Nrビット：スタミナロスを軽減）
@@ -69,24 +70,24 @@ interface PartDef {
   dashLimit?: [number, number]; // 1ラウンドでXダッシュできる回数の上限（最小〜最大からランダム）。Eビットは2〜3回
 }
 const BLADES: PartDef[] = [
-  { id: 'meteor', bal: 1.2, name: 'メテオドラグーン', desc: '3枚の刃で一撃が重いアタッカー。当たると大きく弾く。', s: { atk: 75, def: 15, sta: 35 }, weight: 39.0, color: '#c4b5fd', blades: 3, spinDir: -1, absorb: 0.45, burstMod: 1.5 },
-  { id: 'cobalt', bal: 1.14, name: 'コバルトドラグーン', desc: '4枚の刃で弾き力が高い、左回転のブレード。右回転の相手の回転を吸いやすい。', s: { atk: 60, def: 15, sta: 25 }, weight: 37.9, color: '#3b82f6', blades: 4, spinDir: -1, absorb: 1.0, burstMod: 1.0 },
-  { id: 'wizard', bal: 1.07, name: 'ウィザードロッド', desc: '外側が重く、丸い輪郭で長く回るスタミナ型。', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5 },
-  { id: 'aero', bal: 0.96, name: 'エアロペガサス', desc: '大きな3枚刃で打撃力が高いアタッカー。', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3 },
-  { id: 'shark', bal: 0.96, name: 'シャークスケイル', desc: 'とがった2枚刃で、低い位置から強く打ち込む。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2 },
-  { id: 'glory', bal: 0.95, comeback: 2.2, name: 'グローリーワルキューレ', desc: 'ラチェットと一体になったブレード。当たった相手を強く弾き、バーストしにくい。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, integrated: true, kick: 1.25, burstFloor: 80, burstTough: 2.3 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
-  { id: 'phoenix', bal: 0.95, tier: 2, name: 'フェニックスウイング', desc: '重い3枚刃で、当たった相手を大きく弾くアタッカー。', s: { atk: 65, def: 30, sta: 20 }, weight: 38.0, color: '#ef4444', blades: 3 },
-  { id: 'hells', bal: 0.97, tier: 2, name: 'ヘルズネザー', desc: 'ラチェットと一体になったブレード。高さを切り替えて、弾きの強いアタック刃（ロー）といなし刃（ノーマル）を使い分ける。', s: { atk: 50, def: 50, sta: 30 }, hid: { atk: 86, def: 80, sta: 51 }, low: { s: { atk: 70, def: 45, sta: 15 }, hid: { atk: 106, def: 75, sta: 36 }, height: 50 }, weight: 42.9, height: 60, color: '#f97316', blades: 4, integrated: true }, // 一体型なので、ラチェットのぶん（バトルの計算でラチェットは3倍）を隠れ性能に足している
-  { id: 'bullet', bal: 1.1, tier: 2, comeback: 0.4, name: 'バレットグリフォン', desc: 'ラチェットと一体になったブレード。バトル中に「バレット」と「本体」に分かれる。バレットは平らな軸先で走り回って攻撃し、本体は円い形で攻撃に耐える。水平シュートだと分かれやすく、斜めシュートだと分かれにくい。', s: { atk: 45, def: 45, sta: 40 }, hid: { atk: 81, def: 75, sta: 61 }, weight: 60.7, height: 60, color: '#e11d48', blades: 3, integrated: true, split: { bulletW: 32.6, bodyW: 28.1 } }, // 勝ち負けは、ビットの付いた本体で決める（バレットは止まっても、場外に出ても負けにならない）
-  { id: 'wyvern', bal: 1.02, tier: 2, comeback: 2.0, name: 'ワイバーンホバー', desc: '下向きにすぼまった段差のある2枚刃で、相手の攻撃を上から押さえつけて衝撃を分散する。場外から戻りやすい。', s: { atk: 13, def: 60, sta: 27 }, type: 'def', weight: 34.9, color: '#a3e635', blades: 2 },
-  { id: 'clock', bal: 1.05, tier: 3, name: 'クロックミラージュ', desc: '円盤の形をした60枚刃で、とても長く回り続ける。そのかわり、とてもバーストしやすい。', s: { atk: 10, def: 10, sta: 80 }, type: 'sta', weight: 37.7, color: '#22d3ee', blades: 6, burstTough: 0.55 },
-  { id: 'golem', bal: 1.08, tier: 3, name: 'ゴーレムロック', desc: '連打形状の側面で攻撃を受け止め、傾いたときは上下方向の打撃面で相手を弾く。', s: { atk: 30, def: 60, sta: 10 }, type: 'def', weight: 34.0, color: '#fb923c', blades: 4, kick: 1.1 },
-  { id: 'knight2', bal: 0.98, name: 'ナイトシールドV2', desc: '6枚の刃で衝撃をやわらげる、守りのブレード。', s: { atk: 22, def: 60, sta: 28 }, hid: { sta: 55 }, weight: 36.5, color: '#4ade80', blades: 6 },
-  { id: 'zeke', bal: 1, name: 'ジークスペリオン', desc: 'メタルが中央までつながっていて剛性が高い。上段の大型アッパー刃での攻撃と、下段のカウンター刃での防御をあわせ持つ。', s: { atk: 38, def: 35, sta: 27 }, type: 'bal', weight: 40.0, color: '#d4a017', blades: 3, burstMod: 1.3 },
-  { id: 'luster', bal: 1.12, tier: 2, name: 'ラスタードラグーン', desc: 'メタルが中央までつながっていて剛性が高い。低い位置からの攻撃に優れた偏重心の2枚刃で、相手をすくい上げて強く弾き飛ばす、重量級の左回転ブレード。', s: { atk: 75, def: 15, sta: 10 }, type: 'atk', weight: 42.7, color: '#a855f7', blades: 2, spinDir: -1, absorb: 0.45, burstMod: 1.3, kick: 1.15 },
-  { id: 'scythe2', bal: 0.93, tier: 3, name: 'ヘルズサイズV2', desc: '4枚のスマッシュ刃で、相手の体勢を崩すことに優れる。性能がアップデートされたV2モデル。', s: { atk: 33, def: 38, sta: 39 }, type: 'bal', weight: 36.2, color: '#dc2626', blades: 4 },
-  { id: 'dran2', bal: 0.82, tier: 4, name: 'ドランソードV2', desc: '3枚刃のアッパー刃で、相手を斜め上に弾き飛ばすことに優れる。性能がアップデートされたV2モデル。', s: { atk: 60, def: 27, sta: 23 }, type: 'atk', weight: 37.9, color: '#0ea5e9', blades: 3, kick: 1.1 },
-  { id: 'warrow2', bal: 0.94, tier: 4, name: 'ウィザードアローV2', desc: '2枚の大型円形刃で強い遠心力を生み出す、外重心の設計。性能がアップデートされたV2モデル。', s: { atk: 17, def: 33, sta: 60 }, type: 'sta', weight: 36.1, color: '#facc15', blades: 2 },
+  { id: 'meteor', line: 'UX', bal: 1.2, name: 'メテオドラグーン', desc: '3枚の刃で一撃が重いアタッカー。当たると大きく弾く。', s: { atk: 75, def: 15, sta: 35 }, weight: 39.0, color: '#c4b5fd', blades: 3, spinDir: -1, absorb: 0.45, burstMod: 1.5 },
+  { id: 'cobalt', line: 'BX', bal: 1.14, name: 'コバルトドラグーン', desc: '4枚の刃で弾き力が高い、左回転のブレード。右回転の相手の回転を吸いやすい。', s: { atk: 60, def: 15, sta: 25 }, weight: 37.9, color: '#3b82f6', blades: 4, spinDir: -1, absorb: 1.0, burstMod: 1.0 },
+  { id: 'wizard', line: 'UX', bal: 1.07, name: 'ウィザードロッド', desc: '外側が重く、丸い輪郭で長く回るスタミナ型。', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5 },
+  { id: 'aero', line: 'UX', bal: 0.96, name: 'エアロペガサス', desc: '大きな3枚刃で打撃力が高いアタッカー。', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3 },
+  { id: 'shark', line: 'UX', bal: 0.96, name: 'シャークスケイル', desc: 'とがった2枚刃で、低い位置から強く打ち込む。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2 },
+  { id: 'glory', line: 'UX', bal: 0.95, comeback: 2.2, name: 'グローリーワルキューレ', desc: 'ラチェットと一体になったブレード。当たった相手を強く弾き、バーストしにくい。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, integrated: true, kick: 1.25, burstFloor: 80, burstTough: 2.3 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
+  { id: 'phoenix', line: 'BX', bal: 0.95, tier: 2, name: 'フェニックスウイング', desc: '重い3枚刃で、当たった相手を大きく弾くアタッカー。', s: { atk: 65, def: 30, sta: 20 }, weight: 38.0, color: '#ef4444', blades: 3 },
+  { id: 'hells', line: 'UX', bal: 0.97, tier: 2, name: 'ヘルズネザー', desc: 'ラチェットと一体になったブレード。高さを切り替えて、弾きの強いアタック刃（ロー）といなし刃（ノーマル）を使い分ける。', s: { atk: 50, def: 50, sta: 30 }, hid: { atk: 86, def: 80, sta: 51 }, low: { s: { atk: 70, def: 45, sta: 15 }, hid: { atk: 106, def: 75, sta: 36 }, height: 50 }, weight: 42.9, height: 60, color: '#f97316', blades: 4, integrated: true }, // 一体型なので、ラチェットのぶん（バトルの計算でラチェットは3倍）を隠れ性能に足している
+  { id: 'bullet', line: 'UX', bal: 1.1, tier: 2, comeback: 0.4, name: 'バレットグリフォン', desc: 'ラチェットと一体になったブレード。バトル中に「バレット」と「本体」に分かれる。バレットは平らな軸先で走り回って攻撃し、本体は円い形で攻撃に耐える。水平シュートだと分かれやすく、斜めシュートだと分かれにくい。', s: { atk: 45, def: 45, sta: 40 }, hid: { atk: 81, def: 75, sta: 61 }, weight: 60.7, height: 60, color: '#e11d48', blades: 3, integrated: true, split: { bulletW: 32.6, bodyW: 28.1 } }, // 勝ち負けは、ビットの付いた本体で決める（バレットは止まっても、場外に出ても負けにならない）
+  { id: 'wyvern', line: 'UX', bal: 1.02, tier: 2, comeback: 2.0, name: 'ワイバーンホバー', desc: '下向きにすぼまった段差のある2枚刃で、相手の攻撃を上から押さえつけて衝撃を分散する。場外から戻りやすい。', s: { atk: 13, def: 60, sta: 27 }, type: 'def', weight: 34.9, color: '#a3e635', blades: 2 },
+  { id: 'clock', line: 'UX', bal: 1.05, tier: 3, name: 'クロックミラージュ', desc: '円盤の形をした60枚刃で、とても長く回り続ける。そのかわり、とてもバーストしやすい。', s: { atk: 10, def: 10, sta: 80 }, type: 'sta', weight: 37.7, color: '#22d3ee', blades: 6, burstTough: 0.55 },
+  { id: 'golem', line: 'UX', bal: 1.08, tier: 3, name: 'ゴーレムロック', desc: '連打形状の側面で攻撃を受け止め、傾いたときは上下方向の打撃面で相手を弾く。', s: { atk: 30, def: 60, sta: 10 }, type: 'def', weight: 34.0, color: '#fb923c', blades: 4, kick: 1.1 },
+  { id: 'knight2', line: 'BX', bal: 0.98, name: 'ナイトシールドV2', desc: '6枚の刃で衝撃をやわらげる、守りのブレード。', s: { atk: 22, def: 60, sta: 28 }, hid: { sta: 55 }, weight: 36.5, color: '#4ade80', blades: 6 },
+  { id: 'zeke', line: 'BX', bal: 1, name: 'ジークスペリオン', desc: 'メタルが中央までつながっていて剛性が高い。上段の大型アッパー刃での攻撃と、下段のカウンター刃での防御をあわせ持つ。', s: { atk: 38, def: 35, sta: 27 }, type: 'bal', weight: 40.0, color: '#d4a017', blades: 3, burstMod: 1.3 },
+  { id: 'luster', line: 'BX', bal: 1.12, tier: 2, name: 'ラスタードラグーン', desc: 'メタルが中央までつながっていて剛性が高い。低い位置からの攻撃に優れた偏重心の2枚刃で、相手をすくい上げて強く弾き飛ばす、重量級の左回転ブレード。', s: { atk: 75, def: 15, sta: 10 }, type: 'atk', weight: 42.7, color: '#a855f7', blades: 2, spinDir: -1, absorb: 0.45, burstMod: 1.3, kick: 1.15 },
+  { id: 'scythe2', line: 'BX', bal: 0.93, tier: 3, name: 'ヘルズサイズV2', desc: '4枚のスマッシュ刃で、相手の体勢を崩すことに優れる。性能がアップデートされたV2モデル。', s: { atk: 33, def: 38, sta: 39 }, type: 'bal', weight: 36.2, color: '#dc2626', blades: 4 },
+  { id: 'dran2', line: 'BX', bal: 0.82, tier: 4, name: 'ドランソードV2', desc: '3枚刃のアッパー刃で、相手を斜め上に弾き飛ばすことに優れる。性能がアップデートされたV2モデル。', s: { atk: 60, def: 27, sta: 23 }, type: 'atk', weight: 37.9, color: '#0ea5e9', blades: 3, kick: 1.1 },
+  { id: 'warrow2', line: 'BX', bal: 0.94, tier: 4, name: 'ウィザードアローV2', desc: '2枚の大型円形刃で強い遠心力を生み出す、外重心の設計。性能がアップデートされたV2モデル。', s: { atk: 17, def: 33, sta: 60 }, type: 'sta', weight: 36.1, color: '#facc15', blades: 2 },
 ];
 const RATCHETS: PartDef[] = [
   { id: 'r160', comeback: 2.2, name: '1-60', desc: '低めに構えるラチェット。攻撃力が高い。', s: { atk: 17, def: 9, sta: 4 }, height: 60, weight: 6.0 },
@@ -203,6 +204,8 @@ const CX_BAL = 0.95; // CXの組み合わせ全体の強さの倍率（ティア
 const cxId = (chip: string, main: string, assist: string) => `cx:${chip}:${main}:${assist}`;
 const cxParts = (id: string) => { const [, c, m, a] = id.split(':'); return { chip: pick(CX_CHIPS, c), main: pick(CX_MAINS, m), assist: pick(CX_ASSISTS, a) }; };
 const isCx = (id: string) => id.startsWith('cx:');
+type Line = 'BX' | 'UX' | 'CX';
+const lineOf = (id: string): Line => (isCx(id) ? 'CX' : pick(BLADES, id).line ?? 'BX');
 const cxShort = (a: PartDef) => a.name.replace(/（.*）/, ''); // アシストブレードの略号（A など）
 const CX_CACHE: Record<string, PartDef> = {};
 // 組み立てたCXブレード：性能はメイン＋アシストの合計、重さは3つの合計。形はメインとアシストの外形の大きいほう
@@ -900,7 +903,7 @@ export function Beyblade() {
   const [shotMode2, setShotMode2] = useState<'flat' | 'diag'>('flat');
   const [moreBelow, setMoreBelow] = useState<Record<string, boolean>>({}); // カスタマイズ：パーツ一覧に、下へスクロールすると続きがあるか（スマホではスクロールバーが最初は見えないので、印を出す）
   const [partTab, setPartTab] = useState<Record<string, string>>({});
-  const lastBladeRef = useRef<{ bx: string; cx: string }>({ bx: BLADES[0].id, cx: '' }); // BX・UX／CXを切り替えたときに、前に選んでいたブレードに戻す
+  const lastBladeRef = useRef<Record<Line, string>>({ BX: '', UX: '', CX: '' }); // BX／UX／CXを切り替えたときに、前に選んでいたブレードに戻す
   useEffect(() => { // パーツ一覧に続きがあるかを、ときどき確かめる（文字や画像の読み込み・画面の回転で、あとから一覧の高さが変わることがあるため）
     const id = window.setInterval(() => {
       const els = document.querySelectorAll<HTMLElement>('[data-partlist]');
@@ -2459,16 +2462,18 @@ export function Beyblade() {
   // ---- カスタマイズ（コンパクト）
   const myBey = buildBey(custom);
   // ブレードの列の上の切り替え：BX・UX（一体のブレード）／CX（ロックチップ＋メインブレード＋アシストブレードを組み立てる）
+  const curLine = lineOf(custom.blade);
   const lineToggle = (
     <div style={{ display: 'flex', gap: 2, marginLeft: 'auto' }}>
-      {([['bx', 'BX・UX'], ['cx', 'CX']] as const).map(([k, l]) => {
-        const on = (k === 'cx') === isCx(custom.blade);
+      {(['BX', 'UX', 'CX'] as const).map(k => {
+        const on = k === curLine;
         return (
           <button key={k} onClick={() => {
             if (on) return;
-            const lb = lastBladeRef.current; lb[isCx(custom.blade) ? 'cx' : 'bx'] = custom.blade;
-            setCustom(c => ({ ...c, blade: k === 'cx' ? lb.cx || CX_ALL()[0].id : lb.bx || BLADES[0].id, ratchet: c.ratchet || RATCHETS[0].id }));
-          }} style={{ padding: '0 7px', borderRadius: 8, fontSize: 11, fontWeight: 800, cursor: 'pointer', color: on ? '#04071a' : '#cfd8ff', background: on ? '#5aabff' : '#121a42', border: '1px solid #2a3566' }}>{l}</button>
+            const lb = lastBladeRef.current; lb[curLine] = custom.blade;
+            const first = k === 'CX' ? CX_ALL()[0].id : (BLADES.find(b => (b.line ?? 'BX') === k) ?? BLADES[0]).id;
+            setCustom(c => ({ ...c, blade: lb[k] || first, ratchet: c.ratchet || RATCHETS[0].id }));
+          }} style={{ padding: '0 7px', borderRadius: 8, fontSize: 11, fontWeight: 800, cursor: 'pointer', color: on ? '#04071a' : '#cfd8ff', background: on ? '#5aabff' : '#121a42', border: '1px solid #2a3566' }}>{k}</button>
         );
       })}
     </div>
@@ -2826,7 +2831,7 @@ export function Beyblade() {
                     </div>
                   )}
                 </div>
-                {isCx(custom.blade) ? cxPicker(custom.blade, id => setCustom(c => ({ ...c, blade: id }))) : partPicker('ブレード', BLADES, custom.blade, id => setCustom(c => ({ ...c, blade: id })), usedByOthers('blade'), lineToggle)}
+                {isCx(custom.blade) ? cxPicker(custom.blade, id => setCustom(c => ({ ...c, blade: id }))) : partPicker('ブレード', BLADES.filter(b => (b.line ?? 'BX') === curLine), custom.blade, id => setCustom(c => ({ ...c, blade: id })), usedByOthers('blade'), lineToggle)}
                 {partPicker('ラチェット', RATCHETS, custom.ratchet, id => setCustom(c => ({ ...c, ratchet: id })), usedByOthers('ratchet'))}
                 {partPicker('ビット', BITS, custom.bit, id => setCustom(c => ({ ...c, bit: id })), usedByOthers('bit'))}
               </div>
@@ -2874,7 +2879,8 @@ export function Beyblade() {
                           }))}
                           style={{ padding: '2px 4px', borderRadius: 5, background: '#14204f', color: '#fff', border: '1px solid #2a3566', fontSize: 12.5, opacity: key === 'ratchet' && cpuInt ? 0.5 : 1 }}>
                           <option value="">{key === 'ratchet' && cpuInt ? 'なし（一体型）' : 'ランダム'}</option>
-                          {list.map(pt => <option key={pt.id} value={pt.id} disabled={mode === '3v3' && cpuSels.some((c, i) => i !== n && c[key] === pt.id)}>{pt.name}</option>)}
+                          {(() => { const opt = (pt: PartDef) => <option key={pt.id} value={pt.id} disabled={mode === '3v3' && cpuSels.some((c, i) => i !== n && c[key] === pt.id)}>{pt.name}</option>;
+                            return key === 'blade' ? (['BX', 'UX', 'CX'] as const).map(L => <optgroup key={L} label={L}>{list.filter(pt => lineOf(pt.id) === L).map(opt)}</optgroup>) : list.map(opt); })()}
                         </select>
                       </label>
                     ); })}
