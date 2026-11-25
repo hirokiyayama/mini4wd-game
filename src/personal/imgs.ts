@@ -16,7 +16,10 @@ import luster from './beys/luster.png';
 import scythe2 from './beys/scythe2.png';
 import dran2 from './beys/dran2.png';
 import warrow2 from './beys/warrow2.png';
+import bullet from './beys/bullet.png';
+import bulletB from './beys/bulletB.png';
+import bulletP from './beys/bulletP.png';
 import launcher_red from './launcher_red.png';
 import launcher_black from './launcher_black.png';
 
-(window as unknown as { __BEY_IMGS?: Record<string, string> }).__BEY_IMGS = { meteor, cobalt, wizard, aero, shark, glory, knight2, phoenix, hells, wyvern, clock, golem, zeke, luster, scythe2, dran2, warrow2, launcher_red, launcher_black };
+(window as unknown as { __BEY_IMGS?: Record<string, string> }).__BEY_IMGS = { meteor, cobalt, wizard, aero, shark, glory, knight2, phoenix, hells, wyvern, clock, golem, zeke, luster, scythe2, dran2, warrow2, bullet, bulletB, bulletP, launcher_red, launcher_black };
