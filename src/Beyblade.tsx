@@ -2568,9 +2568,7 @@ export function Beyblade() {
     const hasTier = s.list.some(pt => pt.tier !== undefined);
     const useTabs = s.list.length > 4;
     const tab = useTabs ? partTab[s.k] ?? 'all' : 'all';
-    const tierTab = hasTier && useTabs ? partTab[s.k + ':tier'] ?? 'all' : 'all';
-    const shown = s.list.filter(pt => (tab === 'all' || typeOf(pt) === tab) && (tierTab === 'all' || String(pt.tier ?? 1) === tierTab));
-    const tiers = [...new Set(s.list.map(pt => pt.tier ?? 1))].sort();
+    const shown = s.list.filter(pt => (tab === 'all' || typeOf(pt) === tab));
     const sel = s.list.find(pt => pt.id === s.cur) ?? s.list[0];
     const chipBtn = (on: boolean): React.CSSProperties => ({ padding: '0 6px', borderRadius: 8, fontSize: 10.5, fontWeight: 700, cursor: 'pointer', color: on ? '#04071a' : '#cfd8ff', background: on ? '#ffd740' : '#121a42', border: '1px solid #2a3566', whiteSpace: 'nowrap' });
     const big = bladeSlotKeys.includes(s.k);
@@ -2579,11 +2577,19 @@ export function Beyblade() {
         {/* ① いま付けているパーツ（スロット） */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {lineToggle}
-          {cxForm && (
-            <div style={{ display: 'flex', gap: 2 }}>
-              {([['main', 'メイン型'], ['om', 'オーバー＋メタル型']] as const).map(([k, l]) => (
-                <button key={k} onClick={() => { if (cxForm !== k) setCxForm(k === 'om'); }} style={{ padding: '0 7px', borderRadius: 8, fontSize: 11, fontWeight: 800, cursor: 'pointer', color: cxForm === k ? '#04071a' : '#cfd8ff', background: cxForm === k ? '#ffd740' : '#121a42', border: '1px solid #2a3566', whiteSpace: 'nowrap' }}>{l}</button>
-              ))}
+          {cxForm && ( // CXの組み方：どちらか一方だけ（メインブレードと、オーバー・メタルブレードは一緒に付けられない）
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 6, paddingLeft: 8, borderLeft: '1px solid #2a3566', minWidth: 0 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, opacity: 0.8, whiteSpace: 'nowrap' }}>組み方</span>
+              {([['main', 'メイン型', 'メイン＋アシスト'], ['om', 'オーバー＋メタル型', 'オーバー＋メタル＋アシスト']] as const).map(([k, l, sub]) => {
+                const on = cxForm === k;
+                return (
+                  <button key={k} onClick={() => { if (!on) setCxForm(k === 'om'); }} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '1px 8px 1px 6px', borderRadius: 8, cursor: 'pointer', color: on ? '#fff' : '#8a96c8', background: on ? '#1a2660' : 'transparent', border: `2px solid ${on ? '#ffd740' : '#2a3566'}`, whiteSpace: 'nowrap', minWidth: 0 }}>
+                    <span style={{ width: 11, height: 11, borderRadius: '50%', border: `2px solid ${on ? '#ffd740' : '#5a6698'}`, background: on ? 'radial-gradient(circle, #ffd740 45%, transparent 50%)' : 'transparent', flex: '0 0 auto' }} />
+                    <span style={{ fontSize: 12, fontWeight: 800 }}>{l}</span>
+                    {FW >= 1000 && <span style={{ fontSize: 9.5, opacity: 0.75 }}>{sub}</span>}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -2613,18 +2619,12 @@ export function Beyblade() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap', minHeight: 16 }}>
           <span style={{ fontSize: 11.5, fontWeight: 800, marginRight: 3 }}>{s.label}を選ぶ<span style={{ fontWeight: 400, opacity: 0.6, marginLeft: 4 }}>{s.list.length}種類</span></span>
           {useTabs && ([['all', 'すべて'], ...tabs] as [string, string][]).map(([k, l]) => <button key={k} onClick={() => setPartTab(t => ({ ...t, [s.k]: k }))} style={chipBtn(tab === k)}>{l}</button>)}
-          {useTabs && hasTier && tiers.length > 1 && (
-            <>
-              <span style={{ width: 1, height: 12, background: '#2a3566', margin: '0 2px' }} />
-              {(['all', ...tiers.map(String)]).map(k => <button key={k} onClick={() => setPartTab(t => ({ ...t, [s.k + ':tier']: k }))} style={chipBtn(tierTab === k)}>{k === 'all' ? '全ティア' : `T${k}`}</button>)}
-            </>
-          )}
         </div>
         {/* ③ 候補のカード */}
         <div style={{ position: 'relative', flex: '1 1 0', minHeight: 40, display: 'flex', flexDirection: 'column' }}>
           <div data-partlist={s.label}
             onScroll={e => { const el = e.currentTarget, m = el.scrollTop + el.clientHeight < el.scrollHeight - 4; if (!!moreBelow.grid !== m) setMoreBelow(o => ({ ...o, grid: m })); }}
-            style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${big ? 118 : 92}px, 1fr))`, gap: 4, alignContent: 'start', overflowY: 'auto', flex: '1 1 0', minHeight: 0, paddingRight: 2, scrollbarWidth: 'thin', scrollbarColor: '#5aabff #0a1030' }}>
+            style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${big ? 126 : 72}px, 1fr))`, gap: 4, alignContent: 'start', overflowY: 'auto', flex: '1 1 0', minHeight: 0, paddingRight: 2, scrollbarWidth: 'thin', scrollbarColor: '#5aabff #0a1030' }}>
             {s.none && <div style={{ gridColumn: '1 / -1', fontSize: 12, opacity: 0.8, padding: 6 }}>ラチェット一体型のブレードなので、ラチェットは選べません。</div>}
             {!s.none && shown.length === 0 && <div style={{ gridColumn: '1 / -1', fontSize: 11, opacity: 0.6 }}>まだありません</div>}
             {!s.none && shown.map(pt => {
@@ -2634,12 +2634,11 @@ export function Beyblade() {
                   position: 'relative', display: 'flex', alignItems: 'center', gap: 5, padding: '3px 5px', borderRadius: 8, cursor: bl ? 'not-allowed' : 'pointer', color: '#fff', textAlign: 'left', opacity: bl ? 0.35 : 1,
                   border: `2px solid ${on ? pt.color ?? '#ffd740' : '#2a3566'}`, background: on ? '#1a2660' : '#0a1030', borderLeft: `4px solid ${isRatchet ? '#94a3b8' : TYPE_COLOR[ty] ?? '#2a3566'}`,
                 }}>
-                  <PartIcon kind={s.kind} pt={pt} size={big ? 34 : 28} />
                   <span style={{ minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
                     <span style={{ fontSize: pt.name.length > 8 ? 10.5 : 12, fontWeight: 800, color: pt.color ?? '#fff', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-all' }}>{pt.name}</span>
                     <span style={{ fontSize: 10, opacity: 0.8, whiteSpace: 'nowrap' }}>
                       {hasTier && <b style={{ color: TIER_COLOR[pt.tier ?? 1] ?? '#fff', marginRight: 4 }}>T{pt.tier ?? 1}</b>}
-                      {isRatchet ? `高さ${pt.height}` : `${pt.weight}g`}
+                      
                     </span>
                   </span>
                   {bl && <span style={{ position: 'absolute', right: 4, top: 2, fontSize: 9, opacity: 0.9 }}>使用中</span>}
