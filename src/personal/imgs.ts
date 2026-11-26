@@ -30,7 +30,13 @@ import assist_V from './beys/assist_V.png';
 import metal_fortress from './beys/metal_fortress.png';
 import over_G from './beys/over_G.png';
 import chip_knight from './beys/chip_knight.png';
+import chip_emperor from './beys/chip_emperor.png';
+import chip_valkyrie from './beys/chip_valkyrie.png';
+import chip_hells from './beys/chip_hells.png';
+import chip_perseus from './beys/chip_perseus.png';
+import chip_wizard from './beys/chip_wizard.png';
+import chip_dran from './beys/chip_dran.png';
 import launcher_red from './launcher_red.png';
 import launcher_black from './launcher_black.png';
 
-(window as unknown as { __BEY_IMGS?: Record<string, string> }).__BEY_IMGS = { meteor, cobalt, wizard, aero, shark, glory, knight2, phoenix, hells, wyvern, clock, golem, zeke, luster, scythe2, dran2, warrow2, bullet, bulletB, bulletP, main_blast, assist_A, chip_pegasus, assist_K, metal_blitz, over_B, chip_bahamut, assist_V, metal_fortress, over_G, chip_knight, launcher_red, launcher_black };
+(window as unknown as { __BEY_IMGS?: Record<string, string> }).__BEY_IMGS = { meteor, cobalt, wizard, aero, shark, glory, knight2, phoenix, hells, wyvern, clock, golem, zeke, luster, scythe2, dran2, warrow2, bullet, bulletB, bulletP, main_blast, assist_A, chip_pegasus, assist_K, metal_blitz, over_B, chip_bahamut, assist_V, metal_fortress, over_G, chip_knight, chip_emperor, chip_valkyrie, chip_hells, chip_perseus, chip_wizard, chip_dran, launcher_red, launcher_black };
