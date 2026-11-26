@@ -272,27 +272,72 @@ const isInt = (c: Custom) => !!bladeById(c.blade).integrated; // ラチェット
 // ---- カスタマイズ画面のパーツの絵：画像つき版は写真、画像なし版はブレードの外形（当たり判定と同じ形）。ラチェットは刃の数、ビットは名前の文字
 const TYPE_COLOR: Record<string, string> = { atk: '#ef4444', def: '#5aabff', sta: '#4ade80', bal: '#ffd740' };
 type PartKind = 'blade' | 'chip' | 'main' | 'over' | 'metal' | 'assist' | 'ratchet' | 'bit';
+// 色を明るく（f>0）・暗く（f<0）する
+const shade = (hex: string, f: number) => {
+  const n = parseInt(hex.slice(1), 16), t = f < 0 ? 0 : 255, q = Math.abs(f);
+  const ch = (v: number) => Math.round(v + (t - v) * q);
+  return `rgb(${ch(n >> 16)},${ch((n >> 8) & 255)},${ch(n & 255)})`;
+};
 function PartIcon({ kind, pt, size }: { kind: PartKind; pt: PartDef; size: number }) {
   const key = kind === 'blade' ? pt.id : `${kind}_${pt.id}`;
   const col = pt.color ?? '#cfd8ff';
   if (IMG_URLS[key]) return <img src={IMG_URLS[key]} alt="" width={size} height={size} style={{ objectFit: 'contain', flex: '0 0 auto' }} />;
-  const R = size / 2 - 1;
-  let body: ReactNode;
+  const R = size / 2 - 1, id = `pi-${kind}-${pt.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  const P = (pts: [number, number][]) => pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  // 金属の質感：左上が明るく、右下が暗いグラデーション＋つや
+  const metal = (gid: string, c: string) => (
+    <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stopColor={shade(c, 0.55)} /><stop offset="0.45" stopColor={c} /><stop offset="1" stopColor={shade(c, -0.55)} />
+    </linearGradient>
+  );
+  const hub = (r: number, c: string) => ( // まん中の軸：暗い円＋色のふち＋光の点
+    <><circle r={r} fill={`url(#${id}-hub)`} stroke={shade(c, 0.2)} strokeWidth={1.2} /><polygon points={P([0, 1, 2, 3, 4, 5].map(k => [Math.cos((k / 6) * 2 * Math.PI) * r * 0.5, Math.sin((k / 6) * 2 * Math.PI) * r * 0.5]))} fill="#94a3b8" stroke="#02040f" strokeWidth={0.6} /></>
+  );
+  const hubDef = <radialGradient id={`${id}-hub`} cx="0.35" cy="0.35" r="0.8"><stop offset="0" stopColor="#3a4a8a" /><stop offset="1" stopColor="#050818" /></radialGradient>;
+  const gloss = <linearGradient id={`${id}-gl`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity={0.45} /><stop offset="0.5" stopColor="#fff" stopOpacity={0} /></linearGradient>;
+  let defs: ReactNode = null, body: ReactNode;
   const sh = SHAPES[key];
-  if (sh) {
-    const pts: string[] = [];
-    for (let k = 0; k < SHAPE_N; k++) { const th = ((k + 0.5) / SHAPE_N) * 2 * Math.PI - Math.PI, r = (sh.r[k] / sh.mx) * R; pts.push(`${(Math.cos(th) * r).toFixed(1)},${(Math.sin(th) * r).toFixed(1)}`); }
-    body = <><polygon points={pts.join(' ')} fill={col} fillOpacity={0.85} stroke="#04071a" strokeWidth={1} /><circle r={R * 0.28} fill="#0a1030" stroke={col} strokeWidth={1.5} /></>;
-  } else if (kind === 'ratchet') { // 「3-60」の 3 = 刃の数
-    const n = Number(pt.name.split('-')[0]) || 3, d: string[] = [];
-    for (let k = 0; k < 48; k++) { const th = (k / 48) * 2 * Math.PI, ph = ((th * n) / (2 * Math.PI)) % 1, r = R * (ph < 0.25 ? 1 : 0.72); d.push(`${(Math.cos(th) * r).toFixed(1)},${(Math.sin(th) * r).toFixed(1)}`); }
-    body = <><polygon points={d.join(' ')} fill="#94a3b8" stroke="#04071a" strokeWidth={1} /><circle r={R * 0.4} fill="#0a1030" /></>;
-  } else if (kind === 'bit') {
+  if (sh) { // ブレード：写真から作った外形
+    const pts: [number, number][] = [];
+    for (let k = 0; k < SHAPE_N; k++) { const th = ((k + 0.5) / SHAPE_N) * 2 * Math.PI - Math.PI, r = (sh.r[k] / sh.mx) * R; pts.push([Math.cos(th) * r, Math.sin(th) * r]); }
+    defs = <>{metal(`${id}-m`, col)}{hubDef}{gloss}</>;
+    body = <>
+      <polygon points={P(pts)} fill={`url(#${id}-m)`} stroke="#02040f" strokeWidth={1.2} strokeLinejoin="round" />
+      <polygon points={P(pts)} fill={`url(#${id}-gl)`} />
+      <circle r={R * 0.58} fill="none" stroke="#02040f" strokeOpacity={0.45} strokeWidth={1} />
+      <circle r={R * 0.58} fill="none" stroke="#fff" strokeOpacity={0.18} strokeWidth={0.8} transform="translate(0.6,0.6)" />
+      {hub(R * 0.3, col)}
+    </>;
+  } else if (kind === 'ratchet') { // 上から見たラチェット：「3-60」の 3 = のこぎり歯の数
+    const n = Number(pt.name.split('-')[0]) || 3, pts: [number, number][] = [];
+    for (let k = 0; k <= 96; k++) { const th = (k / 96) * 2 * Math.PI - Math.PI / 2, ph = ((th * n) / (2 * Math.PI) % 1 + 1) % 1, r = R * (ph < 0.7 ? 0.74 + 0.26 * (ph / 0.7) : 0.74); pts.push([Math.cos(th) * r, Math.sin(th) * r]); }
+    defs = <>{metal(`${id}-m`, '#b8c4d6')}{hubDef}{gloss}</>;
+    body = <>
+      <polygon points={P(pts)} fill={`url(#${id}-m)`} stroke="#02040f" strokeWidth={1.2} strokeLinejoin="round" />
+      <polygon points={P(pts)} fill={`url(#${id}-gl)`} />
+      <circle r={R * 0.52} fill="#0a1030" stroke="#64748b" strokeWidth={1} />
+      <circle r={R * 0.22} fill="#02040f" stroke="#94a3b8" strokeWidth={0.8} />
+    </>;
+  } else if (kind === 'bit') { // 横から見たビット：上のつば → 胴 → 下に尖った軸先（色はビットのタイプ）
     const c = TYPE_COLOR[partTypeOf(pt)] ?? '#cfd8ff';
-    // 横から見たビット：上のつば → 胴 → 下に尖った軸先（形はビットのタイプの色）
-    body = <><rect x={-R * 0.9} y={-R * 0.8} width={R * 1.8} height={R * 0.38} rx={R * 0.12} fill="#121a42" stroke={c} strokeWidth={1.5} /><path d={`M${-R * 0.55},${-R * 0.42} H${R * 0.55} L${R * 0.4},${R * 0.3} L0,${R * 0.92} L${-R * 0.4},${R * 0.3} Z`} fill={c} fillOpacity={0.85} stroke="#04071a" strokeWidth={1} /></>;
-  } else body = <><circle r={R * 0.75} fill={col} stroke="#04071a" strokeWidth={1} /><circle r={R * 0.3} fill="#0a1030" /></>; // ロックチップなど、形のないパーツ
-  return <svg width={size} height={size} viewBox={`${-size / 2} ${-size / 2} ${size} ${size}`} style={{ flex: '0 0 auto' }}>{body}</svg>;
+    defs = <>{metal(`${id}-m`, c)}{metal(`${id}-f`, '#8090b0')}</>;
+    body = <>
+      <rect x={-R * 0.9} y={-R * 0.8} width={R * 1.8} height={R * 0.38} rx={R * 0.12} fill={`url(#${id}-f)`} stroke="#02040f" strokeWidth={1} />
+      <path d={`M${-R * 0.55},${-R * 0.42} H${R * 0.55} L${R * 0.4},${R * 0.3} L0,${R * 0.92} L${-R * 0.4},${R * 0.3} Z`} fill={`url(#${id}-m)`} stroke="#02040f" strokeWidth={1} strokeLinejoin="round" />
+      <path d={`M${-R * 0.38},${-R * 0.36} L${-R * 0.26},${R * 0.24}`} stroke="#fff" strokeOpacity={0.5} strokeWidth={1.2} strokeLinecap="round" />
+    </>;
+  } else { // ロックチップ：円いチップに、モデルの色の紋章
+    const star: [number, number][] = [];
+    for (let k = 0; k < 8; k++) { const th = (k / 8) * 2 * Math.PI - Math.PI / 2, r = R * (k % 2 ? 0.17 : 0.42); star.push([Math.cos(th) * r, Math.sin(th) * r]); }
+    defs = <>{metal(`${id}-m`, col)}{hubDef}{gloss}</>;
+    body = <>
+      <circle r={R * 0.92} fill={`url(#${id}-m)`} stroke="#02040f" strokeWidth={1.2} />
+      <circle r={R * 0.92} fill={`url(#${id}-gl)`} />
+      <circle r={R * 0.62} fill={`url(#${id}-hub)`} stroke={shade(col, 0.3)} strokeWidth={1} />
+      <polygon points={P(star)} fill={col} />
+    </>;
+  }
+  return <svg width={size} height={size} viewBox={`${-size / 2} ${-size / 2} ${size} ${size}`} style={{ flex: '0 0 auto', overflow: 'visible' }}><defs>{defs}</defs>{body}</svg>;
 }
 
 // 3on3の公式ルール：3体で同じパーツ（ブレード・ラチェット・ビット）を重ねて使えない
