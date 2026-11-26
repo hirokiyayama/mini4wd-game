@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ベイX 対戦分析</title>
+<style>
+:root{--bg:#04071a;--panel:#0a1030;--panel2:#121a42;--line:#2a3566;--text:#e8edff;--sub:#93a0d0;--blue:#5aabff;--gold:#ffd740;--red:#ef4444;--green:#4ade80}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans JP",system-ui,sans-serif;font-size:14px}
+header{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+h1{font-size:18px;margin:0 12px 0 0;color:var(--gold)}
+main{padding:12px 16px 40px;max-width:1200px;margin:0 auto}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}
+.bar label{color:var(--sub);font-size:12px}
+input,select,button{font:inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+button{cursor:pointer;font-weight:700}
+button.on{border-color:var(--gold);background:#1a2660}
+button.pri{background:var(--gold);color:#04071a;border-color:var(--gold)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.card h2{font-size:15px;margin:0 0 10px;color:var(--blue)}
+.note{color:var(--sub);font-size:12px;margin:4px 0 10px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:6px 8px;border-bottom:1px solid #1b2450;text-align:left;vertical-align:middle}
+th{color:var(--sub);font-size:12px;font-weight:600}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rate{display:flex;align-items:center;gap:8px;min-width:120px}
+.rate i{display:block;height:8px;border-radius:4px;background:var(--blue)}
+.rate.bad i{background:var(--red)}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.big{font-size:30px;font-weight:800;color:var(--gold)}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:12px;margin:2px 4px 2px 0}
+.empty{color:var(--sub);padding:10px 0}
+.wrap{overflow-x:auto}
+#src{display:none}
+#src.show{display:block}
+</style>
+</head>
+<body>
+<header>
+  <h1>ベイX 対戦分析</h1>
+  <span id="status" class="note" style="margin:0"></span>
+  <span style="flex:1"></span>
+  <button id="reload">データを読み直す</button>
+  <button id="srcBtn">データの読み込み設定</button>
+</header>
+<main>
+  <div id="src" class="card">
+    <h2>データの読み込み</h2>
+    <div class="note">Apps ScriptのウェブアプリのURLと、コードに書いたKEYを入れてください。このブラウザだけに保存されます。</div>
+    <div class="bar"><input id="url" placeholder="https://script.google.com/macros/s/…/exec" style="flex:1;min-width:260px"><input id="key" placeholder="KEY" style="width:160px"><button class="pri" id="load">読み込む</button></div>
+    <div class="note">または、スプレッドシートを「CSV」でダウンロードしたファイルを選ぶ：</div>
+    <input type="file" id="file" accept=".csv,.json,.jsonl,text/csv,application/json">
+  </div>
+
+  <div class="bar">
+    <label>期間</label>
+    <select id="period"><option value="7">過去7日</option><option value="30">過去30日</option><option value="0" selected>全期間</option><option value="c">指定</option></select>
+    <input type="date" id="from" style="display:none"><input type="date" id="to" style="display:none">
+    <label>対象</label>
+    <select id="who"><option value="">全体</option></select>
+    <label><input type="checkbox" id="cpu"> CPUのベイも含める</label>
+    <label>最低対戦数</label><input type="number" id="minN" value="5" min="1" style="width:70px">
+    <label>表示数</label><select id="topN"><option>10</option><option>100</option></select>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div id="view"></div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const FIN = { spin: 'スピン', over: 'オーバー', burst: 'バースト', extreme: 'エクストリーム' };
+const FINS = ['spin', 'over', 'burst', 'extreme'];
+let ROWS = [], E = [];
+const ls = { get: k => { try { return localStorage.getItem(k) || ''; } catch { return ''; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+
+// ---------- データの読み込み ----------
+function parseCSV(t) {
+  const out = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true; else if (c === ',') { row.push(cur); cur = ''; } else if (c === '\n' || c === '\r') { if (c === '\r' && t[i + 1] === '\n') i++; row.push(cur); out.push(row); row = []; cur = ''; } else cur += c;
+  }
+  if (cur || row.length) { row.push(cur); out.push(row); }
+  const head = out.shift() || [];
+  return out.filter(r => r.length > 1).map(r => Object.fromEntries(head.map((h, i) => [h, r[i] ?? ''])));
+}
+function setRows(rows, from) { ROWS = rows; $('status').textContent = `${rows.length}ラウンド（${from}）`; build(); }
+async function loadUrl() {
+  const url = $('url').value.trim(), key = $('key').value.trim();
+  if (!url) { $('src').classList.add('show'); return; }
+  ls.set('bey_an_url', url); ls.set('bey_an_key', key);
+  $('status').textContent = '読み込み中…';
+  try {
+    const r = await fetch(url + (url.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(key));
+    const j = await r.json();
+    if (j.error) { $('status').textContent = 'KEYが違います'; return; }
+    setRows(j.rows, 'スプレッドシート'); $('src').classList.remove('show');
+  } catch (e) { $('status').textContent = '読み込めませんでした（URLを確認してください）'; }
+}
+$('file').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return; const t = await f.text();
+  let rows;
+  if (/^\s*[\[{]/.test(t)) { try { const j = JSON.parse(t); rows = Array.isArray(j) ? j : j.rows; } catch { rows = t.split('\n').filter(Boolean).map(l => JSON.parse(l)); } }
+  else rows = parseCSV(t);
+  setRows(rows, f.name); $('src').classList.remove('show');
+};
+$('load').onclick = loadUrl; $('reload').onclick = loadUrl; $('srcBtn').onclick = () => $('src').classList.toggle('show');
+$('url').value = ls.get('bey_an_url'); $('key').value = ls.get('bey_an_key');
+
+// ---------- 1ラウンド → 両方のベイから見た記録 ----------
+const num = v => (v === '' || v == null ? null : +v);
+function shotOf(r, p) { return { side: r[p + 'side'], x: num(r[p + 'x']), y: num(r[p + 'y']), kind: r[p + 'shot'], aim: num(r[p + 'aim']), rpm: num(r[p + 'rpm']), dash: +r[p + 'dash'] || 0 }; }
+function build() {
+  E = [];
+  for (const r of ROWS) {
+    const t = new Date(r.time || Date.now()), human2 = r.vs === '2p' || r.vs === 'online';
+    for (const [me, op, h] of [['p1', 'p2', true], ['p2', 'p1', human2]]) {
+      E.push({ t, pid: r.pid, human: h, fmt: r.fmt, vs: r.vs, key: r[me], name: r[me + 'name'], opp: r[op], oppName: r[op + 'name'], win: r.win === me, finish: r.finish, shot: shotOf(r, me), oshot: shotOf(r, op), hits: +r.hits || 0, sec: num(r.sec) });
+    }
+  }
+  const pids = {}; for (const r of ROWS) pids[r.pid] = (pids[r.pid] || 0) + 1;
+  const cur = $('who').value;
+  $('who').innerHTML = '<option value="">全体</option>' + Object.entries(pids).sort((a, b) => b[1] - a[1]).map(([p, n]) => `<option value="${esc(p)}">プレイヤー ${esc(p.slice(0, 6))}（${n}回）</option>`).join('');
+  $('who').value = cur;
+  NAMES = {}; for (const e of E) NAMES[e.key] = e.name;
+  render();
+}
+let NAMES = {};
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+// ---------- 絞り込み ----------
+function filtered(days) {
+  const per = days ?? $('period').value, who = $('who').value, cpu = $('cpu').checked;
+  let from = 0, to = Infinity;
+  if (per === 'c') { if ($('from').value) from = new Date($('from').value).getTime(); if ($('to').value) to = new Date($('to').value).getTime() + 864e5; }
+  else if (+per) from = Date.now() - +per * 864e5;
+  return E.filter(e => e.t >= from && e.t < to && (who ? e.human && e.pid === who : (e.human || cpu)));
+}
+const minN = () => Math.max(1, +$('minN').value || 1), topN = () => +$('topN').value;
+// 少ない対戦数で上に来ないように、勝率の下限（ウィルソン）で並べる
+function wilson(w, n) { if (!n) return 0; const z = 1.64, p = w / n; return (p + z * z / (2 * n) - z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))) / (1 + z * z / n); }
+function group(es, kf) { const m = new Map(); for (const e of es) { const k = kf(e); if (k == null) continue; let g = m.get(k); if (!g) m.set(k, g = { key: k, n: 0, w: 0, es: [] }); g.n++; if (e.win) g.w++; g.es.push(e); } return [...m.values()]; }
+const pct = (w, n) => (n ? Math.round((100 * w) / n) : 0);
+const rateCell = (w, n, bad) => `<div class="rate${bad ? ' bad' : ''}"><i style="width:${Math.max(2, pct(w, n))}px"></i><b>${pct(w, n)}%</b></div>`;
+
+// ---------- シュートの言い方 ----------
+function posTxt(s) { if (s.y == null) return ''; return s.y < -60 ? '上側' : s.y > 60 ? '下側' : '真ん中の高さ'; }
+function aimTxt(s) {
+  if (s.kind !== '斜め' || s.aim == null || s.x == null) return '';
+  const a = (s.aim * Math.PI) / 180, tc = Math.atan2(-s.y, -s.x); let d = Math.abs(a - tc); if (d > Math.PI) d = 2 * Math.PI - d;
+  if (d < 0.7) return '中央へ';
+  const ax = Math.cos(a); return (s.side === 'L' ? ax > 0 : ax < 0) ? '相手側へ' : '自分側へ';
+}
+function shotTxt(s) { return `${s.side === 'L' ? '左' : s.side === 'R' ? '右' : ''}側の${posTxt(s)}から${aimTxt(s)}${s.kind || ''}シュート`; }
+function winPat(e) { return `${shotTxt(e.shot)}${e.shot.dash ? '→Xダッシュ' : ''}→${FIN[e.finish]}フィニッシュ`; }
+function losePat(e) { return `${shotTxt(e.shot)}${e.hits ? '' : '→ぶつからず'}→${FIN[e.finish]}負け`; }
+
+// ---------- 表 ----------
+function table(cols, rows) { if (!rows.length) return '<div class="empty">データがまだありません（最低対戦数を下げると出ることがあります）</div>'; return `<div class="wrap"><table><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>${rows.map(r => `<tr>${r.map((c, i) => `<td${typeof c === 'number' ? ' class="n"' : ''}>${c}</td>`).join('')}</tr>`).join('')}</table></div>`; }
+function rankRows(gs, bad) { return gs.map((g, i) => [i + 1, esc(NAMES[g.key] || g.key), rateCell(g.w, g.n, bad), g.n]); }
+function customSelect(id, es, label, kf = e => e.key) {
+  const gs = group(es, kf).sort((a, b) => b.n - a.n);
+  const keep = SEL[id];
+  return `<label class="note">${label}</label> <input placeholder="名前で絞り込み" data-f="${id}" style="width:160px" value="${esc(FILTER[id] || '')}"> <select data-s="${id}">${gs.filter(g => !FILTER[id] || (NAMES[g.key] || '').includes(FILTER[id])).map(g => `<option value="${esc(g.key)}"${g.key === keep ? ' selected' : ''}>${esc(NAMES[g.key])}（${g.n}回）</option>`).join('')}</select>`;
+}
+const SEL = {}, FILTER = {};
+
+// ---------- 各ページ ----------
+const PAGES = {
+  '今週の最強カスタム': () => {
+    const es = filtered('7');
+    const gs = group(es, e => e.key).filter(g => g.n >= minN()).sort((a, b) => wilson(b.w, b.n) - wilson(a.w, a.n)).slice(0, 10);
+    return `<div class="card"><h2>今週の最強カスタム TOP10</h2><div class="note">過去7日・最低${minN()}戦。対戦数が少ないカスタムが上に来すぎないように並べています。</div>${table(['#', 'カスタム', '勝率', '対戦数'], rankRows(gs))}</div>`;
+  },
+  '勝率・負率・使用': () => {
+    const es = filtered(), gs = group(es, e => e.key);
+    const ok = gs.filter(g => g.n >= minN());
+    const win = [...ok].sort((a, b) => wilson(b.w, b.n) - wilson(a.w, a.n)).slice(0, topN());
+    const lose = [...ok].sort((a, b) => wilson(b.n - b.w, b.n) - wilson(a.n - a.w, a.n)).slice(0, topN());
+    const use = [...gs].sort((a, b) => b.n - a.n).slice(0, topN());
+    const W = es.filter(e => e.win).length;
+    return `<div class="card"><h2>全体の成績</h2><span class="big">${pct(W, es.length)}%</span> <span class="note">${es.length}戦 ${W}勝 ${es.length - W}敗</span></div>
+    <div class="grid"><div class="card"><h2>勝率がいいカスタム TOP${topN()}</h2>${table(['#', 'カスタム', '勝率', '対戦数'], rankRows(win))}</div>
+    <div class="card"><h2>負けているカスタム TOP${topN()}</h2>${table(['#', 'カスタム', '負率', '対戦数'], lose.map((g, i) => [i + 1, esc(NAMES[g.key]), rateCell(g.n - g.w, g.n, true), g.n]))}</div>
+    <div class="card"><h2>使用カスタム TOP${topN()}</h2>${table(['#', 'カスタム', '使用回数', '勝率'], use.map((g, i) => [i + 1, esc(NAMES[g.key]), g.n, rateCell(g.w, g.n)]))}</div></div>`;
+  },
+  '勝ち・負けパターン': () => {
+    let es = filtered();
+    const all = SEL.pat === '__all' || !SEL.pat;
+    const sel = `<div class="bar"><label class="note">カスタム</label><select data-s="pat"><option value="__all">すべて</option>${group(es, e => e.key).sort((a, b) => b.n - a.n).map(g => `<option value="${esc(g.key)}"${g.key === SEL.pat ? ' selected' : ''}>${esc(NAMES[g.key])}（${g.n}回）</option>`).join('')}</select></div>`;
+    if (!all) es = es.filter(e => e.key === SEL.pat);
+    const wins = es.filter(e => e.win), loses = es.filter(e => !e.win);
+    const pat = (list, f) => { const m = {}; for (const e of list) m[f(e)] = (m[f(e)] || 0) + 1; return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, topN()).map(([k, n], i) => [i + 1, esc(k), n, Math.round((100 * n) / list.length) + '%']); };
+    return sel + `<div class="grid"><div class="card"><h2>勝ちパターン</h2><div class="note">${wins.length}勝のうち多い順</div>${table(['#', 'パターン', '回数', '割合'], pat(wins, winPat))}</div>
+    <div class="card"><h2>負けパターン</h2><div class="note">${loses.length}敗のうち多い順</div>${table(['#', 'パターン', '回数', '割合'], pat(loses, losePat))}</div></div>
+    <div class="card"><h2>シュートのしかた別の勝率</h2>${table(['シュート', '勝率', '対戦数', 'Xダッシュした割合'], group(es, e => shotTxt(e.shot)).filter(g => g.n >= Math.min(3, minN())).sort((a, b) => b.w / b.n - a.w / a.n).slice(0, topN()).map(g => [esc(g.key), rateCell(g.w, g.n), g.n, pct(g.es.filter(e => e.shot.dash).length, g.n) + '%']))}</div>`;
+  },
+  '対戦相性': () => {
+    const es = filtered();
+    if (!SEL.mu) SEL.mu = group(es, e => e.key).sort((a, b) => b.n - a.n)[0]?.key;
+    const mine = es.filter(e => e.key === SEL.mu);
+    const q = FILTER.muo || '';
+    const gs = group(mine, e => e.opp).filter(g => !q || (NAMES[g.key] || '').includes(q)).sort((a, b) => b.w / b.n - a.w / a.n || b.n - a.n);
+    return `<div class="card"><h2>対戦相性分析</h2><div class="bar">${customSelect('mu', es, '自分のカスタム')}</div>
+    <div class="bar"><label class="note">相手を絞り込み</label><input data-f="muo" placeholder="ブレード名など" value="${esc(q)}"></div>
+    ${table(['相手のカスタム', '対戦数', '自分の勝率'], gs.map(g => [esc(NAMES[g.key]), g.n, rateCell(g.w, g.n)]))}</div>`;
+  },
+  'フィニッシュ別': () => {
+    const es = filtered();
+    const tot = FINS.map(f => es.filter(e => e.win && e.finish === f).length), W = tot.reduce((a, b) => a + b, 0);
+    const gs = group(es, e => e.key).filter(g => g.n >= minN()).sort((a, b) => b.n - a.n).slice(0, topN());
+    return `<div class="card"><h2>決まり方の割合（勝ったとき）</h2>${FINS.map((f, i) => `<span class="pill">${FIN[f]} ${pct(tot[i], W)}%（${tot[i]}）</span>`).join('')}</div>
+    <div class="card"><h2>カスタムごとの勝ち方・負け方</h2><div class="note">勝ち = そのフィニッシュで勝った割合、負け = そのフィニッシュで負けた割合（全対戦に対して）</div>
+    ${table(['カスタム', '対戦数', ...FINS.map(f => FIN[f] + ' 勝/負')], gs.map(g => [esc(NAMES[g.key]), g.n, ...FINS.map(f => `${pct(g.es.filter(e => e.win && e.finish === f).length, g.n)}% / ${pct(g.es.filter(e => !e.win && e.finish === f).length, g.n)}%`)]))}</div>`;
+  },
+  'カスタム比較': () => {
+    const es = filtered(), gs = group(es, e => e.key).sort((a, b) => b.n - a.n);
+    for (const k of ['c1', 'c2', 'c3']) if (SEL[k] === undefined) SEL[k] = k === 'c3' ? '' : gs[k === 'c1' ? 0 : 1]?.key;
+    const opt = k => `<select data-s="${k}">${k === 'c3' ? '<option value="">（なし）</option>' : ''}${gs.map(g => `<option value="${esc(g.key)}"${g.key === SEL[k] ? ' selected' : ''}>${esc(NAMES[g.key])}（${g.n}回）</option>`).join('')}</select>`;
+    const pick = ['c1', 'c2', 'c3'].map(k => SEL[k]).filter(Boolean).map(k => gs.find(g => g.key === k)).filter(Boolean);
+    const L = 'ABC';
+    return `<div class="card"><h2>カスタム比較</h2><div class="bar">A ${opt('c1')} B ${opt('c2')} C ${opt('c3')}</div>
+    <div class="grid">${pick.map((g, i) => `<div class="card" style="margin:0"><div class="note">カスタム${L[i]}</div><b>${esc(NAMES[g.key])}</b><div class="big">${pct(g.w, g.n)}%</div><div class="note">勝率・対戦数 ${g.n}回</div></div>`).join('')}</div>
+    ${table(['比較項目', ...pick.map((_, i) => L[i])], [...FINS.map(f => [FIN[f] + '勝ちの割合', ...pick.map(g => pct(g.es.filter(e => e.win && e.finish === f).length, g.w) + '%')]),
+      ['Xダッシュした割合', ...pick.map(g => pct(g.es.filter(e => e.shot.dash).length, g.n) + '%')], ['ぶつからなかった割合', ...pick.map(g => pct(g.es.filter(e => !e.hits).length, g.n) + '%')],
+      ['よく勝つシュート', ...pick.map(g => esc(bestShot(g.es)?.key || '—'))]])}</div>`;
+  },
+  '勝ちやすいカスタム検索': () => {
+    const all = filteredAll(); // 相手のカスタムは、CPUのベイも含めて選べる
+    if (!SEL.tg) SEL.tg = group(all, e => e.opp).sort((a, b) => b.n - a.n)[0]?.key;
+    const vs = all.filter(e => e.opp === SEL.tg);
+    const gs = group(vs, e => e.key).filter(g => g.n >= Math.min(3, minN())).sort((a, b) => wilson(b.w, b.n) - wilson(a.w, a.n)).slice(0, topN());
+    return `<div class="card"><h2>勝ちやすいカスタム検索</h2><div class="bar">${customSelect('tg', all, '相手のカスタム', e => e.opp)}</div>
+    <div class="note">${esc(NAMES[SEL.tg] || '')} に勝ちやすいカスタム TOP${topN()}（この相手と3戦以上）</div>
+    ${table(['#', 'カスタム', '勝率', '対戦数', 'よく勝つシュート'], gs.map((g, i) => [i + 1, esc(NAMES[g.key]), rateCell(g.w, g.n), g.n, esc(bestShot(g.es)?.key || '—')]))}</div>`;
+  },
+  '3on3おすすめ': () => {
+    const es = filtered();
+    const ok = group(es, e => e.key).filter(g => g.n >= minN()).sort((a, b) => wilson(b.w, b.n) - wilson(a.w, a.n));
+    const team = [], used = new Set();
+    for (const g of ok) { const ps = partsOf(g.key); if (ps.some(p => used.has(p))) continue; team.push(g); ps.forEach(p => used.add(p)); if (team.length === 3) break; }
+    const n3 = es.filter(e => e.fmt === '3v3').length;
+    return `<div class="card"><h2>3on3であなたにおすすめのカスタムと戦い方</h2><div class="note">勝率の高い順に、パーツ（ブレード・ラチェット・ビット、CXはチップ・メイン・メタル・オーバー・アシスト）が重ならない3体を選んでいます。3on3のデータ ${n3}戦</div>
+    ${team.length ? `<div class="grid">${team.map((g, i) => { const b = bestShot(g.es), f = FINS.map(f => [f, g.es.filter(e => e.win && e.finish === f).length]).sort((a, b) => b[1] - a[1])[0]; return `<div class="card" style="margin:0"><div class="note">ベイ${i + 1}</div><b>${esc(NAMES[g.key])}</b><div class="big">${pct(g.w, g.n)}%</div><div class="note">${g.n}戦</div><div>戦い方：${esc(b ? b.key : 'データ不足')}${b ? `（勝率${pct(b.w, b.n)}%）` : ''}</div><div class="note">多い勝ち方：${f && f[1] ? FIN[f[0]] + 'フィニッシュ' : '—'}</div></div>`; }).join('')}</div>` : '<div class="empty">データがまだありません</div>'}</div>`;
+  },
+};
+function filteredAll() { return filtered(); }
+function bestShot(es) { return group(es, e => shotTxt(e.shot)).filter(g => g.n >= 2).sort((a, b) => wilson(b.w, b.n) - wilson(a.w, a.n))[0]; }
+function partsOf(key) {
+  const [blade, ratchet, bit] = key.split('|');
+  const ps = ['bit:' + bit];
+  if (ratchet) ps.push('r:' + ratchet);
+  if (blade.startsWith('cx:')) { const [, c, core, a] = blade.split(':'); ps.push('chip:' + c, 'as:' + a); if (core.includes('+')) { const [o, m] = core.split('+'); ps.push('over:' + o, 'metal:' + m); } else ps.push('main:' + core); }
+  else ps.push('b:' + blade);
+  return ps;
+}
+
+let TAB = ls.get('bey_an_tab') || '今週の最強カスタム';
+function render() {
+  $('tabs').innerHTML = Object.keys(PAGES).map(k => `<button class="${k === TAB ? 'on' : ''}" data-tab="${k}">${k}</button>`).join('');
+  $('view').innerHTML = E.length ? PAGES[TAB]() : '<div class="card"><h2>データがありません</h2><div class="note">右上の「データの読み込み設定」から、Apps ScriptのURLとKEYを入れるか、CSVファイルを選んでください。</div></div>';
+}
+document.addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) { TAB = t.dataset.tab; ls.set('bey_an_tab', TAB); render(); } });
+document.addEventListener('change', e => { const s = e.target.dataset?.s; if (s) { SEL[s] = e.target.value; render(); } });
+document.addEventListener('input', e => { const f = e.target.dataset?.f; if (f) { FILTER[f] = e.target.value; const pos = e.target.selectionStart; render(); const n = document.querySelector(`[data-f="${f}"]`); if (n) { n.focus(); n.setSelectionRange(pos, pos); } } });
+for (const id of ['period', 'who', 'cpu', 'minN', 'topN', 'from', 'to']) $(id).addEventListener('change', () => { const c = $('period').value === 'c'; $('from').style.display = $('to').style.display = c ? '' : 'none'; render(); });
+render();
+if ($('url').value) loadUrl(); else $('src').classList.add('show');
+</script>
+</body>
+</html>

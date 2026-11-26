@@ -463,6 +463,21 @@ function track(name: string, params: Record<string, string> = {}) {
   try { (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag?.('event', name, params); } catch { /* 計測に失敗しても遊べるように */ }
 }
 
+// ---- 対戦結果の記録（分析用・画面には何も出さない） ----
+// beylog版の bey.html で window.__BEY_LOG_URL に送り先（Googleスプレッドシートの Apps Script）を書いたときだけ送る。個人用の版は送らない
+const RSTAT = { hits: 0, lastHit: -9, firstHit: -1, t0: 0, simT: 0 }; // 1ラウンドのぶつかった回数・最初にぶつかった時間（時間はバトルの中の秒）
+const nowSec = () => RSTAT.simT;
+function playerId(): string { // ブラウザごとの匿名ID（ログインの代わり）
+  try { let id = localStorage.getItem('bey_pid'); if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); localStorage.setItem('bey_pid', id); } return id; } catch { return 'anon'; }
+}
+const SESSION_ID = Math.random().toString(36).slice(2, 10);
+const customKey = (c: Custom) => [c.blade, c.ratchet, c.bit].join('|') + (c.low ? '|low' : '');
+function sendLog(row: Record<string, string | number>) {
+  const url = (window as unknown as { __BEY_LOG_URL?: string }).__BEY_LOG_URL;
+  if (!url) return;
+  try { fetch(url, { method: 'POST', mode: 'no-cors', keepalive: true, headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(row) }); } catch { /* 送れなくても遊べるように */ }
+}
+
 // 合計値 → バトル中の動きの係数（基準値の付近で1になる）
 const norm = (v: number, ref: number, k: number) => Math.max(0.3, 1 + k * (v / ref - 1));
 
@@ -1145,6 +1160,12 @@ export function Beyblade() {
   const [order, setOrder] = useState<number[]>([]); // 自分の出す順番（deck.me の番号）
   const cpuOrderRef = useRef<number[]>([0, 1, 2]);
   const vsRef = useRef<'cpu' | '2p'>('cpu');
+  // 分析用の記録：このラウンドのカスタムとシュート
+  type ShotRec = { x: number; y: number; diag: boolean; aim: { x: number; y: number } | null; rpm: number };
+  const roundCustomRef = useRef<{ m: Custom; c: Custom } | null>(null);
+  const shotRef = useRef<{ me: ShotRec; cpu: ShotRec } | null>(null);
+  const metaRef = useRef({ gameMode: 'versus', vs: 'cpu', fmt: '1v1', online: null as string | null });
+  metaRef.current = { gameMode, vs, fmt: mode, online };
   const hideOppRef = useRef(false); // 相手の落とす位置を隠す（CPU対戦の設定 / トーナメント）
   const mode2Ref = useRef<'flat' | 'diag'>('flat');
   const aim2Ref = useRef<{ x: number; y: number } | null>(null);
@@ -1286,6 +1307,7 @@ export function Beyblade() {
 
   // 1戦ぶんの準備：ベイのデータを作って、場所決めの画面へ
   const setupRound = (m: Custom, c: Custom) => {
+    roundCustomRef.current = { m, c };
     TYPES.me = buildBey(m);
     TYPES.cpu = buildBey(c);
     setCpuCustom(c);
@@ -1492,6 +1514,8 @@ export function Beyblade() {
     beysRef.current = bs;
     endedRef.current = false;
     (window as unknown as { __dashes?: number[] }).__dashes = [0, 0];
+    RSTAT.hits = 0; RSTAT.lastHit = -9; RSTAT.firstHit = -1; RSTAT.t0 = nowSec();
+    shotRef.current = { me: { x: my.x, y: my.y, diag: modeRef.current === 'diag', aim: aimRef.current, rpm: powRef.current }, cpu: { x: cpu.x, y: cpu.y, diag: cpu.diag, aim: cpu.aim, rpm: vsRef.current === '2p' ? pow2Ref.current : Math.round(POW_MIN + (cpu.power ?? 0.85) * (POW_MAX - POW_MIN)) } };
     linkRef.current?.send({ t: 'fire' });
     setPhase('battle');
   }, []);
@@ -1594,6 +1618,21 @@ export function Beyblade() {
     }
     linkRef.current?.send({ t: 'end', winner, finish });
     setMessage({ winner, finish });
+    { // 分析用の記録（1ラウンド1行）
+      const rc = roundCustomRef.current, sh = shotRef.current, mt = metaRef.current, d = (window as unknown as { __dashes?: number[] }).__dashes ?? [0, 0];
+      if (rc && sh) {
+        const shot = (q: typeof sh.me) => ({ side: q.x < 0 ? 'L' : 'R', x: Math.round(q.x), y: Math.round(q.y), kind: q.diag ? '斜め' : '水平', aim: q.aim ? Math.round((Math.atan2(q.aim.y, q.aim.x) * 180) / Math.PI) : '', rpm: q.rpm });
+        const a = shot(sh.me), b = shot(sh.cpu);
+        sendLog({
+          pid: playerId(), sid: SESSION_ID, mode: mt.gameMode, vs: mt.online ? 'online' : mt.vs, fmt: mt.fmt, diff: mt.vs === 'cpu' && !mt.online ? diffRef.current : '',
+          p1: customKey(rc.m), p1name: buildBey(rc.m).name, p2: customKey(rc.c), p2name: buildBey(rc.c).name,
+          win: winner === 'me' ? 'p1' : 'p2', finish,
+          p1side: a.side, p1x: a.x, p1y: a.y, p1shot: a.kind, p1aim: a.aim, p1rpm: a.rpm, p1dash: d[0] ?? 0,
+          p2side: b.side, p2x: b.x, p2y: b.y, p2shot: b.kind, p2aim: b.aim, p2rpm: b.rpm, p2dash: d[1] ?? 0,
+          hits: RSTAT.hits, firstHit: RSTAT.firstHit < 0 ? '' : Math.round(RSTAT.firstHit * 10) / 10, sec: Math.round((nowSec() - RSTAT.t0) * 10) / 10,
+        });
+      }
+    }
     // 決着の動きを見せてから結果表示
     timerRef.current = window.setTimeout(() => {
       const next = { ...scoreRef.current, [winner]: scoreRef.current[winner] + FINISH_INFO[finish].points };
@@ -2297,6 +2336,7 @@ export function Beyblade() {
             // ぶつかったあとは、ビットごとの円・楕円には戻らず、惰性で動く（しばらく、円や楕円の力を切る）
             a.postT = 4; b.postT = 4; a.calmT = Math.max(a.calmT, 2.5); b.calmT = Math.max(b.calmT, 2.5); // ぶつかったあと、真ん中へ戻るときも、勢いをつけない
             // Xダッシュ中の打撃は強い（Eビットはスマッシュ攻撃でさらに強い）
+            { const tn = nowSec(); if (tn - RSTAT.lastHit > 0.25) { RSTAT.hits++; if (RSTAT.firstHit < 0) RSTAT.firstHit = tn - RSTAT.t0; } RSTAT.lastHit = tn; } // 記録用：ぶつかった回数
             const impact = Math.min(1, rel / 120) * rel * Math.max(a.dashT > 0 ? 1.5 * ta.smash : 1, b.dashT > 0 ? 1.5 * tb.smash : 1) * (0.45 + 0.55 * spinPow);
             // 反対回転どうしが当たると、接触面の動きが揃ってスピンの削れが少し減る
             const oppo = a.dir !== b.dir ? 0.6 : 1;
@@ -2618,7 +2658,7 @@ export function Beyblade() {
       acc += Math.min(0.05, (now - last) / 1000) * timeScale;
       visDt = Math.min(0.1, Math.max(0, (now - last) / 1000));
       last = now;
-      while (acc >= DT) { step(); acc -= DT; }
+      while (acc >= DT) { step(); acc -= DT; RSTAT.simT += DT; }
       if (onlineRef.current === 'guest') applyInterp(now);
       draw();
       // ホスト：ベイの動きをゲストに送る（約30回/秒）
