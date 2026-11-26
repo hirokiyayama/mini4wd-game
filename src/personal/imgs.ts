@@ -40,7 +40,13 @@ import main_bolt from './beys/main_bolt.png';
 import main_dark from './beys/main_dark.png';
 import main_arc from './beys/main_arc.png';
 import main_brave from './beys/main_brave.png';
+import metal_rage from './beys/metal_rage.png';
+import metal_whip from './beys/metal_whip.png';
+import over_O from './beys/over_O.png';
+import over_T from './beys/over_T.png';
+import assist_W from './beys/assist_W.png';
+import assist_H from './beys/assist_H.png';
 import launcher_red from './launcher_red.png';
 import launcher_black from './launcher_black.png';
 
-(window as unknown as { __BEY_IMGS?: Record<string, string> }).__BEY_IMGS = { meteor, cobalt, wizard, aero, shark, glory, knight2, phoenix, hells, wyvern, clock, golem, zeke, luster, scythe2, dran2, warrow2, bullet, bulletB, bulletP, main_blast, assist_A, chip_pegasus, assist_K, metal_blitz, over_B, chip_bahamut, assist_V, metal_fortress, over_G, chip_knight, chip_emperor, chip_valkyrie, chip_hells, chip_perseus, chip_wizard, chip_dran, main_bolt, main_dark, main_arc, main_brave, launcher_red, launcher_black };
+(window as unknown as { __BEY_IMGS?: Record<string, string> }).__BEY_IMGS = { meteor, cobalt, wizard, aero, shark, glory, knight2, phoenix, hells, wyvern, clock, golem, zeke, luster, scythe2, dran2, warrow2, bullet, bulletB, bulletP, main_blast, assist_A, chip_pegasus, assist_K, metal_blitz, over_B, chip_bahamut, assist_V, metal_fortress, over_G, chip_knight, chip_emperor, chip_valkyrie, chip_hells, chip_perseus, chip_wizard, chip_dran, main_bolt, main_dark, main_arc, main_brave, metal_rage, metal_whip, over_O, over_T, assist_W, assist_H, launcher_red, launcher_black };
