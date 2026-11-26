@@ -70,46 +70,46 @@ interface PartDef {
   dashLimit?: [number, number]; // 1ラウンドでXダッシュできる回数の上限（最小〜最大からランダム）。Eビットは2〜3回
 }
 const BLADES: PartDef[] = [
-  { id: 'meteor', line: 'UX', bal: 1.2, name: 'メテオドラグーン', desc: '3枚の刃で一撃が重いアタッカー。当たると大きく弾く。', s: { atk: 75, def: 15, sta: 35 }, weight: 39.0, color: '#c4b5fd', blades: 3, spinDir: -1, absorb: 0.45, burstMod: 1.5 },
-  { id: 'cobalt', line: 'BX', bal: 1.14, name: 'コバルトドラグーン', desc: '4枚の刃で弾き力が高い、左回転のブレード。右回転の相手の回転を吸いやすい。', s: { atk: 60, def: 15, sta: 25 }, weight: 37.9, color: '#3b82f6', blades: 4, spinDir: -1, absorb: 1.0, burstMod: 1.0 },
-  { id: 'wizard', line: 'UX', bal: 1.07, name: 'ウィザードロッド', desc: '外側が重く、丸い輪郭で長く回るスタミナ型。', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5 },
-  { id: 'aero', line: 'UX', bal: 0.96, name: 'エアロペガサス', desc: '大きな3枚刃で打撃力が高いアタッカー。', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3 },
-  { id: 'shark', line: 'UX', bal: 0.96, name: 'シャークスケイル', desc: 'とがった2枚刃で、低い位置から強く打ち込む。', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2 },
-  { id: 'glory', line: 'UX', bal: 0.95, comeback: 2.2, name: 'グローリーワルキューレ', desc: 'ラチェットと一体になったブレード。当たった相手を強く弾き、バーストしにくい。', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, integrated: true, kick: 1.25, burstFloor: 80, burstTough: 2.3 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
-  { id: 'phoenix', line: 'BX', bal: 0.95, tier: 2, name: 'フェニックスウイング', desc: '重い3枚刃で、当たった相手を大きく弾くアタッカー。', s: { atk: 65, def: 30, sta: 20 }, weight: 38.0, color: '#ef4444', blades: 3 },
-  { id: 'hells', line: 'UX', bal: 0.97, tier: 2, name: 'ヘルズネザー', desc: 'ラチェットと一体になったブレード。高さを切り替えて、弾きの強いアタック刃（ロー）といなし刃（ノーマル）を使い分ける。', s: { atk: 50, def: 50, sta: 30 }, hid: { atk: 86, def: 80, sta: 51 }, low: { s: { atk: 70, def: 45, sta: 15 }, hid: { atk: 106, def: 75, sta: 36 }, height: 50 }, weight: 42.9, height: 60, color: '#f97316', blades: 4, integrated: true }, // 一体型なので、ラチェットのぶん（バトルの計算でラチェットは3倍）を隠れ性能に足している
-  { id: 'bullet', line: 'UX', bal: 1.1, tier: 2, comeback: 0.4, name: 'バレットグリフォン', desc: 'ラチェットと一体になったブレード。バトル中に「バレット」と「本体」に分かれる。バレットは平らな軸先で走り回って攻撃し、本体は円い形で攻撃に耐える。水平シュートだと分かれやすく、斜めシュートだと分かれにくい。', s: { atk: 45, def: 45, sta: 40 }, hid: { atk: 81, def: 75, sta: 61 }, weight: 60.7, height: 60, color: '#e11d48', blades: 3, integrated: true, split: { bulletW: 32.6, bodyW: 28.1 } }, // 勝ち負けは、ビットの付いた本体で決める（バレットは止まっても、場外に出ても負けにならない）
-  { id: 'wyvern', line: 'UX', bal: 1.02, tier: 2, comeback: 2.0, name: 'ワイバーンホバー', desc: '下向きにすぼまった段差のある2枚刃で、相手の攻撃を上から押さえつけて衝撃を分散する。場外から戻りやすい。', s: { atk: 13, def: 60, sta: 27 }, type: 'def', weight: 34.9, color: '#a3e635', blades: 2 },
-  { id: 'clock', line: 'UX', bal: 1.05, tier: 3, name: 'クロックミラージュ', desc: '円盤の形をした60枚刃で、とても長く回り続ける。そのかわり、とてもバーストしやすい。', s: { atk: 10, def: 10, sta: 80 }, type: 'sta', weight: 37.7, color: '#22d3ee', blades: 6, burstTough: 0.55 },
-  { id: 'golem', line: 'UX', bal: 1.08, tier: 3, name: 'ゴーレムロック', desc: '連打形状の側面で攻撃を受け止め、傾いたときは上下方向の打撃面で相手を弾く。', s: { atk: 30, def: 60, sta: 10 }, type: 'def', weight: 34.0, color: '#fb923c', blades: 4, kick: 1.1 },
-  { id: 'knight2', line: 'BX', bal: 0.98, name: 'ナイトシールドV2', desc: '6枚の刃で衝撃をやわらげる、守りのブレード。', s: { atk: 22, def: 60, sta: 28 }, hid: { sta: 55 }, weight: 36.5, color: '#4ade80', blades: 6 },
-  { id: 'zeke', line: 'BX', bal: 1, name: 'ジークスペリオン', desc: 'メタルが中央までつながっていて剛性が高い。上段の大型アッパー刃での攻撃と、下段のカウンター刃での防御をあわせ持つ。', s: { atk: 38, def: 35, sta: 27 }, type: 'bal', weight: 40.0, color: '#d4a017', blades: 3, burstMod: 1.3 },
-  { id: 'luster', line: 'BX', bal: 1.12, tier: 2, name: 'ラスタードラグーン', desc: 'メタルが中央までつながっていて剛性が高い。低い位置からの攻撃に優れた偏重心の2枚刃で、相手をすくい上げて強く弾き飛ばす、重量級の左回転ブレード。', s: { atk: 75, def: 15, sta: 10 }, type: 'atk', weight: 42.7, color: '#a855f7', blades: 2, spinDir: -1, absorb: 0.45, burstMod: 1.3, kick: 1.15 },
-  { id: 'scythe2', line: 'BX', bal: 0.93, tier: 3, name: 'ヘルズサイズV2', desc: '4枚のスマッシュ刃で、相手の体勢を崩すことに優れる。性能がアップデートされたV2モデル。', s: { atk: 33, def: 38, sta: 39 }, type: 'bal', weight: 36.2, color: '#dc2626', blades: 4 },
-  { id: 'dran2', line: 'BX', bal: 0.82, tier: 4, name: 'ドランソードV2', desc: '3枚刃のアッパー刃で、相手を斜め上に弾き飛ばすことに優れる。性能がアップデートされたV2モデル。', s: { atk: 60, def: 27, sta: 23 }, type: 'atk', weight: 37.9, color: '#0ea5e9', blades: 3, kick: 1.1 },
-  { id: 'warrow2', line: 'BX', bal: 0.94, tier: 4, name: 'ウィザードアローV2', desc: '2枚の大型円形刃で強い遠心力を生み出す、外重心の設計。性能がアップデートされたV2モデル。', s: { atk: 17, def: 33, sta: 60 }, type: 'sta', weight: 36.1, color: '#facc15', blades: 2 },
+  { id: 'meteor', line: 'UX', bal: 1.2, name: 'メテオドラグーン', desc: '', s: { atk: 75, def: 15, sta: 35 }, weight: 39.0, color: '#c4b5fd', blades: 3, spinDir: -1, absorb: 0.45, burstMod: 1.5 },
+  { id: 'cobalt', line: 'BX', bal: 1.14, name: 'コバルトドラグーン', desc: '', s: { atk: 60, def: 15, sta: 25 }, weight: 37.9, color: '#3b82f6', blades: 4, spinDir: -1, absorb: 1.0, burstMod: 1.0 },
+  { id: 'wizard', line: 'UX', bal: 1.07, name: 'ウィザードロッド', desc: '', s: { atk: 15, def: 25, sta: 60 }, weight: 35.1, color: '#fbbf24', blades: 5 },
+  { id: 'aero', line: 'UX', bal: 0.96, name: 'エアロペガサス', desc: '', s: { atk: 70, def: 30, sta: 35 }, weight: 38.7, color: '#38bdf8', blades: 3 },
+  { id: 'shark', line: 'UX', bal: 0.96, name: 'シャークスケイル', desc: '', s: { atk: 70, def: 15, sta: 15 }, weight: 37.3, color: '#8b5cf6', blades: 2 },
+  { id: 'glory', line: 'UX', bal: 0.95, comeback: 2.2, name: 'グローリーワルキューレ', desc: '', s: { atk: 85, def: 35, sta: 25 }, weight: 43.5, height: 50, color: '#fde68a', blades: 4, integrated: true, kick: 1.25, burstFloor: 80, burstTough: 2.3 }, // 構造上ビットが抜けにくい：B/E/FB/Nrでもバーストしにくい
+  { id: 'phoenix', line: 'BX', bal: 0.95, tier: 2, name: 'フェニックスウイング', desc: '重厚な3枚刃で相手を強烈に弾く。メタルが塗装され性能がアップしている。', s: { atk: 65, def: 30, sta: 20 }, weight: 38.0, color: '#ef4444', blades: 3 },
+  { id: 'hells', line: 'UX', bal: 0.97, tier: 2, name: 'ヘルズネザー', desc: 'ラチェット一体型のブレード。ブレードの高さを切り替えるギミックにより弾きの強いアタック刃といなし刃を使い分け、様々な高さの相手への対応力に特化した構造。', s: { atk: 50, def: 50, sta: 30 }, hid: { atk: 86, def: 80, sta: 51 }, low: { s: { atk: 70, def: 45, sta: 15 }, hid: { atk: 106, def: 75, sta: 36 }, height: 50 }, weight: 42.9, height: 60, color: '#f97316', blades: 4, integrated: true }, // 一体型なので、ラチェットのぶん（バトルの計算でラチェットは3倍）を隠れ性能に足している
+  { id: 'bullet', line: 'UX', bal: 1.1, tier: 2, comeback: 0.4, name: 'バレットグリフォン', desc: 'ラチェット一体型のブレード。バトル中に「バレット」と「本体」に分離する。', s: { atk: 45, def: 45, sta: 40 }, hid: { atk: 81, def: 75, sta: 61 }, weight: 60.7, height: 60, color: '#e11d48', blades: 3, integrated: true, split: { bulletW: 32.6, bodyW: 28.1 } }, // 勝ち負けは、ビットの付いた本体で決める（バレットは止まっても、場外に出ても負けにならない）
+  { id: 'wyvern', line: 'UX', bal: 1.02, tier: 2, comeback: 2.0, name: 'ワイバーンホバー', desc: '下向きにすぼまった段差形状の2枚刃で相手の攻撃を上から押さえつけ、衝撃を分散することに優れる。', s: { atk: 13, def: 60, sta: 27 }, type: 'def', weight: 34.9, color: '#a3e635', blades: 2 },
+  { id: 'clock', line: 'UX', bal: 1.05, tier: 3, name: 'クロックミラージュ', desc: '驚異的な持久力を生み出す円盤形状の60枚刃で、長く回転し続けることに特化した設計。', s: { atk: 10, def: 10, sta: 80 }, type: 'sta', weight: 37.7, color: '#22d3ee', blades: 6, burstTough: 0.55 },
+  { id: 'golem', line: 'UX', bal: 1.08, tier: 3, name: 'ゴーレムロック', desc: '相手の攻撃を受け止める連打形状の側面と、傾いたときに相手をはじく上下方向の打撃面を併せ持つ設計。', s: { atk: 30, def: 60, sta: 10 }, type: 'def', weight: 34.0, color: '#fb923c', blades: 4, kick: 1.1 },
+  { id: 'knight2', line: 'BX', bal: 0.98, name: 'ナイトシールドV2', desc: '', s: { atk: 22, def: 60, sta: 28 }, hid: { sta: 55 }, weight: 36.5, color: '#4ade80', blades: 6 },
+  { id: 'zeke', line: 'BX', bal: 1, name: 'ジークスペリオン', desc: 'メタルが中央までつながっていることで剛性が高く、上段大型アッパー刃での攻撃性能と、下段カウンター刃での防御性能を併せ持つ設計。', s: { atk: 38, def: 35, sta: 27 }, type: 'bal', weight: 40.0, color: '#d4a017', blades: 3, burstMod: 1.3 },
+  { id: 'luster', line: 'BX', bal: 1.12, tier: 2, name: 'ラスタードラグーン', desc: 'メタルが中央までつながっていることで剛性が高く、低い位置からの攻撃に優れた偏重心2枚刃により相手をすくい上げて強烈に弾き飛ばす重量級左回転ブレード。', s: { atk: 75, def: 15, sta: 10 }, type: 'atk', weight: 42.7, color: '#a855f7', blades: 2, spinDir: -1, absorb: 0.45, burstMod: 1.3, kick: 1.15 },
+  { id: 'scythe2', line: 'BX', bal: 0.93, tier: 3, name: 'ヘルズサイズV2', desc: '4枚のスマッシュ刃で相手の体勢を崩すことに優れる。性能がアップデートされたV2モデル。', s: { atk: 33, def: 38, sta: 39 }, type: 'bal', weight: 36.2, color: '#dc2626', blades: 4 },
+  { id: 'dran2', line: 'BX', bal: 0.82, tier: 4, name: 'ドランソードV2', desc: '3枚刃のアッパー刃で相手を斜め上に弾き飛ばすことに優れる。性能がアップデートされたV2モデル。', s: { atk: 60, def: 27, sta: 23 }, type: 'atk', weight: 37.9, color: '#0ea5e9', blades: 3, kick: 1.1 },
+  { id: 'warrow2', line: 'BX', bal: 0.94, tier: 4, name: 'ウィザードアローV2', desc: '2枚の大型円形刃で強い遠心力を生み出す外重心の設計。性能がアップデートされたV2モデル。', s: { atk: 17, def: 33, sta: 60 }, type: 'sta', weight: 36.1, color: '#facc15', blades: 2 },
 ];
 const RATCHETS: PartDef[] = [
-  { id: 'r160', comeback: 2.2, name: '1-60', desc: '低めに構えるラチェット。攻撃力が高い。', s: { atk: 17, def: 9, sta: 4 }, height: 60, weight: 6.0 },
-  { id: 'r170', bal: 1.06, comeback: 2, name: '1-70', desc: '中くらいの高さのラチェット。攻撃力が高い。', s: { atk: 17, def: 6, sta: 7 }, height: 70, weight: 6.1 },
-  { id: 'r360', name: '3-60', desc: '低めに構えるラチェット。弾き力が高い。', s: { atk: 15, def: 9, sta: 6 }, height: 60, weight: 6.3 },
-  { id: 'r560', name: '5-60', desc: '低く構えるラチェット。遠心力に強く、バランスがよい。', s: { atk: 10, def: 9, sta: 11 }, height: 60, weight: 6.6 },
-  { id: 'r760', name: '7-60', desc: '低めに構えるラチェット。守りが固く、連続して当てやすい。', s: { atk: 8, def: 14, sta: 8 }, height: 60, weight: 7.2 },
-  { id: 'r960', name: '9-60', desc: '低めに構えるラチェット。連続して当てやすい。', s: { atk: 13, def: 10, sta: 7 }, hid: { sta: 12, atk: 8 }, height: 60, weight: 6.1 },
-  { id: 'r150', bal: 1.07, tier: 2, name: '1-50', desc: 'ベイを低くセットするラチェット。攻撃性能に特化した1枚刃。', s: { atk: 17, def: 9, sta: 4 }, height: 50, weight: 5.6 },
-  { id: 'r965', bal: 0.95, tier: 2, name: '9-65', desc: '低めに構えるラチェット。バースト耐性が安定し、ぶれが少ない。', s: { atk: 13, def: 10, sta: 7 }, height: 65, weight: 4.3, burstFloor: 50 },
+  { id: 'r160', comeback: 2.2, name: '1-60', desc: '', s: { atk: 17, def: 9, sta: 4 }, height: 60, weight: 6.0 },
+  { id: 'r170', bal: 1.06, comeback: 2, name: '1-70', desc: '', s: { atk: 17, def: 6, sta: 7 }, height: 70, weight: 6.1 },
+  { id: 'r360', name: '3-60', desc: '', s: { atk: 15, def: 9, sta: 6 }, height: 60, weight: 6.3 },
+  { id: 'r560', name: '5-60', desc: '', s: { atk: 10, def: 9, sta: 11 }, height: 60, weight: 6.6 },
+  { id: 'r760', name: '7-60', desc: '', s: { atk: 8, def: 14, sta: 8 }, height: 60, weight: 7.2 },
+  { id: 'r960', name: '9-60', desc: '', s: { atk: 13, def: 10, sta: 7 }, hid: { sta: 12, atk: 8 }, height: 60, weight: 6.1 },
+  { id: 'r150', bal: 1.07, tier: 2, name: '1-50', desc: 'ベイを低くセットするパーツ。攻撃性能に特化した1枚刃を採用。', s: { atk: 17, def: 9, sta: 4 }, height: 50, weight: 5.6 },
+  { id: 'r965', bal: 0.95, tier: 2, name: '9-65', desc: '', s: { atk: 13, def: 10, sta: 7 }, height: 65, weight: 4.3, burstFloor: 50 },
 ];
 const BITS: PartDef[] = [
-  { id: 'E', bal: 1.03, name: 'E', desc: '姿勢が安定しやすく、ダッシュ中の打撃が強い。', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, type: 'bal', weight: 3.1, smash: 1.35, absorbBit: 1, dashLimit: [2, 3] },
-  { id: 'B', name: 'B', desc: '丸い軸先で動きがやわらかく、長く回る。', s: { atk: 15, def: 25, sta: 50, dash: 10, burst: 30 }, weight: 2.1 },
-  { id: 'FB', bal: 1.06, name: 'FB', desc: '空回りする軸先で、回転のロスが少ない。', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
-  { id: 'R', bal: 0.96, name: 'R', desc: 'ダッシュは控えめだが、回数が多い。', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
-  { id: 'LR', bal: 1.03, name: 'LR', desc: 'Rより低めで、下から打ち上げるのが得意。', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, mobility: 1.8 },
-  { id: 'H', bal: 0.88, name: 'H', desc: '先がとがっていて、すり鉢の真ん中にとどまって回り続ける。飛ばされても、ひと呼吸おいてゆっくり真ん中へ戻る。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, type: 'bal', weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
-  { id: 'L', bal: 1.12, tier: 2, name: 'L', desc: '速さを3段階に切り替えて攻める。', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
-  { id: 'Nr', name: 'Nr', desc: '細い軸先で長く回り、ダッシュによるスタミナの消耗が少ない。', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
-  { id: 'I', bal: 0.9, tier: 4, name: 'I', desc: '突起のある大型の円筒形の軸先がスタジアムに強くグリップし、高速で動き回って攻撃する。', s: { atk: 50, def: 15, sta: 5, dash: 30, burst: 80 }, type: 'atk', weight: 2.4, mobility: 1.9 },
-  { id: 'K', name: 'K', desc: '角のある軸先でスタジアムを蹴って動き回る。', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, type: 'bal', weight: 2.1 },
+  { id: 'E', bal: 1.03, name: 'E', desc: '', s: { atk: 30, def: 15, sta: 20, dash: 35, burst: 30 }, type: 'bal', weight: 3.1, smash: 1.35, absorbBit: 1, dashLimit: [2, 3] },
+  { id: 'B', name: 'B', desc: '', s: { atk: 15, def: 25, sta: 50, dash: 10, burst: 30 }, weight: 2.1 },
+  { id: 'FB', bal: 1.06, name: 'FB', desc: '', s: { atk: 10, def: 25, sta: 60, dash: 5, burst: 30 }, weight: 2.0 },
+  { id: 'R', bal: 0.96, name: 'R', desc: '', s: { atk: 40, def: 10, sta: 20, dash: 30, burst: 80 }, weight: 2.1, mobility: 1.8 },
+  { id: 'LR', bal: 1.03, name: 'LR', desc: '', s: { atk: 45, def: 5, sta: 15, dash: 35, burst: 80 }, weight: 2.0, mobility: 1.8 },
+  { id: 'H', bal: 0.88, name: 'H', desc: '', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, type: 'bal', weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
+  { id: 'L', bal: 1.12, tier: 2, name: 'L', desc: '', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
+  { id: 'Nr', name: 'Nr', desc: '', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
+  { id: 'I', bal: 0.9, tier: 4, name: 'I', desc: '複数の突起を設けた大型円筒形の軸先がスタジアムに強くグリップし、高速機動の攻撃を実現。', s: { atk: 50, def: 15, sta: 5, dash: 30, burst: 80 }, type: 'atk', weight: 2.4, mobility: 1.9 },
+  { id: 'K', name: 'K', desc: '', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, type: 'bal', weight: 2.1 },
 ];
 
 // ブレードの写真（背景を抜いた画像）。戦闘中・プレビューでこの画像を回して描く
@@ -198,22 +198,22 @@ const pick = (list: PartDef[], id: string) => list.find(p => p.id === id) ?? lis
 // ---- CXライン：ロックチップ＋メインブレード＋アシストブレードを組み合わせて、1つのブレードとして扱う（ラチェット・ビットはBX・UXと共通）
 // ティア表：メインブレード・アシストブレードはそれぞれのシート。ロックチップは重さだけなので、ティアなし
 const CX_CHIPS: PartDef[] = [
-  { id: 'pegasus', name: 'ペガサス', desc: 'CXのブレードを固定する、ペガサスモデルのロックパーツ。', s: {}, weight: 1.7, color: '#d9f99d' },
-  { id: 'bahamut', name: 'バハムート', desc: 'CXのブレードを固定する、バハムートモデルのロックパーツ。', s: {}, weight: 1.7, color: '#ec4899' },
+  { id: 'pegasus', name: 'ペガサス', desc: 'CXのブレードを固定するペガサスモデルのロックパーツ。', s: {}, weight: 1.7, color: '#d9f99d' },
+  { id: 'bahamut', name: 'バハムート', desc: 'CXのブレードを固定するバハムートモデルのロックパーツ。', s: {}, weight: 1.7, color: '#ec4899' },
 ];
 // メインブレード型：ロックチップ＋メインブレード＋アシストブレード
 const CX_MAINS: PartDef[] = [
-  { id: 'blast', bal: 1, tier: 2, name: 'ブラスト', desc: '流線型の重厚な3枚刃で、相手を弾き飛ばすことに優れる。メタルが塗装され性能がアップしている。', s: { atk: 50, def: 10, sta: 15 }, type: 'atk', weight: 32.7, color: '#22d3ee', blades: 3 },
+  { id: 'blast', bal: 1, tier: 2, name: 'ブラスト', desc: '流線型の重厚な3枚刃で相手を弾き飛ばすことに優れる。メタルが塗装され性能がアップしている。', s: { atk: 50, def: 10, sta: 15 }, type: 'atk', weight: 32.7, color: '#22d3ee', blades: 3 },
 ];
 // オーバー＋メタル型：ロックチップ＋オーバーブレード＋メタルブレード＋アシストブレード（メインブレードとは一緒に付けられない）
 const CX_OVERS: PartDef[] = [
-  { id: 'B', bal: 1, tier: 3, name: 'B（ブレイク）', desc: '重心を偏らせることで、弾き性能を向上させた設計。', s: { atk: 10, def: 5, sta: 5 }, type: 'atk', weight: 3.8, color: '#f472b6' },
+  { id: 'B', bal: 1, tier: 3, name: 'B（ブレイク）', desc: '重心を偏らせることで弾き性能を向上させた設計。', s: { atk: 10, def: 5, sta: 5 }, type: 'atk', weight: 3.8, color: '#f472b6' },
 ];
 const CX_METALS: PartDef[] = [
-  { id: 'blitz', bal: 1, tier: 3, name: 'ブリッツ', desc: '弾き性能の高い重量級の5枚刃。重心を偏らせた大型刃もあわせ持ち、重撃性能を高めた。', s: { atk: 25, def: 10, sta: 5 }, type: 'atk', weight: 29.7, color: '#f472b6', blades: 5 },
+  { id: 'blitz', bal: 1, tier: 3, name: 'ブリッツ', desc: '弾き性能の高い重量級の5枚刃設計。重心を偏らせた大型刃を併せ持つことで重撃性能を高めた。', s: { atk: 25, def: 10, sta: 5 }, type: 'atk', weight: 29.7, color: '#f472b6', blades: 5 },
 ];
 const CX_ASSISTS: PartDef[] = [
-  { id: 'A', bal: 1, tier: 3, name: 'A（アサルト）', desc: '厚みのある3枚刃で、高い弾き性能を実現。', s: { atk: 25, def: 10, sta: 5 }, type: 'atk', weight: 5.0, height: 60, color: '#d9f99d' },
+  { id: 'A', bal: 1, tier: 3, name: 'A（アサルト）', desc: '厚みのある3枚刃で高い弾き性能を実現。', s: { atk: 25, def: 10, sta: 5 }, type: 'atk', weight: 5.0, height: 60, color: '#d9f99d' },
   { id: 'K', bal: 1, tier: 3, name: 'K（ナックル）', desc: '5枚刃のうち1枚が重撃ポイントとなり、ブレードの弾き性能を底上げする。', s: { atk: 30, def: 5, sta: 5 }, type: 'atk', weight: 4.9, height: 50, color: '#94a3b8' },
 ];
 const CX_BAL = 0.95; // CXの組み合わせ全体の強さの倍率（ティア表に合わせて調整した値）
@@ -2734,7 +2734,7 @@ export function Beyblade() {
             {!s.none && shown.map(pt => {
               const bl = s.blocked.includes(pt.id) && pt.id !== s.cur, on = pt.id === s.cur;
               return (
-                <button key={pt.id} onClick={() => { if (!bl) s.set(pt.id); }} title={pt.desc} style={{
+                <button key={pt.id} onClick={() => { if (!bl) s.set(pt.id); }} title={pt.desc || undefined} style={{
                   position: 'relative', display: 'flex', alignItems: 'center', minHeight: 34, padding: '3px 7px', borderRadius: 8, cursor: bl ? 'not-allowed' : 'pointer', color: '#fff', textAlign: 'left', opacity: bl ? 0.35 : 1,
                   border: `2px solid ${on ? '#ffd740' : '#2a3566'}`, background: on ? '#1a2660' : '#0a1030',
                 }}>
@@ -2760,7 +2760,7 @@ export function Beyblade() {
               <span style={{ opacity: 0.8 }}>{sel.weight}g</span>
               {s.kind === 'chip' && <span style={{ opacity: 0.7 }}>（重さだけ）</span>}
             </div>
-            <div style={{ opacity: 0.75, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sel.desc}</div>
+            {sel.desc && <div style={{ opacity: 0.75, lineHeight: 1.3 }}>{sel.desc}</div>}
           </div>
         )}
       </div>
