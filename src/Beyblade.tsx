@@ -271,7 +271,6 @@ const isInt = (c: Custom) => !!bladeById(c.blade).integrated; // ラチェット
 
 // ---- カスタマイズ画面のパーツの絵：画像つき版は写真、画像なし版はブレードの外形（当たり判定と同じ形）。ラチェットは刃の数、ビットは名前の文字
 const TYPE_COLOR: Record<string, string> = { atk: '#ef4444', def: '#5aabff', sta: '#4ade80', bal: '#ffd740' };
-const TIER_COLOR = ['#ffd740', '#ffd740', '#cbd5e1', '#d97706', '#64748b', '#475569'];
 type PartKind = 'blade' | 'chip' | 'main' | 'over' | 'metal' | 'assist' | 'ratchet' | 'bit';
 function PartIcon({ kind, pt, size }: { kind: PartKind; pt: PartDef; size: number }) {
   const key = kind === 'blade' ? pt.id : `${kind}_${pt.id}`;
@@ -2542,8 +2541,8 @@ export function Beyblade() {
     return [
       { k: 'chip', kind: 'chip', label: 'チップ', list: CX_CHIPS, cur: chip.id, set: id => setBlade(cxId(id, core, assist.id)), blocked: [] },
       ...(main ? [{ k: 'main', kind: 'main', label: 'メイン', list: CX_MAINS, cur: main.id, set: (id: string) => setBlade(cxId(chip.id, id, assist.id)), blocked: [] } as SlotDef] : [
-        { k: 'over', kind: 'over', label: 'オーバー', list: CX_OVERS, cur: over!.id, set: (id: string) => setBlade(cxId(chip.id, `${id}+${metal!.id}`, assist.id)), blocked: [] } as SlotDef,
         { k: 'metal', kind: 'metal', label: 'メタル', list: CX_METALS, cur: metal!.id, set: (id: string) => setBlade(cxId(chip.id, `${over!.id}+${id}`, assist.id)), blocked: [] } as SlotDef,
+        { k: 'over', kind: 'over', label: 'オーバー', list: CX_OVERS, cur: over!.id, set: (id: string) => setBlade(cxId(chip.id, `${id}+${metal!.id}`, assist.id)), blocked: [] } as SlotDef,
       ]),
       { k: 'assist', kind: 'assist', label: 'アシスト', list: CX_ASSISTS, cur: assist.id, set: id => setBlade(cxId(chip.id, core, id)), blocked: [] },
       ...tail,
@@ -2565,7 +2564,6 @@ export function Beyblade() {
     const isRatchet = s.kind === 'ratchet';
     const tabs: [string, string][] = isRatchet ? [['50', '50系統'], ['60', '60系統'], ['70', '70系統'], ['80', '80系統']] : [['atk', 'アタック'], ['def', 'ディフェンス'], ['sta', 'スタミナ'], ['bal', 'バランス']];
     const typeOf = (pt: PartDef) => (isRatchet ? String(Math.floor((pt.height ?? 60) / 10) * 10) : partTypeOf(pt));
-    const hasTier = s.list.some(pt => pt.tier !== undefined);
     const useTabs = s.list.length > 4;
     const tab = useTabs ? partTab[s.k] ?? 'all' : 'all';
     const shown = s.list.filter(pt => (tab === 'all' || typeOf(pt) === tab));
@@ -2577,10 +2575,11 @@ export function Beyblade() {
         {/* ① いま付けているパーツ（スロット） */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {lineToggle}
-          {cxForm && ( // CXの組み方：どちらか一方だけ（メインブレードと、オーバー・メタルブレードは一緒に付けられない）
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 6, paddingLeft: 8, borderLeft: '1px solid #2a3566', minWidth: 0 }}>
+        </div>
+        {cxForm && ( // CXの組み方：どちらか一方だけ（メインブレードと、オーバー・メタルブレードは一緒に付けられない）
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
               <span style={{ fontSize: 11, fontWeight: 800, opacity: 0.8, whiteSpace: 'nowrap' }}>組み方</span>
-              {([['main', 'メイン型', 'メイン＋アシスト'], ['om', 'オーバー＋メタル型', 'オーバー＋メタル＋アシスト']] as const).map(([k, l, sub]) => {
+              {([['main', 'メイン型', 'メイン＋アシスト'], ['om', 'オーバー＋メタル型', 'メタル＋オーバー＋アシスト']] as const).map(([k, l, sub]) => {
                 const on = cxForm === k;
                 return (
                   <button key={k} onClick={() => { if (!on) setCxForm(k === 'om'); }} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '1px 8px 1px 6px', borderRadius: 8, cursor: 'pointer', color: on ? '#fff' : '#8a96c8', background: on ? '#1a2660' : 'transparent', border: `2px solid ${on ? '#ffd740' : '#2a3566'}`, whiteSpace: 'nowrap', minWidth: 0 }}>
@@ -2592,7 +2591,6 @@ export function Beyblade() {
               })}
             </div>
           )}
-        </div>
         <div style={{ display: 'flex', gap: 3, alignItems: 'stretch' }}>
           {slots.map((x, i) => {
             const many = slots.length > 4; // CXはスロットが多いので、詰めて表示する
@@ -2628,19 +2626,13 @@ export function Beyblade() {
             {s.none && <div style={{ gridColumn: '1 / -1', fontSize: 12, opacity: 0.8, padding: 6 }}>ラチェット一体型のブレードなので、ラチェットは選べません。</div>}
             {!s.none && shown.length === 0 && <div style={{ gridColumn: '1 / -1', fontSize: 11, opacity: 0.6 }}>まだありません</div>}
             {!s.none && shown.map(pt => {
-              const bl = s.blocked.includes(pt.id) && pt.id !== s.cur, on = pt.id === s.cur, ty = partTypeOf(pt);
+              const bl = s.blocked.includes(pt.id) && pt.id !== s.cur, on = pt.id === s.cur;
               return (
                 <button key={pt.id} onClick={() => { if (!bl) s.set(pt.id); }} title={pt.desc} style={{
-                  position: 'relative', display: 'flex', alignItems: 'center', gap: 5, padding: '3px 5px', borderRadius: 8, cursor: bl ? 'not-allowed' : 'pointer', color: '#fff', textAlign: 'left', opacity: bl ? 0.35 : 1,
-                  border: `2px solid ${on ? pt.color ?? '#ffd740' : '#2a3566'}`, background: on ? '#1a2660' : '#0a1030', borderLeft: `4px solid ${isRatchet ? '#94a3b8' : TYPE_COLOR[ty] ?? '#2a3566'}`,
+                  position: 'relative', display: 'flex', alignItems: 'center', minHeight: 34, padding: '3px 7px', borderRadius: 8, cursor: bl ? 'not-allowed' : 'pointer', color: '#fff', textAlign: 'left', opacity: bl ? 0.35 : 1,
+                  border: `2px solid ${on ? '#ffd740' : '#2a3566'}`, background: on ? '#1a2660' : '#0a1030',
                 }}>
-                  <span style={{ minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
-                    <span style={{ fontSize: pt.name.length > 8 ? 10.5 : 12, fontWeight: 800, color: pt.color ?? '#fff', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-all' }}>{pt.name}</span>
-                    <span style={{ fontSize: 10, opacity: 0.8, whiteSpace: 'nowrap' }}>
-                      {hasTier && <b style={{ color: TIER_COLOR[pt.tier ?? 1] ?? '#fff', marginRight: 4 }}>T{pt.tier ?? 1}</b>}
-                      
-                    </span>
-                  </span>
+                  <span style={{ fontSize: pt.name.length > 8 ? 10.5 : 12, lineHeight: 1.15, fontWeight: 800, color: pt.color ?? '#fff', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-all' }}>{pt.name}</span>
                   {bl && <span style={{ position: 'absolute', right: 4, top: 2, fontSize: 9, opacity: 0.9 }}>使用中</span>}
                 </button>
               );
