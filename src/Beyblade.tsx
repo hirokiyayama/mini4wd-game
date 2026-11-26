@@ -269,6 +269,32 @@ const bladeById = (id: string) => (isCx(id) ? cxBlade(id) : pick(BLADES, id));
 const bladeOf = (c: Custom): PartDef => { const b = bladeById(c.blade); return b.low && c.low ? { ...b, s: b.low.s, hid: b.low.hid, height: b.low.height } : b; };
 const isInt = (c: Custom) => !!bladeById(c.blade).integrated; // ラチェット一体型のブレードか
 
+// ---- カスタマイズ画面のパーツの絵：画像つき版は写真、画像なし版はブレードの外形（当たり判定と同じ形）。ラチェットは刃の数、ビットは名前の文字
+const TYPE_COLOR: Record<string, string> = { atk: '#ef4444', def: '#5aabff', sta: '#4ade80', bal: '#ffd740' };
+const TIER_COLOR = ['#ffd740', '#ffd740', '#cbd5e1', '#d97706', '#64748b', '#475569'];
+type PartKind = 'blade' | 'chip' | 'main' | 'over' | 'metal' | 'assist' | 'ratchet' | 'bit';
+function PartIcon({ kind, pt, size }: { kind: PartKind; pt: PartDef; size: number }) {
+  const key = kind === 'blade' ? pt.id : `${kind}_${pt.id}`;
+  const col = pt.color ?? '#cfd8ff';
+  if (IMG_URLS[key]) return <img src={IMG_URLS[key]} alt="" width={size} height={size} style={{ objectFit: 'contain', flex: '0 0 auto' }} />;
+  const R = size / 2 - 1;
+  let body: ReactNode;
+  const sh = SHAPES[key];
+  if (sh) {
+    const pts: string[] = [];
+    for (let k = 0; k < SHAPE_N; k++) { const th = ((k + 0.5) / SHAPE_N) * 2 * Math.PI - Math.PI, r = (sh.r[k] / sh.mx) * R; pts.push(`${(Math.cos(th) * r).toFixed(1)},${(Math.sin(th) * r).toFixed(1)}`); }
+    body = <><polygon points={pts.join(' ')} fill={col} fillOpacity={0.85} stroke="#04071a" strokeWidth={1} /><circle r={R * 0.28} fill="#0a1030" stroke={col} strokeWidth={1.5} /></>;
+  } else if (kind === 'ratchet') { // 「3-60」の 3 = 刃の数
+    const n = Number(pt.name.split('-')[0]) || 3, d: string[] = [];
+    for (let k = 0; k < 48; k++) { const th = (k / 48) * 2 * Math.PI, ph = ((th * n) / (2 * Math.PI)) % 1, r = R * (ph < 0.25 ? 1 : 0.72); d.push(`${(Math.cos(th) * r).toFixed(1)},${(Math.sin(th) * r).toFixed(1)}`); }
+    body = <><polygon points={d.join(' ')} fill="#94a3b8" stroke="#04071a" strokeWidth={1} /><circle r={R * 0.4} fill="#0a1030" /></>;
+  } else if (kind === 'bit') {
+    const c = TYPE_COLOR[partTypeOf(pt)] ?? '#cfd8ff';
+    body = <><path d={`M${-R * 0.7},${-R * 0.75} H${R * 0.7} L${R * 0.35},${R * 0.85} H${-R * 0.35} Z`} fill="#121a42" stroke={c} strokeWidth={1.5} /><text y={R * 0.12} textAnchor="middle" dominantBaseline="middle" fontSize={pt.name.length > 2 ? R * 0.55 : R * 0.8} fontWeight={900} fill={c}>{pt.name}</text></>;
+  } else body = <><circle r={R * 0.75} fill={col} stroke="#04071a" strokeWidth={1} /><circle r={R * 0.3} fill="#0a1030" /></>; // ロックチップなど、形のないパーツ
+  return <svg width={size} height={size} viewBox={`${-size / 2} ${-size / 2} ${size} ${size}`} style={{ flex: '0 0 auto' }}>{body}</svg>;
+}
+
 // 3on3の公式ルール：3体で同じパーツ（ブレード・ラチェット・ビット）を重ねて使えない
 const KEYS = ['blade', 'ratchet', 'bit'] as const;
 const LISTS: Record<(typeof KEYS)[number], PartDef[]> = { get blade() { return [...BLADES, ...CX_ALL()]; }, ratchet: RATCHETS, bit: BITS }; // ブレードにはCXの組み合わせも入る
@@ -926,6 +952,7 @@ export function Beyblade() {
   const [shotMode2, setShotMode2] = useState<'flat' | 'diag'>('flat');
   const [moreBelow, setMoreBelow] = useState<Record<string, boolean>>({}); // カスタマイズ：パーツ一覧に、下へスクロールすると続きがあるか（スマホではスクロールバーが最初は見えないので、印を出す）
   const [partTab, setPartTab] = useState<Record<string, string>>({});
+  const [pickSlot, setPickSlot] = useState('blade'); // カスタマイズ：いま候補を出しているスロット
   const lastBladeRef = useRef<Record<Line, string>>({ BX: '', UX: '', CX: '' }); // BX／UX／CXを切り替えたときに、前に選んでいたブレードに戻す
   useEffect(() => { // パーツ一覧に続きがあるかを、ときどき確かめる（文字や画像の読み込み・画面の回転で、あとから一覧の高さが変わることがあるため）
     const id = window.setInterval(() => {
@@ -2487,7 +2514,7 @@ export function Beyblade() {
   // ブレードの列の上の切り替え：BX・UX（一体のブレード）／CX（ロックチップ＋メインブレード＋アシストブレードを組み立てる）
   const curLine = lineOf(custom.blade);
   const lineToggle = (
-    <div style={{ display: 'flex', gap: 2, marginLeft: 'auto' }}>
+    <div style={{ display: 'flex', gap: 2 }}>
       {(['BX', 'UX', 'CX'] as const).map(k => {
         const on = k === curLine;
         return (
@@ -2496,127 +2523,149 @@ export function Beyblade() {
             const lb = lastBladeRef.current; lb[curLine] = custom.blade;
             const first = k === 'CX' ? CX_ALL()[0].id : (BLADES.find(b => (b.line ?? 'BX') === k) ?? BLADES[0]).id;
             setCustom(c => ({ ...c, blade: lb[k] || first, ratchet: c.ratchet || RATCHETS[0].id }));
-          }} style={{ padding: '0 7px', borderRadius: 8, fontSize: 11, fontWeight: 800, cursor: 'pointer', color: on ? '#04071a' : '#cfd8ff', background: on ? '#5aabff' : '#121a42', border: '1px solid #2a3566' }}>{k}</button>
+          }} style={{ padding: '1px 10px', borderRadius: 8, fontSize: 12, fontWeight: 800, cursor: 'pointer', color: on ? '#04071a' : '#cfd8ff', background: on ? '#5aabff' : '#121a42', border: '1px solid #2a3566' }}>{k}</button>
         );
       })}
     </div>
   );
-  // CXのブレードを組み立てる欄：上から ロックチップ → メインブレード → アシストブレード
-  const cxPicker = (value: string, onPick: (id: string) => void) => {
-    const { chip, main, over, metal, assist, core } = cxParts(value), bl = cxBlade(value);
-    const row = (label: string, list: PartDef[], cur: string, set: (id: string) => void, note: string) => (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <div style={{ fontSize: 11, fontWeight: 800, opacity: 0.85 }}>{label}<span style={{ fontWeight: 400, opacity: 0.7, marginLeft: 5 }}>{note}</span></div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-          {list.length === 0 && <span style={{ fontSize: 11, opacity: 0.6 }}>まだありません</span>}
-          {list.map(pt => { const on = pt.id === cur; return (
-            <button key={pt.id} onClick={() => set(pt.id)} style={{ padding: '1px 7px', borderRadius: 12, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', whiteSpace: 'nowrap', border: `2px solid ${on ? (pt.color ?? '#ffd740') : '#2a3566'}`, background: on ? '#14204f' : '#0a1030' }}>
-              <span style={{ color: pt.color ?? '#fff' }}>{pt.name}</span>
-            </button>
-          ); })}
-        </div>
-      </div>
-    );
-    const line = (pt: PartDef) => (
-      <div key={pt.id + pt.name}><b style={{ color: pt.color ?? '#fff' }}>{pt.name}</b>{' '}
-        {STAT_LABELS.filter(([k]) => pt.s[k] !== undefined).map(([k, label]) => `${label} ${pt.s[k]}`).join('  ')}{pt.height !== undefined ? `  高さ ${pt.height}` : ''}  <span style={{ opacity: 0.8 }}>{pt.weight}g</span>
-      </div>
-    );
-    const isOM = !main;
-    const lastOM = core.includes('+') ? core : `${CX_OVERS[0]?.id}+${CX_METALS[0]?.id}`;
-    return (
-      <div style={{ flex: 1.25, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3, minHeight: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}><span style={{ fontWeight: 800, fontSize: 13 }}>ブレード</span><span style={{ fontSize: 10.5, opacity: 0.6 }}>CX</span>{lineToggle}</div>
-        <div style={{ display: 'flex', gap: 2 }}>
-          {([[false, 'メイン型'], [true, 'オーバー＋メタル型']] as const).map(([k, l]) => (
-            <button key={l} onClick={() => { if (k !== isOM && (k ? CX_OVERS.length && CX_METALS.length : CX_MAINS.length)) onPick(cxId(chip.id, k ? lastOM : CX_MAINS[0].id, assist.id)); }}
-              style={{ padding: '0 7px', borderRadius: 8, fontSize: 10.5, fontWeight: 800, cursor: 'pointer', color: k === isOM ? '#04071a' : '#cfd8ff', background: k === isOM ? '#ffd740' : '#121a42', border: '1px solid #2a3566' }}>{l}</button>
-          ))}
-        </div>
-        <div style={{ flex: '1 1 0', minHeight: 40, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 5, scrollbarWidth: 'thin', scrollbarColor: '#5aabff #0a1030' }}>
-          {row('ロックチップ', CX_CHIPS, chip.id, id => onPick(cxId(id, core, assist.id)), '重さだけ')}
-          {main ? row('メインブレード', CX_MAINS, main.id, id => onPick(cxId(chip.id, id, assist.id)), '') : (
-            <>
-              {row('オーバーブレード', CX_OVERS, over!.id, id => onPick(cxId(chip.id, `${id}+${metal!.id}`, assist.id)), '')}
-              {row('メタルブレード', CX_METALS, metal!.id, id => onPick(cxId(chip.id, `${over!.id}+${id}`, assist.id)), '')}
-            </>
-          )}
-          {row('アシストブレード', CX_ASSISTS, assist.id, id => onPick(cxId(chip.id, core, id)), '')}
-        </div>
-        <div style={{ flex: '0 0 auto', maxHeight: '45%', minHeight: 44, overflowY: 'auto', padding: '4px 6px', borderRadius: 6, background: '#0a1030', border: '1px solid #2a3566', fontSize: 11.5, lineHeight: 1.35 }}>
-          <div style={{ fontWeight: 800, color: bl.color ?? '#fff', fontSize: 12.5 }}>{bl.name}<span style={{ fontWeight: 400, opacity: 0.8, marginLeft: 6 }}>合計 {STAT_LABELS.filter(([k]) => bl.s[k] !== undefined).map(([k, label]) => `${label} ${bl.s[k]}`).join('  ')}  {bl.weight}g</span></div>
-          {line(chip)}{main ? line(main) : <>{line(over!)}{line(metal!)}</>}{line(assist)}
-        </div>
-      </div>
-    );
+  // ---- パーツ選び：上に「いま付けているパーツ」のスロットを並べ、押したスロットの候補だけを下にカードで出す
+  // CXは組み方（メイン型／オーバー＋メタル型）でスロットの数が変わる
+  type SlotDef = { k: string; kind: PartKind; label: string; list: PartDef[]; cur: string; set: (id: string) => void; blocked: string[]; none?: string };
+  const setBlade = (id: string) => setCustom(c => ({ ...c, blade: id }));
+  const slots: SlotDef[] = (() => {
+    const tail: SlotDef[] = [
+      { k: 'ratchet', kind: 'ratchet', label: 'ラチェット', list: RATCHETS, cur: custom.ratchet, set: id => setCustom(c => ({ ...c, ratchet: id })), blocked: usedByOthers('ratchet'), none: isInt(custom) ? '一体型' : undefined },
+      { k: 'bit', kind: 'bit', label: 'ビット', list: BITS, cur: custom.bit, set: id => setCustom(c => ({ ...c, bit: id })), blocked: usedByOthers('bit') },
+    ];
+    if (!isCx(custom.blade)) return [{ k: 'blade', kind: 'blade', label: 'ブレード', list: BLADES.filter(b => (b.line ?? 'BX') === curLine), cur: custom.blade, set: setBlade, blocked: usedByOthers('blade') }, ...tail];
+    const { chip, main, over, metal, assist, core } = cxParts(custom.blade);
+    return [
+      { k: 'chip', kind: 'chip', label: 'チップ', list: CX_CHIPS, cur: chip.id, set: id => setBlade(cxId(id, core, assist.id)), blocked: [] },
+      ...(main ? [{ k: 'main', kind: 'main', label: 'メイン', list: CX_MAINS, cur: main.id, set: (id: string) => setBlade(cxId(chip.id, id, assist.id)), blocked: [] } as SlotDef] : [
+        { k: 'over', kind: 'over', label: 'オーバー', list: CX_OVERS, cur: over!.id, set: (id: string) => setBlade(cxId(chip.id, `${id}+${metal!.id}`, assist.id)), blocked: [] } as SlotDef,
+        { k: 'metal', kind: 'metal', label: 'メタル', list: CX_METALS, cur: metal!.id, set: (id: string) => setBlade(cxId(chip.id, `${over!.id}+${id}`, assist.id)), blocked: [] } as SlotDef,
+      ]),
+      { k: 'assist', kind: 'assist', label: 'アシスト', list: CX_ASSISTS, cur: assist.id, set: id => setBlade(cxId(chip.id, core, id)), blocked: [] },
+      ...tail,
+    ];
+  })();
+  const bladeSlotKeys = ['blade', 'chip', 'main', 'over', 'metal', 'assist'];
+  // 選んでいるスロットが今の組み方にないとき（BX→CXに切り替えたなど）は、ブレード側の最初のスロットにする
+  const actSlot = slots.find(x => x.k === pickSlot) ?? slots.find(x => x.k === (isCx(custom.blade) ? (cxParts(custom.blade).main ? 'main' : 'metal') : 'blade')) ?? slots[0];
+  const cxForm = isCx(custom.blade) ? (cxParts(custom.blade).main ? 'main' : 'om') : null;
+  const setCxForm = (om: boolean) => {
+    const { chip, assist, core } = cxParts(custom.blade);
+    if (om ? !(CX_OVERS.length && CX_METALS.length) : !CX_MAINS.length) return;
+    const lastOM = core.includes('+') ? core : `${CX_OVERS[0].id}+${CX_METALS[0].id}`;
+    setBlade(cxId(chip.id, om ? lastOM : CX_MAINS[0].id, assist.id));
+    setPickSlot(om ? 'metal' : 'main');
   };
-  const partPicker = (title: string, list: PartDef[], value: string, onPick: (id: string) => void, blocked: string[] = [], head: ReactNode = null) => {
-    const sel = list.find(pt => pt.id === value) ?? list[0];
-    const allBlocked = list.every(pt => blocked.includes(pt.id));
-    // パーツが増えても選びやすいように、タブでしぼりこむ。一覧はスクロールする
-    // ブレード・ビット：アタック／ディフェンス／スタミナ／バランス（type を書いていなければ性能から決める）。ラチェット：高さで50〜80系統
-    const isRatchet = list === RATCHETS;
+  const partPanel = () => {
+    const s = actSlot;
+    const isRatchet = s.kind === 'ratchet';
     const tabs: [string, string][] = isRatchet ? [['50', '50系統'], ['60', '60系統'], ['70', '70系統'], ['80', '80系統']] : [['atk', 'アタック'], ['def', 'ディフェンス'], ['sta', 'スタミナ'], ['bal', 'バランス']];
-    const typeOf = (pt: PartDef): string => {
-      if (isRatchet) return String(Math.floor((pt.height ?? 60) / 10) * 10);
-      return partTypeOf(pt);
-    };
-    const useTabs = list.length > 6;
-    const tab = useTabs ? partTab[title] ?? 'all' : 'all';
-    const shown = tab === 'all' ? list : list.filter(pt => typeOf(pt) === tab);
+    const typeOf = (pt: PartDef) => (isRatchet ? String(Math.floor((pt.height ?? 60) / 10) * 10) : partTypeOf(pt));
+    const hasTier = s.list.some(pt => pt.tier !== undefined);
+    const useTabs = s.list.length > 4;
+    const tab = useTabs ? partTab[s.k] ?? 'all' : 'all';
+    const tierTab = hasTier && useTabs ? partTab[s.k + ':tier'] ?? 'all' : 'all';
+    const shown = s.list.filter(pt => (tab === 'all' || typeOf(pt) === tab) && (tierTab === 'all' || String(pt.tier ?? 1) === tierTab));
+    const tiers = [...new Set(s.list.map(pt => pt.tier ?? 1))].sort();
+    const sel = s.list.find(pt => pt.id === s.cur) ?? s.list[0];
+    const chipBtn = (on: boolean): React.CSSProperties => ({ padding: '0 6px', borderRadius: 8, fontSize: 10.5, fontWeight: 700, cursor: 'pointer', color: on ? '#04071a' : '#cfd8ff', background: on ? '#ffd740' : '#121a42', border: '1px solid #2a3566', whiteSpace: 'nowrap' });
+    const big = bladeSlotKeys.includes(s.k);
     return (
-      <div style={{ flex: list.length > 6 && title === 'ブレード' ? 1.25 : 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3, minHeight: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}><span style={{ fontWeight: 800, fontSize: 13 }}>{title}</span><span style={{ fontSize: 10.5, opacity: 0.6 }}>{list.length}種類</span>{head}</div>
-        {useTabs && (
-          <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            {([['all', 'すべて'], ...tabs] as [string, string][]).map(([k, l]) => (
-              <button key={k} onClick={() => setPartTab(t => ({ ...t, [title]: k }))} style={{ padding: '0 6px', borderRadius: 8, fontSize: 10.5, fontWeight: 700, cursor: 'pointer', color: tab === k ? '#04071a' : '#cfd8ff', background: tab === k ? '#ffd740' : '#121a42', border: '1px solid #2a3566' }}>{l}</button>
-            ))}
-          </div>
-        )}
-        <div style={{ position: 'relative', flex: '1 1 0', minHeight: 40, display: 'flex', flexDirection: 'column' }}>
-        <div data-partlist={title}
-          onScroll={e => { const el = e.currentTarget, m = el.scrollTop + el.clientHeight < el.scrollHeight - 4; if (!!moreBelow[title] !== m) setMoreBelow(o => ({ ...o, [title]: m })); }}
-          style={{ display: 'flex', flexWrap: 'wrap', gap: 3, alignContent: 'flex-start', overflowY: 'auto', flex: '1 1 0', minHeight: 0, paddingRight: 2, scrollbarWidth: 'thin', scrollbarColor: '#5aabff #0a1030' }}>
-          {shown.length === 0 && <div style={{ fontSize: 11, opacity: 0.6 }}>まだありません</div>}
-          {shown.map(pt => {
-            const bl = blocked.includes(pt.id);
-            const on = value === pt.id && !allBlocked;
+      <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {/* ① いま付けているパーツ（スロット） */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {lineToggle}
+          {cxForm && (
+            <div style={{ display: 'flex', gap: 2 }}>
+              {([['main', 'メイン型'], ['om', 'オーバー＋メタル型']] as const).map(([k, l]) => (
+                <button key={k} onClick={() => { if (cxForm !== k) setCxForm(k === 'om'); }} style={{ padding: '0 7px', borderRadius: 8, fontSize: 11, fontWeight: 800, cursor: 'pointer', color: cxForm === k ? '#04071a' : '#cfd8ff', background: cxForm === k ? '#ffd740' : '#121a42', border: '1px solid #2a3566', whiteSpace: 'nowrap' }}>{l}</button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 3, alignItems: 'stretch' }}>
+          {slots.map((x, i) => {
+            const many = slots.length > 4; // CXはスロットが多いので、詰めて表示する
+            const pt = x.list.find(p => p.id === x.cur) ?? x.list[0], on = x.k === s.k;
+            const plus = i > 0 && bladeSlotKeys.includes(x.k) && bladeSlotKeys.includes(slots[i - 1].k);
             return (
-              <button key={pt.id} onClick={() => { if (!bl) onPick(pt.id); }} style={{
-                display: 'flex', alignItems: 'center', gap: 3, padding: '1px 7px', borderRadius: 12, fontWeight: 700, fontSize: 12.5,
-                cursor: bl ? 'not-allowed' : 'pointer', color: '#fff', opacity: bl ? 0.35 : 1, whiteSpace: 'nowrap',
-                border: `2px solid ${on ? (pt.color ?? '#ffd740') : '#2a3566'}`, background: on ? '#14204f' : '#0a1030',
-              }}>
-                {pt.img && <img src={pt.img} alt="" width={16} height={16} />}
-                <span style={{ color: pt.color ?? '#fff' }}>{pt.name}</span>
-              </button>
+              <div key={x.k} style={{ display: 'flex', alignItems: 'center', gap: 3, flex: '1 1 0', minWidth: 0 }}>
+                {i > 0 && !many && <span style={{ fontSize: 10, opacity: 0.5, flex: '0 0 auto' }}>{plus ? '+' : '|'}</span>}
+                <button data-slot={x.k} onClick={() => setPickSlot(x.k)} style={{
+                  flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', gap: many ? 2 : 4, padding: many ? '2px 3px' : '2px 4px', borderRadius: 8, marginLeft: many && i > 0 && !plus ? 4 : 0, cursor: 'pointer', color: '#fff', textAlign: 'left',
+                  border: `2px solid ${on ? '#ffd740' : '#2a3566'}`, background: on ? '#1a2660' : '#0a1030', boxShadow: on ? '0 0 8px rgba(255,215,64,0.45)' : 'none',
+                }}>
+                  {x.none ? <span style={{ width: 26, height: 26, flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, opacity: 0.5 }}>—</span> : <PartIcon kind={x.kind} pt={pt} size={many ? 20 : 26} />}
+                  <span style={{ minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+                    <span style={{ fontSize: many ? 9 : 9.5, opacity: 0.7, whiteSpace: 'nowrap' }}>{x.label}</span>
+                    <span style={{ fontSize: many ? 11 : 12, fontWeight: 800, color: x.none ? '#cfd8ff' : pt.color ?? '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.none ?? pt.name.replace(/（.*）/, '')}</span>
+                  </span>
+                </button>
+              </div>
             );
           })}
         </div>
-        {moreBelow[title] && ( // 下にまだパーツがある印（スクロールすると消える）
-          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 26, pointerEvents: 'none', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'linear-gradient(180deg, rgba(4,7,26,0), rgba(4,7,26,0.95))' }}>
-            <span style={{ fontSize: 10.5, fontWeight: 800, color: '#04071a', background: '#ffd740', borderRadius: 8, padding: '0 7px', marginBottom: 1, animation: 'beyMore 1.2s ease-in-out infinite' }}>▼ 下にもあります</span>
-          </div>
-        )}
-        </div>
-        {/* 押した（選んだ）パーツの詳細 */}
-        <div style={{ flex: '0 0 auto', maxHeight: '40%', minHeight: 44, overflowY: 'auto', padding: '4px 6px', borderRadius: 6, background: '#0a1030', border: '1px solid #2a3566', fontSize: 11.5, lineHeight: 1.35 }}>
-          {allBlocked ? (
-            <div style={{ opacity: 0.8 }}>ラチェット一体型のブレードなので、ラチェットは選べません。</div>
-          ) : (
+        {/* ② しぼりこみ */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap', minHeight: 16 }}>
+          <span style={{ fontSize: 11.5, fontWeight: 800, marginRight: 3 }}>{s.label}を選ぶ<span style={{ fontWeight: 400, opacity: 0.6, marginLeft: 4 }}>{s.list.length}種類</span></span>
+          {useTabs && ([['all', 'すべて'], ...tabs] as [string, string][]).map(([k, l]) => <button key={k} onClick={() => setPartTab(t => ({ ...t, [s.k]: k }))} style={chipBtn(tab === k)}>{l}</button>)}
+          {useTabs && hasTier && tiers.length > 1 && (
             <>
-              <div style={{ fontWeight: 800, color: sel.color ?? '#fff', fontSize: 12.5 }}>{sel.name}</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 7px' }}>
-                {STAT_LABELS.filter(([k]) => sel.s[k] !== undefined).map(([k, label]) => <span key={k}>{label} <b>{sel.s[k]}</b></span>)}
-                {sel.height !== undefined && <span>高さ <b>{sel.height}</b></span>}
-                <span style={{ opacity: 0.8 }}>{sel.weight}g</span>
-                {sel.img && <span style={{ color: sel.spinDir === -1 ? '#ffd740' : '#9fb2ff', fontWeight: 700 }}>{sel.spinDir === -1 ? '左回転' : '右回転'}</span>}
-              </div>
-              {sel.low && <div style={{ opacity: 0.9 }}>ローモード：{STAT_LABELS.filter(([k]) => sel.low!.s[k] !== undefined).map(([k, label]) => `${label} ${sel.low!.s[k]}`).join('  ')}  高さ {sel.low.height}（左の画面で切り替え）</div>}
+              <span style={{ width: 1, height: 12, background: '#2a3566', margin: '0 2px' }} />
+              {(['all', ...tiers.map(String)]).map(k => <button key={k} onClick={() => setPartTab(t => ({ ...t, [s.k + ':tier']: k }))} style={chipBtn(tierTab === k)}>{k === 'all' ? '全ティア' : `T${k}`}</button>)}
             </>
           )}
         </div>
+        {/* ③ 候補のカード */}
+        <div style={{ position: 'relative', flex: '1 1 0', minHeight: 40, display: 'flex', flexDirection: 'column' }}>
+          <div data-partlist={s.label}
+            onScroll={e => { const el = e.currentTarget, m = el.scrollTop + el.clientHeight < el.scrollHeight - 4; if (!!moreBelow.grid !== m) setMoreBelow(o => ({ ...o, grid: m })); }}
+            style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${big ? 118 : 92}px, 1fr))`, gap: 4, alignContent: 'start', overflowY: 'auto', flex: '1 1 0', minHeight: 0, paddingRight: 2, scrollbarWidth: 'thin', scrollbarColor: '#5aabff #0a1030' }}>
+            {s.none && <div style={{ gridColumn: '1 / -1', fontSize: 12, opacity: 0.8, padding: 6 }}>ラチェット一体型のブレードなので、ラチェットは選べません。</div>}
+            {!s.none && shown.length === 0 && <div style={{ gridColumn: '1 / -1', fontSize: 11, opacity: 0.6 }}>まだありません</div>}
+            {!s.none && shown.map(pt => {
+              const bl = s.blocked.includes(pt.id) && pt.id !== s.cur, on = pt.id === s.cur, ty = partTypeOf(pt);
+              return (
+                <button key={pt.id} onClick={() => { if (!bl) s.set(pt.id); }} title={pt.desc} style={{
+                  position: 'relative', display: 'flex', alignItems: 'center', gap: 5, padding: '3px 5px', borderRadius: 8, cursor: bl ? 'not-allowed' : 'pointer', color: '#fff', textAlign: 'left', opacity: bl ? 0.35 : 1,
+                  border: `2px solid ${on ? pt.color ?? '#ffd740' : '#2a3566'}`, background: on ? '#1a2660' : '#0a1030', borderLeft: `4px solid ${isRatchet ? '#94a3b8' : TYPE_COLOR[ty] ?? '#2a3566'}`,
+                }}>
+                  <PartIcon kind={s.kind} pt={pt} size={big ? 34 : 28} />
+                  <span style={{ minWidth: 0, display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
+                    <span style={{ fontSize: pt.name.length > 8 ? 10.5 : 12, fontWeight: 800, color: pt.color ?? '#fff', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-all' }}>{pt.name}</span>
+                    <span style={{ fontSize: 10, opacity: 0.8, whiteSpace: 'nowrap' }}>
+                      {hasTier && <b style={{ color: TIER_COLOR[pt.tier ?? 1] ?? '#fff', marginRight: 4 }}>T{pt.tier ?? 1}</b>}
+                      {isRatchet ? `高さ${pt.height}` : `${pt.weight}g`}
+                    </span>
+                  </span>
+                  {bl && <span style={{ position: 'absolute', right: 4, top: 2, fontSize: 9, opacity: 0.9 }}>使用中</span>}
+                </button>
+              );
+            })}
+          </div>
+          {moreBelow.grid && (
+            <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 26, pointerEvents: 'none', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', background: 'linear-gradient(180deg, rgba(4,7,26,0), rgba(4,7,26,0.95))' }}>
+              <span style={{ fontSize: 10.5, fontWeight: 800, color: '#04071a', background: '#ffd740', borderRadius: 8, padding: '0 7px', marginBottom: 1, animation: 'beyMore 1.2s ease-in-out infinite' }}>▼ 下にもあります</span>
+            </div>
+          )}
+        </div>
+        {/* ④ 選んでいるパーツの詳しい性能 */}
+        {!s.none && (
+          <div style={{ flex: '0 0 auto', padding: '3px 6px', borderRadius: 6, background: '#0a1030', border: '1px solid #2a3566', fontSize: 11, lineHeight: 1.35 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 8px', alignItems: 'baseline' }}>
+              <b style={{ color: sel.color ?? '#fff', fontSize: 12 }}>{sel.name}</b>
+              {STAT_LABELS.filter(([k]) => sel.s[k] !== undefined).map(([k, label]) => <span key={k}>{label} <b>{sel.s[k]}</b></span>)}
+              {sel.height !== undefined && <span>高さ <b>{sel.height}</b></span>}
+              <span style={{ opacity: 0.8 }}>{sel.weight}g</span>
+              {s.kind === 'chip' && <span style={{ opacity: 0.7 }}>（重さだけ）</span>}
+            </div>
+            <div style={{ opacity: 0.75, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sel.desc}</div>
+          </div>
+        )}
       </div>
     );
   };
@@ -2868,9 +2917,7 @@ export function Beyblade() {
                     </div>
                   )}
                 </div>
-                {isCx(custom.blade) ? cxPicker(custom.blade, id => setCustom(c => ({ ...c, blade: id }))) : partPicker('ブレード', BLADES.filter(b => (b.line ?? 'BX') === curLine), custom.blade, id => setCustom(c => ({ ...c, blade: id })), usedByOthers('blade'), lineToggle)}
-                {partPicker('ラチェット', RATCHETS, custom.ratchet, id => setCustom(c => ({ ...c, ratchet: id })), usedByOthers('ratchet'))}
-                {partPicker('ビット', BITS, custom.bit, id => setCustom(c => ({ ...c, bit: id })), usedByOthers('bit'))}
+                {partPanel()}
               </div>
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-start', minHeight: 30 }}>
