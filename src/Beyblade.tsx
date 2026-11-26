@@ -109,7 +109,7 @@ const BITS: PartDef[] = [
   { id: 'H', bal: 0.88, name: 'H', desc: '軸先側の6つの平面形状がベイの傾きを抑制し、常に安定した体勢を保持し続ける設計。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, type: 'bal', weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
   { id: 'L', bal: 1.12, tier: 2, name: 'L', desc: '3段階の高さを持つ軸先により、低速・中速・高速の3パターンの攻撃速度を実現。', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
   { id: 'Nr', name: 'Nr', desc: '細い球状の軸先で長く回り、10枚刃ギヤでXダッシュ時の速度を抑えスタミナロスを軽減する設計。', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
-  { id: 'UN', bal: 0.92, tier: 3, name: 'UN', desc: 'Nビットより2mm低い設計で、ベイの重心を下げ、低位置からのカウンターをサポートする。', s: { atk: 10, def: 60, sta: 20, dash: 10, burst: 30 }, type: 'def', weight: 1.9, mobility: 0.6, steady: 0.9 },
+  { id: 'UN', bal: 0.9, tier: 3, name: 'UN', desc: 'Nビットより2mm低い設計で、ベイの重心を下げ、低位置からのカウンターをサポートする。', s: { atk: 10, def: 60, sta: 20, dash: 10, burst: 30 }, type: 'def', weight: 1.9, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
   { id: 'I', bal: 0.9, tier: 4, name: 'I', desc: '複数の突起を設けた大型円筒形の軸先がスタジアムに強くグリップし、高速機動の攻撃を実現。', s: { atk: 50, def: 15, sta: 5, dash: 30, burst: 80 }, type: 'atk', weight: 2.4, mobility: 1.9 },
   { id: 'K', name: 'K', desc: '角ばった軸先側面でスタジアム内を蹴り、連続攻撃やカウンター防御に繋がる動きを実現。', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, type: 'bal', weight: 2.1 },
 ];
@@ -248,7 +248,7 @@ const CX_ASSISTS: PartDef[] = [
   { id: 'A', bal: 1, tier: 3, name: 'A（アサルト）', desc: '厚みのある3枚刃で高い弾き性能を実現。', s: { atk: 25, def: 10, sta: 5 }, type: 'atk', weight: 5.0, height: 60, color: '#d9f99d' },
   { id: 'K', bal: 1, tier: 3, name: 'K（ナックル）', desc: '5枚刃のうち1枚が重撃ポイントとなり、ブレードの弾き性能を底上げする。', s: { atk: 30, def: 5, sta: 5 }, type: 'atk', weight: 4.9, height: 50, color: '#94a3b8' },
   { id: 'V', bal: 1, tier: 3, name: 'V（ヴァーチカル）', desc: '下方向に伸びた12枚の垂直刃でラチェットへの攻撃を防ぎ、バースト耐性を高める設計。', s: { atk: 10, def: 25, sta: 5 }, type: 'def', weight: 5.2, height: 60, color: '#f1f5f9' },
-  { id: 'W', bal: 1.05, tier: 2, name: 'W（ウィール）', desc: '厚みのある円柱形状の刃で出んな高さからの攻撃もいなし続ける設計。', s: { atk: 5, def: 15, sta: 20 }, type: 'sta', weight: 7.0, height: 80, color: '#64748b' },
+  { id: 'W', bal: 1.05, tier: 2, name: 'W（ウィール）', desc: '厚みのある円柱形状の刃でどんな高さからの攻撃もいなし続ける設計。', s: { atk: 5, def: 15, sta: 20 }, type: 'sta', weight: 7.0, height: 80, color: '#64748b' },
   { id: 'H', bal: 0.95, tier: 2, name: 'H（ヘビー）', desc: 'メタルパーツを搭載し遠心力を高めた低めの6枚刃で、打撃力と安定性を強化する設計。', s: { atk: 17, def: 17, sta: 11 }, type: 'bal', weight: 7.9, height: 50, color: '#fbbf24' },
 ];
 const CX_BAL = 0.95; // CXの組み合わせ全体の強さの倍率（ティア表に合わせて調整した値）
@@ -394,6 +394,27 @@ function dedupeDeck(deck: Custom[]): Custom[] {
       used.add(c[key]);
     }
   }
+  return cxFixDeck(out);
+}
+// CXの3on3：ロックチップ・メイン・メタル・オーバー・アシストも、3体で同じものは使えない
+type CxKind = 'chip' | 'main' | 'metal' | 'over' | 'assist';
+const CX_KINDS: CxKind[] = ['chip', 'main', 'metal', 'over', 'assist'];
+const cxList = (k: CxKind) => ({ chip: CX_CHIPS, main: CX_MAINS, metal: CX_METALS, over: CX_OVERS, assist: CX_ASSISTS })[k];
+const cxUsed = (others: Custom[], k: CxKind) => others.filter(o => isCx(o.blade)).map(o => cxParts(o.blade)[k]?.id).filter(Boolean) as string[];
+// 他のベイと重なっているCXのパーツを、まだ使われていないパーツに置き換える
+function cxFixOne(blade: string, others: Custom[]): string {
+  if (!isCx(blade)) return blade;
+  const p = cxParts(blade); const ids: Record<CxKind, string | null> = { chip: p.chip.id, main: p.main?.id ?? null, metal: p.metal?.id ?? null, over: p.over?.id ?? null, assist: p.assist.id };
+  for (const k of CX_KINDS) {
+    const cur = ids[k]; if (!cur) continue;
+    const used = cxUsed(others, k);
+    if (used.includes(cur)) { const free = cxList(k).find(pt => !used.includes(pt.id)); if (free) ids[k] = free.id; }
+  }
+  return cxId(ids.chip!, ids.main ?? `${ids.over}+${ids.metal}`, ids.assist!);
+}
+function cxFixDeck(deck: Custom[]): Custom[] {
+  const out = deck.map(c => ({ ...c }));
+  out.forEach((c, i) => { c.blade = cxFixOne(c.blade, out.slice(0, i)); });
   return out;
 }
 // 選んだパーツはそのまま、空欄（ランダム）は、重ならないようにランダムに決める
@@ -407,7 +428,7 @@ function randomDeck(sels: Custom[]): Custom[] {
     for (const o of out) if (!o[key]) o[key] = pool.pop() ?? LISTS[key][0].id;
   }
   for (const o of out) if (bladeById(o.blade).low && o.low === undefined) o.low = Math.random() < 0.5; // 高さを切り替えられるブレードは、ノーマルかローをランダムに
-  return out;
+  return cxFixDeck(out);
 }
 
 const makeDefaultDeck = (): Custom[] => randomDeck([0, 1, 2].map(() => ({ blade: '', ratchet: '', bit: '' }))); // 重ならない3体
@@ -2622,6 +2643,8 @@ export function Beyblade() {
     return mode === '3v3' ? curDeck.filter((c, i) => i !== slot && !(key === 'ratchet' && isInt(c))).map(c => c[key]) : [];
   };
 
+  const cxBlocked = (k: CxKind) => (mode === '3v3' ? cxUsed(curDeck.filter((_, i) => i !== slot), k) : []);
+
   // ---------------- スマホ横画面用の見た目（枠のサイズ FW×FH に合わせる） ----------------
   const FW = frame.w, FH = frame.h;
   const sb = (active: boolean, color = '#ffd740'): React.CSSProperties => ({
@@ -2664,7 +2687,7 @@ export function Beyblade() {
             if (on) return;
             const lb = lastBladeRef.current; lb[curLine] = custom.blade;
             const first = k === 'CX' ? CX_ALL()[0].id : (BLADES.find(b => (b.line ?? 'BX') === k) ?? BLADES[0]).id;
-            setCustom(c => ({ ...c, blade: lb[k] || first, ratchet: c.ratchet || RATCHETS[0].id }));
+            const nb = lb[k] || first; setCustom(c => ({ ...c, blade: mode === '3v3' ? cxFixOne(nb, curDeck.filter((_, i) => i !== slot)) : nb, ratchet: c.ratchet || RATCHETS[0].id })); // 3on3のCXは、他のベイと重ならないパーツにする
           }} style={{ padding: '1px 10px', borderRadius: 8, fontSize: 12, fontWeight: 800, cursor: 'pointer', color: on ? '#04071a' : '#cfd8ff', background: on ? '#5aabff' : '#121a42', border: '1px solid #2a3566' }}>{k}</button>
         );
       })}
@@ -2673,7 +2696,7 @@ export function Beyblade() {
   // ---- パーツ選び：上に「いま付けているパーツ」のスロットを並べ、押したスロットの候補だけを下にカードで出す
   // CXは組み方（メイン型／オーバー＋メタル型）でスロットの数が変わる
   type SlotDef = { k: string; kind: PartKind; label: string; list: PartDef[]; cur: string; set: (id: string) => void; blocked: string[]; none?: string };
-  const setBlade = (id: string) => setCustom(c => ({ ...c, blade: id }));
+  const setBlade = (id: string) => setCustom(c => ({ ...c, blade: mode === '3v3' ? cxFixOne(id, curDeck.filter((_, i) => i !== slot)) : id })); // 3on3のCXは、他のベイと重なるパーツを自動で外す
   const slots: SlotDef[] = (() => {
     const tail: SlotDef[] = [
       { k: 'ratchet', kind: 'ratchet', label: 'ラチェット', list: RATCHETS, cur: custom.ratchet, set: id => setCustom(c => ({ ...c, ratchet: id })), blocked: usedByOthers('ratchet'), none: isInt(custom) ? '一体型' : undefined },
@@ -2682,12 +2705,12 @@ export function Beyblade() {
     if (!isCx(custom.blade)) return [{ k: 'blade', kind: 'blade', label: 'ブレード', list: BLADES.filter(b => (b.line ?? 'BX') === curLine), cur: custom.blade, set: setBlade, blocked: usedByOthers('blade') }, ...tail];
     const { chip, main, over, metal, assist, core } = cxParts(custom.blade);
     return [
-      { k: 'chip', kind: 'chip', label: 'チップ', list: CX_CHIPS, cur: chip.id, set: id => setBlade(cxId(id, core, assist.id)), blocked: [] },
-      ...(main ? [{ k: 'main', kind: 'main', label: 'メイン', list: CX_MAINS, cur: main.id, set: (id: string) => setBlade(cxId(chip.id, id, assist.id)), blocked: [] } as SlotDef] : [
-        { k: 'metal', kind: 'metal', label: 'メタル', list: CX_METALS, cur: metal!.id, set: (id: string) => setBlade(cxId(chip.id, `${over!.id}+${id}`, assist.id)), blocked: [] } as SlotDef,
-        { k: 'over', kind: 'over', label: 'オーバー', list: CX_OVERS, cur: over!.id, set: (id: string) => setBlade(cxId(chip.id, `${id}+${metal!.id}`, assist.id)), blocked: [] } as SlotDef,
+      { k: 'chip', kind: 'chip', label: 'チップ', list: CX_CHIPS, cur: chip.id, set: id => setBlade(cxId(id, core, assist.id)), blocked: cxBlocked('chip') },
+      ...(main ? [{ k: 'main', kind: 'main', label: 'メイン', list: CX_MAINS, cur: main.id, set: (id: string) => setBlade(cxId(chip.id, id, assist.id)), blocked: cxBlocked('main') } as SlotDef] : [
+        { k: 'metal', kind: 'metal', label: 'メタル', list: CX_METALS, cur: metal!.id, set: (id: string) => setBlade(cxId(chip.id, `${over!.id}+${id}`, assist.id)), blocked: cxBlocked('metal') } as SlotDef,
+        { k: 'over', kind: 'over', label: 'オーバー', list: CX_OVERS, cur: over!.id, set: (id: string) => setBlade(cxId(chip.id, `${id}+${metal!.id}`, assist.id)), blocked: cxBlocked('over') } as SlotDef,
       ]),
-      { k: 'assist', kind: 'assist', label: 'アシスト', list: CX_ASSISTS, cur: assist.id, set: id => setBlade(cxId(chip.id, core, id)), blocked: [] },
+      { k: 'assist', kind: 'assist', label: 'アシスト', list: CX_ASSISTS, cur: assist.id, set: id => setBlade(cxId(chip.id, core, id)), blocked: cxBlocked('assist') },
       ...tail,
     ];
   })();
