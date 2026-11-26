@@ -833,6 +833,57 @@ function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, ang
   ctx.fillStyle = cap; ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
 }
 
+// カスタマイズ画面の左のプレビュー：色の光と照準のような輪の上に、ブレードを描く
+// 画像つき版は写真、画像なし版はブレードの外形に金属の光を付けた絵
+function drawPreview(ctx: CanvasRenderingContext2D, key: string, color: string, sprite: HTMLImageElement | null) {
+  const S = 85;
+  ctx.clearRect(0, 0, 170, 170);
+  ctx.save(); ctx.translate(S, S);
+  // うしろの光
+  const glow = ctx.createRadialGradient(0, 0, 10, 0, 0, S);
+  glow.addColorStop(0, shade(color, 0.1).replace('rgb', 'rgba').replace(')', ',0.55)')); glow.addColorStop(0.55, shade(color, -0.2).replace('rgb', 'rgba').replace(')', ',0.18)')); glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow; ctx.fillRect(-S, -S, S * 2, S * 2);
+  // 照準のような輪（4つに切れた弧と、目盛り）
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.globalAlpha = 0.85;
+  for (let q = 0; q < 4; q++) { ctx.beginPath(); ctx.arc(0, 0, S - 6, q * Math.PI / 2 + 0.18, (q + 1) * Math.PI / 2 - 0.18); ctx.stroke(); }
+  ctx.lineWidth = 1; ctx.globalAlpha = 0.45;
+  for (let q = 0; q < 24; q++) { const a = (q / 24) * Math.PI * 2, r0 = q % 6 === 0 ? S - 16 : S - 12; ctx.beginPath(); ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); ctx.lineTo(Math.cos(a) * (S - 9), Math.sin(a) * (S - 9)); ctx.stroke(); }
+  ctx.globalAlpha = 1;
+  const R = 62;
+  if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+    ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
+    ctx.drawImage(sprite, -R * 1.07, -R * 1.07, R * 2.14, R * 2.14);
+    ctx.restore(); return;
+  }
+  const sh = SHAPES[key];
+  const path = new Path2D();
+  if (sh) { for (let k = 0; k < SHAPE_N; k++) { const th = ((k + 0.5) / SHAPE_N) * 2 * Math.PI - Math.PI, r = (sh.r[k] / sh.mx) * R; if (k) path.lineTo(Math.cos(th) * r, Math.sin(th) * r); else path.moveTo(Math.cos(th) * r, Math.sin(th) * r); } path.closePath(); }
+  else path.arc(0, 0, R * 0.95, 0, Math.PI * 2);
+  // 影 → 金属のグラデーション → つや → ふち
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 5; ctx.fillStyle = '#000'; ctx.fill(path); ctx.restore();
+  const mg = ctx.createLinearGradient(-R, -R, R, R);
+  mg.addColorStop(0, shade(color, 0.6)); mg.addColorStop(0.45, color); mg.addColorStop(1, shade(color, -0.6));
+  ctx.fillStyle = mg; ctx.fill(path);
+  const gl = ctx.createLinearGradient(0, -R, 0, R);
+  gl.addColorStop(0, 'rgba(255,255,255,0.5)'); gl.addColorStop(0.45, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gl; ctx.fill(path);
+  ctx.lineJoin = 'round'; ctx.lineWidth = 2.5; ctx.strokeStyle = '#02040f'; ctx.stroke(path);
+  // 内側のリング（溝）
+  ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(2,4,15,0.5)'; ctx.beginPath(); ctx.arc(0, 0, R * 0.58, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.beginPath(); ctx.arc(1, 1.5, R * 0.58, 0, Math.PI * 2); ctx.stroke();
+  // まん中の軸：暗い円＋色のふち＋六角のボルト
+  const hg = ctx.createRadialGradient(-R * 0.1, -R * 0.1, 2, 0, 0, R * 0.3);
+  hg.addColorStop(0, '#3a4a8a'); hg.addColorStop(1, '#050818');
+  ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(0, 0, R * 0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.lineWidth = 2.5; ctx.strokeStyle = shade(color, 0.2); ctx.stroke();
+  const bg = ctx.createLinearGradient(-R * 0.15, -R * 0.15, R * 0.15, R * 0.15);
+  bg.addColorStop(0, '#e2e8f0'); bg.addColorStop(1, '#475569');
+  ctx.fillStyle = bg; ctx.beginPath();
+  for (let q = 0; q < 6; q++) { const a = (q / 6) * Math.PI * 2; if (q) ctx.lineTo(Math.cos(a) * R * 0.15, Math.sin(a) * R * 0.15); else ctx.moveTo(R * 0.15, 0); }
+  ctx.closePath(); ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = '#02040f'; ctx.stroke();
+  ctx.restore();
+}
+
 function drawStadium(ctx: CanvasRenderingContext2D) {
   // 実際のスタジアム（上から見た写真）に近づけた絵：透明な四角いケースの中に、黒い皿と、緑のエクストリームライン
   const half = 330;
@@ -1695,10 +1746,7 @@ export function Beyblade() {
     const ctx = c.getContext('2d')!;
     const bey = buildBey(custom);
     const draw = () => {
-      ctx.clearRect(0, 0, 170, 170);
-      ctx.save(); ctx.translate(85, 85); ctx.scale(2.2, 2.2);
-      drawBey(ctx, bey.color, '#5aabff', 0, 0, '#fff', bey.blades, bey.sprite, bey.spinDir, false);
-      ctx.restore();
+      drawPreview(ctx, bladeOf(custom).id, bey.color, bey.sprite);
     };
     draw();
     bey.sprite?.addEventListener('load', draw); // 画像の読み込みが終わったら描き直す
@@ -2933,7 +2981,7 @@ export function Beyblade() {
               <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 8 }}>
                 <div style={{ flex: '0 0 150px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: 6, borderRadius: 10, background: '#0a1030', border: '2px solid #2a3566', overflow: 'hidden' }}>
                   <canvas ref={previewRef} width={170} height={170} style={{ width: 92, height: 92, flex: '0 0 auto' }} />
-                  <div style={{ fontWeight: 900, fontSize: 13, color: myBey.color, textAlign: 'center', lineHeight: 1.2 }}>{myBey.name}</div>
+                  <div style={{ fontWeight: 900, fontSize: 13, color: myBey.color, textAlign: 'center', lineHeight: 1.2, }}>{(() => { const w = myBey.name.split(' '), n = isInt(custom) ? 1 : 2; return <><span>{w.slice(0, -n).join(' ')}</span> <span style={{ whiteSpace: 'nowrap' }}>{w.slice(-n).join(' ')}</span></>; })()}</div>
                   <div style={{ width: '100%' }}>
                     {STAT_LABELS.map(([key, label]) => (
                       <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, marginTop: 2 }}>
