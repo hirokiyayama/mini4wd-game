@@ -289,7 +289,8 @@ function PartIcon({ kind, pt, size }: { kind: PartKind; pt: PartDef; size: numbe
     body = <><polygon points={d.join(' ')} fill="#94a3b8" stroke="#04071a" strokeWidth={1} /><circle r={R * 0.4} fill="#0a1030" /></>;
   } else if (kind === 'bit') {
     const c = TYPE_COLOR[partTypeOf(pt)] ?? '#cfd8ff';
-    body = <><path d={`M${-R * 0.7},${-R * 0.75} H${R * 0.7} L${R * 0.35},${R * 0.85} H${-R * 0.35} Z`} fill="#121a42" stroke={c} strokeWidth={1.5} /><text y={R * 0.12} textAnchor="middle" dominantBaseline="middle" fontSize={pt.name.length > 2 ? R * 0.55 : R * 0.8} fontWeight={900} fill={c}>{pt.name}</text></>;
+    // 横から見たビット：上のつば → 胴 → 下に尖った軸先（形はビットのタイプの色）
+    body = <><rect x={-R * 0.9} y={-R * 0.8} width={R * 1.8} height={R * 0.38} rx={R * 0.12} fill="#121a42" stroke={c} strokeWidth={1.5} /><path d={`M${-R * 0.55},${-R * 0.42} H${R * 0.55} L${R * 0.4},${R * 0.3} L0,${R * 0.92} L${-R * 0.4},${R * 0.3} Z`} fill={c} fillOpacity={0.85} stroke="#04071a" strokeWidth={1} /></>;
   } else body = <><circle r={R * 0.75} fill={col} stroke="#04071a" strokeWidth={1} /><circle r={R * 0.3} fill="#0a1030" /></>; // ロックチップなど、形のないパーツ
   return <svg width={size} height={size} viewBox={`${-size / 2} ${-size / 2} ${size} ${size}`} style={{ flex: '0 0 auto' }}>{body}</svg>;
 }
