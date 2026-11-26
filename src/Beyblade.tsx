@@ -201,11 +201,17 @@ const pick = (list: PartDef[], id: string) => list.find(p => p.id === id) ?? lis
 
 // ローモードを選んでいるときは、ブレードの性能と高さをローモードのものにする
 // ---- CXライン：ロックチップ＋メインブレード＋アシストブレードを組み合わせて、1つのブレードとして扱う（ラチェット・ビットはBX・UXと共通）
-// ティア表：メインブレード・アシストブレードはそれぞれのシート。ロックチップは重さだけなので、ティアなし
+// ティア表：メインブレード・アシストブレードはそれぞれのシート。ロックチップはティアなし（エンペラー・ワルキューレなどメタル入りのチップは性能も付く）
 const CX_CHIPS: PartDef[] = [
   { id: 'pegasus', name: 'ペガサス', desc: 'CXのブレードを固定するペガサスモデルのロックパーツ。', s: {}, weight: 1.7, color: '#d9f99d' },
   { id: 'knight', name: 'ナイト', desc: 'CXのブレードを固定するナイトモデルのロックパーツ。', s: {}, weight: 1.7, color: '#cbd5e1' },
   { id: 'bahamut', name: 'バハムート', desc: 'CXのブレードを固定するバハムートモデルのロックパーツ。', s: {}, weight: 1.7, color: '#ec4899' },
+  { id: 'emperor', name: 'エンペラー', desc: 'CXのブレードを固定するエンペラーモデルのロックパーツ。メタルパーツにより重量が増加したロックチップ。', s: { atk: 2, def: 2, sta: 1 }, weight: 4.8, color: '#fbbf24' },
+  { id: 'valkyrie', name: 'ワルキューレ', desc: 'CXのブレードを固定するワルキューレモデルのロックパーツ。メタルパーツにより重量が増加したロックチップ。', s: { atk: 4, def: 4, sta: 2 }, weight: 4.8, color: '#60a5fa' },
+  { id: 'dran', name: 'ドラン', desc: 'CXのブレードを固定するドランモデルのロックパーツ。', s: {}, weight: 1.7, color: '#38bdf8' },
+  { id: 'wizard', name: 'ウィザード', desc: 'CXのブレードを固定するウィザードモデルのロックパーツ。', s: {}, weight: 1.7, color: '#a78bfa' },
+  { id: 'perseus', name: 'ペルセウス', desc: 'CXのブレードを固定するペルセウスモデルのロックパーツ。', s: {}, weight: 1.7, color: '#f87171' },
+  { id: 'hells', name: 'ヘルズ', desc: 'CXのブレードを固定するヘルズモデルのロックパーツ。', s: {}, weight: 1.7, color: '#ef4444' },
 ];
 // メインブレード型：ロックチップ＋メインブレード＋アシストブレード
 const CX_MAINS: PartDef[] = [
@@ -238,13 +244,13 @@ type Line = 'BX' | 'UX' | 'CX';
 const lineOf = (id: string): Line => (isCx(id) ? 'CX' : pick(BLADES, id).line ?? 'BX');
 const cxShort = (a: PartDef) => a.name.replace(/（.*）/, ''); // オーバー・アシストブレードの略号（A など）
 const CX_CACHE: Record<string, PartDef> = {};
-// 組み立てたCXブレード：性能はロックチップ以外の合計、重さは全部の合計。形は、それぞれの外形の大きいほう
+// 組み立てたCXブレード：性能はロックチップも含めた合計、重さは全部の合計。形は、それぞれの外形の大きいほう
 function cxBlade(id: string): PartDef {
   if (CX_CACHE[id]) return CX_CACHE[id];
   const { chip, main, over, metal, assist } = cxParts(id);
   const body = main ? [main] : [metal!, over!], parts = [...body, assist];
   const s: Partial<Stats> = {};
-  for (const pt of parts) for (const [k, v] of Object.entries(pt.s)) s[k as keyof Stats] = (s[k as keyof Stats] ?? 0) + (v as number);
+  for (const pt of [chip, ...parts]) for (const [k, v] of Object.entries(pt.s)) s[k as keyof Stats] = (s[k as keyof Stats] ?? 0) + (v as number);
   const tp = Math.pow(parts.reduce((m, pt) => m * tierPow(pt), 1), 1 / parts.length) * CX_BAL; // ティアは、付けたパーツの平均
   const shs = [main && SHAPES['main_' + main.id], metal && SHAPES['metal_' + metal.id], over && SHAPES['over_' + over.id]].filter(Boolean) as (typeof SHAPES)[string][];
   const sa = SHAPES['assist_' + assist.id];
@@ -375,7 +381,9 @@ function randomDeck(sels: Custom[]): Custom[] {
   const out = sels.map(c => ({ ...c }));
   for (const key of KEYS) {
     const taken = new Set(out.filter(o => !(key === 'ratchet' && isInt(o))).map(o => o[key]).filter(Boolean));
-    const pool = shuffled(LISTS[key].map(pt => pt.id).filter(id => !taken.has(id)));
+    // CXは組み合わせの数がとても多いので、ランダムに選ぶときは数個だけ候補に入れる（CXばかりにならないように）
+    const ids = key === 'blade' ? [...BLADES.map(b => b.id), ...shuffled(CX_ALL().map(b => b.id)).slice(0, CX_MAINS.length + CX_METALS.length)] : LISTS[key].map(pt => pt.id);
+    const pool = shuffled(ids.filter(id => !taken.has(id)));
     for (const o of out) if (!o[key]) o[key] = pool.pop() ?? LISTS[key][0].id;
   }
   for (const o of out) if (bladeById(o.blade).low && o.low === undefined) o.low = Math.random() < 0.5; // 高さを切り替えられるブレードは、ノーマルかローをランダムに
@@ -2679,7 +2687,7 @@ export function Beyblade() {
     const isRatchet = s.kind === 'ratchet';
     const tabs: [string, string][] = isRatchet ? [['50', '50系統'], ['60', '60系統'], ['70', '70系統'], ['80', '80系統']] : [['atk', 'アタック'], ['def', 'ディフェンス'], ['sta', 'スタミナ'], ['bal', 'バランス']];
     const typeOf = (pt: PartDef) => (isRatchet ? String(Math.floor((pt.height ?? 60) / 10) * 10) : partTypeOf(pt));
-    const useTabs = s.list.length > 4;
+    const useTabs = s.list.length > 4 && s.kind !== 'chip'; // ロックチップはタイプがないので、しぼりこまない
     const tab = useTabs ? partTab[s.k] ?? 'all' : 'all';
     const shown = s.list.filter(pt => (tab === 'all' || typeOf(pt) === tab));
     const sel = s.list.find(pt => pt.id === s.cur) ?? s.list[0];
