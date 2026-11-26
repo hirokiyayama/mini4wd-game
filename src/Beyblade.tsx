@@ -120,6 +120,7 @@ const SHAPE_N = 72;
 const IMG_URLS = (window as unknown as { __BEY_IMGS?: Record<string, string> }).__BEY_IMGS ?? {};
 const loadImg = (id: string) => { if (!IMG_URLS[id]) return null; const im = new Image(); im.src = IMG_URLS[id]; return im; };
 const SPRITES: Record<string, HTMLImageElement | null> = {};
+const PAINTED: Record<string, HTMLImageElement | null> = {}; // 画像なし版：金属のブレードの絵（paintedSprite）
 const LAUNCHERS = { red: loadImg('launcher_red'), black: loadImg('launcher_black') }; // 相手の落とす位置を隠しているときのヒント
 const SHAPES: Record<string, { r: Float32Array; mean: number; nr: number; mx: number; cx: number; cy: number; ecc: number }> = {
   meteor: { r: Float32Array.from([32.5,32.23,31.95,31.69,31.7,31.96,32.22,32.41,32.45,32.35,32.34,32.61,32.91,32.95,32.79,32.8,33.05,33.23,32.32,30.63,30.03,29.41,27.73,27.71,29.66,30.9,31.19,31.48,31.82,32.11,32.19,32.25,32.58,33.02,33.35,33.71,34.08,34.29,34.22,34.15,34.41,34.62,33.66,31.87,31,30.22,29.28,30.11,31.65,32.39,32.7,32.88,32.97,32.99,32.87,32.79,33,33.09,33.08,33.37,33.59,33.38,32.94,32.61,32.91,33.97,34.89,35.09,35.05,34.77,33.9,32.98]), mean: 32.472, nr: 0.899, mx: 35.09, cx: -0.452, cy: 0.645, ecc: 0.0243 },
@@ -426,7 +427,7 @@ function buildBey(c: Custom) {
   const hBurst = Math.pow(60 / height, 0.8), hSta = Math.pow(height / 60, 0.6); // ラチェットが高いほどバーストされやすく、低いほど持久が上がる（ティア表の注意書き）
   return {
     name: bl.integrated ? `${bl.name} ${c.bit}` : `${bl.name} ${pick(RATCHETS, c.ratchet).name} ${c.bit}`,
-    color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, sprite: isCx(bl.id) ? cxSprite(bl.id) : bl.id in SPRITES ? SPRITES[bl.id] : (SPRITES[bl.id] = loadImg(bl.id)), // 画像（個人用の版だけ。ブレードのidと同じ名前の画像）
+    color: bl.color ?? '#f59e0b', blades: bl.blades ?? 3, sprite: (isCx(bl.id) ? cxSprite(bl.id) : bl.id in SPRITES ? SPRITES[bl.id] : (SPRITES[bl.id] = loadImg(bl.id))) ?? paintedSprite(bl.id, bl.color ?? '#f59e0b'), // 画像（個人用の版だけ。ブレードのidと同じ名前の画像）
     stats: st, weight, height,
     atk: norm(ef.atk, 90, 1.0) * tp, // 与ダメージ・弾き飛ばす力
     def: norm(ef.def, 55, 0.45) * tp, // 被スピンダメージの軽減
@@ -833,34 +834,14 @@ function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, ang
   ctx.fillStyle = cap; ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
 }
 
-// カスタマイズ画面の左のプレビュー：色の光と照準のような輪の上に、ブレードを描く
-// 画像つき版は写真、画像なし版はブレードの外形に金属の光を付けた絵
-function drawPreview(ctx: CanvasRenderingContext2D, key: string, color: string, sprite: HTMLImageElement | null) {
-  const S = 85;
-  ctx.clearRect(0, 0, 170, 170);
-  ctx.save(); ctx.translate(S, S);
-  // うしろの光
-  const glow = ctx.createRadialGradient(0, 0, 10, 0, 0, S);
-  glow.addColorStop(0, shade(color, 0.1).replace('rgb', 'rgba').replace(')', ',0.55)')); glow.addColorStop(0.55, shade(color, -0.2).replace('rgb', 'rgba').replace(')', ',0.18)')); glow.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = glow; ctx.fillRect(-S, -S, S * 2, S * 2);
-  // 照準のような輪（4つに切れた弧と、目盛り）
-  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.globalAlpha = 0.85;
-  for (let q = 0; q < 4; q++) { ctx.beginPath(); ctx.arc(0, 0, S - 6, q * Math.PI / 2 + 0.18, (q + 1) * Math.PI / 2 - 0.18); ctx.stroke(); }
-  ctx.lineWidth = 1; ctx.globalAlpha = 0.45;
-  for (let q = 0; q < 24; q++) { const a = (q / 24) * Math.PI * 2, r0 = q % 6 === 0 ? S - 16 : S - 12; ctx.beginPath(); ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); ctx.lineTo(Math.cos(a) * (S - 9), Math.sin(a) * (S - 9)); ctx.stroke(); }
-  ctx.globalAlpha = 1;
-  const R = 62;
-  if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-    ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
-    ctx.drawImage(sprite, -R * 1.07, -R * 1.07, R * 2.14, R * 2.14);
-    ctx.restore(); return;
-  }
+// 金属の質感のブレード（画像なし版の絵）：写真から作った外形に、グラデーション・つや・溝・六角の軸。norm=true なら外形をRいっぱいに広げる
+function paintBlade(ctx: CanvasRenderingContext2D, key: string, color: string, R: number, norm: boolean, shadow = true) {
   const sh = SHAPES[key];
   const path = new Path2D();
-  if (sh) { for (let k = 0; k < SHAPE_N; k++) { const th = ((k + 0.5) / SHAPE_N) * 2 * Math.PI - Math.PI, r = (sh.r[k] / sh.mx) * R; if (k) path.lineTo(Math.cos(th) * r, Math.sin(th) * r); else path.moveTo(Math.cos(th) * r, Math.sin(th) * r); } path.closePath(); }
+  if (sh) { for (let k = 0; k < SHAPE_N; k++) { const th = ((k + 0.5) / SHAPE_N) * 2 * Math.PI - Math.PI, r = (sh.r[k] / (norm ? sh.mx : BEY_R)) * R; if (k) path.lineTo(Math.cos(th) * r, Math.sin(th) * r); else path.moveTo(Math.cos(th) * r, Math.sin(th) * r); } path.closePath(); }
   else path.arc(0, 0, R * 0.95, 0, Math.PI * 2);
   // 影 → 金属のグラデーション → つや → ふち
-  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 5; ctx.fillStyle = '#000'; ctx.fill(path); ctx.restore();
+  if (shadow) { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 5; ctx.fillStyle = '#000'; ctx.fill(path); ctx.restore(); }
   const mg = ctx.createLinearGradient(-R, -R, R, R);
   mg.addColorStop(0, shade(color, 0.6)); mg.addColorStop(0.45, color); mg.addColorStop(1, shade(color, -0.6));
   ctx.fillStyle = mg; ctx.fill(path);
@@ -881,6 +862,37 @@ function drawPreview(ctx: CanvasRenderingContext2D, key: string, color: string, 
   ctx.fillStyle = bg; ctx.beginPath();
   for (let q = 0; q < 6; q++) { const a = (q / 6) * Math.PI * 2; if (q) ctx.lineTo(Math.cos(a) * R * 0.15, Math.sin(a) * R * 0.15); else ctx.moveTo(R * 0.15, 0); }
   ctx.closePath(); ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = '#02040f'; ctx.stroke();
+}
+// 画像なし版の対戦用の絵：金属のブレードを1枚の画像にしておく（対戦中は、写真と同じように回して残像を付ける）
+function paintedSprite(key: string, color: string, scale = 1): HTMLImageElement | null {
+  const ck = key + color;
+  if (ck in PAINTED) return PAINTED[ck];
+  if (!SHAPES[key]) return (PAINTED[ck] = null);
+  const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+  const g = cv.getContext('2d')!; g.translate(128, 128);
+  const Rb = Math.min((128 / 1.075) * scale, (124 * BEY_R) / SHAPES[key].mx); // 対戦の絵は BEY_R×2.15 の四角に描くので、BEY_R が 128/1.075 になる（はみ出す形は少し縮める）
+  paintBlade(g, key, color, Rb, false, false); // 影は回ってしまうので付けない
+  const im = new Image(); im.src = cv.toDataURL();
+  return (PAINTED[ck] = im);
+}
+
+// カスタマイズ画面の左のプレビュー：色の光の上に、ブレードを描く
+// 画像つき版は写真、画像なし版はブレードの外形に金属の光を付けた絵
+function drawPreview(ctx: CanvasRenderingContext2D, key: string, color: string, sprite: HTMLImageElement | null) {
+  const S = 85;
+  ctx.clearRect(0, 0, 170, 170);
+  ctx.save(); ctx.translate(S, S);
+  // うしろの光
+  const glow = ctx.createRadialGradient(0, 0, 10, 0, 0, S);
+  glow.addColorStop(0, shade(color, 0.1).replace('rgb', 'rgba').replace(')', ',0.55)')); glow.addColorStop(0.55, shade(color, -0.2).replace('rgb', 'rgba').replace(')', ',0.18)')); glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow; ctx.fillRect(-S, -S, S * 2, S * 2);
+  const R = 62;
+  if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+    ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
+    ctx.drawImage(sprite, -R * 1.07, -R * 1.07, R * 2.14, R * 2.14);
+    ctx.restore(); return;
+  }
+  paintBlade(ctx, key, color, R, true);
   ctx.restore();
 }
 
@@ -2381,7 +2393,7 @@ export function Beyblade() {
             const rt = Math.max(0, b.spin / b.spinMax), w = b.spin > 0 ? 2 + 75 * Math.pow(rt, 1.5) : 0;
             b.vAng += t.spinDir * Math.min(w * visDt, 0.36 * (Math.PI * 2) / t.blades);
           }
-          drawBey(ctx, b.isBody ? '#3b82f6' : t.color, i === 0 ? '#38b6ff' : '#ff3ea5', b.vAng, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, b.isBody ? (SPRITES.bulletB ?? (SPRITES.bulletB = loadImg('bulletB'))) : t.sprite, t.spinDir); // バレットグリフォンの本体は、分かれたら青で描く（画像あり版は本体の写真）
+          drawBey(ctx, b.isBody ? '#3b82f6' : t.color, i === 0 ? '#38b6ff' : '#ff3ea5', b.vAng, Math.max(0, b.spin / b.spinMax), i === 0 ? '#fff' : '#ffb4b4', t.blades, b.isBody ? (SPRITES.bulletB ?? (SPRITES.bulletB = loadImg('bulletB')) ?? paintedSprite('bulletB', '#3b82f6')) : t.sprite, t.spinDir); // バレットグリフォンの本体は、分かれたら青で描く（画像あり版は本体の写真）
           ctx.restore();
         });
         beys.forEach((b, i) => { // バレットグリフォンから分かれたバレット
@@ -2396,7 +2408,7 @@ export function Beyblade() {
           const rt = Math.max(0, q.spin / q.spinMax), w = q.spin > 0 ? 2 + 75 * Math.pow(rt, 1.5) : 0, col = TYPES[b.type].color;
           q.vAng += q.dir * Math.min(w * visDt, 0.36 * (Math.PI * 2) / 3);
           ctx.scale(BLT_R / BEY_R, BLT_R / BEY_R);
-          drawBey(ctx, col, i === 0 ? '#38b6ff' : '#ff3ea5', q.vAng, rt, i === 0 ? '#fff' : '#ffb4b4', 3, SPRITES.bulletP ?? (SPRITES.bulletP = loadImg('bulletP')), q.dir);
+          drawBey(ctx, col, i === 0 ? '#38b6ff' : '#ff3ea5', q.vAng, rt, i === 0 ? '#fff' : '#ffb4b4', 3, SPRITES.bulletP ?? (SPRITES.bulletP = loadImg('bulletP')) ?? paintedSprite('bulletP', col, BEY_R / BLT_R), q.dir);
           ctx.restore();
         });
       }
@@ -3090,8 +3102,7 @@ export function Beyblade() {
                     position: 'relative', width: Math.min(190, (FW - 60) / 3), padding: '6px 6px', borderRadius: 10, cursor: pos < 0 ? 'pointer' : 'default', color: '#fff',
                     border: `3px solid ${pos >= 0 ? bey.color : '#2a3566'}`, background: pos >= 0 ? '#14204f' : '#0a1030', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                   }}>
-                    <div style={{ width: 46, height: 46, borderRadius: '50%', background: '#161d38', border: `5px solid ${bey.color}`, boxSizing: 'border-box' }} />
-                    {bey.sprite && <img src={bey.sprite.src} alt="" width={58} height={58} />}
+                    {bey.sprite ? <img src={bey.sprite.src} alt="" width={58} height={58} /> : <div style={{ width: 46, height: 46, borderRadius: '50%', background: '#161d38', border: `5px solid ${bey.color}`, boxSizing: 'border-box' }} />}
                     <div style={{ fontWeight: 800, color: bey.color, textAlign: 'center', fontSize: 13, lineHeight: 1.2 }}>{bey.name}</div>
                     <div style={{ fontSize: 11, opacity: 0.85 }}>攻{bey.stats.atk} 防{bey.stats.def} 持{bey.stats.sta} ダ{bey.stats.dash} 耐{bey.stats.burst}</div>
                     {pos >= 0 && <div style={{ position: 'absolute', top: -9, left: -9, width: 26, height: 26, borderRadius: 13, background: '#ffd740', color: '#04071a', fontWeight: 900, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pos + 1}</div>}
