@@ -860,20 +860,13 @@ function drawBey(ctx: CanvasRenderingContext2D, color: string, ring: string, ang
 }
 
 // 金属の質感のブレード（画像なし版の絵）：写真から作った外形に、グラデーション・つや・溝・六角の軸。norm=true なら外形をRいっぱいに広げる
-function paintBlade(ctx: CanvasRenderingContext2D, key: string, color: string, R: number, norm: boolean, shadow = true, flat = false) {
+function paintBlade(ctx: CanvasRenderingContext2D, key: string, color: string, R: number, norm: boolean, shadow = true) {
   const sh = SHAPES[key];
   const path = new Path2D();
   if (sh) { for (let k = 0; k < SHAPE_N; k++) { const th = ((k + 0.5) / SHAPE_N) * 2 * Math.PI - Math.PI, r = (sh.r[k] / (norm ? sh.mx : BEY_R)) * R; if (k) path.lineTo(Math.cos(th) * r, Math.sin(th) * r); else path.moveTo(Math.cos(th) * r, Math.sin(th) * r); } path.closePath(); }
   else path.arc(0, 0, R * 0.95, 0, Math.PI * 2);
   // 影 → 金属のグラデーション → つや → ふち
   if (shadow) { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.75)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 5; ctx.fillStyle = '#000'; ctx.fill(path); ctx.restore(); }
-  if (flat) { // 対戦用：陰影を付けず、ベイの色1色でぬる（回ったときに暗い側が影に見えて、形が分かりづらいので）
-    ctx.fillStyle = color; ctx.fill(path);
-    ctx.lineJoin = 'round'; ctx.lineWidth = 2.5; ctx.strokeStyle = '#02040f'; ctx.stroke(path);
-    ctx.fillStyle = '#0a1030'; ctx.beginPath(); ctx.arc(0, 0, R * 0.3, 0, Math.PI * 2); ctx.fill();
-    ctx.lineWidth = 2.5; ctx.strokeStyle = '#e2e8f0'; ctx.stroke();
-    return;
-  }
   const mg = ctx.createLinearGradient(-R, -R, R, R);
   mg.addColorStop(0, shade(color, 0.6)); mg.addColorStop(0.45, color); mg.addColorStop(1, shade(color, -0.6));
   ctx.fillStyle = mg; ctx.fill(path);
@@ -903,7 +896,7 @@ function paintedSprite(key: string, color: string, scale = 1): HTMLImageElement 
   const cv = document.createElement('canvas'); cv.width = cv.height = 256;
   const g = cv.getContext('2d')!; g.translate(128, 128);
   const Rb = Math.min((128 / 1.075) * scale, (124 * BEY_R) / SHAPES[key].mx); // 対戦の絵は BEY_R×2.15 の四角に描くので、BEY_R が 128/1.075 になる（はみ出す形は少し縮める）
-  paintBlade(g, key, color, Rb, false, false, true); // 対戦用は影も陰影も付けない（回ると分かりづらい）
+  paintBlade(g, key, color, Rb, false, false); // 影は回ってしまうので付けない
   const im = new Image(); im.src = cv.toDataURL();
   return (PAINTED[ck] = im);
 }
