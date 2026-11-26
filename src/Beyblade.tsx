@@ -96,6 +96,7 @@ const RATCHETS: PartDef[] = [
   { id: 'r560', name: '5-60', desc: '低く構えるラチェット。遠心力に強く、バランスがよい。', s: { atk: 10, def: 9, sta: 11 }, height: 60, weight: 6.6 },
   { id: 'r760', name: '7-60', desc: '低めに構えるラチェット。守りが固く、連続して当てやすい。', s: { atk: 8, def: 14, sta: 8 }, height: 60, weight: 7.2 },
   { id: 'r960', name: '9-60', desc: '低めに構えるラチェット。連続して当てやすい。', s: { atk: 13, def: 10, sta: 7 }, hid: { sta: 12, atk: 8 }, height: 60, weight: 6.1 },
+  { id: 'r150', bal: 1.07, tier: 2, name: '1-50', desc: 'ベイを低くセットするラチェット。攻撃性能に特化した1枚刃。', s: { atk: 17, def: 9, sta: 4 }, height: 50, weight: 5.6 },
   { id: 'r965', bal: 0.95, tier: 2, name: '9-65', desc: '低めに構えるラチェット。バースト耐性が安定し、ぶれが少ない。', s: { atk: 13, def: 10, sta: 7 }, height: 65, weight: 4.3, burstFloor: 50 },
 ];
 const BITS: PartDef[] = [
@@ -107,6 +108,7 @@ const BITS: PartDef[] = [
   { id: 'H', bal: 0.88, name: 'H', desc: '先がとがっていて、すり鉢の真ん中にとどまって回り続ける。飛ばされても、ひと呼吸おいてゆっくり真ん中へ戻る。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, type: 'bal', weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
   { id: 'L', bal: 1.12, tier: 2, name: 'L', desc: '速さを3段階に切り替えて攻める。', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
   { id: 'Nr', name: 'Nr', desc: '細い軸先で長く回り、ダッシュによるスタミナの消耗が少ない。', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
+  { id: 'I', bal: 0.9, tier: 4, name: 'I', desc: '突起のある大型の円筒形の軸先がスタジアムに強くグリップし、高速で動き回って攻撃する。', s: { atk: 50, def: 15, sta: 5, dash: 30, burst: 80 }, type: 'atk', weight: 2.4, mobility: 1.9 },
   { id: 'K', name: 'K', desc: '角のある軸先でスタジアムを蹴って動き回る。', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, type: 'bal', weight: 2.1 },
 ];
 
@@ -141,6 +143,9 @@ bullet: { r: Float32Array.from([32.53,32.52,32.12,31.29,30.64,30.23,29.69,28.72,
   bulletP: { r: Float32Array.from([29.64,29.51,29.36,28.9,28.11,27.54,27.24,26.76,25.94,25.08,25.44,27.1,28.17,28.45,28.72,28.88,28.97,29.27,29.74,29.94,29.73,29.1,28.92,29.68,30.13,30.04,29.95,29.58,28.95,28.62,28.47,27.92,26.88,26.82,28.22,29.2,29.47,29.78,30.09,30.27,30.45,30.75,30.88,30.59,29.86,28.5,26.32,24.36,23.64,23.65,23.98,25.04,26.37,26.75,26.43,25.42,23.64,24.12,27.21,28.91,29.02,29.23,29.43,29.53,29.61,29.77,29.96,30.01,29.6,28.71,28.53,29.29]), mean: 28.252, nr: 1, mx: 30.885, cx: 0.496, cy: -1.360, ecc: 0.0512 },
 assist_A: { r: Float32Array.from([30.82,30.98,31.29,31.57,31.54,31.23,30.69,29.5,28.41,28.41,28.82,29.06,29.29,29.59,29.96,30.36,30.73,30.72,30.31,30.1,30.71,31.95,32.98,33.53,33.85,34,34.05,34.05,33.91,33.47,32.33,30.69,29.76,29.84,30.1,30.31,30.59,30.82,31,31.22,31.28,30.95,30.45,30.35,31.04,32.01,32.42,32.4,32.37,32.35,32.37,32.37,32.1,31.35,30.02,28.49,27.68,27.68,27.82,27.95,28.1,28.28,28.52,28.84,29.09,28.83,28.18,27.92,28.33,29.21,30.16,30.68]), mean: 30.585, nr: 1, mx: 34.05, cx: 1.332, cy: -0.614, ecc: 0.0480 },
   main_blast: { r: Float32Array.from([30.68,31.51,32.05,32.21,32.31,32.39,32.39,32.23,31.97,31.86,31.68,31.24,30.71,29.99,29.46,29.49,29.77,30.04,30.55,31.44,32.1,32.36,32.54,32.76,33.31,33.96,34.22,34.18,34.04,33.8,33.46,33.02,32.49,31.86,30.95,29.59,28.6,28.57,28.81,29.01,29.22,29.58,30.13,30.45,30.48,30.45,30.37,30.74,31.63,32.06,31.91,31.71,31.56,31.35,30.91,30.26,29.65,29.09,28.39,27.49,26.73,26.56,26.66,26.72,27.05,27.35,27.71,28.45,29.08,29.39,29.73,30.12]), mean: 30.647, nr: 1, mx: 34.22, cx: 0.825, cy: -1.412, ecc: 0.0533 },
+assist_K: { r: Float32Array.from([30.84,31.25,31.73,31.5,30.97,30.83,30.85,30.69,30.46,29.95,28.89,27.69,27.74,29.22,30.07,30.56,31.54,31.67,31.03,30.99,31.72,32.04,31.66,31.2,30.94,30.87,30.45,30.02,30.33,30.57,30.99,32.13,32.44,31.61,31.19,31.51,31.73,31.8,31.83,31.33,30.25,30.03,31.24,32.06,32.45,33.36,33.98,33.64,33.06,33.02,33.09,32.88,32.52,31.76,30.56,30.35,31.61,32.36,32.63,33.4,33.69,32.97,32.27,32.27,32.25,31.88,31.32,30.32,29.07,28.88,30.09,30.85]), mean: 31.318, nr: 0.745, mx: 33.98, cx: 0.473, cy: 0.921, ecc: 0.0331 },
+  metal_blitz: { r: Float32Array.from([28.59,30.74,32.25,32.62,32.52,32.33,32.21,32.16,31.88,30.9,29.44,28.07,27.2,27.39,28.28,29.4,30.69,31.34,31.18,30.79,30.51,30.52,30.78,31.02,30.53,29.33,28.32,27.71,27.13,27.56,29.44,30.91,31.36,31.51,31.46,31.26,31.15,30.91,30.08,28.87,27.82,27.26,27.14,27.3,28.63,31.08,32.62,32.78,32.48,32.25,32.26,32.26,31.91,31.08,29.89,28.75,28.12,27.95,29.26,32.08,33.89,34.11,33.88,33.54,33.37,33.36,32.77,31.39,29.87,28.54,27.79,27.63]), mean: 30.463, nr: 1, mx: 34.11, cx: -0.583, cy: 0.681, ecc: 0.0294 },
+  over_B: { r: Float32Array.from([26.03,26.22,26.37,28.02,30.79,32.23,31.88,31.12,30.29,28.99,27.44,25.86,24.73,24.52,24.65,25.24,27.38,30.15,31.26,30.95,30.59,30.4,30.01,28.93,27.6,26.39,25.13,24.04,23.39,23.04,23.06,23.47,25.03,28.11,30.47,30.8,30.3,29.76,28.88,27.59,26.31,25.12,24.18,23.88,24.06,24.46,25.35,28.09,31.82,33.25,32.74,32.18,31.44,30.14,28.62,27.2,26.06,25.5,25.48,25.77,26.67,29.15,32.39,33.82,33.42,32.74,31.92,30.6,29.06,27.45,25.95,25.54]), mean: 28.076, nr: 1, mx: 33.82, cx: -1.013, cy: 0.619, ecc: 0.0423 },
   knight2: { r: Float32Array.from([33.12,32.88,33.14,33.4,33.38,33.43,33.43,33.3,33.25,33.22,33.01,32.88,33.14,33.47,33.64,33.81,33.8,33.67,33.59,33.7,34.1,34.32,34.18,33.95,33.65,33.46,33.62,33.92,34.1,34.18,34.15,34.09,34.06,33.74,33.37,33.47,33.91,34.35,34.58,34.46,34.31,34.49,34.62,34.67,34.78,34.59,34.19,33.74,33.36,33.34,33.58,33.69,33.69,33.86,34.04,34.1,33.95,33.49,33.12,33.32,33.82,34.18,34.41,34.28,33.96,33.98,34.02,34.06,34.24,34.19,33.92,33.58]), mean: 33.812, nr: 0, mx: 34.78, cx: 0.298, cy: 0.161, ecc: 0.01 }
 };
 const nrOf = (id: string) => SHAPES[id]?.nr ?? 0.5;
@@ -193,55 +198,73 @@ const pick = (list: PartDef[], id: string) => list.find(p => p.id === id) ?? lis
 // ティア表：メインブレード・アシストブレードはそれぞれのシート。ロックチップは重さだけなので、ティアなし
 const CX_CHIPS: PartDef[] = [
   { id: 'pegasus', name: 'ペガサス', desc: 'CXのブレードを固定する、ペガサスモデルのロックパーツ。', s: {}, weight: 1.7, color: '#d9f99d' },
+  { id: 'bahamut', name: 'バハムート', desc: 'CXのブレードを固定する、バハムートモデルのロックパーツ。', s: {}, weight: 1.7, color: '#ec4899' },
 ];
+// メインブレード型：ロックチップ＋メインブレード＋アシストブレード
 const CX_MAINS: PartDef[] = [
   { id: 'blast', bal: 1, tier: 2, name: 'ブラスト', desc: '流線型の重厚な3枚刃で、相手を弾き飛ばすことに優れる。メタルが塗装され性能がアップしている。', s: { atk: 50, def: 10, sta: 15 }, type: 'atk', weight: 32.7, color: '#22d3ee', blades: 3 },
 ];
+// オーバー＋メタル型：ロックチップ＋オーバーブレード＋メタルブレード＋アシストブレード（メインブレードとは一緒に付けられない）
+const CX_OVERS: PartDef[] = [
+  { id: 'B', bal: 1, tier: 3, name: 'B（ブレイク）', desc: '重心を偏らせることで、弾き性能を向上させた設計。', s: { atk: 10, def: 5, sta: 5 }, type: 'atk', weight: 3.8, color: '#f472b6' },
+];
+const CX_METALS: PartDef[] = [
+  { id: 'blitz', bal: 1, tier: 3, name: 'ブリッツ', desc: '弾き性能の高い重量級の5枚刃。重心を偏らせた大型刃もあわせ持ち、重撃性能を高めた。', s: { atk: 25, def: 10, sta: 5 }, type: 'atk', weight: 29.7, color: '#f472b6', blades: 5 },
+];
 const CX_ASSISTS: PartDef[] = [
   { id: 'A', bal: 1, tier: 3, name: 'A（アサルト）', desc: '厚みのある3枚刃で、高い弾き性能を実現。', s: { atk: 25, def: 10, sta: 5 }, type: 'atk', weight: 5.0, height: 60, color: '#d9f99d' },
+  { id: 'K', bal: 1, tier: 3, name: 'K（ナックル）', desc: '5枚刃のうち1枚が重撃ポイントとなり、ブレードの弾き性能を底上げする。', s: { atk: 30, def: 5, sta: 5 }, type: 'atk', weight: 4.9, height: 50, color: '#94a3b8' },
 ];
 const CX_BAL = 0.95; // CXの組み合わせ全体の強さの倍率（ティア表に合わせて調整した値）
-const cxId = (chip: string, main: string, assist: string) => `cx:${chip}:${main}:${assist}`;
-const cxParts = (id: string) => { const [, c, m, a] = id.split(':'); return { chip: pick(CX_CHIPS, c), main: pick(CX_MAINS, m), assist: pick(CX_ASSISTS, a) }; };
+// CXのid：cx:ロックチップ:まん中:アシスト。まん中は、メインブレードのid か「オーバー+メタル」
+const cxId = (chip: string, core: string, assist: string) => `cx:${chip}:${core}:${assist}`;
+const cxParts = (id: string) => {
+  const [, c, core, a] = id.split(':'), om = core.includes('+') ? core.split('+') : null;
+  return { chip: pick(CX_CHIPS, c), main: om ? null : pick(CX_MAINS, core), over: om ? pick(CX_OVERS, om[0]) : null, metal: om ? pick(CX_METALS, om[1]) : null, assist: pick(CX_ASSISTS, a), core };
+};
+const CX_CORES = () => [...CX_MAINS.map(m => m.id), ...CX_OVERS.flatMap(o => CX_METALS.map(m => `${o.id}+${m.id}`))];
 const isCx = (id: string) => id.startsWith('cx:');
 type Line = 'BX' | 'UX' | 'CX';
 const lineOf = (id: string): Line => (isCx(id) ? 'CX' : pick(BLADES, id).line ?? 'BX');
-const cxShort = (a: PartDef) => a.name.replace(/（.*）/, ''); // アシストブレードの略号（A など）
+const cxShort = (a: PartDef) => a.name.replace(/（.*）/, ''); // オーバー・アシストブレードの略号（A など）
 const CX_CACHE: Record<string, PartDef> = {};
-// 組み立てたCXブレード：性能はメイン＋アシストの合計、重さは3つの合計。形はメインとアシストの外形の大きいほう
+// 組み立てたCXブレード：性能はロックチップ以外の合計、重さは全部の合計。形は、それぞれの外形の大きいほう
 function cxBlade(id: string): PartDef {
   if (CX_CACHE[id]) return CX_CACHE[id];
-  const { chip, main, assist } = cxParts(id);
+  const { chip, main, over, metal, assist } = cxParts(id);
+  const body = main ? [main] : [metal!, over!], parts = [...body, assist];
   const s: Partial<Stats> = {};
-  for (const src of [main.s, assist.s]) for (const [k, v] of Object.entries(src)) s[k as keyof Stats] = (s[k as keyof Stats] ?? 0) + (v as number);
-  const tp = Math.sqrt(tierPow(main) * tierPow(assist)) * CX_BAL;
-  const sm = SHAPES['main_' + main.id], sa = SHAPES['assist_' + assist.id];
-  if (sm && !SHAPES[id]) {
-    const r = new Float32Array(SHAPE_N); for (let k = 0; k < SHAPE_N; k++) r[k] = Math.max(sm.r[k], sa ? sa.r[k] * 0.95 : 0);
+  for (const pt of parts) for (const [k, v] of Object.entries(pt.s)) s[k as keyof Stats] = (s[k as keyof Stats] ?? 0) + (v as number);
+  const tp = Math.pow(parts.reduce((m, pt) => m * tierPow(pt), 1), 1 / parts.length) * CX_BAL; // ティアは、付けたパーツの平均
+  const shs = [main && SHAPES['main_' + main.id], metal && SHAPES['metal_' + metal.id], over && SHAPES['over_' + over.id]].filter(Boolean) as (typeof SHAPES)[string][];
+  const sa = SHAPES['assist_' + assist.id];
+  if (shs.length && !SHAPES[id]) {
+    const r = new Float32Array(SHAPE_N); for (let k = 0; k < SHAPE_N; k++) r[k] = Math.max(...shs.map(q => q.r[k]), sa ? sa.r[k] * 0.95 : 0);
     let mean = 0; for (const v of r) mean += v; mean /= SHAPE_N;
-    SHAPES[id] = { ...sm, r, mean, mx: Math.max(...r) };
+    SHAPES[id] = { ...shs[0], r, mean, mx: Math.max(...r) };
   }
-  return (CX_CACHE[id] = { id, name: `${chip.name}${main.name} ${cxShort(assist)}`, desc: main.desc, s, weight: Math.round((chip.weight + main.weight + assist.weight) * 10) / 10, type: main.type, color: main.color, blades: main.blades, spinDir: main.spinDir, absorb: main.absorb, tier: 1, bal: tp });
+  const top = main ?? metal!;
+  const name = main ? `${chip.name}${main.name} ${cxShort(assist)}` : `${chip.name}${metal!.name} ${cxShort(over!)}${cxShort(assist)}`;
+  return (CX_CACHE[id] = { id, name, desc: top.desc, s, weight: Math.round((chip.weight + parts.reduce((w, pt) => w + pt.weight, 0)) * 10) / 10, type: top.type, color: top.color, blades: top.blades, spinDir: top.spinDir, absorb: top.absorb, tier: 1, bal: tp });
 }
-// CXの画像（個人用の版だけ）：アシストブレード → メインブレード → ロックチップの順に重ねて、1枚の画像にする
+// CXの画像（個人用の版だけ）：アシスト → メイン（またはメタル → オーバー） → ロックチップの順に重ねて、1枚の画像にする
 function cxSprite(id: string): HTMLImageElement | null {
   if (id in SPRITES) return SPRITES[id];
-  const { chip, main, assist } = cxParts(id);
-  const ims = [loadImg('assist_' + assist.id), loadImg('main_' + main.id), loadImg('chip_' + chip.id)];
-  if (!ims[1]) return (SPRITES[id] = null);
+  const { chip, main, over, metal, assist } = cxParts(id);
+  const layers: [HTMLImageElement | null, number][] = [[loadImg('assist_' + assist.id), 0.95], ...(main ? [[loadImg('main_' + main.id), 1]] as [HTMLImageElement | null, number][] : [[loadImg('metal_' + metal!.id), 1], [loadImg('over_' + over!.id), 1]] as [HTMLImageElement | null, number][]), [loadImg('chip_' + chip.id), 0.46]];
+  if (!layers[1][0]) return (SPRITES[id] = null);
   const out = new Image(); SPRITES[id] = out;
   const make = () => {
-    if (!ims.every(im => !im || (im.complete && im.naturalWidth > 0))) return;
+    if (!layers.every(([im]) => !im || (im.complete && im.naturalWidth > 0))) return;
     const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d')!;
-    const put = (im: HTMLImageElement | null, k: number) => { if (im) g.drawImage(im, 128 - 128 * k, 128 - 128 * k, 256 * k, 256 * k); };
-    put(ims[0], 0.95); put(ims[1], 1); put(ims[2], 0.46);
+    for (const [im, k] of layers) if (im) g.drawImage(im, 128 - 128 * k, 128 - 128 * k, 256 * k, 256 * k);
     out.src = cv.toDataURL();
   };
-  for (const im of ims) if (im) im.addEventListener('load', make);
+  for (const [im] of layers) if (im) im.addEventListener('load', make);
   make();
   return out;
 }
-const CX_ALL = () => CX_CHIPS.flatMap(c => CX_MAINS.flatMap(m => CX_ASSISTS.map(a => cxBlade(cxId(c.id, m.id, a.id)))));
+const CX_ALL = () => CX_CHIPS.flatMap(c => CX_CORES().flatMap(m => CX_ASSISTS.map(a => cxBlade(cxId(c.id, m, a.id)))));
 const bladeById = (id: string) => (isCx(id) ? cxBlade(id) : pick(BLADES, id));
 const bladeOf = (c: Custom): PartDef => { const b = bladeById(c.blade); return b.low && c.low ? { ...b, s: b.low.s, hid: b.low.hid, height: b.low.height } : b; };
 const isInt = (c: Custom) => !!bladeById(c.blade).integrated; // ラチェット一体型のブレードか
@@ -349,7 +372,7 @@ function buildBey(c: Custom) {
     mobility: bit.mobility ?? 1,
     bid: bl.id, // ブレードの種類（形の計算に使う）
     splitLoss: ['atk', 'bal'].includes(partTypeOf(bit)) ? 0.2 : 0, // バレットグリフォンが分かれるときに失う回転：アタック・バランス系のビットは2割、スタミナ・ディフェンス系は失わない
-    flat: ['K', 'L', 'R', 'LR'].includes(bit.id), // 底が平ら：きれいな円を描かず、楕円で回り、そのうちリングや壁に当たって軌道が変わる
+    flat: ['K', 'L', 'R', 'LR', 'I'].includes(bit.id), // 底が平ら：きれいな円を描かず、楕円で回り、そのうちリングや壁に当たって軌道が変わる
     noRideInner: ['E', 'B', 'FB', 'H', 'Nr'].includes(bit.id),
     orbitR: bit.id === 'E' ? 153 : bit.id === 'H' ? 80 : ['B', 'FB', 'Nr'].includes(bit.id) ? 92 : 0, // 小さな円の半径（実際に描く円は、これより少し大きくなる）：B・FB・Nrは中心の円の段のあたり、Eはもっと外側、Hはもっと内側, // 水平シュートで真ん中の円の中に落とすと、その円より少し大きいくらいの小さな円を描いて回る（ぶつかるまで）
     tip: bit.id === 'H', // 底がとがっている：真ん中にとどまり、ほんの少しだけ小さな円を描いて動く
@@ -2480,11 +2503,12 @@ export function Beyblade() {
   );
   // CXのブレードを組み立てる欄：上から ロックチップ → メインブレード → アシストブレード
   const cxPicker = (value: string, onPick: (id: string) => void) => {
-    const { chip, main, assist } = cxParts(value), bl = cxBlade(value);
+    const { chip, main, over, metal, assist, core } = cxParts(value), bl = cxBlade(value);
     const row = (label: string, list: PartDef[], cur: string, set: (id: string) => void, note: string) => (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <div style={{ fontSize: 11, fontWeight: 800, opacity: 0.85 }}>{label}<span style={{ fontWeight: 400, opacity: 0.7, marginLeft: 5 }}>{note}</span></div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+          {list.length === 0 && <span style={{ fontSize: 11, opacity: 0.6 }}>まだありません</span>}
           {list.map(pt => { const on = pt.id === cur; return (
             <button key={pt.id} onClick={() => set(pt.id)} style={{ padding: '1px 7px', borderRadius: 12, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', whiteSpace: 'nowrap', border: `2px solid ${on ? (pt.color ?? '#ffd740') : '#2a3566'}`, background: on ? '#14204f' : '#0a1030' }}>
               <span style={{ color: pt.color ?? '#fff' }}>{pt.name}</span>
@@ -2494,21 +2518,34 @@ export function Beyblade() {
       </div>
     );
     const line = (pt: PartDef) => (
-      <div key={pt.id}><b style={{ color: pt.color ?? '#fff' }}>{pt.name}</b>{' '}
+      <div key={pt.id + pt.name}><b style={{ color: pt.color ?? '#fff' }}>{pt.name}</b>{' '}
         {STAT_LABELS.filter(([k]) => pt.s[k] !== undefined).map(([k, label]) => `${label} ${pt.s[k]}`).join('  ')}{pt.height !== undefined ? `  高さ ${pt.height}` : ''}  <span style={{ opacity: 0.8 }}>{pt.weight}g</span>
       </div>
     );
+    const isOM = !main;
+    const lastOM = core.includes('+') ? core : `${CX_OVERS[0]?.id}+${CX_METALS[0]?.id}`;
     return (
       <div style={{ flex: 1.25, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3, minHeight: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}><span style={{ fontWeight: 800, fontSize: 13 }}>ブレード</span><span style={{ fontSize: 10.5, opacity: 0.6 }}>CX</span>{lineToggle}</div>
+        <div style={{ display: 'flex', gap: 2 }}>
+          {([[false, 'メイン型'], [true, 'オーバー＋メタル型']] as const).map(([k, l]) => (
+            <button key={l} onClick={() => { if (k !== isOM && (k ? CX_OVERS.length && CX_METALS.length : CX_MAINS.length)) onPick(cxId(chip.id, k ? lastOM : CX_MAINS[0].id, assist.id)); }}
+              style={{ padding: '0 7px', borderRadius: 8, fontSize: 10.5, fontWeight: 800, cursor: 'pointer', color: k === isOM ? '#04071a' : '#cfd8ff', background: k === isOM ? '#ffd740' : '#121a42', border: '1px solid #2a3566' }}>{l}</button>
+          ))}
+        </div>
         <div style={{ flex: '1 1 0', minHeight: 40, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 5, scrollbarWidth: 'thin', scrollbarColor: '#5aabff #0a1030' }}>
-          {row('ロックチップ', CX_CHIPS, chip.id, id => onPick(cxId(id, main.id, assist.id)), '重さだけ')}
-          {row('メインブレード', CX_MAINS, main.id, id => onPick(cxId(chip.id, id, assist.id)), '')}
-          {row('アシストブレード', CX_ASSISTS, assist.id, id => onPick(cxId(chip.id, main.id, id)), '')}
+          {row('ロックチップ', CX_CHIPS, chip.id, id => onPick(cxId(id, core, assist.id)), '重さだけ')}
+          {main ? row('メインブレード', CX_MAINS, main.id, id => onPick(cxId(chip.id, id, assist.id)), '') : (
+            <>
+              {row('オーバーブレード', CX_OVERS, over!.id, id => onPick(cxId(chip.id, `${id}+${metal!.id}`, assist.id)), '')}
+              {row('メタルブレード', CX_METALS, metal!.id, id => onPick(cxId(chip.id, `${over!.id}+${id}`, assist.id)), '')}
+            </>
+          )}
+          {row('アシストブレード', CX_ASSISTS, assist.id, id => onPick(cxId(chip.id, core, id)), '')}
         </div>
         <div style={{ flex: '0 0 auto', maxHeight: '45%', minHeight: 44, overflowY: 'auto', padding: '4px 6px', borderRadius: 6, background: '#0a1030', border: '1px solid #2a3566', fontSize: 11.5, lineHeight: 1.35 }}>
           <div style={{ fontWeight: 800, color: bl.color ?? '#fff', fontSize: 12.5 }}>{bl.name}<span style={{ fontWeight: 400, opacity: 0.8, marginLeft: 6 }}>合計 {STAT_LABELS.filter(([k]) => bl.s[k] !== undefined).map(([k, label]) => `${label} ${bl.s[k]}`).join('  ')}  {bl.weight}g</span></div>
-          {line(chip)}{line(main)}{line(assist)}
+          {line(chip)}{main ? line(main) : <>{line(over!)}{line(metal!)}</>}{line(assist)}
         </div>
       </div>
     );
