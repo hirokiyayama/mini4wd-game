@@ -474,7 +474,13 @@ function playerId(): string { // ブラウザごとの匿名ID（ログインの
 const SESSION_ID = Math.random().toString(36).slice(2, 10);
 const BUILD = (window as unknown as { __BEY_IMGS?: unknown }).__BEY_IMGS ? 'personal' : 'beylog'; // どちらの版で遊んだか
 const ANALYSIS_HTML = (window as unknown as { __BEY_ANALYSIS?: string }).__BEY_ANALYSIS; // 個人用の版だけ：対戦分析の画面
-const customKey = (c: Custom) => [c.blade, c.ratchet, c.bit].join('|') + (c.low ? '|low' : '');
+const customKey = (c: Custom) => [c.blade, isInt(c) ? '' : c.ratchet, c.bit].join('|') + (c.low ? '|low' : ''); // ラチェット一体型はラチェットなし
+// 個人用の版の対戦分析：カスタマイズ画面と同じパーツの一覧を渡す（カスタム比較で使う）
+if (ANALYSIS_HTML) playerId(); // 対戦分析の「自分」が分かるように、この端末のIDを先に作っておく
+if (ANALYSIS_HTML) (window as unknown as { __BEY_PARTS?: unknown }).__BEY_PARTS = {
+  blades: BLADES.map(b => ({ id: b.id, name: b.name, line: b.line ?? 'BX', int: !!b.integrated })), ratchets: RATCHETS.map(r => ({ id: r.id, name: r.name })), bits: BITS.map(b => ({ id: b.id, name: b.name })),
+  chips: CX_CHIPS.map(c => ({ id: c.id, name: c.name })), mains: CX_MAINS.map(c => ({ id: c.id, name: c.name })), metals: CX_METALS.map(c => ({ id: c.id, name: c.name })), overs: CX_OVERS.map(c => ({ id: c.id, name: c.name })), assists: CX_ASSISTS.map(c => ({ id: c.id, name: c.name })),
+};
 function sendLog(row: Record<string, string | number>) {
   const url = (window as unknown as { __BEY_LOG_URL?: string }).__BEY_LOG_URL;
   if (!url) return;

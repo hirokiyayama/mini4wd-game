@@ -65,7 +65,7 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
     <select id="period"><option value="7">過去7日</option><option value="30">過去30日</option><option value="0" selected>全期間</option><option value="c">指定</option></select>
     <input type="date" id="from" style="display:none"><input type="date" id="to" style="display:none">
     <label>対象</label>
-    <select id="who"><option value="">全体</option></select>
+    <select id="who"><option value="">全員</option></select>
   </div>
 
   <div class="tabs" id="tabs"></div>
@@ -184,7 +184,8 @@ function build() {
   const pids = {}; for (const r of ROWS) pids[r.pid] = (pids[r.pid] || 0) + 1;
   const cur = $('who').value;
   const mine = ls.get('bey_pid'); // シミュレーターと同じページの中で開いたときは、この端末のIDが分かる
-  $('who').innerHTML = '<option value="">全体</option>' + Object.entries(pids).sort((a, b) => (b[0] === mine) - (a[0] === mine) || b[1] - a[1]).map(([p, n]) => `<option value="${esc(p)}">${p === mine ? 'あなた（この端末）' : 'プレイヤー ' + esc(p.slice(0, 6))}（${n}回）</option>`).join('');
+  // 対象は「全員」と「自分」だけ（ほかの人の成績は見られない）
+  $('who').innerHTML = '<option value="">全員</option>' + (mine ? `<option value="${esc(mine)}">自分</option>` : '');
   $('who').value = cur;
   NAMES = {}; for (const e of E) NAMES[e.key] = e.name;
   render();
@@ -256,44 +257,63 @@ const PAGES = {
     <div class="tabs" style="margin:0 0 10px">${FINS.map(k => `<button class="${k === f ? 'on' : ''}" data-fin="${k}">${FIN[k]}フィニッシュ</button>`).join('')}</div>
     ${table(['#', 'カスタム', FIN[f] + 'で勝つ率'], gs.map((g, i) => [i + 1, esc(NAMES[g.key]), rateCell(g.fw, g.n)]))}</div>`;
   },
-  'カスタム比較': () => {
-    const es = filtered();
-    const P = partOptions(es);
-    CMP ??= [0, 1].map(i => { const k = group(es, e => e.key).sort((a, b) => b.n - a.n)[i]?.key; return k ? splitKey(k) : { b: '', r: '', t: '' }; }).concat([{ b: '', r: '', t: '', off: true }]);
-    const L = 'ABC';
-    const match = c => es.filter(e => { const k = splitKey(e.key); return (!c.b || k.b === c.b) && (!c.r || k.r === c.r) && (!c.t || k.t === c.t); });
-    const used = CMP.map((c, i) => ({ c, i, es: c.off ? null : match(c) })).filter(x => x.es);
-    const slotBtn = (i, part, label) => { const v = CMP[i][part]; const name = v ? P[part].get(v) || v : 'すべて'; const on = PICK && PICK.i === i && PICK.part === part;
-      return `<button class="slot${on ? ' on' : ''}" data-pick="${i}:${part}"><span class="note" style="margin:0">${label}</span><br>${esc(name)}</button>`; };
-    const picker = PICK ? `<div class="card" style="margin:10px 0 0;background:var(--panel2)"><div class="note">カスタム${L[PICK.i]}の${{ b: 'ブレード', r: 'ラチェット', t: 'ビット' }[PICK.part]}を選ぶ</div><div class="cards">
-      <button class="pcard${!CMP[PICK.i][PICK.part] ? ' on' : ''}" data-opt="">すべて</button>
-      ${[...P[PICK.part]].sort((a, b) => a[1].localeCompare(b[1], 'ja')).map(([k, n]) => `<button class="pcard${CMP[PICK.i][PICK.part] === k ? ' on' : ''}" data-opt="${esc(k)}">${esc(n)}</button>`).join('')}</div></div>` : '';
-    const col = i => CMP[i].off
-      ? `<div class="card" style="margin:0"><div class="note">カスタム${L[i]}</div><button data-cmpon="${i}">＋ 比べるカスタムを足す</button></div>`
-      : `<div class="card" style="margin:0"><div class="bar" style="justify-content:space-between;margin:0 0 6px"><span class="note" style="margin:0">カスタム${L[i]}</span>${i === 2 ? `<button data-cmpoff="2" style="padding:2px 8px">× 外す</button>` : ''}</div>
-        <div class="slots">${slotBtn(i, 'b', 'ブレード')}${slotBtn(i, 'r', 'ラチェット')}${slotBtn(i, 't', 'ビット')}</div>
-        ${(() => { const x = used.find(u => u.i === i); const w = x.es.filter(e => e.win).length; return x.es.length ? `<div class="big">${pct(w, x.es.length)}%</div><div class="note">勝率・対戦数 ${x.es.length}回</div>` : '<div class="empty">この組み合わせのデータはまだありません</div>'; })()}</div>`;
-    const rows = used.map(x => x.es), lab = used.map(x => L[x.i]);
-    const r = (f, fn) => [f, ...rows.map(fn)];
-    return `<div class="card"><h2>カスタム比較</h2><div class="note">ブレード・ラチェット・ビットを押して選びます。「すべて」にすると、その部分は何でも数えます（例：ブレードだけ比べる）。</div>
-    <div class="grid">${[0, 1, 2].map(col).join('')}</div>${picker}
-    <div style="margin-top:12px">${table(['比較項目', ...lab], [...FINS.map(f => r(FIN[f] + '勝ちの割合', es2 => { const w = es2.filter(e => e.win).length; return pct(es2.filter(e => e.win && e.finish === f).length, w) + '%'; })),
-      r('Xダッシュした割合', es2 => pct(es2.filter(e => e.shot.dash).length, es2.length) + '%'), r('ぶつからなかった割合', es2 => pct(es2.filter(e => !e.hits).length, es2.length) + '%'),
-      r('よく勝つシュート', es2 => esc(bestShot(es2)?.key || '—'))])}</div></div>`;
-  },
 };
-let CMP = null, PICK = null;
-// カスタムのid（ブレード|ラチェット|ビット）と名前から、パーツごとの名前を作る
-function splitKey(k) { const [b, r, t] = k.split('|'); return { b: b || '', r: r || '', t: t || '' }; }
-function partOptions(es) {
-  const P = { b: new Map(), r: new Map(), t: new Map() };
-  for (const e of es) {
-    const k = splitKey(e.key), toks = String(e.name || '').split(' ');
-    const bit = toks.pop(), rat = k.r ? toks.pop() : '';
-    if (k.b) P.b.set(k.b, toks.join(' ') || k.b); if (k.r) P.r.set(k.r, rat || k.r); if (k.t) P.t.set(k.t, bit || k.t);
-  }
-  return P;
+// ---------- カスタム比較：カスタマイズ画面と同じように、自分と相手のカスタムを選ぶ ----------
+let PARTS = null; try { PARTS = window.parent !== window ? window.parent.__BEY_PARTS : null; } catch {}
+const short = n => String(n).replace(/（.*）/, '');
+const byId = (list, id) => (PARTS?.[list] || []).find(x => x.id === id);
+function keyToSt(key) {
+  const [b, r, t] = String(key || '').split('|');
+  if (b && b.startsWith('cx:')) { const [, c, core, a] = b.split(':'); const om = core.includes('+') ? core.split('+') : null; return { line: 'CX', form: om ? 'om' : 'main', chip: c, main: om ? '' : core, over: om ? om[0] : '', metal: om ? om[1] : '', assist: a, ratchet: r || '', bit: t || '' }; }
+  const bl = byId('blades', b); return { line: bl?.line || 'BX', blade: b || '', ratchet: r || '', bit: t || '' };
 }
+function stKey(st) {
+  if (st.line === 'CX') return `cx:${st.chip}:${st.form === 'main' ? st.main : st.over + '+' + st.metal}:${st.assist}|${st.ratchet}|${st.bit}`;
+  const bl = byId('blades', st.blade); return `${st.blade}|${bl?.int ? '' : st.ratchet}|${st.bit}`;
+}
+function stName(st) {
+  const r = byId('ratchets', st.ratchet)?.name || '', t = byId('bits', st.bit)?.name || '';
+  if (st.line === 'CX') { const c = byId('chips', st.chip)?.name || ''; const a = short(byId('assists', st.assist)?.name || '');
+    return st.form === 'main' ? `${c}${byId('mains', st.main)?.name || ''} ${a} ${r} ${t}` : `${c}${byId('metals', st.metal)?.name || ''} ${short(byId('overs', st.over)?.name || '')}${a} ${r} ${t}`; }
+  const bl = byId('blades', st.blade); return bl?.int ? `${bl.name} ${t}` : `${bl?.name || ''} ${r} ${t}`;
+}
+function slotsOf(st) {
+  if (st.line !== 'CX') { const bl = byId('blades', st.blade); return [['blade', 'ブレード', PARTS.blades.filter(b => b.line === st.line)], ...(bl?.int ? [] : [['ratchet', 'ラチェット', PARTS.ratchets]]), ['bit', 'ビット', PARTS.bits]]; }
+  return [['chip', 'チップ', PARTS.chips], ...(st.form === 'main' ? [['main', 'メイン', PARTS.mains]] : [['metal', 'メタル', PARTS.metals], ['over', 'オーバー', PARTS.overs]]), ['assist', 'アシスト', PARTS.assists], ['ratchet', 'ラチェット', PARTS.ratchets], ['bit', 'ビット', PARTS.bits]];
+}
+function setLine(st, line) {
+  st.line = line;
+  if (line === 'CX') { st.form ||= 'main'; st.chip ||= PARTS.chips[0].id; st.main ||= PARTS.mains[0]?.id || ''; st.metal ||= PARTS.metals[0]?.id || ''; st.over ||= PARTS.overs[0]?.id || ''; st.assist ||= PARTS.assists[0].id; }
+  else { const bl = byId('blades', st.blade); if (!bl || bl.line !== line) st.blade = PARTS.blades.find(b => b.line === line)?.id || ''; }
+  st.ratchet ||= PARTS.ratchets[0].id; st.bit ||= PARTS.bits[0].id;
+}
+let CMP = null, PICK = null;
+PAGES['カスタム比較'] = () => {
+  if (!PARTS) return '<div class="card"><h2>カスタム比較</h2><div class="empty">シミュレーターの中（画像あり版の「対戦分析」）で開くと使えます。</div></div>';
+  const es = filtered();
+  if (!CMP) { const top = group(es, e => e.key).sort((a, b) => b.n - a.n)[0]; const mk = top?.key; const ok = mk ? group(top.es, e => e.opp).sort((a, b) => b.n - a.n)[0]?.key : '';
+    CMP = { me: keyToSt(mk || ''), op: keyToSt(ok || mk || '') }; for (const st of [CMP.me, CMP.op]) setLine(st, st.line); }
+  const side = (k, label, color) => { const st = CMP[k];
+    return `<div class="card" style="margin:0;border-color:${color}"><div class="note" style="color:${color};font-weight:700">${label}</div>
+      <div class="bar" style="margin:4px 0 6px">${['BX', 'UX', 'CX'].map(l => `<button class="${st.line === l ? 'on' : ''}" data-line="${k}:${l}" style="padding:2px 12px">${l}</button>`).join('')}
+      ${st.line === 'CX' ? `<span class="note" style="margin:0 0 0 8px">組み方</span>${[['main', 'メイン型'], ['om', 'オーバー＋メタル型']].map(([f, n]) => `<button class="${st.form === f ? 'on' : ''}" data-form="${k}:${f}" style="padding:2px 10px">${n}</button>`).join('')}` : ''}</div>
+      <div class="slots" style="grid-template-columns:repeat(auto-fill,minmax(96px,1fr))">${slotsOf(st).map(([sk, sl, list]) => { const on = PICK && PICK.side === k && PICK.slot === sk; return `<button class="slot${on ? ' on' : ''}" data-pick="${k}:${sk}"><span class="note" style="margin:0">${sl}</span><br>${esc(short(list.find(x => x.id === st[sk])?.name || '—'))}</button>`; }).join('')}</div>
+      <div style="font-weight:800">${esc(stName(st))}</div></div>`; };
+  let picker = '';
+  if (PICK) { const st = CMP[PICK.side], sl = slotsOf(st).find(x => x[0] === PICK.slot);
+    if (sl) picker = `<div class="card" style="margin:10px 0 0;background:var(--panel2)"><div class="note">${PICK.side === 'me' ? '自分' : '相手'}の${sl[1]}を選ぶ</div><div class="cards">${sl[2].map(x => `<button class="pcard${st[PICK.slot] === x.id ? ' on' : ''}" data-opt="${esc(x.id)}">${esc(x.name)}</button>`).join('')}</div></div>`; }
+  const mk = stKey(CMP.me), ok = stKey(CMP.op);
+  const vs = es.filter(e => e.key === mk && e.opp === ok), n = vs.length, w = vs.filter(e => e.win).length;
+  const mine = vs.filter(e => e.win), theirs = vs.filter(e => !e.win);
+  const best = (list, f) => { const g = {}; for (const e of list) { const k = shotTxt(f(e)); g[k] = (g[k] || 0) + 1; } const t = Object.entries(g).sort((a, b) => b[1] - a[1])[0]; return t ? esc(t[0]) : '—'; };
+  const result = n ? `<div class="grid" style="margin-top:12px"><div class="card" style="margin:0;text-align:center"><div class="note">自分の勝率</div><div class="big">${pct(w, n)}%</div><div class="note">${n}戦 ${w}勝 ${n - w}敗</div></div></div>
+    <div style="margin-top:12px">${table(['比較項目', '自分', '相手'], [
+      ...FINS.map(f => [FIN[f] + 'で勝った回数', mine.filter(e => e.finish === f).length + '回', theirs.filter(e => e.finish === f).length + '回']),
+      ['Xダッシュした割合', pct(vs.filter(e => e.shot.dash).length, n) + '%', pct(vs.filter(e => e.oshot.dash).length, n) + '%'],
+      ['勝ったときに多いシュート', best(mine, e => e.shot), best(theirs, e => e.oshot)],
+    ])}</div>` : `<div class="empty" style="margin-top:12px">この2つのカスタムが戦ったデータはまだありません</div>`;
+  return `<div class="card"><h2>カスタム比較</h2><div class="grid">${side('me', '自分のカスタム', 'var(--blue)')}${side('op', '相手のカスタム', 'var(--red)')}</div>${picker}${result}</div>`;
+};
 function filteredAll() { return filtered(); }
 function bestShot(es) { return group(es, e => shotTxt(e.shot)).filter(g => g.n >= 2).sort((a, b) => wilson(b.w, b.n) - wilson(a.w, a.n))[0]; }
 function partsOf(key) {
@@ -314,10 +334,10 @@ function render() {
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-tab]'); if (t) { TAB = t.dataset.tab; ls.set('bey_an_tab', TAB); PICK = null; render(); return; }
   const fb = e.target.closest('[data-fin]'); if (fb) { SEL.fin = fb.dataset.fin; render(); return; }
-  const pk = e.target.closest('[data-pick]'); if (pk) { const [i, part] = pk.dataset.pick.split(':'); PICK = PICK && PICK.i === +i && PICK.part === part ? null : { i: +i, part }; render(); return; }
-  const op = e.target.closest('[data-opt]'); if (op && PICK) { CMP[PICK.i][PICK.part] = op.dataset.opt; PICK = null; render(); return; }
-  const on = e.target.closest('[data-cmpon]'); if (on) { CMP[+on.dataset.cmpon] = { b: '', r: '', t: '' }; render(); return; }
-  const off = e.target.closest('[data-cmpoff]'); if (off) { CMP[+off.dataset.cmpoff] = { b: '', r: '', t: '', off: true }; PICK = null; render(); return; }
+  const pk = e.target.closest('[data-pick]'); if (pk) { const [side, slot] = pk.dataset.pick.split(':'); PICK = PICK && PICK.side === side && PICK.slot === slot ? null : { side, slot }; render(); return; }
+  const op = e.target.closest('[data-opt]'); if (op && PICK) { CMP[PICK.side][PICK.slot] = op.dataset.opt; PICK = null; render(); return; }
+  const ln = e.target.closest('[data-line]'); if (ln) { const [side, l] = ln.dataset.line.split(':'); setLine(CMP[side], l); PICK = null; render(); return; }
+  const fm = e.target.closest('[data-form]'); if (fm) { const [side, f] = fm.dataset.form.split(':'); CMP[side].form = f; PICK = null; render(); return; }
 });
 document.addEventListener('change', e => { const s = e.target.dataset?.s; if (s) { SEL[s] = e.target.value; render(); } });
 document.addEventListener('input', e => { const f = e.target.dataset?.f; if (f) { FILTER[f] = e.target.value; const pos = e.target.selectionStart; render(); const n = document.querySelector(`[data-f="${f}"]`); if (n) { n.focus(); n.setSelectionRange(pos, pos); } } });
