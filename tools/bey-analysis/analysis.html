@@ -188,7 +188,7 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 
 // ---------- 絞り込み ----------
 function filtered(days) {
-  const per = days ?? $('period').value, cpu = false; // CPUのベイは数えない（人が選んだベイだけ）
+  const per = days ?? $('period').value, cpu = true; // CPUのベイも数える（データを増やすため）
   let from = 0, to = Infinity;
   if (per === 'c') { if ($('from').value) from = new Date($('from').value).getTime(); if ($('to').value) to = new Date($('to').value).getTime() + 864e5; }
   else if (+per) from = Date.now() - +per * 864e5;
