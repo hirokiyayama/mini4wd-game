@@ -35,6 +35,11 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .empty{color:var(--sub);padding:10px 0}
 .wrap{overflow-x:auto}
 #src{display:none}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.slot{text-align:left;font-weight:700;line-height:1.3;padding:6px 8px;min-height:48px}
+.slot.on,.pcard.on{border-color:var(--gold);background:#1a2660}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px}
+.pcard{text-align:left;padding:8px 10px}
 #src.show{display:block}
 </style>
 </head>
@@ -44,7 +49,6 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
   <span id="status" class="note" style="margin:0"></span>
   <span style="flex:1"></span>
   <button id="demo">仮のデータで見る</button>
-  <button id="reload">データを読み直す</button>
   <button id="srcBtn">データの読み込み設定</button>
 </header>
 <main>
@@ -109,7 +113,7 @@ $('file').onchange = async e => {
   else rows = parseCSV(t);
   setRows(rows, f.name); $('src').classList.remove('show');
 };
-$('load').onclick = () => loadUrl(); $('reload').onclick = () => loadUrl(); $('srcBtn').onclick = () => $('src').classList.toggle('show');
+$('load').onclick = () => loadUrl(); $('srcBtn').onclick = () => $('src').classList.toggle('show');
 $('url').value = ls.get('bey_an_url'); $('key').value = ls.get('bey_an_key');
 
 // ---------- 仮のデータ（表示の確認用。本物のデータには混ざらない） ----------
@@ -231,7 +235,7 @@ const PAGES = {
   '今週の最強カスタム': () => {
     const es = filtered('7');
     const gs = group(es, e => e.key).filter(g => g.n >= minN()).sort((a, b) => wilson(b.w, b.n) - wilson(a.w, a.n)).slice(0, 10);
-    return `<div class="card"><h2>今週の最強カスタム TOP10</h2><div class="note">過去7日・最低${minN()}戦。対戦数が少ないカスタムが上に来すぎないように並べています。</div>${table(['#', 'カスタム', '勝率', '対戦数'], rankRows(gs))}</div>`;
+    return `<div class="card"><h2>今週の最強カスタム TOP10</h2>${table(['#', 'カスタム', '勝率'], gs.map((g, i) => [i + 1, esc(NAMES[g.key] || g.key), rateCell(g.w, g.n)]))}</div>`;
   },
   '勝率・負率・使用': () => {
     const es = filtered(), gs = group(es, e => e.key);
@@ -239,72 +243,57 @@ const PAGES = {
     const win = [...ok].sort((a, b) => wilson(b.w, b.n) - wilson(a.w, a.n)).slice(0, topN());
     const lose = [...ok].sort((a, b) => wilson(b.n - b.w, b.n) - wilson(a.n - a.w, a.n)).slice(0, topN());
     const use = [...gs].sort((a, b) => b.n - a.n).slice(0, topN());
-    const W = es.filter(e => e.win).length;
-    return `<div class="card"><h2>全体の成績</h2><span class="big">${pct(W, es.length)}%</span> <span class="note">${es.length}戦 ${W}勝 ${es.length - W}敗</span></div>
-    <div class="grid"><div class="card"><h2>勝率がいいカスタム TOP${topN()}</h2>${table(['#', 'カスタム', '勝率', '対戦数'], rankRows(win))}</div>
-    <div class="card"><h2>負けているカスタム TOP${topN()}</h2>${table(['#', 'カスタム', '負率', '対戦数'], lose.map((g, i) => [i + 1, esc(NAMES[g.key]), rateCell(g.n - g.w, g.n, true), g.n]))}</div>
-    <div class="card"><h2>使用カスタム TOP${topN()}</h2>${table(['#', 'カスタム', '使用回数', '勝率'], use.map((g, i) => [i + 1, esc(NAMES[g.key]), g.n, rateCell(g.w, g.n)]))}</div></div>`;
-  },
-  '勝ち・負けパターン': () => {
-    let es = filtered();
-    const all = SEL.pat === '__all' || !SEL.pat;
-    const sel = `<div class="bar"><label class="note">カスタム</label><select data-s="pat"><option value="__all">すべて</option>${group(es, e => e.key).sort((a, b) => b.n - a.n).map(g => `<option value="${esc(g.key)}"${g.key === SEL.pat ? ' selected' : ''}>${esc(NAMES[g.key])}（${g.n}回）</option>`).join('')}</select></div>`;
-    if (!all) es = es.filter(e => e.key === SEL.pat);
-    const wins = es.filter(e => e.win), loses = es.filter(e => !e.win);
-    const pat = (list, f) => { const m = {}; for (const e of list) m[f(e)] = (m[f(e)] || 0) + 1; return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, topN()).map(([k, n], i) => [i + 1, esc(k), n, Math.round((100 * n) / list.length) + '%']); };
-    return sel + `<div class="grid"><div class="card"><h2>勝ちパターン</h2><div class="note">${wins.length}勝のうち多い順</div>${table(['#', 'パターン', '回数', '割合'], pat(wins, winPat))}</div>
-    <div class="card"><h2>負けパターン</h2><div class="note">${loses.length}敗のうち多い順</div>${table(['#', 'パターン', '回数', '割合'], pat(loses, losePat))}</div></div>
-    <div class="card"><h2>シュートのしかた別の勝率</h2>${table(['シュート', '勝率', '対戦数', 'Xダッシュした割合'], group(es, e => shotTxt(e.shot)).filter(g => g.n >= Math.min(3, minN())).sort((a, b) => b.w / b.n - a.w / a.n).slice(0, topN()).map(g => [esc(g.key), rateCell(g.w, g.n), g.n, pct(g.es.filter(e => e.shot.dash).length, g.n) + '%']))}</div>`;
-  },
-  '対戦相性': () => {
-    const es = filtered();
-    if (!SEL.mu) SEL.mu = group(es, e => e.key).sort((a, b) => b.n - a.n)[0]?.key;
-    const mine = es.filter(e => e.key === SEL.mu);
-    const q = FILTER.muo || '';
-    const gs = group(mine, e => e.opp).filter(g => !q || (NAMES[g.key] || '').includes(q)).sort((a, b) => b.w / b.n - a.w / a.n || b.n - a.n);
-    return `<div class="card"><h2>対戦相性分析</h2><div class="bar">${customSelect('mu', es, '自分のカスタム')}</div>
-    <div class="bar"><label class="note">相手を絞り込み</label><input data-f="muo" placeholder="ブレード名など" value="${esc(q)}"></div>
-    ${table(['相手のカスタム', '対戦数', '自分の勝率'], gs.map(g => [esc(NAMES[g.key]), g.n, rateCell(g.w, g.n)]))}</div>`;
+    return `<div class="grid"><div class="card"><h2>勝率がいいカスタム TOP${topN()}</h2>${table(['#', 'カスタム', '勝率'], win.map((g, i) => [i + 1, esc(NAMES[g.key]), rateCell(g.w, g.n)]))}</div>
+    <div class="card"><h2>負けているカスタム TOP${topN()}</h2>${table(['#', 'カスタム', '負率'], lose.map((g, i) => [i + 1, esc(NAMES[g.key]), rateCell(g.n - g.w, g.n, true)]))}</div>
+    <div class="card"><h2>使用カスタム TOP${topN()}</h2>${table(['#', 'カスタム', '勝率'], use.map((g, i) => [i + 1, esc(NAMES[g.key]), rateCell(g.w, g.n)]))}</div></div>`;
   },
   'フィニッシュ別': () => {
-    const es = filtered();
-    const tot = FINS.map(f => es.filter(e => e.win && e.finish === f).length), W = tot.reduce((a, b) => a + b, 0);
-    const gs = group(es, e => e.key).filter(g => g.n >= minN()).sort((a, b) => b.n - a.n).slice(0, topN());
-    return `<div class="card"><h2>決まり方の割合（勝ったとき）</h2>${FINS.map((f, i) => `<span class="pill">${FIN[f]} ${pct(tot[i], W)}%（${tot[i]}）</span>`).join('')}</div>
-    <div class="card"><h2>カスタムごとの勝ち方・負け方</h2><div class="note">勝ち = そのフィニッシュで勝った割合、負け = そのフィニッシュで負けた割合（全対戦に対して）</div>
-    ${table(['カスタム', '対戦数', ...FINS.map(f => FIN[f] + ' 勝/負')], gs.map(g => [esc(NAMES[g.key]), g.n, ...FINS.map(f => `${pct(g.es.filter(e => e.win && e.finish === f).length, g.n)}% / ${pct(g.es.filter(e => !e.win && e.finish === f).length, g.n)}%`)]))}</div>`;
+    const es = filtered(), f = SEL.fin || 'spin';
+    // そのフィニッシュで勝った割合（そのカスタムの全対戦のうち）が高い順
+    const gs = group(es, e => e.key).filter(g => g.n >= minN()).map(g => ({ ...g, fw: g.es.filter(e => e.win && e.finish === f).length }))
+      .sort((a, b) => wilson(b.fw, b.n) - wilson(a.fw, a.n)).slice(0, topN());
+    return `<div class="card"><h2>フィニッシュ別 TOP${topN()}</h2>
+    <div class="tabs" style="margin:0 0 10px">${FINS.map(k => `<button class="${k === f ? 'on' : ''}" data-fin="${k}">${FIN[k]}フィニッシュ</button>`).join('')}</div>
+    ${table(['#', 'カスタム', FIN[f] + 'で勝つ率'], gs.map((g, i) => [i + 1, esc(NAMES[g.key]), rateCell(g.fw, g.n)]))}</div>`;
   },
   'カスタム比較': () => {
-    const es = filtered(), gs = group(es, e => e.key).sort((a, b) => b.n - a.n);
-    for (const k of ['c1', 'c2', 'c3']) if (SEL[k] === undefined) SEL[k] = k === 'c3' ? '' : gs[k === 'c1' ? 0 : 1]?.key;
-    const opt = k => `<select data-s="${k}">${k === 'c3' ? '<option value="">（なし）</option>' : ''}${gs.map(g => `<option value="${esc(g.key)}"${g.key === SEL[k] ? ' selected' : ''}>${esc(NAMES[g.key])}（${g.n}回）</option>`).join('')}</select>`;
-    const pick = ['c1', 'c2', 'c3'].map(k => SEL[k]).filter(Boolean).map(k => gs.find(g => g.key === k)).filter(Boolean);
-    const L = 'ABC';
-    return `<div class="card"><h2>カスタム比較</h2><div class="bar">A ${opt('c1')} B ${opt('c2')} C ${opt('c3')}</div>
-    <div class="grid">${pick.map((g, i) => `<div class="card" style="margin:0"><div class="note">カスタム${L[i]}</div><b>${esc(NAMES[g.key])}</b><div class="big">${pct(g.w, g.n)}%</div><div class="note">勝率・対戦数 ${g.n}回</div></div>`).join('')}</div>
-    ${table(['比較項目', ...pick.map((_, i) => L[i])], [...FINS.map(f => [FIN[f] + '勝ちの割合', ...pick.map(g => pct(g.es.filter(e => e.win && e.finish === f).length, g.w) + '%')]),
-      ['Xダッシュした割合', ...pick.map(g => pct(g.es.filter(e => e.shot.dash).length, g.n) + '%')], ['ぶつからなかった割合', ...pick.map(g => pct(g.es.filter(e => !e.hits).length, g.n) + '%')],
-      ['よく勝つシュート', ...pick.map(g => esc(bestShot(g.es)?.key || '—'))]])}</div>`;
-  },
-  '勝ちやすいカスタム検索': () => {
-    const all = filteredAll(); // 相手のカスタムは、CPUのベイも含めて選べる
-    if (!SEL.tg) SEL.tg = group(all, e => e.opp).sort((a, b) => b.n - a.n)[0]?.key;
-    const vs = all.filter(e => e.opp === SEL.tg);
-    const gs = group(vs, e => e.key).filter(g => g.n >= Math.min(3, minN())).sort((a, b) => wilson(b.w, b.n) - wilson(a.w, a.n)).slice(0, topN());
-    return `<div class="card"><h2>勝ちやすいカスタム検索</h2><div class="bar">${customSelect('tg', all, '相手のカスタム', e => e.opp)}</div>
-    <div class="note">${esc(NAMES[SEL.tg] || '')} に勝ちやすいカスタム TOP${topN()}（この相手と3戦以上）</div>
-    ${table(['#', 'カスタム', '勝率', '対戦数', 'よく勝つシュート'], gs.map((g, i) => [i + 1, esc(NAMES[g.key]), rateCell(g.w, g.n), g.n, esc(bestShot(g.es)?.key || '—')]))}</div>`;
-  },
-  '3on3おすすめ': () => {
     const es = filtered();
-    const ok = group(es, e => e.key).filter(g => g.n >= minN()).sort((a, b) => wilson(b.w, b.n) - wilson(a.w, a.n));
-    const team = [], used = new Set();
-    for (const g of ok) { const ps = partsOf(g.key); if (ps.some(p => used.has(p))) continue; team.push(g); ps.forEach(p => used.add(p)); if (team.length === 3) break; }
-    const n3 = es.filter(e => e.fmt === '3v3').length;
-    return `<div class="card"><h2>3on3であなたにおすすめのカスタムと戦い方</h2><div class="note">勝率の高い順に、パーツ（ブレード・ラチェット・ビット、CXはチップ・メイン・メタル・オーバー・アシスト）が重ならない3体を選んでいます。3on3のデータ ${n3}戦</div>
-    ${team.length ? `<div class="grid">${team.map((g, i) => { const b = bestShot(g.es), f = FINS.map(f => [f, g.es.filter(e => e.win && e.finish === f).length]).sort((a, b) => b[1] - a[1])[0]; return `<div class="card" style="margin:0"><div class="note">ベイ${i + 1}</div><b>${esc(NAMES[g.key])}</b><div class="big">${pct(g.w, g.n)}%</div><div class="note">${g.n}戦</div><div>戦い方：${esc(b ? b.key : 'データ不足')}${b ? `（勝率${pct(b.w, b.n)}%）` : ''}</div><div class="note">多い勝ち方：${f && f[1] ? FIN[f[0]] + 'フィニッシュ' : '—'}</div></div>`; }).join('')}</div>` : '<div class="empty">データがまだありません</div>'}</div>`;
+    const P = partOptions(es);
+    CMP ??= [0, 1].map(i => { const k = group(es, e => e.key).sort((a, b) => b.n - a.n)[i]?.key; return k ? splitKey(k) : { b: '', r: '', t: '' }; }).concat([{ b: '', r: '', t: '', off: true }]);
+    const L = 'ABC';
+    const match = c => es.filter(e => { const k = splitKey(e.key); return (!c.b || k.b === c.b) && (!c.r || k.r === c.r) && (!c.t || k.t === c.t); });
+    const used = CMP.map((c, i) => ({ c, i, es: c.off ? null : match(c) })).filter(x => x.es);
+    const slotBtn = (i, part, label) => { const v = CMP[i][part]; const name = v ? P[part].get(v) || v : 'すべて'; const on = PICK && PICK.i === i && PICK.part === part;
+      return `<button class="slot${on ? ' on' : ''}" data-pick="${i}:${part}"><span class="note" style="margin:0">${label}</span><br>${esc(name)}</button>`; };
+    const picker = PICK ? `<div class="card" style="margin:10px 0 0;background:var(--panel2)"><div class="note">カスタム${L[PICK.i]}の${{ b: 'ブレード', r: 'ラチェット', t: 'ビット' }[PICK.part]}を選ぶ</div><div class="cards">
+      <button class="pcard${!CMP[PICK.i][PICK.part] ? ' on' : ''}" data-opt="">すべて</button>
+      ${[...P[PICK.part]].sort((a, b) => a[1].localeCompare(b[1], 'ja')).map(([k, n]) => `<button class="pcard${CMP[PICK.i][PICK.part] === k ? ' on' : ''}" data-opt="${esc(k)}">${esc(n)}</button>`).join('')}</div></div>` : '';
+    const col = i => CMP[i].off
+      ? `<div class="card" style="margin:0"><div class="note">カスタム${L[i]}</div><button data-cmpon="${i}">＋ 比べるカスタムを足す</button></div>`
+      : `<div class="card" style="margin:0"><div class="bar" style="justify-content:space-between;margin:0 0 6px"><span class="note" style="margin:0">カスタム${L[i]}</span>${i === 2 ? `<button data-cmpoff="2" style="padding:2px 8px">× 外す</button>` : ''}</div>
+        <div class="slots">${slotBtn(i, 'b', 'ブレード')}${slotBtn(i, 'r', 'ラチェット')}${slotBtn(i, 't', 'ビット')}</div>
+        ${(() => { const x = used.find(u => u.i === i); const w = x.es.filter(e => e.win).length; return x.es.length ? `<div class="big">${pct(w, x.es.length)}%</div><div class="note">勝率・対戦数 ${x.es.length}回</div>` : '<div class="empty">この組み合わせのデータはまだありません</div>'; })()}</div>`;
+    const rows = used.map(x => x.es), lab = used.map(x => L[x.i]);
+    const r = (f, fn) => [f, ...rows.map(fn)];
+    return `<div class="card"><h2>カスタム比較</h2><div class="note">ブレード・ラチェット・ビットを押して選びます。「すべて」にすると、その部分は何でも数えます（例：ブレードだけ比べる）。</div>
+    <div class="grid">${[0, 1, 2].map(col).join('')}</div>${picker}
+    <div style="margin-top:12px">${table(['比較項目', ...lab], [...FINS.map(f => r(FIN[f] + '勝ちの割合', es2 => { const w = es2.filter(e => e.win).length; return pct(es2.filter(e => e.win && e.finish === f).length, w) + '%'; })),
+      r('Xダッシュした割合', es2 => pct(es2.filter(e => e.shot.dash).length, es2.length) + '%'), r('ぶつからなかった割合', es2 => pct(es2.filter(e => !e.hits).length, es2.length) + '%'),
+      r('よく勝つシュート', es2 => esc(bestShot(es2)?.key || '—'))])}</div></div>`;
   },
 };
+let CMP = null, PICK = null;
+// カスタムのid（ブレード|ラチェット|ビット）と名前から、パーツごとの名前を作る
+function splitKey(k) { const [b, r, t] = k.split('|'); return { b: b || '', r: r || '', t: t || '' }; }
+function partOptions(es) {
+  const P = { b: new Map(), r: new Map(), t: new Map() };
+  for (const e of es) {
+    const k = splitKey(e.key), toks = String(e.name || '').split(' ');
+    const bit = toks.pop(), rat = k.r ? toks.pop() : '';
+    if (k.b) P.b.set(k.b, toks.join(' ') || k.b); if (k.r) P.r.set(k.r, rat || k.r); if (k.t) P.t.set(k.t, bit || k.t);
+  }
+  return P;
+}
 function filteredAll() { return filtered(); }
 function bestShot(es) { return group(es, e => shotTxt(e.shot)).filter(g => g.n >= 2).sort((a, b) => wilson(b.w, b.n) - wilson(a.w, a.n))[0]; }
 function partsOf(key) {
@@ -317,11 +306,19 @@ function partsOf(key) {
 }
 
 let TAB = ls.get('bey_an_tab') || '今週の最強カスタム';
+if (!PAGES[TAB]) TAB = '今週の最強カスタム';
 function render() {
   $('tabs').innerHTML = Object.keys(PAGES).map(k => `<button class="${k === TAB ? 'on' : ''}" data-tab="${k}">${k}</button>`).join('');
   $('view').innerHTML = E.length ? PAGES[TAB]() : '<div class="card"><h2>データがありません</h2><div class="note">まだ対戦データがありません。ベイろぐにプラグインを入れると、遊んだ結果がここに出ます。</div></div>';
 }
-document.addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) { TAB = t.dataset.tab; ls.set('bey_an_tab', TAB); render(); } });
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-tab]'); if (t) { TAB = t.dataset.tab; ls.set('bey_an_tab', TAB); PICK = null; render(); return; }
+  const fb = e.target.closest('[data-fin]'); if (fb) { SEL.fin = fb.dataset.fin; render(); return; }
+  const pk = e.target.closest('[data-pick]'); if (pk) { const [i, part] = pk.dataset.pick.split(':'); PICK = PICK && PICK.i === +i && PICK.part === part ? null : { i: +i, part }; render(); return; }
+  const op = e.target.closest('[data-opt]'); if (op && PICK) { CMP[PICK.i][PICK.part] = op.dataset.opt; PICK = null; render(); return; }
+  const on = e.target.closest('[data-cmpon]'); if (on) { CMP[+on.dataset.cmpon] = { b: '', r: '', t: '' }; render(); return; }
+  const off = e.target.closest('[data-cmpoff]'); if (off) { CMP[+off.dataset.cmpoff] = { b: '', r: '', t: '', off: true }; PICK = null; render(); return; }
+});
 document.addEventListener('change', e => { const s = e.target.dataset?.s; if (s) { SEL[s] = e.target.value; render(); } });
 document.addEventListener('input', e => { const f = e.target.dataset?.f; if (f) { FILTER[f] = e.target.value; const pos = e.target.selectionStart; render(); const n = document.querySelector(`[data-f="${f}"]`); if (n) { n.focus(); n.setSelectionRange(pos, pos); } } });
 for (const id of ['period', 'who', 'from', 'to']) $(id).addEventListener('change', () => { const c = $('period').value === 'c'; $('from').style.display = $('to').style.display = c ? '' : 'none'; render(); });
