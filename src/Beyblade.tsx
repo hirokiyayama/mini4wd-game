@@ -26,8 +26,8 @@ function ringRadiusAtAngle(th: number) { // 画面の角度 th（右が0、下�
   return RING_R - NOTCH_DEPTH * u * u * (3 - 2 * u);
 }
 const ringRadiusAt = (x: number, y: number) => ringRadiusAtAngle(Math.atan2(y, x));
-// シュートで落とせるのは、エクストリームラインの少し内側まで（実際は、ラインの上や外には落とせない）
-const inDrop = <T extends { x: number; y: number }>(p: T): T => { const d = Math.hypot(p.x, p.y), lim = ringRadiusAtAngle(Math.atan2(p.y, p.x)) - BEY_R - 8; return d > lim ? { ...p, x: (p.x * lim) / d, y: (p.y * lim) / d } : p; };
+// シュートで落とせるのは、中心の円とエクストリームラインのまんなかまで（外側に落とすと、すぐリングに乗ってダッシュしてしまうため）
+const inDrop = <T extends { x: number; y: number }>(p: T): T => { const d = Math.hypot(p.x, p.y), lim = (ringRadiusAtAngle(Math.atan2(p.y, p.x)) + RING_R * 0.5) / 2; return d > lim ? { ...p, x: (p.x * lim) / d, y: (p.y * lim) / d } : p; };
 const BOWL_TILT = 200; // すり鉢の傾き（px/s²）。外周でも、ほんの少し中心へ寄る程度
 const OVER_PHI = 0.64; // 下方向から左右ポケットまでの角度（rad）
 
