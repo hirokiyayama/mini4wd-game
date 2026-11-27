@@ -288,7 +288,7 @@ function setLine(st, line) {
   st.ratchet ||= PARTS.ratchets[0].id; st.bit ||= PARTS.bits[0].id;
 }
 let CMP = null, PICK = null;
-PAGES['カスタム比較'] = () => {
+const PAGE_CMP = () => { // カスタム比較（今はタブに出さない。あとで PAGES['カスタム比較'] = PAGE_CMP で戻す）
   if (!PARTS) return '<div class="card"><h2>カスタム比較</h2><div class="empty">シミュレーターの中（画像あり版の「対戦分析」）で開くと使えます。</div></div>';
   const es = filtered();
   if (!CMP) { const top = group(es, e => e.key).sort((a, b) => b.n - a.n)[0]; const mk = top?.key; const ok = mk ? group(top.es, e => e.opp).sort((a, b) => b.n - a.n)[0]?.key : '';
