@@ -91,16 +91,16 @@ function parseCSV(t) {
   return out.filter(r => r.length > 1).map(r => Object.fromEntries(head.map((h, i) => [h, r[i] ?? ''])));
 }
 function setRows(rows, from) { ROWS = rows; $('status').textContent = `${rows.length}ラウンド（${from}）`; build(); }
-async function loadUrl() {
+async function loadUrl(quiet) {
   const url = $('url').value.trim(), key = $('key').value.trim();
   if (!url) { $('src').classList.add('show'); return; }
-  ls.set('bey_an_url', url); ls.set('bey_an_key', key);
-  $('status').textContent = '読み込み中…';
+  if (!AUTO) { ls.set('bey_an_url', url); ls.set('bey_an_key', key); }
+  if (quiet !== true) $('status').textContent = '読み込み中…';
   try {
     const r = await fetch(url + (url.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(key));
     const j = await r.json();
     if (j.error) { $('status').textContent = 'KEYが違います'; return; }
-    setRows(j.rows, 'スプレッドシート'); $('src').classList.remove('show');
+    setRows(j.rows, '最新 ' + new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })); $('src').classList.remove('show');
   } catch (e) { $('status').textContent = '読み込めませんでした（URLを確認してください）'; }
 }
 $('file').onchange = async e => {
@@ -110,7 +110,7 @@ $('file').onchange = async e => {
   else rows = parseCSV(t);
   setRows(rows, f.name); $('src').classList.remove('show');
 };
-$('load').onclick = loadUrl; $('reload').onclick = loadUrl; $('srcBtn').onclick = () => $('src').classList.toggle('show');
+$('load').onclick = () => loadUrl(); $('reload').onclick = () => loadUrl(); $('srcBtn').onclick = () => $('src').classList.toggle('show');
 $('url').value = ls.get('bey_an_url'); $('key').value = ls.get('bey_an_key');
 
 // ---------- 1ラウンド → 両方のベイから見た記録 ----------
@@ -272,8 +272,15 @@ document.addEventListener('click', e => { const t = e.target.closest('[data-tab]
 document.addEventListener('change', e => { const s = e.target.dataset?.s; if (s) { SEL[s] = e.target.value; render(); } });
 document.addEventListener('input', e => { const f = e.target.dataset?.f; if (f) { FILTER[f] = e.target.value; const pos = e.target.selectionStart; render(); const n = document.querySelector(`[data-f="${f}"]`); if (n) { n.focus(); n.setSelectionRange(pos, pos); } } });
 for (const id of ['period', 'build', 'who', 'cpu', 'minN', 'topN', 'from', 'to']) $(id).addEventListener('change', () => { const c = $('period').value === 'c'; $('from').style.display = $('to').style.display = c ? '' : 'none'; render(); });
+// シミュレーター（個人用の版）の中で開いたときは、送り先とパスワードが分かるので、自動で読み込む（開いている間は1分ごとに更新）
+let AUTO = null;
+try { const P = window.parent !== window ? window.parent : null; if (P && P.__BEY_AN_KEY !== undefined) AUTO = { url: P.__BEY_LOG_URL || '', key: P.__BEY_AN_KEY || '' }; } catch {}
 render();
-if ($('url').value) loadUrl(); else $('src').classList.add('show');
+if (AUTO) {
+  $('srcBtn').style.display = 'none';
+  if (AUTO.url && AUTO.key) { $('url').value = AUTO.url; $('key').value = AUTO.key; loadUrl(); setInterval(() => { if (!document.hidden) loadUrl(true); }, 60000); }
+  else { $('status').textContent = ''; $('view').innerHTML = '<div class="card"><h2>記録の準備中です</h2><div class="note">記録の送り先（Apps Script）がまだ設定されていません。設定されると、ここに自動でデータが出ます。</div></div>'; $('tabs').innerHTML = ''; }
+} else if ($('url').value) loadUrl(); else $('src').classList.add('show');
 </script>
 </body>
 </html>
