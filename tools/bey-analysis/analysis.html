@@ -26,7 +26,7 @@ table{width:100%;border-collapse:collapse}
 th,td{padding:6px 8px;border-bottom:1px solid #1b2450;text-align:left;vertical-align:middle}
 th{color:var(--sub);font-size:12px;font-weight:600}
 td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.rate{display:flex;align-items:center;gap:8px;min-width:120px}
+.rate{display:flex;align-items:center;gap:8px;min-width:120px;white-space:nowrap}
 .rate i{display:block;height:8px;border-radius:4px;background:var(--blue)}
 .rate.bad i{background:var(--red)}
 .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
@@ -205,7 +205,16 @@ function filtered(days) {
 const minN = () => 20, topN = () => 10; // 最低対戦数は20、表示数は10で固定
 // 少ない対戦数で上に来ないように、勝率の下限（ウィルソン）で並べる
 function wilson(w, n) { if (!n) return 0; const z = 1.64, p = w / n; return (p + z * z / (2 * n) - z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))) / (1 + z * z / n); }
-function group(es, kf) { const m = new Map(); for (const e of es) { const k = kf(e); if (k == null) continue; let g = m.get(k); if (!g) m.set(k, g = { key: k, n: 0, w: 0, es: [] }); g.n++; if (e.win) g.w++; g.es.push(e); } return [...m.values()]; }
+const PTS = { spin: 1, over: 2, burst: 2, extreme: 3 }; // 本物のバトルと同じ点数
+function group(es, kf) { const m = new Map(); for (const e of es) { const k = kf(e); if (k == null) continue; let g = m.get(k); if (!g) m.set(k, g = { key: k, n: 0, w: 0, pe: 0, pc: 0, es: [] }); g.n++; if (e.win) { g.w++; g.pe += PTS[e.finish] || 1; } else g.pc += PTS[e.finish] || 1; g.es.push(e); } return [...m.values()]; }
+// ランキングの物差し：'pt'＝ポイント率（取った点÷(取った点＋取られた点)）／'win'＝勝率（勝った回数÷戦った回数）／'both'＝並びはポイント率、表に両方
+const METRIC = 'both';
+const ratio = (g, bad) => { const r = METRIC === 'win' ? g.w / g.n : g.pe / Math.max(1, g.pe + g.pc); return bad ? 1 - r : r; };
+const rk = (g, bad) => wilson(ratio(g, bad) * g.n, g.n); // 対戦数が少ないものが上に来すぎないように
+const rcell = (g, bad) => { const v = Math.round(ratio(g, bad) * 100); return `<div class="rate${bad ? ' bad' : ''}"><i style="width:${Math.max(2, v)}px"></i><b>${v}%</b></div>`; };
+const MLABEL = METRIC === 'win' ? '勝率' : 'ポイント率';
+const mcols = bad => (METRIC === 'both' ? [bad ? '負率' : '勝率', bad ? '取られた点の率' : 'ポイント率'] : [bad ? (METRIC === 'win' ? '負率' : '取られた点の率') : MLABEL]);
+const mcells = (g, bad) => (METRIC === 'both' ? [rateCell(bad ? g.n - g.w : g.w, g.n, bad), rcell(g, bad)] : [rcell(g, bad)]);
 const pct = (w, n) => (n ? Math.round((100 * w) / n) : 0);
 const rateCell = (w, n, bad) => `<div class="rate${bad ? ' bad' : ''}"><i style="width:${Math.max(2, pct(w, n))}px"></i><b>${pct(w, n)}%</b></div>`;
 
@@ -235,18 +244,18 @@ const SEL = {}, FILTER = {};
 const PAGES = {
   '今週の最強カスタム': () => {
     const es = filtered('7');
-    const gs = group(es, e => e.key).filter(g => g.n >= minN()).sort((a, b) => wilson(b.w, b.n) - wilson(a.w, a.n)).slice(0, 10);
-    return `<div class="card"><h2>今週の最強カスタム TOP10</h2>${table(['#', 'カスタム', '勝率'], gs.map((g, i) => [i + 1, esc(NAMES[g.key] || g.key), rateCell(g.w, g.n)]))}</div>`;
+    const gs = group(es, e => e.key).filter(g => g.n >= minN()).sort((a, b) => rk(b) - rk(a)).slice(0, 10);
+    return `<div class="card"><h2>今週の最強カスタム TOP10</h2>${table(['#', 'カスタム', ...mcols()], gs.map((g, i) => [i + 1, esc(NAMES[g.key] || g.key), ...mcells(g)]))}</div>`;
   },
   '勝率・負率・使用': () => {
     const es = filtered(), gs = group(es, e => e.key);
     const ok = gs.filter(g => g.n >= minN());
-    const win = [...ok].sort((a, b) => wilson(b.w, b.n) - wilson(a.w, a.n)).slice(0, topN());
-    const lose = [...ok].sort((a, b) => wilson(b.n - b.w, b.n) - wilson(a.n - a.w, a.n)).slice(0, topN());
+    const win = [...ok].sort((a, b) => rk(b) - rk(a)).slice(0, topN());
+    const lose = [...ok].sort((a, b) => rk(b, true) - rk(a, true)).slice(0, topN());
     const use = [...gs].sort((a, b) => b.n - a.n).slice(0, topN());
-    return `<div class="grid"><div class="card"><h2>勝率がいいカスタム TOP${topN()}</h2>${table(['#', 'カスタム', '勝率'], win.map((g, i) => [i + 1, esc(NAMES[g.key]), rateCell(g.w, g.n)]))}</div>
-    <div class="card"><h2>負けているカスタム TOP${topN()}</h2>${table(['#', 'カスタム', '負率'], lose.map((g, i) => [i + 1, esc(NAMES[g.key]), rateCell(g.n - g.w, g.n, true)]))}</div>
-    <div class="card"><h2>使用カスタム TOP${topN()}</h2>${table(['#', 'カスタム', '勝率'], use.map((g, i) => [i + 1, esc(NAMES[g.key]), rateCell(g.w, g.n)]))}</div></div>`;
+    return `<div class="grid" style="grid-template-columns:1fr"><div class="card"><h2>${MLABEL}がいいカスタム TOP${topN()}</h2>${table(['#', 'カスタム', ...mcols()], win.map((g, i) => [i + 1, esc(NAMES[g.key]), ...mcells(g)]))}</div>
+    <div class="card"><h2>負けているカスタム TOP${topN()}</h2>${table(['#', 'カスタム', ...mcols(true)], lose.map((g, i) => [i + 1, esc(NAMES[g.key]), ...mcells(g, true)]))}</div>
+    <div class="card"><h2>使用カスタム TOP${topN()}</h2>${table(['#', 'カスタム', ...mcols()], use.map((g, i) => [i + 1, esc(NAMES[g.key]), ...mcells(g)]))}</div></div>`;
   },
   'フィニッシュ別': () => {
     const es = filtered(), f = SEL.fin || 'spin';
