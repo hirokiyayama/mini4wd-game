@@ -26,6 +26,8 @@ function ringRadiusAtAngle(th: number) { // 画面の角度 th（右が0、下�
   return RING_R - NOTCH_DEPTH * u * u * (3 - 2 * u);
 }
 const ringRadiusAt = (x: number, y: number) => ringRadiusAtAngle(Math.atan2(y, x));
+// シュートで落とせるのは、エクストリームラインの少し内側まで（実際は、ラインの上や外には落とせない）
+const inDrop = <T extends { x: number; y: number }>(p: T): T => { const d = Math.hypot(p.x, p.y), lim = ringRadiusAtAngle(Math.atan2(p.y, p.x)) - BEY_R - 8; return d > lim ? { ...p, x: (p.x * lim) / d, y: (p.y * lim) / d } : p; };
 const BOWL_TILT = 200; // すり鉢の傾き（px/s²）。外周でも、ほんの少し中心へ寄る程度
 const OVER_PHI = 0.64; // 下方向から左右ポケットまでの角度（rad）
 
@@ -1251,7 +1253,7 @@ export function Beyblade() {
     const clampPos = (x: number, y: number) => { // 自陣の半分の中に収める
       const ax = Math.min(Math.max(x * cpuSx, m), lim);
       const maxY = Math.sqrt(Math.max(0, lim * lim - ax * ax));
-      return { x: ax * cpuSx, y: Math.max(-maxY, Math.min(maxY, y)) };
+      return inDrop({ x: ax * cpuSx, y: Math.max(-maxY, Math.min(maxY, y)) });
     };
     // リングに乗って、できるだけ早く上側からXダッシュできる出発点（技巧派）
     const ringStart = () => {
@@ -1510,8 +1512,9 @@ export function Beyblade() {
 
   // 「GO!シュート!」の表示が消えたら、ベイを落とす
   const fireNow = useCallback(() => {
-    const my = dropRef.current, cpu = cpuPlanRef.current;
-    if (phaseRef.current !== 'count' || !my || !cpu) return;
+    const my0 = dropRef.current, cpu0 = cpuPlanRef.current;
+    if (phaseRef.current !== 'count' || !my0 || !cpu0) return;
+    const my = inDrop(my0), cpu = inDrop(cpu0); // CPU・時間切れのランダムも、ラインの内側から
     countTimers.current.forEach(window.clearTimeout);
     const bs: [Bey, Bey] = [
       makeBey('me', my.x, my.y, modeRef.current === 'diag', aimRef.current, rpmToPower(powRef.current)),
@@ -1570,7 +1573,7 @@ export function Beyblade() {
     // 左側の人は左半分、右側の人は右半分にしか落とせない
     const ax = Math.min(Math.max(p.x * sx, m), lim);
     const maxY = Math.sqrt(Math.max(0, lim * lim - ax * ax));
-    const x = ax * sx, y = Math.max(-maxY, Math.min(maxY, p.y));
+    const { x, y } = inDrop({ x: ax * sx, y: Math.max(-maxY, Math.min(maxY, p.y)) });
     activeRef.current = player;
     if (player === 0) {
       dropRef.current = { x, y };
@@ -1752,7 +1755,7 @@ export function Beyblade() {
     const sx = side === 'left' ? -1 : 1, lim = R - BEY_R - 8, m = BEY_R + 8;
     const rr = (0.15 + 0.75 * Math.random()) * lim, phi = (Math.random() - 0.5) * Math.PI * 0.92;
     const ax = Math.min(Math.max(Math.cos(phi) * rr, m), lim), maxY = Math.sqrt(Math.max(0, lim * lim - ax * ax));
-    const x = ax * sx, y = Math.max(-maxY, Math.min(maxY, Math.sin(phi) * rr));
+    const { x, y } = inDrop({ x: ax * sx, y: Math.max(-maxY, Math.min(maxY, Math.sin(phi) * rr)) });
     const dir = side === 'left' ? TYPES.me.spinDir : TYPES.cpu.spinDir, a = Math.random() * Math.PI * 2;
     return { x, y, diag: Math.random() < 0.4, aim: Math.random() < 0.5 ? defaultAim(x, y, dir) : { x: Math.cos(a), y: Math.sin(a) } };
   };
