@@ -88,7 +88,7 @@ function parseCSV(t) {
   const head = out.shift() || [];
   return out.filter(r => r.length > 1).map(r => Object.fromEntries(head.map((h, i) => [h, r[i] ?? ''])));
 }
-function setRows(rows, from) { ROWS = rows; $('status').textContent = `${rows.length}ラウンド（${from}）`; build(); }
+function setRows(rows, from) { ROWS = rows; const nb = b => rows.filter(r => r.build === b).length; $('status').textContent = `${rows.length}ラウンド（画像なし ${nb('beylog')}・画像あり ${nb('personal')}／${from}）`; build(); }
 let DEMO = false;
 async function loadUrl(quiet) {
   if (DEMO) return;
