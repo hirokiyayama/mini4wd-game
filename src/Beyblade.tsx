@@ -110,7 +110,7 @@ const BITS: PartDef[] = [
   { id: 'H', bal: 0.88, name: 'H', desc: '軸先側の6つの平面形状がベイの傾きを抑制し、常に安定した体勢を保持し続ける設計。', s: { atk: 30, def: 35, sta: 20, dash: 15, burst: 80 }, type: 'bal', weight: 2.6, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
   { id: 'L', bal: 1.12, tier: 2, name: 'L', desc: '3段階の高さを持つ軸先により、低速・中速・高速の3パターンの攻撃速度を実現。', s: { atk: 40, def: 5, sta: 15, dash: 40, burst: 80 }, weight: 2.7, syn: { blades: ['meteor', 'glory'], good: { atk: 20, sta: 5 }, bad: { atk: -20, sta: -10, dash: -10 } } },
   { id: 'Nr', name: 'Nr', desc: '細い球状の軸先で長く回り、10枚刃ギヤでXダッシュ時の速度を抑えスタミナロスを軽減する設計。', s: { atk: 15, def: 20, sta: 60, dash: 5, burst: 30 }, weight: 1.9, dashCost: 0.4, syn: { blades: ['wizard', 'knight2'], good: { sta: 20 } } },
-  { id: 'UN', bal: 0.9, tier: 3, name: 'UN', desc: 'Nビットより2mm低い設計で、ベイの重心を下げ、低位置からのカウンターをサポートする。', s: { atk: 10, def: 60, sta: 20, dash: 10, burst: 30 }, type: 'def', weight: 1.9, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
+  { id: 'UN', bal: 0.89, tier: 3, name: 'UN', desc: 'Nビットより2mm低い設計で、ベイの重心を下げ、低位置からのカウンターをサポートする。', s: { atk: 10, def: 60, sta: 20, dash: 10, burst: 30 }, type: 'def', weight: 1.9, mobility: 0.45, steady: 0.92, exitResist: 1.1 },
   { id: 'I', bal: 0.9, tier: 4, name: 'I', desc: '複数の突起を設けた大型円筒形の軸先がスタジアムに強くグリップし、高速機動の攻撃を実現。', s: { atk: 50, def: 15, sta: 5, dash: 30, burst: 80 }, type: 'atk', weight: 2.4, mobility: 1.9 },
   { id: 'K', name: 'K', desc: '角ばった軸先側面でスタジアム内を蹴り、連続攻撃やカウンター防御に繋がる動きを実現。', s: { atk: 35, def: 25, sta: 15, dash: 25, burst: 80 }, type: 'bal', weight: 2.1 },
 ];
@@ -527,9 +527,9 @@ function buildBey(c: Custom) {
     bid: bl.id, // ブレードの種類（形の計算に使う）
     splitLoss: ['atk', 'bal'].includes(partTypeOf(bit)) ? 0.2 : 0, // バレットグリフォンが分かれるときに失う回転：アタック・バランス系のビットは2割、スタミナ・ディフェンス系は失わない
     flat: ['K', 'L', 'R', 'LR', 'I'].includes(bit.id), // 底が平ら：きれいな円を描かず、楕円で回り、そのうちリングや壁に当たって軌道が変わる
-    noRideInner: ['E', 'B', 'FB', 'H', 'Nr'].includes(bit.id),
-    orbitR: bit.id === 'E' ? 153 : bit.id === 'H' ? 80 : ['B', 'FB', 'Nr'].includes(bit.id) ? 92 : 0, // 小さな円の半径（実際に描く円は、これより少し大きくなる）：B・FB・Nrは中心の円の段のあたり、Eはもっと外側、Hはもっと内側, // 水平シュートで真ん中の円の中に落とすと、その円より少し大きいくらいの小さな円を描いて回る（ぶつかるまで）
-    tip: bit.id === 'H', // 底がとがっている：真ん中にとどまり、ほんの少しだけ小さな円を描いて動く
+    noRideInner: ['E', 'B', 'FB', 'H', 'UN', 'Nr'].includes(bit.id),
+    orbitR: bit.id === 'E' ? 153 : ['H', 'UN'].includes(bit.id) ? 80 : ['B', 'FB', 'Nr'].includes(bit.id) ? 92 : 0, // 小さな円の半径（実際に描く円は、これより少し大きくなる）：B・FB・Nrは中心の円の段のあたり、Eはもっと外側、Hはもっと内側, // 水平シュートで真ん中の円の中に落とすと、その円より少し大きいくらいの小さな円を描いて回る（ぶつかるまで）
+    tip: ['H', 'UN'].includes(bit.id), // 底がとがっている：真ん中にとどまり、ほんの少しだけ小さな円を描いて動く
     cruise: 360 * Math.sqrt(bit.mobility ?? 1), // 実際の動画：ベイは中央に落ち着いても止まらず、一定の速さで動き回り続ける（Rなど動き回るビットは速く、Hは遅い）
     steady: bit.steady ?? 1,
     exitResist: bit.exitResist ?? 1,
