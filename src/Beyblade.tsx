@@ -28,7 +28,7 @@ function ringRadiusAtAngle(th: number) { // 画面の角度 th（右が0、下�
 const ringRadiusAt = (x: number, y: number) => ringRadiusAtAngle(Math.atan2(y, x));
 // シュートで落とせるのは、真ん中の円の少し外まで。上の凹みのあたり（真上から±DROP_TOP）には落とせない
 // （外側に落とすと、すぐリングに乗ってダッシュしてしまうため）
-const DROP_R = RING_R * 0.5 + 24, DROP_TOP = NOTCH_A2 + 0.08;
+const DROP_R = RING_R * 0.5 + 40, DROP_TOP = NOTCH_A2 + 0.08;
 const inDrop = <T extends { x: number; y: number }>(p: T): T => {
   let d = Math.hypot(p.x, p.y), th = Math.atan2(p.y, p.x);
   const fromTop = Math.atan2(Math.sin(th + Math.PI / 2), Math.cos(th + Math.PI / 2)); // 真上からの角度（右が＋）
