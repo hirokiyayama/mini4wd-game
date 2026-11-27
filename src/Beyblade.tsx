@@ -26,8 +26,16 @@ function ringRadiusAtAngle(th: number) { // 画面の角度 th（右が0、下�
   return RING_R - NOTCH_DEPTH * u * u * (3 - 2 * u);
 }
 const ringRadiusAt = (x: number, y: number) => ringRadiusAtAngle(Math.atan2(y, x));
-// シュートで落とせるのは、中心の円とエクストリームラインのまんなかまで（外側に落とすと、すぐリングに乗ってダッシュしてしまうため）
-const inDrop = <T extends { x: number; y: number }>(p: T): T => { const d = Math.hypot(p.x, p.y), lim = (ringRadiusAtAngle(Math.atan2(p.y, p.x)) + RING_R * 0.5) / 2; return d > lim ? { ...p, x: (p.x * lim) / d, y: (p.y * lim) / d } : p; };
+// シュートで落とせるのは、真ん中の円の少し外まで。上の凹みのあたり（真上から±DROP_TOP）には落とせない
+// （外側に落とすと、すぐリングに乗ってダッシュしてしまうため）
+const DROP_R = RING_R * 0.5 + 24, DROP_TOP = NOTCH_A2 + 0.08;
+const inDrop = <T extends { x: number; y: number }>(p: T): T => {
+  let d = Math.hypot(p.x, p.y), th = Math.atan2(p.y, p.x);
+  const fromTop = Math.atan2(Math.sin(th + Math.PI / 2), Math.cos(th + Math.PI / 2)); // 真上からの角度（右が＋）
+  if (Math.abs(fromTop) < DROP_TOP && d > 1) th = -Math.PI / 2 + (fromTop < 0 || (fromTop === 0 && p.x < 0) ? -DROP_TOP : DROP_TOP);
+  d = Math.min(d, DROP_R);
+  return { ...p, x: Math.cos(th) * d, y: Math.sin(th) * d };
+};
 const BOWL_TILT = 200; // すり鉢の傾き（px/s²）。外周でも、ほんの少し中心へ寄る程度
 const OVER_PHI = 0.64; // 下方向から左右ポケットまでの角度（rad）
 
@@ -2470,7 +2478,8 @@ export function Beyblade() {
         // 自分が落とせる半分をハイライト
         const sx = sideRef.current === 'left' ? -1 : 1;
         ctx.save();
-        ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.clip();
+        // 落とせる範囲（真ん中の円の少し外まで・上の凹みのあたりは除く）だけを塗る
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, DROP_R, -Math.PI / 2 + DROP_TOP, (3 * Math.PI) / 2 - DROP_TOP); ctx.closePath(); ctx.clip();
         if (vsRef.current === '2p') { // 2人対戦：左（プレイヤー1・青）と右（プレイヤー2・赤）の両方を色分け
           ctx.fillStyle = 'rgba(90,171,255,0.16)'; ctx.fillRect(-R, -R, R, R * 2);
           ctx.fillStyle = 'rgba(239,68,68,0.12)'; ctx.fillRect(0, -R, R, R * 2);
@@ -2479,8 +2488,10 @@ export function Beyblade() {
           ctx.fillRect(sx < 0 ? -R : 0, -R, R, R * 2);
         }
         ctx.setLineDash([8, 8]); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(120,170,255,0.7)';
-        ctx.beginPath(); ctx.moveTo(0, -R); ctx.lineTo(0, R); ctx.stroke();
-        ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, R); ctx.stroke();
+        ctx.restore();
+        ctx.save(); ctx.setLineDash([8, 8]); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(120,170,255,0.55)'; // 範囲のふち
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, DROP_R, -Math.PI / 2 + DROP_TOP, (3 * Math.PI) / 2 - DROP_TOP); ctx.closePath(); ctx.stroke();
         ctx.restore();
       }
 
