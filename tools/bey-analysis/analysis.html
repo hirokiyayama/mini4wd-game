@@ -211,8 +211,8 @@ const M = {
 const rk = (g, m) => wilson(M[m].v(g) * g.n, g.n);
 const mcell = (g, m, tot) => { const v = Math.round(M[m].v(g, tot) * 1000) / 10, s = m === 'use' ? v.toFixed(1) : Math.round(v); return `<div class="rate${M[m].bad ? ' bad' : ''}"><i style="width:${Math.max(2, m === 'use' ? v * 4 : v)}px"></i><b>${s}%</b></div>`; };
 const mBtns = (attr, keys, cur) => `<div class="tabs" style="margin:0 0 10px">${keys.map(k => `<button class="${k === cur ? 'on' : ''}" data-${attr}="${k}">${M[k].label}</button>`).join('')}</div>`;
-const PT_NOTE = `<div class="note" style="margin-top:10px;line-height:1.7">※ポイント率＝取ったポイント ÷（取ったポイント＋取られたポイント）。スピンフィニッシュ1点・オーバー／バーストフィニッシュ2点・エクストリームフィニッシュ3点で数えます。勝率だけだと点の小さいスピン勝ちが多いベイが上に来やすいので、大きい点で勝つ・大きい点を取られないベイを見るための数字です。3on3も、そのベイが出たラウンドごとに数えます。<br>※20戦以上したカスタムだけが出ます。</div>`;
-const RK_NOTE = PT_NOTE.replace('<br>※20戦以上したカスタムだけが出ます。</div>', '') + `<br>※取られたポイント率＝取られたポイント ÷（取ったポイント＋取られたポイント）。<br>※使用率＝そのカスタムが使われた回数 ÷ 全カスタムが使われた回数。<br>※使用率以外は、20戦以上したカスタムだけが出ます。`;
+const PT_NOTE = `<div class="note" style="margin-top:10px;line-height:1.7">※ポイント率＝取ったポイント ÷（取ったポイント＋取られたポイント）</div>`;
+const RK_NOTE = `<div class="note" style="margin-top:10px;line-height:1.7">※ポイント率＝取ったポイント ÷（取ったポイント＋取られたポイント）<br>※取られたポイント率＝取られたポイント ÷（取ったポイント＋取られたポイント）<br>※使用率＝そのカスタムが使われた回数 ÷ 全カスタムが使われた回数`;
 const pct = (w, n) => (n ? Math.round((100 * w) / n) : 0);
 const rateCell = (w, n, bad) => `<div class="rate${bad ? ' bad' : ''}"><i style="width:${Math.max(2, pct(w, n))}px"></i><b>${pct(w, n)}%</b></div>`;
 
