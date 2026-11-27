@@ -1896,7 +1896,7 @@ export function Beyblade() {
     const canvas = canvasRef.current;
     if (!canvasOn || !canvas) return;
     const ctx = canvas.getContext('2d')!;
-    const timeScale = Number(new URLSearchParams(window.location.search).get('speed')) || 1;
+    const timeScale = Number(new URLSearchParams(window.location.search).get('speed')) || 1.5; // ふだんの速さ：ベイの動きは1.5倍（計算は同じなので、強さのバランスは変わらない）
     let raf = 0;
     let last = performance.now();
     let acc = 0;
