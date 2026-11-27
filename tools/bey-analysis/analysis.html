@@ -64,8 +64,6 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
     <label>期間</label>
     <select id="period"><option value="7">過去7日</option><option value="30">過去30日</option><option value="0" selected>全期間</option><option value="c">指定</option></select>
     <input type="date" id="from" style="display:none"><input type="date" id="to" style="display:none">
-    <label>対象</label>
-    <select id="who"><option value="">全員</option></select>
   </div>
 
   <div class="tabs" id="tabs"></div>
@@ -104,7 +102,7 @@ async function loadUrl(quiet) {
     const j = await r.json();
     if (j.error) { $('status').textContent = 'パスワードが違います'; return; }
     setRows(since ? ROWS.concat(j.rows) : j.rows, '最新 ' + new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })); $('src').classList.remove('show');
-  } catch (e) { $('status').textContent = '読み込めませんでした（URLを確認してください）'; }
+  } catch (e) { if (quiet !== true) $('status').textContent = ''; }
 }
 $('file').onchange = async e => {
   const f = e.target.files[0]; if (!f) return; const t = await f.text();
@@ -182,11 +180,6 @@ function build() {
     }
   }
   const pids = {}; for (const r of ROWS) pids[r.pid] = (pids[r.pid] || 0) + 1;
-  const cur = $('who').value;
-  const mine = ls.get('bey_pid'); // シミュレーターと同じページの中で開いたときは、この端末のIDが分かる
-  // 対象は「全員」と「自分」だけ（ほかの人の成績は見られない）
-  $('who').innerHTML = '<option value="">全員</option>' + (mine ? `<option value="${esc(mine)}">自分</option>` : '');
-  $('who').value = cur;
   NAMES = {}; for (const e of E) NAMES[e.key] = e.name;
   render();
 }
@@ -195,26 +188,31 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 
 // ---------- 絞り込み ----------
 function filtered(days) {
-  const per = days ?? $('period').value, who = $('who').value, cpu = false; // CPUのベイは数えない（人が選んだベイだけ）
+  const per = days ?? $('period').value, cpu = false; // CPUのベイは数えない（人が選んだベイだけ）
   let from = 0, to = Infinity;
   if (per === 'c') { if ($('from').value) from = new Date($('from').value).getTime(); if ($('to').value) to = new Date($('to').value).getTime() + 864e5; }
   else if (+per) from = Date.now() - +per * 864e5;
   const bd = '';
-  return E.filter(e => e.t >= from && e.t < to && (!bd || e.build === bd) && (who ? e.human && e.pid === who : (e.human || cpu)));
+  return E.filter(e => e.t >= from && e.t < to && (!bd || e.build === bd) && (e.human || cpu));
 }
 const minN = () => 20, topN = () => 10; // 最低対戦数は20、表示数は10で固定
 // 少ない対戦数で上に来ないように、勝率の下限（ウィルソン）で並べる
 function wilson(w, n) { if (!n) return 0; const z = 1.64, p = w / n; return (p + z * z / (2 * n) - z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))) / (1 + z * z / n); }
 const PTS = { spin: 1, over: 2, burst: 2, extreme: 3 }; // 本物のバトルと同じ点数
 function group(es, kf) { const m = new Map(); for (const e of es) { const k = kf(e); if (k == null) continue; let g = m.get(k); if (!g) m.set(k, g = { key: k, n: 0, w: 0, pe: 0, pc: 0, es: [] }); g.n++; if (e.win) { g.w++; g.pe += PTS[e.finish] || 1; } else g.pc += PTS[e.finish] || 1; g.es.push(e); } return [...m.values()]; }
-// ランキングの物差し：'pt'＝ポイント率（取った点÷(取った点＋取られた点)）／'win'＝勝率（勝った回数÷戦った回数）／'both'＝並びはポイント率、表に両方
-const METRIC = 'both';
-const ratio = (g, bad) => { const r = METRIC === 'win' ? g.w / g.n : g.pe / Math.max(1, g.pe + g.pc); return bad ? 1 - r : r; };
-const rk = (g, bad) => wilson(ratio(g, bad) * g.n, g.n); // 対戦数が少ないものが上に来すぎないように
-const rcell = (g, bad) => { const v = Math.round(ratio(g, bad) * 100); return `<div class="rate${bad ? ' bad' : ''}"><i style="width:${Math.max(2, v)}px"></i><b>${v}%</b></div>`; };
-const MLABEL = METRIC === 'win' ? '勝率' : 'ポイント率';
-const mcols = bad => (METRIC === 'both' ? [bad ? '負率' : '勝率', bad ? '取られた点の率' : 'ポイント率'] : [bad ? (METRIC === 'win' ? '負率' : '取られた点の率') : MLABEL]);
-const mcells = (g, bad) => (METRIC === 'both' ? [rateCell(bad ? g.n - g.w : g.w, g.n, bad), rcell(g, bad)] : [rcell(g, bad)]);
+// ランキングの物差し（どれも対戦数が少ないものが上に来すぎないように、下限（ウィルソン）で並べる）
+const M = {
+  win:  { label: '勝率', bad: false, v: g => g.w / g.n },
+  lose: { label: '負率', bad: true, v: g => (g.n - g.w) / g.n },
+  pt:   { label: 'ポイント率', bad: false, v: g => g.pe / Math.max(1, g.pe + g.pc) },
+  ptc:  { label: '取られたポイント率', bad: true, v: g => g.pc / Math.max(1, g.pe + g.pc) },
+  use:  { label: '使用率', bad: false, v: (g, tot) => g.n / Math.max(1, tot) },
+};
+const rk = (g, m) => wilson(M[m].v(g) * g.n, g.n);
+const mcell = (g, m, tot) => { const v = Math.round(M[m].v(g, tot) * 1000) / 10, s = m === 'use' ? v.toFixed(1) : Math.round(v); return `<div class="rate${M[m].bad ? ' bad' : ''}"><i style="width:${Math.max(2, m === 'use' ? v * 4 : v)}px"></i><b>${s}%</b></div>`; };
+const mBtns = (attr, keys, cur) => `<div class="tabs" style="margin:0 0 10px">${keys.map(k => `<button class="${k === cur ? 'on' : ''}" data-${attr}="${k}">${M[k].label}</button>`).join('')}</div>`;
+const PT_NOTE = `<div class="note" style="margin-top:10px;line-height:1.7">※ポイント率＝取ったポイント ÷（取ったポイント＋取られたポイント）。スピンフィニッシュ1点・オーバー／バーストフィニッシュ2点・エクストリームフィニッシュ3点で数えます。勝率だけだと点の小さいスピン勝ちが多いベイが上に来やすいので、大きい点で勝つ・大きい点を取られないベイを見るための数字です。3on3も、そのベイが出たラウンドごとに数えます。<br>※20戦以上したカスタムだけが出ます。</div>`;
+const RK_NOTE = PT_NOTE.replace('<br>※20戦以上したカスタムだけが出ます。</div>', '') + `<br>※取られたポイント率＝取られたポイント ÷（取ったポイント＋取られたポイント）。<br>※使用率＝そのカスタムが使われた回数 ÷ 全カスタムが使われた回数。<br>※使用率以外は、20戦以上したカスタムだけが出ます。`;
 const pct = (w, n) => (n ? Math.round((100 * w) / n) : 0);
 const rateCell = (w, n, bad) => `<div class="rate${bad ? ' bad' : ''}"><i style="width:${Math.max(2, pct(w, n))}px"></i><b>${pct(w, n)}%</b></div>`;
 
@@ -243,19 +241,14 @@ const SEL = {}, FILTER = {};
 // ---------- 各ページ ----------
 const PAGES = {
   '今週の最強カスタム': () => {
-    const es = filtered('7');
-    const gs = group(es, e => e.key).filter(g => g.n >= minN()).sort((a, b) => rk(b) - rk(a)).slice(0, 10);
-    return `<div class="card"><h2>今週の最強カスタム TOP10</h2>${table(['#', 'カスタム', ...mcols()], gs.map((g, i) => [i + 1, esc(NAMES[g.key] || g.key), ...mcells(g)]))}</div>`;
+    const es = filtered('7'), m = SEL.wk || 'win';
+    const gs = group(es, e => e.key).filter(g => g.n >= minN()).sort((a, b) => rk(b, m) - rk(a, m)).slice(0, 10);
+    return `<div class="card"><h2>今週の最強カスタム TOP10</h2>${mBtns('wk', ['win', 'pt'], m)}${table(['#', 'カスタム', M[m].label], gs.map((g, i) => [i + 1, esc(NAMES[g.key] || g.key), mcell(g, m)]))}${PT_NOTE}</div>`;
   },
-  '勝率・負率・使用': () => {
-    const es = filtered(), gs = group(es, e => e.key);
-    const ok = gs.filter(g => g.n >= minN());
-    const win = [...ok].sort((a, b) => rk(b) - rk(a)).slice(0, topN());
-    const lose = [...ok].sort((a, b) => rk(b, true) - rk(a, true)).slice(0, topN());
-    const use = [...gs].sort((a, b) => b.n - a.n).slice(0, topN());
-    return `<div class="grid" style="grid-template-columns:1fr"><div class="card"><h2>${MLABEL}がいいカスタム TOP${topN()}</h2>${table(['#', 'カスタム', ...mcols()], win.map((g, i) => [i + 1, esc(NAMES[g.key]), ...mcells(g)]))}</div>
-    <div class="card"><h2>負けているカスタム TOP${topN()}</h2>${table(['#', 'カスタム', ...mcols(true)], lose.map((g, i) => [i + 1, esc(NAMES[g.key]), ...mcells(g, true)]))}</div>
-    <div class="card"><h2>使用カスタム TOP${topN()}</h2>${table(['#', 'カスタム', ...mcols()], use.map((g, i) => [i + 1, esc(NAMES[g.key]), ...mcells(g)]))}</div></div>`;
+  'ランキング': () => {
+    const es = filtered(), gs = group(es, e => e.key), m = SEL.rk || 'win';
+    const list = m === 'use' ? [...gs].sort((a, b) => b.n - a.n) : gs.filter(g => g.n >= minN()).sort((a, b) => rk(b, m) - rk(a, m));
+    return `<div class="card"><h2>${M[m].label} TOP${topN()}</h2>${mBtns('rk', ['win', 'lose', 'pt', 'ptc', 'use'], m)}${table(['#', 'カスタム', M[m].label], list.slice(0, topN()).map((g, i) => [i + 1, esc(NAMES[g.key]), mcell(g, m, es.length)]))}${RK_NOTE}</div></div>`;
   },
   'フィニッシュ別': () => {
     const es = filtered(), f = SEL.fin || 'spin';
@@ -342,6 +335,8 @@ function render() {
 }
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-tab]'); if (t) { TAB = t.dataset.tab; ls.set('bey_an_tab', TAB); PICK = null; render(); return; }
+  const wk = e.target.closest('[data-wk]'); if (wk) { SEL.wk = wk.dataset.wk; render(); return; }
+  const rb = e.target.closest('[data-rk]'); if (rb) { SEL.rk = rb.dataset.rk; render(); return; }
   const fb = e.target.closest('[data-fin]'); if (fb) { SEL.fin = fb.dataset.fin; render(); return; }
   const pk = e.target.closest('[data-pick]'); if (pk) { const [side, slot] = pk.dataset.pick.split(':'); PICK = PICK && PICK.side === side && PICK.slot === slot ? null : { side, slot }; render(); return; }
   const op = e.target.closest('[data-opt]'); if (op && PICK) { CMP[PICK.side][PICK.slot] = op.dataset.opt; PICK = null; render(); return; }
@@ -350,7 +345,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('change', e => { const s = e.target.dataset?.s; if (s) { SEL[s] = e.target.value; render(); } });
 document.addEventListener('input', e => { const f = e.target.dataset?.f; if (f) { FILTER[f] = e.target.value; const pos = e.target.selectionStart; render(); const n = document.querySelector(`[data-f="${f}"]`); if (n) { n.focus(); n.setSelectionRange(pos, pos); } } });
-for (const id of ['period', 'who', 'from', 'to']) $(id).addEventListener('change', () => { const c = $('period').value === 'c'; $('from').style.display = $('to').style.display = c ? '' : 'none'; render(); });
+for (const id of ['period', 'from', 'to']) $(id).addEventListener('change', () => { const c = $('period').value === 'c'; $('from').style.display = $('to').style.display = c ? '' : 'none'; render(); });
 // シミュレーター（個人用の版）の中で開いたときは、送り先とパスワードが分かるので、自動で読み込む（開いている間は1分ごとに更新）
 let AUTO = null;
 try { const P = window.parent !== window ? window.parent : null; if (P && P.__BEY_AN_KEY !== undefined) AUTO = { url: P.__BEY_LOG_URL || '', key: P.__BEY_AN_KEY || '' }; } catch {}
