@@ -43,6 +43,7 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
   <h1>ベイX 対戦分析</h1>
   <span id="status" class="note" style="margin:0"></span>
   <span style="flex:1"></span>
+  <button id="demo">仮のデータで見る</button>
   <button id="reload">データを読み直す</button>
   <button id="srcBtn">データの読み込み設定</button>
 </header>
@@ -59,13 +60,8 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
     <label>期間</label>
     <select id="period"><option value="7">過去7日</option><option value="30">過去30日</option><option value="0" selected>全期間</option><option value="c">指定</option></select>
     <input type="date" id="from" style="display:none"><input type="date" id="to" style="display:none">
-    <label>版</label>
-    <select id="build"><option value="">両方</option><option value="personal">画像あり</option><option value="beylog">画像なし（beylog）</option></select>
     <label>対象</label>
     <select id="who"><option value="">全体</option></select>
-    <label><input type="checkbox" id="cpu"> CPUのベイも含める</label>
-    <label>最低対戦数</label><input type="number" id="minN" value="5" min="1" style="width:70px">
-    <label>表示数</label><select id="topN"><option>10</option><option>100</option></select>
   </div>
 
   <div class="tabs" id="tabs"></div>
@@ -91,7 +87,9 @@ function parseCSV(t) {
   return out.filter(r => r.length > 1).map(r => Object.fromEntries(head.map((h, i) => [h, r[i] ?? ''])));
 }
 function setRows(rows, from) { ROWS = rows; $('status').textContent = `${rows.length}ラウンド（${from}）`; build(); }
+let DEMO = false;
 async function loadUrl(quiet) {
+  if (DEMO) return;
   const url = $('url').value.trim(), key = $('key').value.trim();
   if (!url) { $('src').classList.add('show'); return; }
   if (!AUTO) { ls.set('bey_an_url', url); ls.set('bey_an_key', key); }
@@ -113,6 +111,60 @@ $('file').onchange = async e => {
 };
 $('load').onclick = () => loadUrl(); $('reload').onclick = () => loadUrl(); $('srcBtn').onclick = () => $('src').classList.toggle('show');
 $('url').value = ls.get('bey_an_url'); $('key').value = ls.get('bey_an_key');
+
+// ---------- 仮のデータ（表示の確認用。本物のデータには混ざらない） ----------
+function demoRows() {
+  // [カスタムのid, 名前, 強さ, タイプ（atk/def/sta/bal）]
+  const C = [
+    ['shark|r360|R', 'シャークスケイル 3-60 R', 0.9, 'atk'], ['wizard|r960|B', 'ウィザードロッド 9-60 B', 0.85, 'sta'], ['aero|r160|E', 'エアロペガサス 1-60 E', 0.8, 'atk'],
+    ['glory||LR', 'グローリーワルキューレ LR', 0.75, 'atk'], ['meteor|r360|R', 'メテオドラグーン 3-60 R', 0.75, 'atk'], ['cobalt|r760|E', 'コバルトドラグーン 7-60 E', 0.7, 'atk'],
+    ['knight2|r360|H', 'ナイトシールドV2 3-60 H', 0.7, 'def'], ['zeke|r160|LR', 'ジークスペリオン 1-60 LR', 0.7, 'atk'], ['phoenix|r960|H', 'フェニックスウイング 9-60 H', 0.6, 'bal'],
+    ['hells||B', 'ヘルズネザー B', 0.55, 'sta'], ['wyvern|r160|R', 'ワイバーンホバー 1-60 R', 0.55, 'sta'], ['bullet||R', 'バレットグリフォン R', 0.5, 'atk'],
+    ['luster|r560|K', 'ラスタードラグーン 5-60 K', 0.5, 'bal'], ['clock|r360|Nr', 'クロックミラージュ 3-60 Nr', 0.4, 'sta'], ['golem|r960|H', 'ゴーレムロック 9-60 H', 0.4, 'def'],
+    ['scythe2|r360|B', 'ヘルズサイズV2 3-60 B', 0.35, 'sta'], ['dran2|r360|E', 'ドランソードV2 3-60 E', 0.25, 'atk'], ['warrow2|r960|B', 'ウィザードアローV2 9-60 B', 0.2, 'sta'],
+    ['cx:pegasus:blast:A|r160|E', 'ペガサスブラスト A 1-60 E', 0.65, 'atk'], ['cx:knight:bolt:H|r360|R', 'ナイトボルト H 3-60 R', 0.5, 'atk'],
+    ['cx:valkyrie:B+fortress:W|r160|B', 'ワルキューレフォートレス BW 1-60 B', 0.55, 'def'], ['cx:dran:G+whip:V|r960|H', 'ドランウィップ GV 9-60 H', 0.4, 'sta'],
+    ['cx:emperor:T+rage:K|r360|UN', 'エンペラーレイジ TK 3-60 UN', 0.35, 'def'], ['cx:wizard:arc:W|r160|Nr', 'ウィザードアーク W 1-60 Nr', 0.25, 'sta'],
+  ];
+  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const pickW = arr => { const t = arr.reduce((a, x) => a + x[1], 0); let r = rnd() * t; for (const x of arr) { r -= x[1]; if (r <= 0) return x[0]; } return arr[0][0]; };
+  const popular = C.map((c, i) => [i, 1 + c[2] * 3]); // 強いカスタムほどよく使われる
+  const mine = ls.get('bey_pid') || 'demo_me';
+  const pids = [mine, ...Array.from({ length: 45 }, (_, i) => 'p' + (1000 + i * 37).toString(36))];
+  const rows = [], now = Date.now();
+  const FIN_BY = { atk: [['over', 4], ['extreme', 3], ['burst', 2], ['spin', 1]], def: [['spin', 3], ['over', 2], ['burst', 2], ['extreme', 1]], sta: [['spin', 6], ['over', 1], ['burst', 1], ['extreme', 1]], bal: [['spin', 3], ['over', 3], ['burst', 2], ['extreme', 2]] };
+  const shot = (side, isAtk) => { const diag = rnd() < (isAtk ? 0.6 : 0.3); const x = (side === 'L' ? -1 : 1) * (60 + rnd() * 130), y = -150 + rnd() * 300; return { side, x: Math.round(x), y: Math.round(y), kind: diag ? '斜め' : '水平', aim: diag ? Math.round(-180 + rnd() * 360) : '', rpm: Math.round(9000 + rnd() * 5000) }; };
+  for (let n = 0; n < 4000; n++) {
+    const pid = rnd() < 0.08 ? mine : pids[1 + Math.floor(rnd() * (pids.length - 1))];
+    const a = C[pickW(popular)], b = C[Math.floor(rnd() * C.length)];
+    const vs = rnd() < 0.85 ? 'cpu' : rnd() < 0.5 ? '2p' : 'online';
+    const s1 = shot(rnd() < 0.7 ? 'L' : 'R', a[3] === 'atk'), s2 = shot(s1.side === 'L' ? 'R' : 'L', b[3] === 'atk');
+    const hits = rnd() < 0.12 ? 0 : 1 + Math.floor(rnd() * 6);
+    // 勝つ確率：強さの差 ＋ シュートの相性（攻撃型は斜めで相手側、持久型は水平が少し有利）
+    let pw = 0.5 + (a[2] - b[2]) * 0.6;
+    const aim1 = s1.kind === '斜め' && typeof s1.aim === 'number' ? Math.cos((s1.aim * Math.PI) / 180) * (s1.side === 'L' ? 1 : -1) : 0;
+    if (a[3] === 'atk') pw += s1.kind === '斜め' ? 0.08 * aim1 : -0.03; else if (a[3] === 'sta') pw += s1.kind === '水平' ? 0.06 : -0.04;
+    if (!hits) pw += a[3] === 'sta' ? 0.15 : -0.15;
+    const win = rnd() < Math.max(0.05, Math.min(0.95, pw)) ? 'p1' : 'p2';
+    const wt = win === 'p1' ? a[3] : b[3];
+    const finish = !hits ? 'spin' : pickW(FIN_BY[wt]);
+    const dash = c => (/\|(E|R|LR|K)$/.test(c[0]) ? Math.floor(rnd() * 3) : rnd() < 0.3 ? 1 : 0);
+    rows.push({ id: n + 1, time: new Date(now - rnd() * 30 * 864e5).toISOString(), pid, sid: 'demo', build: rnd() < 0.3 ? 'personal' : 'beylog', mode: rnd() < 0.85 ? 'versus' : 'tournament', vs, fmt: rnd() < 0.25 ? '3v3' : '1v1', diff: vs === 'cpu' ? 'normal' : '',
+      p1: a[0], p1name: a[1], p2: b[0], p2name: b[1], win, finish,
+      p1side: s1.side, p1x: s1.x, p1y: s1.y, p1shot: s1.kind, p1aim: s1.aim, p1rpm: s1.rpm, p1dash: dash(a),
+      p2side: s2.side, p2x: s2.x, p2y: s2.y, p2shot: s2.kind, p2aim: s2.aim, p2rpm: s2.rpm, p2dash: dash(b),
+      hits, firstHit: hits ? Math.round(10 + rnd() * 40) / 10 : '', sec: Math.round(30 + rnd() * 900) / 10 });
+  }
+  return rows;
+}
+$('demo').onclick = () => {
+  DEMO = !DEMO;
+  $('demo').textContent = DEMO ? '本物のデータに戻す' : '仮のデータで見る';
+  $('demo').classList.toggle('on', DEMO);
+  if (DEMO) { REAL = ROWS; setRows(demoRows(), '仮のデータ・表示の確認用'); $('status').style.color = 'var(--gold)'; }
+  else { $('status').style.color = ''; if (REAL) setRows(REAL, '本物のデータ'); else { ROWS = []; build(); } loadUrl(); }
+};
+let REAL = null;
 
 // ---------- 1ラウンド → 両方のベイから見た記録 ----------
 const num = v => (v === '' || v == null ? null : +v);
@@ -138,14 +190,14 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '
 
 // ---------- 絞り込み ----------
 function filtered(days) {
-  const per = days ?? $('period').value, who = $('who').value, cpu = $('cpu').checked;
+  const per = days ?? $('period').value, who = $('who').value, cpu = false; // CPUのベイは数えない（人が選んだベイだけ）
   let from = 0, to = Infinity;
   if (per === 'c') { if ($('from').value) from = new Date($('from').value).getTime(); if ($('to').value) to = new Date($('to').value).getTime() + 864e5; }
   else if (+per) from = Date.now() - +per * 864e5;
-  const bd = $('build').value;
+  const bd = '';
   return E.filter(e => e.t >= from && e.t < to && (!bd || e.build === bd) && (who ? e.human && e.pid === who : (e.human || cpu)));
 }
-const minN = () => Math.max(1, +$('minN').value || 1), topN = () => +$('topN').value;
+const minN = () => 20, topN = () => 10; // 最低対戦数は20、表示数は10で固定
 // 少ない対戦数で上に来ないように、勝率の下限（ウィルソン）で並べる
 function wilson(w, n) { if (!n) return 0; const z = 1.64, p = w / n; return (p + z * z / (2 * n) - z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))) / (1 + z * z / n); }
 function group(es, kf) { const m = new Map(); for (const e of es) { const k = kf(e); if (k == null) continue; let g = m.get(k); if (!g) m.set(k, g = { key: k, n: 0, w: 0, es: [] }); g.n++; if (e.win) g.w++; g.es.push(e); } return [...m.values()]; }
@@ -165,7 +217,7 @@ function winPat(e) { return `${shotTxt(e.shot)}${e.shot.dash ? '→Xダッシュ
 function losePat(e) { return `${shotTxt(e.shot)}${e.hits ? '' : '→ぶつからず'}→${FIN[e.finish]}負け`; }
 
 // ---------- 表 ----------
-function table(cols, rows) { if (!rows.length) return '<div class="empty">データがまだありません（最低対戦数を下げると出ることがあります）</div>'; return `<div class="wrap"><table><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>${rows.map(r => `<tr>${r.map((c, i) => `<td${typeof c === 'number' ? ' class="n"' : ''}>${c}</td>`).join('')}</tr>`).join('')}</table></div>`; }
+function table(cols, rows) { if (!rows.length) return '<div class="empty">データがまだありません（20戦以上したカスタムが出ます）</div>'; return `<div class="wrap"><table><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>${rows.map(r => `<tr>${r.map((c, i) => `<td${typeof c === 'number' ? ' class="n"' : ''}>${c}</td>`).join('')}</tr>`).join('')}</table></div>`; }
 function rankRows(gs, bad) { return gs.map((g, i) => [i + 1, esc(NAMES[g.key] || g.key), rateCell(g.w, g.n, bad), g.n]); }
 function customSelect(id, es, label, kf = e => e.key) {
   const gs = group(es, kf).sort((a, b) => b.n - a.n);
@@ -272,7 +324,7 @@ function render() {
 document.addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) { TAB = t.dataset.tab; ls.set('bey_an_tab', TAB); render(); } });
 document.addEventListener('change', e => { const s = e.target.dataset?.s; if (s) { SEL[s] = e.target.value; render(); } });
 document.addEventListener('input', e => { const f = e.target.dataset?.f; if (f) { FILTER[f] = e.target.value; const pos = e.target.selectionStart; render(); const n = document.querySelector(`[data-f="${f}"]`); if (n) { n.focus(); n.setSelectionRange(pos, pos); } } });
-for (const id of ['period', 'build', 'who', 'cpu', 'minN', 'topN', 'from', 'to']) $(id).addEventListener('change', () => { const c = $('period').value === 'c'; $('from').style.display = $('to').style.display = c ? '' : 'none'; render(); });
+for (const id of ['period', 'who', 'from', 'to']) $(id).addEventListener('change', () => { const c = $('period').value === 'c'; $('from').style.display = $('to').style.display = c ? '' : 'none'; render(); });
 // シミュレーター（個人用の版）の中で開いたときは、送り先とパスワードが分かるので、自動で読み込む（開いている間は1分ごとに更新）
 let AUTO = null;
 try { const P = window.parent !== window ? window.parent : null; if (P && P.__BEY_AN_KEY !== undefined) AUTO = { url: P.__BEY_LOG_URL || '', key: P.__BEY_AN_KEY || '' }; } catch {}
