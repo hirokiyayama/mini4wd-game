@@ -26,10 +26,10 @@ function ringRadiusAtAngle(th: number) { // 画面の角度 th（右が0、下�
   return RING_R - NOTCH_DEPTH * u * u * (3 - 2 * u);
 }
 const ringRadiusAt = (x: number, y: number) => ringRadiusAtAngle(Math.atan2(y, x));
-// シュートで落とせるのは、真ん中の円の少し外まで。上の凹みのあたり（真上から±DROP_TOP）には落とせない
+// シュートで落とせるのは、真ん中の円の少し外まで（左右それぞれ半円）
 // （外側に落とすと、すぐリングに乗ってダッシュしてしまうため）
-const DROP_VIEW = RING_R * 0.5 + 24 + BEY_R; // 薄い色で見せる範囲（ベイの体がおさまる大きさ。実際に落とせる中心の範囲 DROP_R より広い）
-const DROP_R = RING_R * 0.5 + 24, DROP_TOP = NOTCH_A2 + 0.08;
+const DROP_VIEW = RING_R * 0.5 + 12 + BEY_R; // 薄い色で見せる範囲（ベイの体がおさまる大きさ。実際に落とせる中心の範囲 DROP_R より広い）
+const DROP_R = RING_R * 0.5 + 12, DROP_TOP = 0; // 上の凹みのあたりも、半円でつなげて落とせる
 const inDrop = <T extends { x: number; y: number }>(p: T): T => {
   let d = Math.hypot(p.x, p.y), th = Math.atan2(p.y, p.x);
   const fromTop = Math.atan2(Math.sin(th + Math.PI / 2), Math.cos(th + Math.PI / 2)); // 真上からの角度（右が＋）
@@ -811,7 +811,7 @@ interface Bey {
   ph0: number; // 進路のゆれの位相
   dAt: number; // （未使用）
   calmT: number; // 凹みから戻ったあと、しばらくは、勢いをつけない時間
-  softDone: boolean; spiralT: number; orbR: number; diagShot: boolean; notched: boolean; prevD: number; // 斜めシュートか／上の凹みで一度とどまったか／前の位置のリングからの距離
+  softDone: boolean; spiralT: number; orbR: number; orbUntil: number; orbSp: number; diagShot: boolean; notched: boolean; prevD: number; // 斜めシュートか／上の凹みで一度とどまったか／前の位置のリングからの距離
   outAng: number; prevTh: number; // リングの外側を回った角度（1周回ったら、次の動きに移る）
   postT: number; // ぶつかってからの、惰性で動く時間（この間は、ビットごとの円・楕円の動きを切る）
   eAng: number; er: number; // 平らな底のビットの楕円の向き・ひらべったさ
@@ -851,6 +851,13 @@ function exitKind(x: number, y: number): 'extreme' | 'over' | null {
 }
 
 // 向きを指定しなかった場合：リングへ向かって反時計回りに走る向き
+// 水平シュートで円の外に落としたとき：ほぼ斜面に沿った向き（回転の向きに少し流れる）。外へはほんの少しだけ
+function flatAim(x: number, y: number, dir: 1 | -1 = 1) {
+  const d = Math.hypot(x, y) || 1;
+  const ux = (y / d) * dir + (x / d) * 0.08, uy = (-x / d) * dir + (y / d) * 0.08;
+  const l = Math.hypot(ux, uy) || 1;
+  return { x: ux / l, y: uy / l };
+}
 function defaultAim(x: number, y: number, dir: 1 | -1 = 1) {
   const d = Math.hypot(x, y) || 1;
   const ux = (y / d) * 0.9 * dir + (x / d) * 0.45, uy = (-x / d) * 0.9 * dir + (y / d) * 0.45;
@@ -866,9 +873,9 @@ const rpmToPower = (rpm: number) => Math.max(0, Math.min(1, (rpm - POW_MIN) / (P
 function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: number; y: number } | null, power: number): Bey {
   const spinMax = 3350 * (0.6 + 0.4 * power);
   const smallCircle = !diag && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5; // 小さな円で回るビットは、最初から円に沿う向きで動き出す
-  const tdn = Math.hypot(x, y) || 1, a = diag ? (aim ?? defaultAim(x, y, TYPES[type].spinDir)) : TYPES[type].tip ? { x: -x / tdn, y: -y / tdn } : smallCircle ? { x: (y / tdn) * TYPES[type].spinDir, y: (-x / tdn) * TYPES[type].spinDir } : defaultAim(x, y, TYPES[type].spinDir); // 水平シュートは矢印なし：決めた向きには飛ばさず、そのまま回り始める（斜めだけ向きを決められる）。Hビットは、どこから水平シュートしても真ん中へ向かう
+  const tdn = Math.hypot(x, y) || 1, a = diag ? (aim ?? defaultAim(x, y, TYPES[type].spinDir)) : TYPES[type].tip ? { x: -x / tdn, y: -y / tdn } : smallCircle ? { x: (y / tdn) * TYPES[type].spinDir, y: (-x / tdn) * TYPES[type].spinDir } : flatAim(x, y, TYPES[type].spinDir); // 水平シュートは矢印なし：決めた向きには飛ばさず、そのまま回り始める（斜めだけ向きを決められる）。Hビットは、どこから水平シュートしても真ん中へ向かう
   const mob = TYPES[type].mobility;
-  const sp = (260 + 140 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない
+  const sp = (smallCircle || TYPES[type].tip ? 260 + 140 * power : 150 + 90 * power) * Math.min(1, mob); // Hは水平に打ってもあまり飛び出さない。円の外に水平で落とすと、すり鉢の斜面に沿ってゆっくり回り出す（いきなりリングへは向かわない）
   return {
     type, x, y, vx: diag ? a.x * (75 + 0.16 * (130 + 140 * power) * (mob > 1 ? 1.3 : 1)) * (mob > 1 ? mob * mob : 1) : a.x * sp, vy: diag ? a.y * (75 + 0.16 * (130 + 140 * power) * (mob > 1 ? 1.3 : 1)) * (mob > 1 ? mob * mob : 1) : a.y * sp,
     spin: spinMax, spinMax, burst: 0, angle: 0,
@@ -877,7 +884,9 @@ function makeBey(type: BeyType, x: number, y: number, diag: boolean, aim: { x: n
     holdT: (diag ? (mob > 1 ? 0.6 : 1.05) : mob < 1 ? 0.5 * (1 - mob) : 0) * (1 + 0.8 * Math.max(0, (0.5 - power) / 0.5)), riding: false, rideT: 0, // パワーが低いほど、斜めシュートでとどまる時間が長い
     ax: a.x, ay: a.y, push: (130 + 140 * power) * (mob > 1 ? 1.3 : 1),
     knockT: 0, hit: false, rideChance: diag ? 0.4 : 1, onRing: false,
-    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, orbR: !diag && !TYPES[type].tip && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5 ? TYPES[type].orbitR : 0, softDone: false, spiralT: 0, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0, vAng: Math.random() * Math.PI * 2, hPh: 3, hT: 0, wild: Math.max(0, (power - 0.5) / 0.5), calm: Math.max(0, (0.5 - power) / 0.5),
+    age: 0, coast: 0, ph0: Math.random() * 6.28, dAt: 0, calmT: 0, diagShot: diag, orbR: !diag && !TYPES[type].tip && TYPES[type].noRideInner && Math.hypot(x, y) < RING_R * 0.5 ? TYPES[type].orbitR : !diag && !TYPES[type].tip && Math.hypot(x, y) >= RING_R * 0.5 ? Math.hypot(x, y) : 0,
+    // 水平シュートで真ん中の円の外に落としたとき：すぐにはリングへ行かず、しばらく落とした所の近くを斜面に沿ってゆっくり回り、少しずつふくらんでからリングにかかる
+    orbUntil: !diag && !TYPES[type].tip && Math.hypot(x, y) >= RING_R * 0.5 ? 1.4 + Math.random() * 1.4 : Infinity, orbSp: !diag && !TYPES[type].tip && Math.hypot(x, y) >= RING_R * 0.5 ? 0.55 : 0.95, softDone: false, spiralT: 0, notched: false, prevD: 0, outAng: 0, prevTh: 0, postT: 0, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, mode: 0, r0: 140, osgn: 1, outT: 0, outKind: 'extreme', outPhi: 0, retPlan: false, retCount: 0, grace: 0, vAng: Math.random() * Math.PI * 2, hPh: 3, hT: 0, wild: Math.max(0, (power - 0.5) / 0.5), calm: Math.max(0, (0.5 - power) / 0.5),
     isBody: false, blt: null,
     dashesLeft: TYPES[type].dashLimit ? TYPES[type].dashLimit![0] + Math.floor(Math.random() * (TYPES[type].dashLimit![1] - TYPES[type].dashLimit![0] + 1)) : Infinity,
   };
@@ -1919,7 +1928,7 @@ export function Beyblade() {
         ...b, tt: bt, blt: null, isBody: false, trail: [],
         x: b.x + ca * (BEY_R + BLT_R * 0.4), y: b.y + sa * (BEY_R + BLT_R * 0.4), vx: ca * bv, vy: sa * bv,
         spin: b.spin * 0.65, spinMax: b.spinMax, burst: 0, // 回転はそのとき残っている分から（増えない）。バレットの持久は本体より低い riding: false, rideT: 0, holdT: 0, dashT: 0, coast: 0, dashCd: 0.6, dashFx: 0,
-        hit: true, rideChance: 1, onRing: false, diagShot: false, softDone: true, spiralT: 0, orbR: 0, mode: 0, postT: 1, calmT: 0, knockT: 0,
+        hit: true, rideChance: 1, onRing: false, diagShot: false, softDone: true, spiralT: 0, orbR: 0, orbUntil: 0, orbSp: 0.95, mode: 0, postT: 1, calmT: 0, knockT: 0,
         outT: 0, out: false, dead: false, retPlan: false, retCount: 1, grace: 1.5, outAng: 0, dashesLeft: Infinity, eAng: Math.random() * Math.PI, er: 0.35 + Math.random() * 0.25, ph0: Math.random() * 6.28,
       };
       { const q = b.blt, qd = sqn(q.x, q.y), lim = R - BEY_R * 1.2; if (qd > lim) { q.x *= lim / qd; q.y *= lim / qd; } } // 壁の外には出さない
@@ -2032,9 +2041,10 @@ export function Beyblade() {
           b.vx += -b.x * kk * DT;
           b.vy += -b.y * kk * DT;
         }
-        if (!hCtl && b.orbR > 0 && !b.hit && b.dashT <= 0 && !b.riding) { // ぶつかるまでは、真ん中の円より少し大きい円を、なめらかに描いて回る
+        if (!hCtl && b.orbR > 0 && !b.hit && b.dashT <= 0 && !b.riding && b.age < b.orbUntil) { // ぶつかるまでは、真ん中の円より少し大きい円を、なめらかに描いて回る
           const w = Math.max(wMode, 0.4), rr = Math.hypot(b.x, b.y) || 1, ux = b.x / rr, uy = b.y / rr, tx = (b.dir * b.y) / rr, ty = (-b.dir * b.x) / rr;
-          const tgt = t.cruise * 0.95, rv = Math.max(-260, Math.min(260, -(rr - b.orbR) * 4)); // 円の半径に近づくように、少しずつ内外へ寄る
+          if (b.orbUntil < Infinity) b.orbR += 14 * DT; // 少しずつ外へふくらむ
+          const tgt = t.cruise * b.orbSp, rv = Math.max(-260, Math.min(260, -(rr - b.orbR) * 4)); // 円の半径に近づくように、少しずつ内外へ寄る
           const k = Math.min(1, 7 * w * DT);
           b.vx += (tx * tgt + ux * rv - b.vx) * k; b.vy += (ty * tgt + uy * rv - b.vy) * k;
         }
