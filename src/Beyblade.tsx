@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { createRoom, joinRoom, randomCode } from './online';
 import type { Link, Msg } from './online';
 
@@ -471,6 +472,8 @@ function playerId(): string { // ブラウザごとの匿名ID（ログインの
   try { let id = localStorage.getItem('bey_pid'); if (!id) { id = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); localStorage.setItem('bey_pid', id); } return id; } catch { return 'anon'; }
 }
 const SESSION_ID = Math.random().toString(36).slice(2, 10);
+const BUILD = (window as unknown as { __BEY_IMGS?: unknown }).__BEY_IMGS ? 'personal' : 'beylog'; // どちらの版で遊んだか
+const ANALYSIS_HTML = (window as unknown as { __BEY_ANALYSIS?: string }).__BEY_ANALYSIS; // 個人用の版だけ：対戦分析の画面
 const customKey = (c: Custom) => [c.blade, c.ratchet, c.bit].join('|') + (c.low ? '|low' : '');
 function sendLog(row: Record<string, string | number>) {
   const url = (window as unknown as { __BEY_LOG_URL?: string }).__BEY_LOG_URL;
@@ -1081,6 +1084,7 @@ export function Beyblade() {
   const [count, setCount] = useState<number | null>(null);
   // 対戦モード：1on1 / 3on3（3体のデッキ。順番を決めて、どちらかが4ポイント取るまで）
   const [mode, setMode] = useState<'1v1' | '3v3'>('1v1');
+  const [showAnalysis, setShowAnalysis] = useState(false); // 個人用の版：対戦分析の画面
   const [gameMode, setGameMode] = useState<'versus' | 'tournament'>('versus'); // トップページ：通常の対戦 / トーナメント
   const [diff, setDiff] = useState<Diff>('normal'); // CPUの強さ
   const diffRef = useRef<Diff>('normal');
@@ -1624,7 +1628,7 @@ export function Beyblade() {
         const shot = (q: typeof sh.me) => ({ side: q.x < 0 ? 'L' : 'R', x: Math.round(q.x), y: Math.round(q.y), kind: q.diag ? '斜め' : '水平', aim: q.aim ? Math.round((Math.atan2(q.aim.y, q.aim.x) * 180) / Math.PI) : '', rpm: q.rpm });
         const a = shot(sh.me), b = shot(sh.cpu);
         sendLog({
-          pid: playerId(), sid: SESSION_ID, mode: mt.gameMode, vs: mt.online ? 'online' : mt.vs, fmt: mt.fmt, diff: mt.vs === 'cpu' && !mt.online ? diffRef.current : '',
+          pid: playerId(), sid: SESSION_ID, build: BUILD, mode: mt.gameMode, vs: mt.online ? 'online' : mt.vs, fmt: mt.fmt, diff: mt.vs === 'cpu' && !mt.online ? diffRef.current : '',
           p1: customKey(rc.m), p1name: buildBey(rc.m).name, p2: customKey(rc.c), p2name: buildBey(rc.c).name,
           win: winner === 'me' ? 'p1' : 'p2', finish,
           p1side: a.side, p1x: a.x, p1y: a.y, p1shot: a.kind, p1aim: a.aim, p1rpm: a.rpm, p1dash: d[0] ?? 0,
@@ -2953,6 +2957,13 @@ export function Beyblade() {
     );
   };
 
+  const analysisView = showAnalysis && ANALYSIS_HTML ? createPortal(
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#04071a', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 10px', borderBottom: '1px solid #2a3566' }}>
+        <button onClick={() => setShowAnalysis(false)} style={sb(false)}>× 閉じる</button>
+      </div>
+      <iframe title="対戦分析" srcDoc={ANALYSIS_HTML} style={{ flex: 1, border: 0, width: '100%' }} />
+    </div>, document.body) : null;
   return (
     // スマホ実機：ページをスクロールできるようにして、Safariなどのメニューバーを隠せるようにする（隠れると画面が広がり、枠も追従する）
     <div style={frame.emulate
@@ -2969,6 +2980,7 @@ export function Beyblade() {
         {phase === 'top' && (
           // ---- トップページ：対戦 / トーナメント
           <div style={{ position: 'absolute', inset: 0, padding: '6px 14px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+            {ANALYSIS_HTML && <button onClick={() => setShowAnalysis(true)} style={{ ...sb(false, '#5aabff'), position: 'absolute', top: 8, right: 12, borderColor: '#5aabff' }}>対戦分析</button>}
             <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: 2 }}>ベイブレードX シミュレーター</div>
             <div style={{ display: 'flex', gap: 8 }}>
               {([['versus', 'シミュレーション', 'CPUや2人でシミュレーション'], ['tournament', 'トーナメント', '最大32人でシミュレーション']] as const).map(([k, label, sub]) => (
@@ -3305,6 +3317,7 @@ export function Beyblade() {
         )}
       </div>
      </div>
+      {analysisView}
     </div>
   );
 }

@@ -5,7 +5,7 @@
 // 4. 出てきた「ウェブアプリのURL」（https://script.google.com/macros/s/…/exec）を Claude に送る
 const KEY = 'ここを好きな文字に変える';
 const COLS = ['time', 'pid', 'sid', 'mode', 'vs', 'fmt', 'diff', 'p1', 'p1name', 'p2', 'p2name', 'win', 'finish',
-  'p1side', 'p1x', 'p1y', 'p1shot', 'p1aim', 'p1rpm', 'p1dash', 'p2side', 'p2x', 'p2y', 'p2shot', 'p2aim', 'p2rpm', 'p2dash', 'hits', 'firstHit', 'sec'];
+  'p1side', 'p1x', 'p1y', 'p1shot', 'p1aim', 'p1rpm', 'p1dash', 'p2side', 'p2x', 'p2y', 'p2shot', 'p2aim', 'p2rpm', 'p2dash', 'hits', 'firstHit', 'sec', 'build'];
 
 function sheet_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();

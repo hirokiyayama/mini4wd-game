@@ -59,6 +59,8 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
     <label>期間</label>
     <select id="period"><option value="7">過去7日</option><option value="30">過去30日</option><option value="0" selected>全期間</option><option value="c">指定</option></select>
     <input type="date" id="from" style="display:none"><input type="date" id="to" style="display:none">
+    <label>版</label>
+    <select id="build"><option value="">両方</option><option value="personal">画像あり</option><option value="beylog">画像なし（beylog）</option></select>
     <label>対象</label>
     <select id="who"><option value="">全体</option></select>
     <label><input type="checkbox" id="cpu"> CPUのベイも含める</label>
@@ -119,12 +121,13 @@ function build() {
   for (const r of ROWS) {
     const t = new Date(r.time || Date.now()), human2 = r.vs === '2p' || r.vs === 'online';
     for (const [me, op, h] of [['p1', 'p2', true], ['p2', 'p1', human2]]) {
-      E.push({ t, pid: r.pid, human: h, fmt: r.fmt, vs: r.vs, key: r[me], name: r[me + 'name'], opp: r[op], oppName: r[op + 'name'], win: r.win === me, finish: r.finish, shot: shotOf(r, me), oshot: shotOf(r, op), hits: +r.hits || 0, sec: num(r.sec) });
+      E.push({ t, pid: r.pid, build: r.build, human: h, fmt: r.fmt, vs: r.vs, key: r[me], name: r[me + 'name'], opp: r[op], oppName: r[op + 'name'], win: r.win === me, finish: r.finish, shot: shotOf(r, me), oshot: shotOf(r, op), hits: +r.hits || 0, sec: num(r.sec) });
     }
   }
   const pids = {}; for (const r of ROWS) pids[r.pid] = (pids[r.pid] || 0) + 1;
   const cur = $('who').value;
-  $('who').innerHTML = '<option value="">全体</option>' + Object.entries(pids).sort((a, b) => b[1] - a[1]).map(([p, n]) => `<option value="${esc(p)}">プレイヤー ${esc(p.slice(0, 6))}（${n}回）</option>`).join('');
+  const mine = ls.get('bey_pid'); // シミュレーターと同じページの中で開いたときは、この端末のIDが分かる
+  $('who').innerHTML = '<option value="">全体</option>' + Object.entries(pids).sort((a, b) => (b[0] === mine) - (a[0] === mine) || b[1] - a[1]).map(([p, n]) => `<option value="${esc(p)}">${p === mine ? 'あなた（この端末）' : 'プレイヤー ' + esc(p.slice(0, 6))}（${n}回）</option>`).join('');
   $('who').value = cur;
   NAMES = {}; for (const e of E) NAMES[e.key] = e.name;
   render();
@@ -138,7 +141,8 @@ function filtered(days) {
   let from = 0, to = Infinity;
   if (per === 'c') { if ($('from').value) from = new Date($('from').value).getTime(); if ($('to').value) to = new Date($('to').value).getTime() + 864e5; }
   else if (+per) from = Date.now() - +per * 864e5;
-  return E.filter(e => e.t >= from && e.t < to && (who ? e.human && e.pid === who : (e.human || cpu)));
+  const bd = $('build').value;
+  return E.filter(e => e.t >= from && e.t < to && (!bd || e.build === bd) && (who ? e.human && e.pid === who : (e.human || cpu)));
 }
 const minN = () => Math.max(1, +$('minN').value || 1), topN = () => +$('topN').value;
 // 少ない対戦数で上に来ないように、勝率の下限（ウィルソン）で並べる
@@ -267,7 +271,7 @@ function render() {
 document.addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) { TAB = t.dataset.tab; ls.set('bey_an_tab', TAB); render(); } });
 document.addEventListener('change', e => { const s = e.target.dataset?.s; if (s) { SEL[s] = e.target.value; render(); } });
 document.addEventListener('input', e => { const f = e.target.dataset?.f; if (f) { FILTER[f] = e.target.value; const pos = e.target.selectionStart; render(); const n = document.querySelector(`[data-f="${f}"]`); if (n) { n.focus(); n.setSelectionRange(pos, pos); } } });
-for (const id of ['period', 'who', 'cpu', 'minN', 'topN', 'from', 'to']) $(id).addEventListener('change', () => { const c = $('period').value === 'c'; $('from').style.display = $('to').style.display = c ? '' : 'none'; render(); });
+for (const id of ['period', 'build', 'who', 'cpu', 'minN', 'topN', 'from', 'to']) $(id).addEventListener('change', () => { const c = $('period').value === 'c'; $('from').style.display = $('to').style.display = c ? '' : 'none'; render(); });
 render();
 if ($('url').value) loadUrl(); else $('src').classList.add('show');
 </script>
