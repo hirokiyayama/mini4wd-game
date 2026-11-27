@@ -2264,7 +2264,9 @@ export function Beyblade() {
           const dd = Math.hypot(b.x, b.y);
           if (dd > ringRadiusAt(b.x, b.y) + 3 && !exitKind(b.x, b.y) && (b.vx * b.x + b.vy * b.y) / dd < 120 && b.spiralT <= 0) { // 壁へ向かって勢いよく飛んでいるあいだは押し戻さない（途中でふわっと減速せず、壁にガツンと当たって跳ね返る）
             // 時計回りなど、壁に沿って回り続けようとしても、強く内側へ押し戻される（リングの外側では、円を描いて回り続けられない）
-            const f = Math.min(2, (dd - (ringRadiusAt(b.x, b.y) + 3)) / 5) * 3200 * DT;
+            // ただし、もう内側へ戻っているときは、それ以上は押さない（上の左右の角は壁とリングの間が広いので、ここで押し続けると、すごい勢いで真ん中へ戻ってしまっていた）
+            if (b.diagShot && !b.softDone && b.knockT <= 0 && b.dashT <= 0) { b.softDone = true; b.spiralT = 3.6; b.postT = 0; b.calmT = Math.max(b.calmT, 3.6); } // 斜めシュートで上の左右の角（壁とリングの間が広い所）へ行ったときも、壁に当たったときと同じく、回りながらゆっくり戻る
+            const vr = (b.vx * b.x + b.vy * b.y) / dd, f = Math.min(Math.max(0, vr + 60), Math.min(2, (dd - (ringRadiusAt(b.x, b.y) + 3)) / 5) * 3200 * DT);
             b.vx -= (b.x / dd) * f; b.vy -= (b.y / dd) * f;
           }
         }
