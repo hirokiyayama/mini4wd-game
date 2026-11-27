@@ -16,8 +16,8 @@
       gtag('js', new Date());
       gtag('config', 'G-JV6GG2XY4J');
     </script>
-    <!-- 対戦結果の記録（分析用）：Apps Script のウェブアプリのURLを入れると、1ラウンドごとに送る。空なら何も送らない -->
-    <script>window.__BEY_LOG_URL = '';</script>
+    <!-- 対戦結果の記録（分析用）：1ラウンドごとに、ベイろぐのWordPress（プラグイン beylog-sim-stats）へ送る。空にすると送らない -->
+    <script>window.__BEY_LOG_URL = 'https://beylog.com/wp-json/beylog-sim/v1/log';</script>
   </head>
   <body>
     <div id="root"></div>

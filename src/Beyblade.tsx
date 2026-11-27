@@ -465,7 +465,7 @@ function track(name: string, params: Record<string, string> = {}) {
 }
 
 // ---- 対戦結果の記録（分析用・画面には何も出さない） ----
-// beylog版の bey.html で window.__BEY_LOG_URL に送り先（Googleスプレッドシートの Apps Script）を書いたときだけ送る。個人用の版は送らない
+// bey.html / bey-personal.html の window.__BEY_LOG_URL（ベイろぐのWordPressのプラグイン）に送る。空なら送らない
 const RSTAT = { hits: 0, lastHit: -9, firstHit: -1, t0: 0, simT: 0 }; // 1ラウンドのぶつかった回数・最初にぶつかった時間（時間はバトルの中の秒）
 const nowSec = () => RSTAT.simT;
 function playerId(): string { // ブラウザごとの匿名ID（ログインの代わり）

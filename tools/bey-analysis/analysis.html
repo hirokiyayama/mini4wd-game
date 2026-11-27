@@ -49,9 +49,9 @@ td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 <main>
   <div id="src" class="card">
     <h2>データの読み込み</h2>
-    <div class="note">Apps ScriptのウェブアプリのURLと、コードに書いたKEYを入れてください。このブラウザだけに保存されます。</div>
-    <div class="bar"><input id="url" placeholder="https://script.google.com/macros/s/…/exec" style="flex:1;min-width:260px"><input id="key" placeholder="KEY" style="width:160px"><button class="pri" id="load">読み込む</button></div>
-    <div class="note">または、スプレッドシートを「CSV」でダウンロードしたファイルを選ぶ：</div>
+    <div class="note">データの読み出し先のURLとパスワードを入れてください。このブラウザだけに保存されます。</div>
+    <div class="bar"><input id="url" placeholder="https://beylog.com/wp-json/beylog-sim/v1/log" style="flex:1;min-width:260px"><input id="key" placeholder="パスワード" style="width:160px"><button class="pri" id="load">読み込む</button></div>
+    <div class="note">または、CSV／JSONのファイルを選ぶ：</div>
     <input type="file" id="file" accept=".csv,.json,.jsonl,text/csv,application/json">
   </div>
 
@@ -97,10 +97,11 @@ async function loadUrl(quiet) {
   if (!AUTO) { ls.set('bey_an_url', url); ls.set('bey_an_key', key); }
   if (quiet !== true) $('status').textContent = '読み込み中…';
   try {
-    const r = await fetch(url + (url.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(key));
+    const since = ROWS.length && ROWS[ROWS.length - 1].id ? ROWS[ROWS.length - 1].id : 0; // 前に読んだ分より新しい行だけもらう
+    const r = await fetch(url + (url.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(key) + '&since=' + since, { cache: 'no-store' });
     const j = await r.json();
-    if (j.error) { $('status').textContent = 'KEYが違います'; return; }
-    setRows(j.rows, '最新 ' + new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })); $('src').classList.remove('show');
+    if (j.error) { $('status').textContent = 'パスワードが違います'; return; }
+    setRows(since ? ROWS.concat(j.rows) : j.rows, '最新 ' + new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })); $('src').classList.remove('show');
   } catch (e) { $('status').textContent = '読み込めませんでした（URLを確認してください）'; }
 }
 $('file').onchange = async e => {
@@ -266,7 +267,7 @@ function partsOf(key) {
 let TAB = ls.get('bey_an_tab') || '今週の最強カスタム';
 function render() {
   $('tabs').innerHTML = Object.keys(PAGES).map(k => `<button class="${k === TAB ? 'on' : ''}" data-tab="${k}">${k}</button>`).join('');
-  $('view').innerHTML = E.length ? PAGES[TAB]() : '<div class="card"><h2>データがありません</h2><div class="note">右上の「データの読み込み設定」から、Apps ScriptのURLとKEYを入れるか、CSVファイルを選んでください。</div></div>';
+  $('view').innerHTML = E.length ? PAGES[TAB]() : '<div class="card"><h2>データがありません</h2><div class="note">まだ対戦データがありません。ベイろぐにプラグインを入れると、遊んだ結果がここに出ます。</div></div>';
 }
 document.addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) { TAB = t.dataset.tab; ls.set('bey_an_tab', TAB); render(); } });
 document.addEventListener('change', e => { const s = e.target.dataset?.s; if (s) { SEL[s] = e.target.value; render(); } });
@@ -279,7 +280,7 @@ render();
 if (AUTO) {
   $('srcBtn').style.display = 'none';
   if (AUTO.url && AUTO.key) { $('url').value = AUTO.url; $('key').value = AUTO.key; loadUrl(); setInterval(() => { if (!document.hidden) loadUrl(true); }, 60000); }
-  else { $('status').textContent = ''; $('view').innerHTML = '<div class="card"><h2>記録の準備中です</h2><div class="note">記録の送り先（Apps Script）がまだ設定されていません。設定されると、ここに自動でデータが出ます。</div></div>'; $('tabs').innerHTML = ''; }
+  else { $('status').textContent = ''; $('view').innerHTML = '<div class="card"><h2>記録の準備中です</h2><div class="note">記録の送り先がまだ設定されていません。設定されると、ここに自動でデータが出ます。</div></div>'; $('tabs').innerHTML = ''; }
 } else if ($('url').value) loadUrl(); else $('src').classList.add('show');
 </script>
 </body>
